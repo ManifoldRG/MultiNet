@@ -13,6 +13,22 @@ The main pretraining corpus of the original GATO project is the following:
 
 ![The original gato corpus](./assets/gato_corpus.png)
 
+We currently are starting with evaluating models for the Vision / Language datasets.
+
+This is our complimentary view of what each dataset would be replaced with for the Vision / Language datasets.
+
+| Vision/language dataset | Weight | Replaced by                            |
+| ----------------------- | ------ | ---------------------------------------|
+| MassiveText             | 6.70%  | PILE                                   |
+| M3W                     | 4.00%  | Multimodal C4                          |
+| ALIGN                   | 0.67%  | COYO-700M                              |
+| MS-COCO                 | 0.67%  | Open Source                            |
+| Conceptual Captions     | 0.67%  | Open Source                            |
+| LTIP                    | 0.67%  | LAION2-B / AESTHETIC-LAION             |
+| OKVQA                   | 0.67%  | AOKVQA (The augmented version of OKVQA)|
+| VQA-V2                  | 0.67%  | Open Source                            |
+
+
 We are benchmarking the following models.
 
 
