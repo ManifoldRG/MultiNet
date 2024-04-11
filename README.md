@@ -1,4 +1,4 @@
-# MultiBench
+# MultiNet
 
 We are currently working towards a Multi Modal Generalist Benchmark. The first
 version of the project is going to be a pretraining corpus for the
@@ -17,17 +17,21 @@ We currently are starting with evaluating models for the Vision / Language datas
 
 This is our complimentary view of what each dataset would be replaced with for the Vision / Language datasets.
 
-| Vision/language dataset | Weight | Replaced by                            |
-| ----------------------- | ------ | ---------------------------------------|
-| MassiveText             | 6.70%  | PILE                                   |
-| M3W                     | 4.00%  | Multimodal C4                          |
-| ALIGN                   | 0.67%  | COYO-700M                              |
-| MS-COCO                 | 0.67%  | Open Source                            |
-| Conceptual Captions     | 0.67%  | Open Source                            |
-| LTIP                    | 0.67%  | LAION2-B / AESTHETIC-LAION             |
-| OKVQA                   | 0.67%  | AOKVQA (The augmented version of OKVQA)|
-| VQA-V2                  | 0.67%  | Open Source                            |
+| Vision/language dataset | Weight | Replaced by                            | Tokens  |
+| ----------------------- | ------ | ---------------------------------------|---------|
+| MassiveText             | 6.70%  | PILE                                   | 117.8B  |
+| M3W                     | 4.00%  | Multimodal C4                          | 70.34B  |
+| ALIGN                   | 0.67%  | COYO-700M                              | 11.78B  |
+| MS-COCO                 | 0.67%  | Open Source                            | 11.78B  |
+| Conceptual Captions     | 0.67%  | Open Source                            | 11.78B  |
+| LTIP                    | 0.67%  | LAION2-B / AESTHETIC-LAION             | 11.78B  |
+| OKVQA                   | 0.67%  | AOKVQA (The augmented version of OKVQA)| 11.78B  |
+| VQA-V2                  | 0.67%  | Open Source                            | 11.78B  |
+| Total Vision + Language | 14.7%  |                                        | 258.82B |
 
+We need a total of 1.5T for the control data and 258.82B for the language and vision data.
+
+That is a total of 1.7T tokens.
 
 We are benchmarking the following models.
 
@@ -44,3 +48,10 @@ We are benchmarking the following models.
 
 
 
+## Getting Started
+
+Generate a python environment:
+
+```bash
+python -m venv multinet
+```
