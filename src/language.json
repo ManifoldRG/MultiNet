@@ -1,0 +1,13 @@
+{
+	"task": "language",
+	"datasets": [
+		{
+			"name": "HuggingFaceFW/fineweb",
+			"features": [
+				"text"
+			],
+			"samples": 100
+		}
+	],
+	"split": "train"
+}
