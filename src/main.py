@@ -1,5 +1,5 @@
 """
-Call it with: python main.py --task=caption|language
+Call it with: python main.py --task=caption|language|vqa
 """
 
 import json

@@ -6,6 +6,7 @@
 			"features": [
 				"text"
 			],
+			"streaming": true,
 			"samples": 100
 		}
 	],
