@@ -6,8 +6,11 @@
 			"features": [
 				"image",
 				"question",
-				"answers.answer"
+				"multiple_choice_answer"
 			],
+			"rename_columns": {
+				"multiple_choice_answer": "answers"
+			},
 			"samples": 20,
 			"flatten": true,
 			"streaming": false
