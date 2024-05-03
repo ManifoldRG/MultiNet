@@ -1,0 +1,32 @@
+{
+	"task": "vqa",
+	"datasets": [
+		{
+			"name": "HuggingFaceM4/VQAv2",
+			"features": [
+				"image",
+				"question",
+				"multiple_choice_answer"
+			],
+			"rename_columns": {
+				"multiple_choice_answer": "answers"
+			},
+			"samples": 20,
+			"streaming": true
+		},
+		{
+			"name": "HuggingFaceM4/A-OKVQA",
+			"features": [
+				"image",
+				"question",
+				"direct_answers"
+			],
+			"rename_columns": {
+				"direct_answers": "answers"
+			},
+			"samples": 20,
+			"streaming": true
+		}
+	],
+	"split": "train"
+}
