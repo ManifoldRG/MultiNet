@@ -6,7 +6,7 @@ For the Images and Text, we can do the following.
 | Vision/language dataset | Weight | Replaced by                            | Tokens  | Links |
 | ----------------------- | ------ | ---------------------------------------|---------|-------|
 | MassiveText             | 6.70%  | PILE                                   | 117.8B  | https://huggingface.co/datasets/EleutherAI/pile |
-| M3W                     | 4.00%  | Multimodal C4                          | 70.34B  | https://huggingface.co/datasets/HuggingFaceM4/OBELICS |
+| M3W                     | 4.00%  | OBELICS                                | 70.34B  | https://huggingface.co/datasets/HuggingFaceM4/OBELICS |
 | ALIGN                   | 0.67%  | COYO-700M                              | 11.78B  | https://huggingface.co/datasets/kakaobrain/coyo-700m|
 | MS-COCO                 | 0.67%  | Open Source                            | 11.78B  | https://huggingface.co/datasets/shunk031/MSCOCO |
 | Conceptual Captions     | 0.67%  | Open Source                            | 11.78B  | https://huggingface.co/datasets/conceptual_captions
@@ -44,20 +44,20 @@ This is where the rubber hits the road. We have to replicate some of this.
 
 | Environment                   | Tasks | Episodes | Approx. Tokens | Weight | Replaced by | Status    | Links |
 | ----------------------------- | ----- | -------- | -------------- | ------ | ----------- |-----------|-------|
-| DM Lab                        | 254   | 16.4M    | 194B           | 9.35%  |RL Unplugged | TRANSLATE |  https://console.cloud.google.com/storage/browser/rl_unplugged;tab=objects?prefix=&forceOnObjectsSortingFiltering=false |
-| ALE Atari                     | 51    | 63.4K    | 1.26B          | 9.50%  |Scaled-QL    | DONE      | https://github.com/ManifoldRG/NEKO |
-| ALE Atari Extended            | 28    | 28.4K    | 565M           | 10.00% |Scaled-QL    | DONE      | https://github.com/ManifoldRG/NEKO |
+| DM Lab                        | 254   | 16.4M    | 194B           | 9.35%  |RL Unplugged | IMPLEMENT | https://www.samplefactory.dev/09-environment-integrations/dmlab  |
+| ALE Atari                     | 51    | 63.4K    | 1.26B          | 9.50%  |JAT-dataset  | DONE      | https://huggingface.co/datasets/jat-project/jat-dataset |
+| ALE Atari Extended            | 28    | 28.4K    | 565M           | 10.00% |JAT-dataset  | DONE      | https://huggingface.co/datasets/jat-project/jat-dataset |
 | Sokoban                       | 1     | 27.2K    | 298M           | 1.33%  |IMPLEMENT    | NOTHING   | https://github.com/mpSchrader/gym-sokoban |
-| Baby AI                       | 46    | 4.61M    | 22.8B          | 9.06%  |IMPLEMENT    | JUST RUN  | https://github.com/snat-s/baby-ai-dataset |
+| Baby AI                       | 46    | 4.61M    | 22.8B          | 9.06%  |JAT-dataset  | JUST RUN  | https://huggingface.co/datasets/jat-project/jat-dataset |
 | DM Control Suite              | 30    | 395K     | 22.5B          | 4.62%  |D4RL         | DONE?     | https://github.com/Farama-Foundation/D4RL |
 | DM Control Suite Pixels       | 28    | 485K     | 35.5B          | 7.07%  |V-D4RL       | DONE?     | https://github.com/conglu1997/v-d4rl |
 | DM Control Suite Random Small | 26    | 10.6M    | 313B           | 3.04%  |D4RL         | DONE?     | https://github.com/Farama-Foundation/D4RL |
 | DM Control Suite Random Large | 26    | 26.1M    | 791B           | 3.04%  |D4RL         | DONE?     | https://github.com/Farama-Foundation/D4RL |
-| Meta-World                    | 45    | 94.6K    | 3.39B          | 8.96%  |IMPLEMENT    | NOTHING   | https://github.com/Farama-Foundation/Metaworld |
+| Meta-World                    | 45    | 94.6K    | 3.39B          | 8.96%  |JAT-dataset  | DONE      | https://huggingface.co/datasets/jat-project/jat-dataset |
 | Procgen Benchmark             | 16    | 1.6M     | 4.46B          | 5.34%  |Procgen      | TRANSLATE | https://github.com/facebookresearch/gen_dgrl |
 | RGB Stacking simulator        | 1     | 387K     | 24.4B          | 1.33%  |IMPLEMENT    | NOTHING   | https://github.com/google-deepmind/rgb_stacking
 | RGB Stacking real robot       | 1     | 15.7K    | 980M           | 1.33%  |OPEN-X       | NOTHING   | https://huggingface.co/datasets/jxu124/OpenX-Embodiment |
-| Modular RL                    | 38    | 843K     | 69.6B          | 8.23%  |LocoMuJoCo   | DONE      | https://github.com/ManifoldRG/NEKO |
+| Modular RL                    | 38    | 843K     | 69.6B          | 8.23%  |LocoMuJoCo   | NOTHING      | https://github.com/ManifoldRG/NEKO |
 | DM Manipulation Playground    | 4     | 286K     | 6.58B          | 1.68%  |LocoMuJoCo   | DONE      | https://github.com/ManifoldRG/NEKO |
 | Playroom                      | 1     | 829K     | 118B           | 1.33%  |IMPLEMENT    | NOTHING   | I can not find where we could get it |
 | Total                         | 596   | 63M      | 1.5T           | 85.21% |             |           |
