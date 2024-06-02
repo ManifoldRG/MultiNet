@@ -29,6 +29,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--task",
         help="The task to be performed. It will generate a dataset for either language, caption or vqa.",
+        required=True,
     )
     args = parser.parse_args()
     main(args.task)
