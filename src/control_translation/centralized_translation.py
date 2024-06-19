@@ -31,7 +31,7 @@ def build_arg_parser() -> ArgumentParser:
     return parser
 
 # RL unplugged datasets translation
-def rlu(dataset_path: str):
+def rlu(dataset_path: str, limit_schema: bool):
 
     dm_lab_dict = defaultdict(list)
 
@@ -43,7 +43,6 @@ def rlu(dataset_path: str):
         return None
 
     #Access the values in the dataset based on the feature type --only accessing 5 episodes with this code (remove .take() if entire ds needs to be downloaded)
-    print('Translating...')
     for raw_record in raw_dataset.take(5):
 
         example = tf.train.Example()
@@ -69,12 +68,31 @@ def rlu(dataset_path: str):
         
     #Convert data dict to TFDS
     dm_lab_dict = {k: tf.convert_to_tensor(v) for k, v in dm_lab_dict.items()}
+
+    # Trim the data if limit_schema flag is set during code execution
+    if limit_schema:
+        dm_lab_dict_trimmed = {}
+        if 'actions' in dm_lab_dict.keys():
+            dm_lab_dict_trimmed['actions'] = dm_lab_dict['actions']
+        else:
+            dm_lab_dict_trimmed['actions'] = dm_lab_dict['action']
+        dm_lab_dict_trimmed['observations'] = {k:v for k,v in dm_lab_dict.items() if 'observation' in k}
+        if 'rewards' in dm_lab_dict.keys():
+            dm_lab_dict_trimmed['rewards'] = dm_lab_dict['rewards']
+        else:
+            dm_lab_dict_trimmed['rewards'] = dm_lab_dict['reward']
+        
+        print('Translating...')
+        dm_lab_dict_trimmed_tfds = tf.data.Dataset.from_tensor_slices(dm_lab_dict_trimmed)
+        return dm_lab_dict_trimmed_tfds
+
+    print('Translating...')
     dm_lab_tfds = tf.data.Dataset.from_tensor_slices(dm_lab_dict)
     return dm_lab_tfds
     
 
 # JAT datasets translation
-def jat(dataset_path: str, hf_test_data: bool):
+def jat(dataset_path: str, hf_test_data: bool, limit_schema: bool):
 
     jat_tfds = None
     try: 
@@ -89,7 +107,11 @@ def jat(dataset_path: str, hf_test_data: bool):
     #Translate HF DatasetDict to TFDS
     jat_tfds_train = jat_hf['train'].to_tf_dataset(columns=list(jat_hf['train'][0].keys()))
 
+    if limit_schema:
+        print('The JAT datasets only contain observations, actions, and rewards. No further trimming will be done.')
+
     if hf_test_data:
+        
         jat_tfds_test = jat_hf['test'].to_tf_dataset(columns=list(jat_hf['test'][0].keys()))
     
         #Return tuple of translated train and test splits
@@ -101,7 +123,7 @@ def jat(dataset_path: str, hf_test_data: bool):
 
 
 #TorchRL datasets translation
-def torchrlds(dataset_path: str):
+def torchrlds(dataset_path: str, dataset_name, limit_schema: bool):
 
     trl_tfds = None
     try:
@@ -110,13 +132,33 @@ def torchrlds(dataset_path: str):
     except:
         print('Enter the correct path to the Torch dataset')
         return trl_tfds  
+    
+    # Trim the data if limit_schema flag is set during code execution
+    if limit_schema:
+        if dataset_name == 'locomujoco':
+            trl_torch_trimmed = {}
+            trl_torch_trimmed['observations'] = trl_torch['states']
+            trl_torch_trimmed['actions'] = trl_torch['actions']
+            trl_torch_trimmed['rewards'] = trl_torch['rewards']
+            print('Translating...')
+            trl_torch_trimmed_tfds = tf.data.Dataset.from_tensor_slices(trl_torch_trimmed)
+            return trl_torch_trimmed_tfds
+        elif dataset_name == 'vd4rl':
+            trl_torch_trimmed = {}
+            trl_torch_trimmed['observations'] = trl_torch['pixels']
+            trl_torch_trimmed['actions'] = trl_torch['action']
+            trl_torch_trimmed['rewards'] = trl_torch['next']['reward']
+            print('Translating...')
+            trl_torch_trimmed_tfds = tf.data.Dataset.from_tensor_slices(trl_torch_trimmed)
+            return trl_torch_trimmed_tfds
+
 
     #Translate TorchRL dataset to TFDS
     print('Translating...')
     trl_tfds = tf.data.Dataset.from_tensor_slices(trl_torch)  
     return trl_tfds
 
-def procgen(dataset_path: str):
+def procgen(dataset_path: str, limit_schema: bool):
 
     #Taken from https://github.com/ManifoldRG/MultiNet/blob/main/src/control_translation/procgen/convert2tfds.py
 
@@ -133,6 +175,10 @@ def procgen(dataset_path: str):
             print('Enter the correct path to a Procgen file in Numpy format')
             return None
         
+        #Translate TorchRL dataset to TFDS
+        if limit_schema:
+            del procgen_np['dones']
+
         procgen_dict = {key: tf.data.Dataset.from_tensor_slices(procgen_np[key]) for key in procgen_np.keys()}
         procgen_tfds = tf.data.Dataset.zip(procgen_dict)
 
@@ -151,20 +197,20 @@ def procgen(dataset_path: str):
 
 
 #Decides the translation module to be called based on the dataset
-def categorize_datasets(dataset_name: str, dataset_path: str, hf_test_data: bool):
+def categorize_datasets(dataset_name: str, dataset_path: str, hf_test_data: bool, limit_schema: bool):
 
     try:
         if dataset_name=='dm_lab_rlu' or dataset_name=='dm_control_suite_rlu':
-            translated_ds = rlu(dataset_path)
+            translated_ds = rlu(dataset_path, limit_schema)
             return translated_ds
         elif dataset_name=='baby_ai' or dataset_name=='ale_atari' or dataset_name=='mujoco' or dataset_name=='meta_world':
-            translated_ds = jat(dataset_path, hf_test_data)
+            translated_ds = jat(dataset_path, hf_test_data, limit_schema)
             return translated_ds
         elif dataset_name=='vd4rl' or dataset_name=='locomujoco':
-            translated_ds = torchrlds(dataset_path)
+            translated_ds = torchrlds(dataset_path, dataset_name, limit_schema)
             return translated_ds
         elif dataset_name=='procgen':
-            translated_ds = procgen(dataset_path)
+            translated_ds = procgen(dataset_path, limit_schema)
             return translated_ds
         
         else:
@@ -180,7 +226,7 @@ if __name__ == "__main__":
     
     parser = build_arg_parser()
     args = parser.parse_args()
-    translated_ds = categorize_datasets(args.dataset_name, args.dataset_path, args.hf_test_data)
+    translated_ds = categorize_datasets(args.dataset_name, args.dataset_path, args.hf_test_data, args.limit_schema)
 
     if translated_ds is not None:
 
@@ -192,12 +238,12 @@ if __name__ == "__main__":
             print('Translated test data stored')
             
             #Testing
-            '''finalds = tf.data.Dataset.load(<output_dir/translated_train_file_name>)
-            for elem in finalds:
+            finalds = tf.data.Dataset.load('/Users/guruprasad/Desktop/MetarchCode/MultiNet/mujoco_translated_train')
+            '''for elem in finalds:
                 print(elem)
                 break
 
-            finalds = tf.data.Dataset.load('<output_dir/translated_test_file_name>')
+            finalds = tf.data.Dataset.load('/Users/guruprasad/Desktop/MetarchCode/MultiNet/mujoco_translated_test')
             for elem in finalds:
                 print(elem)
                 break'''
@@ -207,7 +253,7 @@ if __name__ == "__main__":
             print('Translated and stored')
             
             #Testing
-            '''finalds = tf.data.Dataset.load('<output_dir/translated_file_name>')
+            '''finalds = tf.data.Dataset.load('/Users/guruprasad/Desktop/MetarchCode/MultiNet/vd4rl_translated')
             print(len(finalds))
             for elem in finalds:
                print(elem)
