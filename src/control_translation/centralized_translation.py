@@ -238,7 +238,7 @@ if __name__ == "__main__":
             print('Translated test data stored')
             
             #Testing
-            finalds = tf.data.Dataset.load('<output_dir>/<name of translated train dataset>')
+            '''finalds = tf.data.Dataset.load('<output_dir>/<name of translated train dataset>')
             for elem in finalds:
                 print(elem)
                 break
@@ -246,18 +246,18 @@ if __name__ == "__main__":
             finalds = tf.data.Dataset.load('<output_dir>/<name of translated test dataset>')
             for elem in finalds:
                 print(elem)
-                break
+                break'''
         else:
             #Saving the translated dataset in output_dir as a single shard
             tf.data.Dataset.save(translated_ds,os.path.join(args.output_dir,args.dataset_name+'_translated'), shard_func = custom_shard_func)
             print('Translated and stored')
             
             #Testing
-            finalds = tf.data.Dataset.load('<output_dir>/<name of translated dataset>')
+            '''finalds = tf.data.Dataset.load('<output_dir>/<name of translated dataset>')
             print(len(finalds))
             for elem in finalds:
                print(elem)
-               break
+               break'''
                
                 
         
