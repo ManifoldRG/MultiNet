@@ -108,7 +108,7 @@ def jat(dataset_path: str, hf_test_data: bool, limit_schema: bool):
     jat_tfds_train = jat_hf['train'].to_tf_dataset(columns=list(jat_hf['train'][0].keys()))
 
     if limit_schema:
-        print('The JAT datasets only contain observations, actions, and rewards. No further trimming will be done.')
+        print('The JAT datasets only contain observations, actions, and rewards. No further trimming will be done. Observations and Actions are stored as Continuous/Discrete Observations and Actions depending on the task')
 
     if hf_test_data:
         
@@ -238,26 +238,26 @@ if __name__ == "__main__":
             print('Translated test data stored')
             
             #Testing
-            finalds = tf.data.Dataset.load('/Users/guruprasad/Desktop/MetarchCode/MultiNet/mujoco_translated_train')
-            '''for elem in finalds:
+            finalds = tf.data.Dataset.load('<output_dir>/<name of translated train dataset>')
+            for elem in finalds:
                 print(elem)
                 break
 
-            finalds = tf.data.Dataset.load('/Users/guruprasad/Desktop/MetarchCode/MultiNet/mujoco_translated_test')
+            finalds = tf.data.Dataset.load('<output_dir>/<name of translated test dataset>')
             for elem in finalds:
                 print(elem)
-                break'''
+                break
         else:
             #Saving the translated dataset in output_dir as a single shard
             tf.data.Dataset.save(translated_ds,os.path.join(args.output_dir,args.dataset_name+'_translated'), shard_func = custom_shard_func)
             print('Translated and stored')
             
             #Testing
-            '''finalds = tf.data.Dataset.load('/Users/guruprasad/Desktop/MetarchCode/MultiNet/vd4rl_translated')
+            finalds = tf.data.Dataset.load('<output_dir>/<name of translated dataset>')
             print(len(finalds))
             for elem in finalds:
                print(elem)
-               break'''
+               break
                
                 
         
