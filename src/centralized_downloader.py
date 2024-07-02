@@ -210,6 +210,8 @@ def procgen(dataset_name: str, output_dir: str):
 #Language Table
 def language_table(dataset_name: str, output_dir: str):
 
+    shard_size = 128
+
     #Language table dataset names
     dataset_directories = {
 
@@ -229,17 +231,17 @@ def language_table(dataset_name: str, output_dir: str):
     dataset_path = os.path.join(dataset_directories['language_table'], '0.0.1')
     try:
         print('Downloading...')
-        builder = tfds.builder_from_directory(dataset_path)
+        builder = tfds.builder_from_directory(builder_dir = dataset_path)
         ds = builder.as_dataset(split='train')
         ds = ds.flat_map(lambda x: x['steps'])
         os.makedirs(os.path.join(output_dir,dataset_name))
-        for i, shard in enumerate(ds.batch(ds)):
+        for i, shard in enumerate(ds.batch(shard_size)):
             shard_tf = tf.data.Dataset.from_tensor_slices(shard)
             tf.data.Dataset.save(shard_tf, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
             del shard
             del shard_tf
             gc.collect()
-        #tf.data.Dataset.save(ds, os.path.join(output_dir,dataset_name))
+            #tf.data.Dataset.save(ds, os.path.join(output_dir,dataset_name))
     except:
         print(f'Error while downloading {dataset_name}...')
         return
