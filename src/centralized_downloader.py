@@ -209,7 +209,34 @@ def procgen(dataset_name: str, output_dir: str):
     print("Successfully downloaded and extracted Procgen expert data")
 
 #Language Table
-def language_table(dataset_name: str, output_dir: str, start_from_shard: int):
+def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int, shard_size: int):
+
+    for i, shard in enumerate(ds.batch(shard_size), start=start_from_shard):
+            # Check RAM usage
+            ram_usage = psutil.virtual_memory().percent
+            if ram_usage > 90:
+                print(f"RAM usage is {ram_usage}%. Restarting from shard {i}...")
+                # Clean up resources
+                del shard
+                gc.collect()
+
+                # Restart the process from the next shard
+                language_table(dataset_name, output_dir, start_from_shard=i)
+                return i
+        
+            shard_tf = tf.data.Dataset.from_tensor_slices(shard)
+            tf.data.Dataset.save(shard_tf, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
+            del shard
+            del shard_tf
+            gc.collect()
+        
+            # Print current RAM usage
+            print(f"Processed shard {i}. Current RAM usage: {ram_usage}%")
+    
+    return None
+
+
+def language_table(dataset_name: str, output_dir: str, start_from_shard):
 
     shard_size = 128
 
@@ -236,28 +263,17 @@ def language_table(dataset_name: str, output_dir: str, start_from_shard: int):
         ds = builder.as_dataset(split='train')
         ds = ds.flat_map(lambda x: x['steps'])
         os.makedirs(os.path.join(output_dir, dataset_name), exist_ok=True)
-        
-        for i, shard in enumerate(ds.batch(shard_size), start=start_from_shard):
-            # Check RAM usage
-            ram_usage = psutil.virtual_memory().percent
-            if ram_usage > 90:
-                print(f"RAM usage is {ram_usage}%. Restarting from shard {i}...")
-                # Clean up resources
-                del shard
-                gc.collect()
+        shard_func_catch=0
 
-                # Restart the process from the next shard
-                language_table(dataset_name, output_dir, start_from_shard=i)
-                return
-        
-            shard_tf = tf.data.Dataset.from_tensor_slices(shard)
-            tf.data.Dataset.save(shard_tf, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
-            del shard
-            del shard_tf
-            gc.collect()
-        
-            # Print current RAM usage
-            print(f"Processed shard {i}. Current RAM usage: {ram_usage}%")
+        while(1):
+            if shard_func_catch is not None:
+                shard_func_catch = shard_and_save(ds,dataset_name, output_dir, shard_func_catch, shard_size)
+            else:
+                break
+
+            
+
+
     except:
         print(f'Error while downloading {dataset_name}...')
         return
@@ -396,7 +412,7 @@ def download_datasets(dataset_name: str, output_dir: str):
     elif dataset_name == 'locomujoco':
         locomujoco(dataset_name, output_dir)
     elif dataset_name == 'language_table':
-        language_table(dataset_name, output_dir, 0)
+        language_table(dataset_name, output_dir)
     elif dataset_name == 'openx':
         openx(dataset_name, output_dir)
     else:
