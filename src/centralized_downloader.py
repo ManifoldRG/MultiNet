@@ -22,6 +22,7 @@ import certifi
 import requests
 from urllib.parse import urlparse, unquote
 from google.cloud import storage
+import gc
 
 os.environ['CURL_CA_BUNDLE'] = ''
 
@@ -232,7 +233,13 @@ def language_table(dataset_name: str, output_dir: str):
         ds = builder.as_dataset(split='train')
         ds = ds.flat_map(lambda x: x['steps'])
         os.makedirs(os.path.join(output_dir,dataset_name))
-        tf.data.Dataset.save(ds, os.path.join(output_dir,dataset_name))
+        for i, shard in enumerate(ds.batch(ds)):
+            shard_tf = tf.data.Dataset.from_tensor_slices(shard)
+            tf.data.Dataset.save(shard_tf, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
+            del shard
+            del shard_tf
+            gc.collect()
+        #tf.data.Dataset.save(ds, os.path.join(output_dir,dataset_name))
     except:
         print(f'Error while downloading {dataset_name}...')
         return
@@ -298,6 +305,8 @@ def openx(dataset_name: str, output_dir: str):
     'berkeley_gnm_sac_son'
     ]
 
+    shard_size = 128
+
     for ds in DATASETS:
         if ds == 'robo_net':
             version = '1.0.0'
@@ -312,7 +321,13 @@ def openx(dataset_name: str, output_dir: str):
                 os.makedirs(os.path.join(output_dir, ds), exist_ok=True)
                 b = builder.as_dataset(split='train')
                 b = b.flat_map(lambda x: x['steps'])
-                tf.data.Dataset.save(b,os.path.join(output_dir, ds))
+                for i, shard in enumerate(b.batch(shard_size)):
+                    shard_tf = tf.data.Dataset.from_tensor_slices(shard)
+                    tf.data.Dataset.save(shard_tf, f"{os.path.join(output_dir, ds)}/shard_{i}")
+                    del shard
+                    del shard_tf
+                    gc.collect()
+                    #tf.data.Dataset.save(b,os.path.join(output_dir, ds))
         except:
             print(f'Error while downloading {ds}')
             
