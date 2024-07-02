@@ -311,6 +311,7 @@ def openx(dataset_name: str, output_dir: str):
                 builder = tfds.builder_from_directory(builder_dir=file_path)
                 os.makedirs(os.path.join(output_dir, ds), exist_ok=True)
                 b = builder.as_dataset(split='train')
+                b = b.flat_map(lambda x: x['steps'])
                 tf.data.Dataset.save(b,os.path.join(output_dir, ds))
         except:
             print(f'Error while downloading {ds}')
