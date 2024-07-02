@@ -219,9 +219,6 @@ def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int
                 # Clean up resources
                 del shard
                 gc.collect()
-
-                # Restart the process from the next shard
-                language_table(dataset_name, output_dir, start_from_shard=i)
                 return i
         
             shard_tf = tf.data.Dataset.from_tensor_slices(shard)
