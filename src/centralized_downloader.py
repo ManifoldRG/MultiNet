@@ -23,6 +23,7 @@ import requests
 from urllib.parse import urlparse, unquote
 from google.cloud import storage
 import gc
+import psutil
 
 os.environ['CURL_CA_BUNDLE'] = ''
 
@@ -208,7 +209,7 @@ def procgen(dataset_name: str, output_dir: str):
     print("Successfully downloaded and extracted Procgen expert data")
 
 #Language Table
-def language_table(dataset_name: str, output_dir: str):
+def language_table(dataset_name: str, output_dir: str, start_from_shard: int):
 
     shard_size = 128
 
@@ -231,22 +232,38 @@ def language_table(dataset_name: str, output_dir: str):
     dataset_path = os.path.join(dataset_directories['language_table'], '0.0.1')
     try:
         print('Downloading...')
-        builder = tfds.builder_from_directory(builder_dir = dataset_path)
+        builder = tfds.builder_from_directory(builder_dir=dataset_path)
         ds = builder.as_dataset(split='train')
         ds = ds.flat_map(lambda x: x['steps'])
-        os.makedirs(os.path.join(output_dir,dataset_name))
-        for i, shard in enumerate(ds.batch(shard_size)):
+        os.makedirs(os.path.join(output_dir, dataset_name), exist_ok=True)
+        
+        for i, shard in enumerate(ds.batch(shard_size), start=start_from_shard):
+            # Check RAM usage
+            ram_usage = psutil.virtual_memory().percent
+            if ram_usage > 90:
+                print(f"RAM usage is {ram_usage}%. Restarting from shard {i}...")
+                # Clean up resources
+                del shard
+                gc.collect()
+
+                # Restart the process from the next shard
+                language_table(dataset_name, output_dir, start_from_shard=i)
+                return
+        
             shard_tf = tf.data.Dataset.from_tensor_slices(shard)
             tf.data.Dataset.save(shard_tf, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
             del shard
             del shard_tf
             gc.collect()
-            #tf.data.Dataset.save(ds, os.path.join(output_dir,dataset_name))
+        
+            # Print current RAM usage
+            print(f"Processed shard {i}. Current RAM usage: {ram_usage}%")
     except:
         print(f'Error while downloading {dataset_name}...')
         return
 
     print('Successfully downloaded Language Table dataset')
+    return
 
 #OpenX-Embodiment
 def openx(dataset_name: str, output_dir: str):
@@ -379,7 +396,7 @@ def download_datasets(dataset_name: str, output_dir: str):
     elif dataset_name == 'locomujoco':
         locomujoco(dataset_name, output_dir)
     elif dataset_name == 'language_table':
-        language_table(dataset_name, output_dir)
+        language_table(dataset_name, output_dir, 0)
     elif dataset_name == 'openx':
         openx(dataset_name, output_dir)
     else:
