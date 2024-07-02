@@ -214,7 +214,7 @@ def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int
     for i, shard in enumerate(ds.batch(shard_size), start=start_from_shard):
             # Check RAM usage
             ram_usage = psutil.virtual_memory().percent
-            if ram_usage > 90:
+            if ram_usage > 60:
                 print(f"RAM usage is {ram_usage}%. Restarting from shard {i}...")
                 # Clean up resources
                 del shard
@@ -236,7 +236,7 @@ def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int
     return None
 
 
-def language_table(dataset_name: str, output_dir: str, start_from_shard):
+def language_table(dataset_name: str, output_dir: str):
 
     shard_size = 128
 
