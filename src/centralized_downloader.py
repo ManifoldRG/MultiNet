@@ -19,6 +19,9 @@ import requests
 from tqdm import tqdm
 import ssl
 import certifi
+import requests
+from urllib.parse import urlparse, unquote
+from google.cloud import storage
 
 os.environ['CURL_CA_BUNDLE'] = ''
 
@@ -39,18 +42,64 @@ def build_arg_parser() -> ArgumentParser:
 def rlu(dataset_name: str, output_dir: str):
 
     if dataset_name == 'dm_lab_rlu':
-        print('Downloading')
-        tfds.load('dmlab', data_dir=os.path.join(output_dir, dataset_name), download=True)
-        print(f"Successfully downloaded DM Lab from RL unplugged")
-        return
-    elif dataset_name == 'dm_control_suite_rlu':
-        print('Downloading')
-        tfds.load('rlu_control_suite', data_dir=os.path.join(output_dir, dataset_name),  download=True)
-        print(f"Successfully downloaded DM Control Suite from RL unplugged")
+        #GCP storage bucket details
+        bucket_name = "rl_unplugged"
+        source_folders = ['dmlab/explore_object_rewards_few', 'dmlab/explore_object_rewards_many', 'dmlab/rooms_select_nonmatching_object', 'dmlab/rooms_watermaze', 'dmlab/seekavoid_arena_01']
+        
+        for source_folder in source_folders:
+            destination_folder = os.path.join(output_dir, dataset_name)
+            print('Downloading')
+            # Initialize the Google Cloud Storage client
+            storage_client = storage.Client.create_anonymous_client()
+            # Get the bucket
+            bucket = storage_client.bucket(bucket_name)
+            # List all blobs in the source folder
+            blobs = bucket.list_blobs(prefix=source_folder)
+
+            # Download each blob
+            for blob in blobs:
+                # Skip if the blob is a folder (ends with '/')
+                if blob.name.endswith('/'):
+                    continue
+                # Create the local file path
+                local_path = os.path.join(destination_folder, blob.name[len(source_folder):].lstrip('/'))
+                # Create directories if they don't exist
+                os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                # Download the blob
+                blob.download_to_filename(local_path)
+                print(f"Downloaded {blob.name} to {local_path}")
+            
+        print('Successfully downloaded DM Lab from RL unplugged')
         return
     
-    print(f'Error downloading {dataset_name}')
-    return
+    elif dataset_name == 'dm_control_suite_rlu':
+        #GCP storage bucket details
+        bucket_name = "rl_unplugged"
+        source_folder = "dm_control_suite"
+        destination_folder = os.path.join(output_dir, dataset_name)
+        print('Downloading')
+        # Initialize the Google Cloud Storage client
+        storage_client = storage.Client.create_anonymous_client()
+        # Get the bucket
+        bucket = storage_client.bucket(bucket_name)
+        # List all blobs in the source folder
+        blobs = bucket.list_blobs(prefix=source_folder)
+        print(blobs)
+        # Download each blob
+        for blob in blobs:
+            # Skip if the blob is a folder (ends with '/')
+            if blob.name.endswith('/'):
+                continue
+            # Create the local file path
+            local_path = os.path.join(destination_folder, blob.name[len(source_folder):].lstrip('/'))
+            # Create directories if they don't exist
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
+            # Download the blob
+            blob.download_to_filename(local_path)
+            print(f"Downloaded {blob.name} to {local_path}")
+        
+        print('Successfully downloaded DM Control Suite from RL unplugged')
+        return
 
 # JAT    
 def jat(dataset_name: str, output_dir: str):
@@ -181,6 +230,7 @@ def language_table(dataset_name: str, output_dir: str):
         print('Downloading...')
         builder = tfds.builder_from_directory(dataset_path)
         ds = builder.as_dataset(split='train')
+        ds = ds.flat_map(lambda x: x['steps'])
         os.makedirs(os.path.join(output_dir,dataset_name))
         tf.data.Dataset.save(ds, os.path.join(output_dir,dataset_name))
     except:
