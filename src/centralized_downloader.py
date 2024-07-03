@@ -137,7 +137,7 @@ def vd4rl(dataset_name: str, output_dir: str):
         if 'expert' in dataset_id:
             try:
                 print(f'Downloading {dataset_id}...')
-                vd4rldataset = VD4RLExperienceReplay(dataset_id = dataset_id, batch_size=64)
+                vd4rldataset = VD4RLExperienceReplay(dataset_id = dataset_id, batch_size=4)
                 batch_ctr=0
                 os.makedirs(os.path.join(output_dir,dataset_name), exist_ok=True)
                 for batch in vd4rldataset:
@@ -161,7 +161,11 @@ def locomujoco(dataset_name: str, output_dir: str):
         if task.split('.')[-1] == 'perfect':
             try:
                 print(f'Downloading {task}...')
-                env = gym.make('LocoMujoco', env_name=task)
+                try:
+                    env = gym.make('LocoMujoco', env_name=task)
+                except:
+                    print(f'Dataset {task} is not available through locomujoco')
+                    continue
                 dict_env = env.create_dataset()
                 os.makedirs(os.path.join(output_dir, dataset_name), exist_ok=True)
                 torch.save(dict_env, os.path.join(os.path.join(output_dir, dataset_name),task+'.pt'))
@@ -240,7 +244,7 @@ def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int
 def language_table(dataset_name: str, output_dir: str):
 
     #Shard size to save the dataset to disk
-    shard_size = 128
+    shard_size = 512
 
     #Language table dataset names
     dataset_directories = {
@@ -340,7 +344,7 @@ def openx(dataset_name: str, output_dir: str):
     ]
 
     #Shard size to save the dataset to disk
-    shard_size = 128
+    shard_size = 512
 
     for ds in DATASETS:
         if ds == 'robo_net':
