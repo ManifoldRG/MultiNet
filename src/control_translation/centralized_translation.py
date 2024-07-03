@@ -151,6 +151,14 @@ def torchrlds(dataset_path: str, dataset_name, limit_schema: bool):
             print('Translating...')
             trl_torch_trimmed_tfds = tf.data.Dataset.from_tensor_slices(trl_torch_trimmed)
             return trl_torch_trimmed_tfds
+        elif dataset_name == 'language_table' or dataset_name == 'openx':
+            trl_torch_trimmed = {}
+            trl_torch_trimmed['observations'] = trl_torch['observation']
+            trl_torch_trimmed['actions'] = trl_torch['action']
+            trl_torch_trimmed['rewards'] = trl_torch['reward']
+            print('Translating...')
+            trl_torch_trimmed_tfds = tf.data.Dataset.from_tensor_slices(trl_torch_trimmed)
+            return trl_torch_trimmed_tfds
 
 
     #Translate TorchRL dataset to TFDS
@@ -206,7 +214,7 @@ def categorize_datasets(dataset_name: str, dataset_path: str, hf_test_data: bool
         elif dataset_name=='baby_ai' or dataset_name=='ale_atari' or dataset_name=='mujoco' or dataset_name=='meta_world':
             translated_ds = jat(dataset_path, hf_test_data, limit_schema)
             return translated_ds
-        elif dataset_name=='vd4rl' or dataset_name=='locomujoco':
+        elif dataset_name=='vd4rl' or dataset_name=='locomujoco' or dataset_name=='language_table' or dataset_name=='openx':
             translated_ds = torchrlds(dataset_path, dataset_name, limit_schema)
             return translated_ds
         elif dataset_name=='procgen':

@@ -360,7 +360,7 @@ def openx(dataset_name: str, output_dir: str):
                 shard_func_catch=0
                 while(1):
                     if shard_func_catch is not None:
-                        shard_func_catch = shard_and_save(b,dataset_name, output_dir, shard_func_catch, shard_size)
+                        shard_func_catch = shard_and_save(b,ds, output_dir, shard_func_catch, shard_size)
                     else:
                         break
 
