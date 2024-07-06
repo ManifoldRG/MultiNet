@@ -129,6 +129,7 @@ def jat(dataset_name: str, output_dir: str):
             print(f"Error downloading {config}: {str(e)}")
 
     print(f"Finished downloading all available {dataset_name} configurations from jat-project/jat-dataset.")
+    return
 
 #V-D4RL
 def vd4rl(dataset_name: str, output_dir: str):
@@ -149,6 +150,7 @@ def vd4rl(dataset_name: str, output_dir: str):
                 return
 
     print('Successfully downloaded all V-D4RL expert datasets')
+    return
 
 
 #LocoMuJoCo
@@ -170,11 +172,13 @@ def locomujoco(dataset_name: str, output_dir: str):
                 dict_env = env.create_dataset()
                 os.makedirs(os.path.join(output_dir, dataset_name), exist_ok=True)
                 torch.save(dict_env, os.path.join(os.path.join(output_dir, dataset_name),task+'.pt'))
+
             except:
                 print(f"Error downloading {task}")
                 return
     
     print('Successfully downloaded all LocoMuJoCo expert datasets')
+    return
     
 #Procgen
 def procgen(dataset_name: str, output_dir: str):
@@ -212,6 +216,7 @@ def procgen(dataset_name: str, output_dir: str):
         os.remove(file_path)
 
     print("Successfully downloaded and extracted Procgen expert data")
+    return
 
 #Language Table and OpenX
     
