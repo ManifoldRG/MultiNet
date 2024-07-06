@@ -374,6 +374,7 @@ def openx(dataset_name: str, output_dir: str):
             
     
     print('OpenX downloads complete')
+    return
 
 
 ## Vision-Language dataset download modules
@@ -399,9 +400,10 @@ def vislang(dataset_name: str, output_dir: str):
         ds = load_dataset("HuggingFaceFW/fineweb-edu", "default")
 
 
-    print('Successfully downloaded.')
     os.makedirs(os.path.join(output_dir, dataset_name), exist_ok=True)
     ds.save_to_disk(os.path.join(output_dir, dataset_name))
+    print('Successfully downloaded and saved')
+    return
 
 def download_datasets(dataset_name: str, output_dir: str):
     
