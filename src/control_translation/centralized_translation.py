@@ -14,7 +14,6 @@ from collections import defaultdict
 from tqdm import tqdm
 import pandas as pd
 import datasets
-from datasets import load_dataset, Dataset
 
 #List of control datasets in v0 MultiNet
 multinetv0list = ['dm_lab_rlu', 'dm_control_suite_rlu', 'ale_atari', 'baby_ai', 'mujoco', 'vd4rl', 'meta_world', 'procgen', 'language_table', 'openx', 'locomuojoco']
@@ -92,7 +91,7 @@ def rlu(dataset_path: str, limit_schema: bool):
     
 
 # JAT datasets translation
-def jat(dataset_path: str, hf_test_data: bool, limit_schema: bool):
+def jat(dataset_name: str, dataset_path: str, hf_test_data: bool, limit_schema: bool):
 
     jat_tfds = None
     try: 
@@ -104,15 +103,50 @@ def jat(dataset_path: str, hf_test_data: bool, limit_schema: bool):
         return jat_tfds
 
     print('Translating...')
+
     #Translate HF DatasetDict to TFDS
-    jat_tfds_train = jat_hf['train'].to_tf_dataset(columns=list(jat_hf['train'][0].keys()))
+    #Baby AI has a slightly different data structure compared to other JAT datasets, which requires pre-processing before conversion to TFDS
+    if dataset_name == 'baby_ai':
+
+        text_observations = [example['text_observations'] for example in jat_hf['train']]
+        discrete_observations = [example['discrete_observations'] for example in jat_hf['train']]
+        discrete_actions = [example['discrete_actions'] for example in jat_hf['train']]
+        rewards = [example['rewards'] for example in jat_hf['train']]
+
+        # Create the dataset
+        jat_tfds_train = tf.data.Dataset.from_tensor_slices({
+            'text_observations': tf.ragged.constant(text_observations, dtype=tf.string),
+            'discrete_observations': tf.ragged.constant(discrete_observations, dtype=tf.int64),
+            'discrete_actions': tf.ragged.constant(discrete_actions, dtype=tf.int64),
+            'rewards': tf.ragged.constant(rewards, dtype=tf.float32)
+        })
+
+    else:
+
+        jat_tfds_train = jat_hf['train'].to_tf_dataset(columns=list(jat_hf['train'][0].keys()))
 
     if limit_schema:
         print('The JAT datasets only contain observations, actions, and rewards. No further trimming will be done. Observations and Actions are stored as Continuous/Discrete Observations and Actions depending on the task')
 
     if hf_test_data:
+
+        if dataset_name == 'baby_ai':
+
+            text_observations = [example['text_observations'] for example in jat_hf['test']]
+            discrete_observations = [example['discrete_observations'] for example in jat_hf['test']]
+            discrete_actions = [example['discrete_actions'] for example in jat_hf['test']]
+            rewards = [example['rewards'] for example in jat_hf['test']]
+
+            # Create the dataset
+            jat_tfds_test = tf.data.Dataset.from_tensor_slices({
+                'text_observations': tf.ragged.constant(text_observations, dtype=tf.string),
+                'discrete_observations': tf.ragged.constant(discrete_observations, dtype=tf.int64),
+                'discrete_actions': tf.ragged.constant(discrete_actions, dtype=tf.int64),
+                'rewards': tf.ragged.constant(rewards, dtype=tf.float32)
+            })
         
-        jat_tfds_test = jat_hf['test'].to_tf_dataset(columns=list(jat_hf['test'][0].keys()))
+        else:
+            jat_tfds_test = jat_hf['test'].to_tf_dataset(columns=list(jat_hf['test'][0].keys()))
     
         #Return tuple of translated train and test splits
         jat_tfds = (jat_tfds_train, jat_tfds_test)
@@ -163,7 +197,11 @@ def torchrlds(dataset_path: str, dataset_name, limit_schema: bool):
 
     #Translate TorchRL dataset to TFDS
     print('Translating...')
-    trl_tfds = tf.data.Dataset.from_tensor_slices(trl_torch)  
+    if type(trl_torch) is not dict:
+        trl_tfds = tf.data.Dataset.from_tensor_slices(trl_torch.to_dict())  
+    else:
+        trl_tfds = tf.data.Dataset.from_tensor_slices(trl_torch)  
+
     return trl_tfds
 
 def procgen(dataset_path: str, limit_schema: bool):
@@ -212,7 +250,7 @@ def categorize_datasets(dataset_name: str, dataset_path: str, hf_test_data: bool
             translated_ds = rlu(dataset_path, limit_schema)
             return translated_ds
         elif dataset_name=='baby_ai' or dataset_name=='ale_atari' or dataset_name=='mujoco' or dataset_name=='meta_world':
-            translated_ds = jat(dataset_path, hf_test_data, limit_schema)
+            translated_ds = jat(dataset_name, dataset_path, hf_test_data, limit_schema)
             return translated_ds
         elif dataset_name=='vd4rl' or dataset_name=='locomujoco' or dataset_name=='language_table' or dataset_name=='openx':
             translated_ds = torchrlds(dataset_path, dataset_name, limit_schema)
@@ -261,7 +299,7 @@ if __name__ == "__main__":
             print('Translated and stored')
             
             #Testing
-            '''finalds = tf.data.Dataset.load('<output_dir>/<name of translated dataset>')
+            '''finalds = tf.data.Dataset.load('<output_dir>/<name of translated train dataset>')
             print(len(finalds))
             for elem in finalds:
                print(elem)
