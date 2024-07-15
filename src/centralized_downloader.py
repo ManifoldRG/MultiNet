@@ -6,19 +6,14 @@ from datasets import load_dataset, get_dataset_config_names
 import os
 import torchrl
 from torchrl.data.datasets import VD4RLExperienceReplay
-from collections.abc import Sequence
 from absl import app
 import loco_mujoco
 import gymnasium as gym
-import functools
-import multiprocessing as mp
 import shutil
 import typing as tp
 import tensorflow as tf
 import requests
 from tqdm import tqdm
-import ssl
-import certifi
 import requests
 from urllib.parse import urlparse, unquote
 from google.cloud import storage
@@ -136,15 +131,20 @@ def vd4rl(dataset_name: str, output_dir: str):
 
     #V-D4RL tasks
     for dataset_id in VD4RLExperienceReplay.available_datasets:
-        if 'expert' in dataset_id:
+        if '/expert' in dataset_id:
             try:
+                
                 print(f'Downloading {dataset_id}...')
-                vd4rldataset = VD4RLExperienceReplay(dataset_id = dataset_id, batch_size=4)
-                batch_ctr=0
                 os.makedirs(os.path.join(output_dir,dataset_name), exist_ok=True)
-                for batch in vd4rldataset:
-                    torch.save(batch, output_dir+'/'+dataset_name+'/'+'_'.join(dataset_id.split('/'))+str(batch_ctr)+'.pt')
-                    batch_ctr+=1
+                vd4rldataset = VD4RLExperienceReplay(dataset_id = dataset_id, batch_size = None)
+                batch_size = len(vd4rldataset)
+                # Iterate through the dataset and save batches
+                for i in range(0, len(vd4rldataset), batch_size):
+                    end = min(i + batch_size, len(vd4rldataset))
+                    batch = vd4rldataset[i:end]
+                    file_path = os.path.join(output_dir+'/'+dataset_name+'/'+'_'.join(dataset_id.split('/'))+str(i)+'.pt')
+                    torch.save(batch, file_path)
+                    print(f"Downloaded and saved batch {i//batch_size} to {file_path}")
             except:
                 print(f'Error downloading {dataset_id}')
                 return
