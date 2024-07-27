@@ -1,57 +1,78 @@
 # MultiNet
 
-We are currently working towards a Multi Modal Generalist Benchmark. The first
-version of the project is going to be a pretraining corpus for the
-[NEKO](https://github.com/ManifoldRG/Neko) project.
+This repo contains simple code that can be used to **download** one of the largest open-source vision-language + control (RL, Robotics) datasets, and **translate** control data of various tasks and sources to a unified [Tensorflow Dataset format](https://www.tensorflow.org/datasets/api_docs/python/tfds). We are currently working towards a new Multimodal Generalist Benchmark to evaluate the generalist capabilities of Vision-Language-Action (VLAs) style models. 
 
+The first version of this project will result in the creation of the pretraining corpus for the [NEKO](https://github.com/ManifoldRG/Neko) project, as well as the evaluation set for the new benchmark.
 
-The main idea behind this pretraining corpus is the original NEKO dataset, but
-we do not have access to all of the data that Google DeepMind had because most
-of it was close sourced. That is why we are using open source alternatives.
+Inspired by the emerging class of VLAs, we at [Manifold Research Group](https://discord.gg/8YenUd5y) believe that training a large model on web-scale multimodal data, and reward-based action trajectories in the form of Reinforcement Learning and Robotics data, will result in a new class of foundation models that are truly generalist and can autonomously plan, interact with their environments, and complete actions in an agentic manner.
 
-The main pretraining corpus of the original GATO project is the following:
+The pretraining corpus of one such model - Deepmind's GATO:
 
 ![The original gato corpus](./assets/gato_corpus.png)
 
-We currently are starting with evaluating models for the Vision / Language datasets.
+However, many datasets in the above list are closed-source. With MultiNet, we provide several trillion tokens worth of open-source VLA data. Below is the final list of datasets included in MultiNet v0:
 
-This is our complimentary view of what each dataset would be replaced with for the Vision / Language datasets.
+| Vision/language datasets| 
+| ----------------------- | 
+| OBELICS                 | 
+| COUO-700M               | 
+| MS COCO                 | 
+| Conceptual Captions     | 
+| A-OKVQA                 | 
+| VQA-v2                  | 
+| Datacomp 1B             | 
+| FineWeb Edu             | 
 
-| Vision/language dataset | Weight | Replaced by                            | Tokens  |
-| ----------------------- | ------ | ---------------------------------------|---------|
-| MassiveText             | 6.70%  | PILE                                   | 117.8B  |
-| M3W                     | 4.00%  | Multimodal C4                          | 70.34B  |
-| ALIGN                   | 0.67%  | COYO-700M                              | 11.78B  |
-| MS-COCO                 | 0.67%  | Open Source                            | 11.78B  |
-| Conceptual Captions     | 0.67%  | Open Source                            | 11.78B  |
-| LTIP                    | 0.67%  | LAION2-B / AESTHETIC-LAION             | 11.78B  |
-| OKVQA                   | 0.67%  | AOKVQA (The augmented version of OKVQA)| 11.78B  |
-| VQA-V2                  | 0.67%  | Open Source                            | 11.78B  |
-| Total Vision + Language | 14.7%  |                                        | 258.82B |
+| RL + Robotics datasets    | 
+| ------------------------- | 
+| DM Lab                    |
+| ALE Atari                 |
+| BabyAI                    |
+| MuJoCo                    |
+| DM Control Suite          |
+| V-D4RL                    |
+| Meta-World                |
+| Procgen                   |
+| Language Table            |
+| Open-X Embodiment dataset |
+| LocoMuJoCo                | 
+ 
 
-We need a total of 1.5T for the control data and 258.82B for the language and vision data.
-
-That is a total of 1.7T tokens.
-
-We are benchmarking the following models.
-
-
-| Name         | Inputs                                             | Outputs                             | Open Source | Architecture                                              | 
-| ------------ | -------------------------------------------------- | ----------------------------------- | ----------- | ----------------------------------------------------------| 
-| LlaVa        | text + image                                       | text                                | Yes         | Vision Encoder (CLIP ViT-L/14) + Vicuna                   | 
-| PandaGPT     | text + image/video + audio + depth + thermal + IMU | text                                | Yes         | Multimodal encoders from ImageBind + Vicuna               | 
-| Mini-GPT4    | text + image                                       | text                                | Yes         | Q-Former & ViT + Vicuna                                   | 
-| NExT-GPT     | text + image + audio + video                       | text + image + audio + video        | Yes         | Multimodal encoders from ImageBind + Vicuna               | 
-| AnyGPT       | text + image + audio                               | text + image + audio (speech/music) | Not yet     | SEED tokenizer + SpeechTokenizer + Encodec + LLaMA-2 7B   | 
-| IDEFICS      | images + video + text                              | text                                | Yes         | OpenClip + LlaMA                                          | 
-| OpenFlamingo | images + text                                      | text                                | Yes         | CLIP ViT-L/14 + MPT-1B / RedPajama3B / MPT-7B             | 
-
-
+We’re always looking forward to quick and longer term collaborators getting involved. So, if you are interested in contributing please take a look at our [open issues](https://github.com/ManifoldRG/MultiNet/issues) or reach out to us via [Discord](https://discord.gg/Tad7wAX8)
 
 ## Getting Started
 
-Generate a python environment:
+To set up the environment
 
 ```bash
-python -m venv multinet
+conda create -n multinet python=3.10
+conda activate multinet
+git clone https://github.com/ManifoldRG/MultiNet.git
+cd MultiNet/src
+pip install -r requirements.txt
 ```
+
+To download the datasets in v0
+
+```bash
+cd Multinet/src
+python centralized_downloader --dataset_name <name of dataset you would like to download> --output_dir <directory where you would like to download the dataset>
+```
+
+To translate one file of your desired control dataset to the TFDS format downloaded using the downloader script in this repo
+
+```bash
+cd Multinet/src/control_translation
+python centralized_translation --dataset_name <name of dataset whose file you would like to translate> --dataset_path <path to the dataset> --output_dir <directory where you would like to store the translated file>
+```
+
+To limit schema to observations, actions, rewards while translating
+
+```bash
+cd Multinet/src/control_translation
+python centralized_translation --dataset_name <name of dataset whose file you would like to translate> --dataset_path <path to the dataset> --output_dir <directory where you would like to store the translated file> --limit_schema True
+```
+
+
+
+
