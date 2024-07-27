@@ -1,5 +1,7 @@
 # MultiNet
 
+## We’re always looking forward to quick and longer term collaborators getting involved! So, if you are interested in contributing please take a look at our [open issues](https://github.com/ManifoldRG/MultiNet/issues) or reach out to us via [Discord](https://discord.gg/Tad7wAX8)**
+
 This repo contains simple code that can be used to **download** one of the largest open-source vision-language + control (RL, Robotics) datasets, and **translate** control data of various tasks and sources to a unified [Tensorflow Dataset format](https://www.tensorflow.org/datasets/api_docs/python/tfds). 
 
 We are currently working towards a **new Multimodal Generalist Benchmark to evaluate the generalist capabilities of Vision-Language-Action (VLAs) style models**. 
@@ -14,7 +16,7 @@ The pretraining corpus of one such model - Deepmind's GATO:
 
 However, many datasets in the above list are closed-source. With MultiNet, **we provide several trillion tokens worth of open-source VLA data. Below is the final list of datasets included in MultiNet v0**. Links to the datasets can be found in [Issue #19](https://github.com/ManifoldRG/MultiNet/issues/19):
 
-| Vision/language datasets| 
+| Vision/language datasets|            
 | ----------------------- | 
 | OBELICS                 | 
 | COYO-700M               | 
@@ -23,7 +25,7 @@ However, many datasets in the above list are closed-source. With MultiNet, **we 
 | A-OKVQA                 | 
 | VQA-v2                  | 
 | Datacomp 1B             | 
-| FineWeb Edu             | 
+| FineWeb Edu             |           
 
 | RL + Robotics datasets    | 
 | ------------------------- | 
@@ -39,9 +41,6 @@ However, many datasets in the above list are closed-source. With MultiNet, **we 
 | Open-X Embodiment dataset |
 | LocoMuJoCo                | 
 
-
-
-**We’re always looking forward to quick and longer term collaborators getting involved! So, if you are interested in contributing please take a look at our [open issues](https://github.com/ManifoldRG/MultiNet/issues) or reach out to us via [Discord](https://discord.gg/Tad7wAX8)**
 
 ## Getting Started
 
