@@ -61,7 +61,7 @@ cd Multinet/src
 python centralized_downloader --dataset_name <name of dataset you would like to download> --output_dir <directory where you would like to download the dataset>
 ```
 
-To translate one file of your desired control dataset to the TFDS format downloaded using the downloader script in this repo
+To translate one file of your desired control dataset (downloaded using the downloader script in this repo) to the TFDS format 
 
 ```bash
 cd Multinet/src/control_translation
