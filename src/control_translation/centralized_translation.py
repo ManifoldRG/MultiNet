@@ -304,7 +304,4 @@ if __name__ == "__main__":
             for elem in finalds:
                print(elem)
                break'''
-               
-                
-        
-    
+            

@@ -29,7 +29,7 @@ def dl_eval(dataset_name: str, output_dir: str):
     elif dataset_name == 'vizwiz':
         ds = load_dataset("lmms-lab/VizWiz-VQA", trust_remote_code=True)
     elif dataset_name == 'winogavil':
-        ds = load_dataset("nlphuji/winogavil", trust_remote_code=True)
+        ds = load_dataset("nlphuji/winogavil", trust_remote_code=True, streaming=True)
     elif dataset_name == 'imagenet_r':
         ds = load_dataset("axiong/imagenet-r", trust_remote_code=True)
     elif dataset_name == 'objectnet':
@@ -44,7 +44,7 @@ def dl_eval(dataset_name: str, output_dir: str):
         ds = load_dataset("tau/commonsense_qa", trust_remote_code=True)
     elif dataset_name == 'mmlu':
         ds = load_dataset("cais/mmlu", "all", trust_remote_code=True)
-
+    
 
     os.makedirs(os.path.join(output_dir, dataset_name), exist_ok=True)
     ds.save_to_disk(os.path.join(output_dir, dataset_name))
