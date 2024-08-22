@@ -2,6 +2,8 @@ import os
 from centralized_translation import rlu, jat, torchrlds, procgen, custom_shard_func
 from argparse import ArgumentParser
 import tensorflow as tf
+import gc
+import psutil
 
 def build_arg_parser() -> ArgumentParser:
 
@@ -35,8 +37,11 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
                         tf.data.Dataset.save(translated_ds,os.path.join(output_dir, 'translated_shard_'+str(idx)), shard_func = custom_shard_func)
                         print('Translated and stored')
                 elif dataset_name=='vd4rl' or dataset_name=='locomujoco' or dataset_name=='language_table' or dataset_name=='openx':
+                    if os.path.exists(os.path.join(os.path.join(output_dir, root.split('/')[-1]), 'translated_shard_'+str(idx))):
+                        print(f'Skipping because shard {idx} is already translated and saved')
+                        continue
                     translated_ds = torchrlds(shard_path, dataset_name, limit_schema)
-                    tf.data.Dataset.save(translated_ds,os.path.join(output_dir, 'translated_shard_'+str(idx)), shard_func = custom_shard_func)
+                    tf.data.Dataset.save(translated_ds,os.path.join(os.path.join(output_dir, root.split('/')[-1])), shard_func = custom_shard_func)
                     print('Translated and stored')
                 elif dataset_name=='procgen':
                     translated_ds = procgen(root, limit_schema) #Enter parent folder of a given procgen dataset
