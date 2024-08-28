@@ -5,7 +5,13 @@ from functools import partial
 import utils
 
 
-def get_datasets(dataset_configs, split, task):
+def get_control_datasets(datasets_config, split):
+    """
+    Generate datasets based around control.
+    """
+
+
+def get_vision_language_datasets(dataset_configs, split, task):
     """
     Generate datasets based around caption, vqa and language.
     """
