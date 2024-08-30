@@ -1,0 +1,29 @@
+{
+    "datasets": {
+        "obelics": "vision-language",
+        "coyo_700m": "vision-language",
+        "ms_coco_captions": "vision-language",
+        "conceptual_captions": "vision-language",
+        "a_okvqa": "vision-language",
+        "vqa_v2": "vision-language",
+        "datacomp": "vision-language",
+        "finewebedu": "vision-language",
+        "dm_lab_rlu": "control",
+        "atari": "control",
+        "babyai": "control",
+        "mujoco": "control",
+        "dm_control_suite_rlu": "control",
+        "vd4rl": "control",
+        "metaworld": "control",
+        "procgen": "control",
+        "language_table": "control",
+        "openx": "control",
+        "locomujoco": "control"
+    },
+    "models": {
+        "gpt-4o-2024-05-13": ["vlm", "openai"],
+        "jat": ["generalist", "open"],
+        "openvla-7b": ["vla", "open"],
+        "octo-base": ["vla", "open"]
+    }
+}
