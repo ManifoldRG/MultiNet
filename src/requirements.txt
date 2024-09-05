@@ -78,6 +78,7 @@ nvidia-cusparse-cu12==12.1.0.106
 nvidia-nccl-cu12==2.20.5
 nvidia-nvjitlink-cu12==12.5.82
 nvidia-nvtx-cu12==12.1.105
+openai==1.43.0
 opencv-python==4.10.0.84
 opt-einsum==3.3.0
 optree==0.11.0
@@ -118,6 +119,7 @@ tensorflow-io-gcs-filesystem==0.37.1
 tensorflow-metadata==1.15.0
 termcolor==2.4.0
 threadpoolctl==3.5.0
+tiktoken==0.7.0
 toml==0.10.2
 tomli==2.0.1
 torch==2.3.1
