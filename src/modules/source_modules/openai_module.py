@@ -48,7 +48,8 @@ class OpenAIModule:
         messages = [self.system_message] + self.messages[start_idx:]
         response = self.client.chat.completions.create(
             model=self.model,
-            messages=messages
+            messages=messages,
+            max_tokens=128
         )
 
         return response.choices[0].message.content
@@ -120,13 +121,13 @@ class OpenAIModule:
         return 85 + 170 * (num_tiles_width * num_tiles_height)
     
     # Finding the starting index of the chat history for adjusting the input size.
-    def find_starting_point(self) -> int:
+    def find_starting_point(self, max_response_tokens: int=128) -> int:
         num_tokens = self.get_message_num_tokens(self.system_message)
         assert num_tokens < self.max_num_tokens, "The number of tokens in the system message must be smaller than the context size."
         
         start_idx = len(self.cur_num_tokens_cache)
         for i in range(len(self.cur_num_tokens_cache)-1, -1, -1):
-            if num_tokens + self.cur_num_tokens_cache[i] > self.max_num_tokens:
+            if num_tokens + self.cur_num_tokens_cache[i] > (self.max_num_tokens - max_response_tokens):
                 break
             num_tokens += self.cur_num_tokens_cache[i]
             start_idx = i

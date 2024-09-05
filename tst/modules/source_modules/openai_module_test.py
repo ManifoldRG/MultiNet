@@ -178,7 +178,7 @@ class OpenAIModuleTest(unittest.TestCase):
     def test_find_starting_point(self):
         system_prompt = "This is a test system prompt."
         model = "test-model"
-        max_num_tokens = 1024
+        max_num_tokens = 1152
         module = OpenAIModule(system_prompt, model, max_num_tokens)
 
         module.get_message_num_tokens = MagicMock(return_value=10)
