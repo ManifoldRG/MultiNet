@@ -4,12 +4,31 @@ from typing import Union
 import tiktoken
 import math
 
+CONTEXT_SIZE_MAP = {
+    'gpt-4o': 128000,
+    'gpt-4o-2024-05-13': 128000,
+    'gpt-4o-2024-08-06': 128000,
+    'chatgpt-4o-latest	': 128000,
+    'gpt-4o-mini': 128000,
+    'gpt-4o-mini-2024-07-18	': 128000,
+    'gpt-4-turbo': 128000,
+    'gpt-4-turbo-2024-04-09': 128000,
+    'gpt-4-turbo-preview': 128000,
+    'gpt-4-0125-preview': 128000,
+    'gpt-4-1106-preview': 128000,
+    'gpt-4': 8196,
+    'gpt-4-0613': 8196
+}
+
 
 class OpenAIModule:
-    def __init__(self, system_prompt: str, model: str, max_num_tokens: int=4096) -> None:
+    def __init__(self, system_prompt: str, model: str) -> None:
+        if model not in CONTEXT_SIZE_MAP:
+            raise KeyError(f"The model {model} is not currenly supported.")
+        
         self.messages = []
         self.model = model
-        self.max_num_tokens = max_num_tokens
+        self.max_num_tokens = CONTEXT_SIZE_MAP[model]
         self.cur_num_tokens_cache = []
         self.system_message = {'role': 'system', 'content': system_prompt}
 

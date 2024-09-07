@@ -14,28 +14,30 @@ class OpenAIModuleTest(unittest.TestCase):
     def test_constructor(self):
         system_prompt = "This is a test system prompt1."
         model = "random-model"
+        with self.assertRaises(KeyError):
+            module = OpenAIModule(system_prompt, model)
+
+        model = "gpt-4o-2024-05-13"
         module = OpenAIModule(system_prompt, model)
         self.assertEqual(module.model, model)
         self.assertEqual(module.system_message, {'role': 'system', 'content': system_prompt})
-        self.assertEqual(module.max_num_tokens, 4096)
-        self.assertEqual(module.cur_num_tokens_cache, [])
-        self.assertEqual(module.encoding.name, 'cl100k_base')
-
-        system_prompt = "This is a test system prompt2."
-        model = "gpt-4o-2024-05-13"
-        max_num_tokens = 128000
-        module = OpenAIModule(system_prompt, model, max_num_tokens)
-        self.assertEqual(module.model, model)
-        self.assertEqual(module.system_message, {'role': 'system', 'content': system_prompt})
-        self.assertEqual(module.max_num_tokens, max_num_tokens)
+        self.assertEqual(module.max_num_tokens, 128000)
         self.assertEqual(module.cur_num_tokens_cache, [])
         self.assertEqual(module.encoding.name, 'o200k_base')
+
+        system_prompt = "This is a test system prompt2."
+        model = "gpt-4"
+        module = OpenAIModule(system_prompt, model)
+        self.assertEqual(module.model, model)
+        self.assertEqual(module.system_message, {'role': 'system', 'content': system_prompt})
+        self.assertEqual(module.max_num_tokens, 8196)
+        self.assertEqual(module.cur_num_tokens_cache, [])
+        self.assertEqual(module.encoding.name, 'cl100k_base')
 
     def test_chat_completion_basic(self):
         system_prompt = "This is a test system prompt."
         model = "gpt-4o-2024-05-13"
-        max_num_tokens = 128000
-        module = OpenAIModule(system_prompt, model, max_num_tokens)
+        module = OpenAIModule(system_prompt, model)
 
         queries = [
             "What's your name?",
@@ -56,8 +58,7 @@ class OpenAIModuleTest(unittest.TestCase):
     def test_chat_completion_multi_modal(self):
         system_prompt = "This is a test system prompt."
         model = "gpt-4o-2024-05-13"
-        max_num_tokens = 128000
-        module = OpenAIModule(system_prompt, model, max_num_tokens)
+        module = OpenAIModule(system_prompt, model)
 
         queries = [
             {
@@ -107,8 +108,7 @@ class OpenAIModuleTest(unittest.TestCase):
     def test_get_num_image_tokens(self):
         system_prompt = "This is a test system prompt."
         model = "gpt-4o-2024-05-13"
-        max_num_tokens = 128000
-        module = OpenAIModule(system_prompt, model, max_num_tokens)
+        module = OpenAIModule(system_prompt, model)
 
         self.assertEqual(module.get_num_image_tokens(128, 1024, 'low'), 85)
         self.assertEqual(module.get_num_image_tokens(4096, 4096, 'low'), 85)
@@ -124,9 +124,8 @@ class OpenAIModuleTest(unittest.TestCase):
 
     def test_get_message_num_tokens(self):
         system_prompt = "This is a test system prompt."
-        model = "test-model"
-        max_num_tokens = 128000
-        module = OpenAIModule(system_prompt, model, max_num_tokens)
+        model = "gpt-4o-2024-05-13"
+        module = OpenAIModule(system_prompt, model)
 
         def side_effect_encode(text):
             if text == 'system' or text == 'user' or text == 'assistant': return [1]
@@ -177,9 +176,9 @@ class OpenAIModuleTest(unittest.TestCase):
 
     def test_find_starting_point(self):
         system_prompt = "This is a test system prompt."
-        model = "test-model"
-        max_num_tokens = 1152
-        module = OpenAIModule(system_prompt, model, max_num_tokens)
+        model = "gpt-4o-2024-05-13"
+        module = OpenAIModule(system_prompt, model)
+        module.max_num_tokens = 1152
 
         module.get_message_num_tokens = MagicMock(return_value=10)
         module.cur_num_tokens_cache = [100, 100, 100, 100, 100]
