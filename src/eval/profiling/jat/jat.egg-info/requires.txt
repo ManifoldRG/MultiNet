@@ -1,0 +1,40 @@
+accelerate>=0.25.0
+datasets>=2.15.0
+gymnasium==0.29.1
+huggingface_hub>=0.10
+numpy
+opencv-python
+torch>=2.1.1
+torchvision
+transformers>=4.36.1
+wandb
+
+[dev]
+free-mujoco-py
+gymnasium[accept-rom-license,atari,mujoco]
+metaworld@ git+https://github.com/qgallouedec/Metaworld@gym2.6_register
+minigrid
+rliable
+pytest-xdist
+pytest
+black[jupyter]~=22.0
+ruff
+pyyaml>=5.3.1
+
+[eval]
+free-mujoco-py
+gymnasium[accept-rom-license,atari,mujoco]
+metaworld@ git+https://github.com/qgallouedec/Metaworld@gym2.6_register
+minigrid
+rliable
+
+[test]
+pytest-xdist
+pytest
+free-mujoco-py
+gymnasium[accept-rom-license,atari,mujoco]
+metaworld@ git+https://github.com/qgallouedec/Metaworld@gym2.6_register
+minigrid
+rliable
+
+[train]
