@@ -22,8 +22,10 @@ def profile_jat_on_openx():
         print(f'\nEvaluating dataset: {openx_dataset}\n')
 
         # Get all shards for the current dataset
+        shard_files = os.listdir(os.path.join(openx_datasets_path, openx_dataset))
+        sorted_shard_files = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
         tfds_shards = [os.path.join(openx_datasets_path, openx_dataset, f) 
-                       for f in os.listdir(os.path.join(openx_datasets_path, openx_dataset))]
+                       for f in sorted_shard_files]
 
         # Start timing
         start_time = time.time()
