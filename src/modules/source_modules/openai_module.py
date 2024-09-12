@@ -42,32 +42,57 @@ class OpenAIModule:
         except KeyError:
             self.encoding = tiktoken.get_encoding('cl100k_base')
 
-    # One inference step.
-    def infer_step(self, text: str=None, images: np.array=None) -> str:
-        assert text is not None or images is not None, "Either text or images should not be None."
-        self.add_data_into_history('input', text, images)
-        response = self.get_response_from_api()
-        self.add_data_into_history('output', response)
+    # One inference step only with text inputs.
+    def infer_step_with_texts(self, inputs: list[str]) -> str:
+        assert len(inputs) > 0, "The inputs cannot be empty. The text inputs should be included."
+        for text in inputs:
+            self.add_text_data('input', text)
+        response = self._get_response_from_api()
+        self.add_text_data('output', response)
         return response
     
-    # Adding new data in the context history.
-    def add_data_into_history(self, type: str, text: str=None, images: np.array=None) -> None:  # images: (F, W, H, C) or (F, W, H)
+    # One inference step with images (+ possibly texts)
+    def infer_step_with_images(self, inputs: list[dict]) -> str:
+        assert len(inputs) > 0, "The inputs cannot be empty. The images or texts should be included."
+        self.add_multi_modal_data('input', inputs)
+        response = self._get_response_from_api()
+        self.add_text_data('output', response)
+        return response
+        
+    # Adding new text data in the context history.
+    def add_text_data(self, type: str, text: str) -> None:
         assert type == 'input' or type == 'output', "The data type should be either 'input' or 'output'."
-        assert text is not None or images is not None, "Either text or images should not be None."
-
         role = 'user' if type == 'input' else 'assistant'
-        if images is None:
-            message = {'role': role, 'content': text}
-            self.history.append(message)
-            self.cur_num_tokens_cache.append(self.get_text_message_num_tokens(message['role'], message['content']))
-        else:
-            image_urls, image_size = self.process_images_for_api(images)
-            message = {'role': role, 'content': []}
-            for image_url in image_urls:
+        message = {'role': role, 'content': text}
+        self.history.append(message)
+        self.cur_num_tokens_cache.append(self.get_text_message_num_tokens(message['role'], message['content']))
+        assert len(self.history) == len(self.cur_num_tokens_cache), "The chat history and num tokens cache should be synced."
+    
+    # Adding new multi-modal data in the context history.
+    def add_multi_modal_data(self, type: str, data: list[dict]) -> None:
+        # data can be either {'text': str} or {'image': np.array}
+        # image shape should be (W, H, C)
+
+        assert type == 'input' or type == 'output', "The data type should be either 'input' or 'output'."
+        assert len(data) > 0, "The inputs cannot be empty. The images or texts should be included."
+        role = 'user' if type == 'input' else 'assistant'
+        message = {'role': role, 'content': []}
+        image_sizes = []
+
+        for obj in data:
+            if 'text' in obj:
+                text = obj['text']
+                message['content'].append({'type': 'text', 'text': text})
+            elif 'image' in obj:
+                image = obj['image']
+                image_url, image_size = self._process_image_for_api(image)
                 message['content'].append({'type': 'image_url', 'image_url': {'url': image_url}})
-            if text is not None: message['content'].append({'type': 'text', 'text': text})
-            self.history.append(message)
-            self.cur_num_tokens_cache.append(self.get_multi_modal_message_num_tokens(message['role'], [image_size] * images.shape[0], text))
+                image_sizes.append(image_size)
+            else:
+                raise NotImplementedError("OpenAIModule only supports the data type 'text' or 'image'.")
+            
+        self.history.append(message)
+        self.cur_num_tokens_cache.append(self.get_multi_modal_message_num_tokens(message['role'], message['content'], image_sizes))
 
         assert len(self.history) == len(self.cur_num_tokens_cache), "The chat history and num tokens cache should be synced."
 
@@ -77,7 +102,7 @@ class OpenAIModule:
         self.cur_num_tokens_cache = []
 
     # Calling the chat completion API.
-    def get_response_from_api(self) -> str:
+    def _get_response_from_api(self) -> str:
         start_idx = self.find_starting_point()
         messages = [self.system_message] + self.history[start_idx:]
         response = self.client.chat.completions.create(
@@ -96,18 +121,20 @@ class OpenAIModule:
         return num_tokens
     
     # Calculating the number of tokens in one message.
-    def get_multi_modal_message_num_tokens(self, role: str, image_sizes: list[tuple[int, int]], text: str=None) -> int:
+    def get_multi_modal_message_num_tokens(self, role: str, content: list[dict], image_sizes: list[tuple[int, int]]) -> int:
         num_tokens = 3
         num_tokens += len(self.encoding.encode(role))
+        for obj in content:
+            if obj['type'] == 'text':
+                num_tokens += len(self.encoding.encode(obj['text']))
         for image_size in image_sizes:
-            num_tokens += self.get_num_image_tokens(image_size[0], image_size[1], detail='high')
-        if text is not None: num_tokens += len(self.encoding.encode(text))
+            num_tokens += self._get_num_image_tokens(image_size[0], image_size[1], detail='high')
             
         return num_tokens
 
     # Utility function for calculating the image tokens.
     # https://community.openai.com/t/how-do-i-calculate-image-tokens-in-gpt4-vision
-    def get_num_image_tokens(self, width: int, height: int, detail: str='high'):
+    def _get_num_image_tokens(self, width: int, height: int, detail: str='high'):
         if detail == 'low':
             return 85
         
@@ -136,16 +163,13 @@ class OpenAIModule:
         return 85 + 170 * (num_tiles_width * num_tiles_height)
     
     # Processing the batched input according to the source module.
-    def process_images_for_api(self, images: np.array) -> tuple[list, tuple]:  # images: (F, W, H, C)
-        image_size = (images.shape[1], images.shape[2])
-        image_urls = []
-        for image in images:
-            image_url = self.convert_image_into_url(image)
-            image_urls.append(image_url)
-        return image_urls, image_size
+    def _process_image_for_api(self, image: np.array) -> tuple[str, tuple]:  # image: (W, H, C)
+        image_size = (image.shape[0], image.shape[1])
+        image_url = self._convert_image_into_url(image)
+        return image_url, image_size
 
     # Converting the image array into URLs for API calls.
-    def convert_image_into_url(self, image: np.array) -> str:
+    def _convert_image_into_url(self, image: np.array) -> str:
         # Checking the data spec.
         multiplier, mode = 1.0, 'RGB'
         if len(image.shape) == 2:  # Grey-scaled image.
@@ -153,6 +177,8 @@ class OpenAIModule:
         if len(image.shape) == 3 and image.shape[-1] == 1:  # Grey-scaled image with extra dimension.
             mode = 'L'
             image = np.squeeze(image, axis=-1)
+        if len(image.shape) == 3 and image.shape[-1] == 4:  # RGB with transparency mask.
+            mode = 'RGBA'
         if np.max(image) <= 1.0:  # Setting the values in range of 0 ~ 255.
             multiplier = 255
         image_converted = Image.fromarray((image * multiplier).astype(np.uint8), mode)
@@ -163,7 +189,7 @@ class OpenAIModule:
         return f"data:image/png;base64,{base64.b64encode(buffer.getvalue()).decode()}"
     
     # Finding the starting index of the chat history for adjusting the input size.
-    def find_starting_point(self, max_response_tokens: int=128) -> int:
+    def _find_starting_point(self, max_response_tokens: int=128) -> int:
         num_tokens = self.get_text_message_num_tokens(self.system_message)
         assert num_tokens < self.max_num_tokens, "The number of tokens in the system message must be smaller than the context size."
         
