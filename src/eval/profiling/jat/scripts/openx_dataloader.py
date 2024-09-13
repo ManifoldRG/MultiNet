@@ -11,19 +11,28 @@ from torch.nn.utils.rnn import pad_sequence
 class OpenXDataset(Dataset):
     def __init__(self, tfds_shards: List[str]):
         self.tfds_shards = tfds_shards
-        self.episodes = self._process_shards()
+        self.current_elem_idx = 0
+        self.current_shard_idx = 0
 
-    def _process_shards(self) -> List[List[Dict[str, Any]]]:
+    def _process_shards(self):
         
-        episodes = []
         current_episode = []
 
-        for shard in self.tfds_shards:
+        for shard_idx, shard in enumerate(self.tfds_shards):
             #print(shard)
             dataset = tf.data.Dataset.load(shard)
 
+            # To prevent input processing overhead for shards that have already been processed
+            if shard_idx < self.current_shard_idx:
+                continue
+
             #Process the input data for each element in the shard
-            for elem in dataset:
+            for elem_idx, elem in enumerate(dataset):
+
+                # To prevent input processing overhead for elements of shardsthat have already been processed
+                if shard_idx == self.current_shard_idx and (self.current_elem_idx!=0 and elem_idx < self.current_elem_idx):
+                    continue
+                    
 
                 discrete_observations = None
                 concatenated_action_float = elem['action']
@@ -165,17 +174,29 @@ class OpenXDataset(Dataset):
                 current_episode.append(step_data)
                 
                 if step_data['is_last']:
-                    episodes.append(current_episode)
+                    #episodes.append(current_episode)
                     #print(len(current_episode))
                     #print(current_episode[-1])
+                    if shard_idx!=self.current_shard_idx:
+                        self.current_elem_idx = 0
+                    else:
+                        self.current_elem_idx = elem_idx+1
+                    self.current_shard_idx = shard_idx
+                    yield current_episode
                     current_episode = []
 
         if current_episode:  # Add the last episode if it's not empty
             #print(len(current_episode))
             #print(current_episode[-1])
-            episodes.append(current_episode)
+            if shard_idx!=self.current_shard_idx:
+                self.current_elem_idx = 0
+            else:
+                self.current_elem_idx = elem_idx+1
+            self.current_shard_idx = shard_idx
+            yield current_episode
+            #episodes.append(current_episode)
 
-        return episodes
+        #return episodes
 
     def _get_feature(self, elem, feature_name: str) -> Any:
         # Implement feature extraction based on your TFDS structure
@@ -186,10 +207,20 @@ class OpenXDataset(Dataset):
             return None
 
     def __len__(self) -> int:
-        return len(self.episodes)
+        return sum(1 for _ in self._process_shards())
 
     def __getitem__(self, idx: int) -> Dict[str, Any]:
-        episode = self.episodes[idx]
+        if idx == 0:    
+            self.current_shard_idx = 0
+            self.current_elem_idx = 0
+        for i, episode in enumerate(self._process_shards()):
+            #if i == idx:
+                #print(self.current_shard_idx, self.current_elem_idx)
+            return self._process_episode(episode)
+        raise IndexError("Episode index out of range")
+
+    def _process_episode(self, episode: List[Dict[str, Any]]) -> Dict[str, Any]:
+
         concatenated_obs_float = []
         text_observation = []
         img_obs_pil = [] 
