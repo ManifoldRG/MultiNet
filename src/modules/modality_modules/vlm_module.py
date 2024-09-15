@@ -3,10 +3,10 @@ from typing import Any, Union
 
 
 class VLMModule:
-    def __init__(self, source: str, model: str, system_prompt: str) -> None:
+    def __init__(self, source: str, model: str) -> None:
         self.source_module = None
         if source == 'openai': 
-            self.source_module = OpenAIModule(system_prompt, model)
+            self.source_module = OpenAIModule(model)
 
         assert self.source_module is not None, "The source module has not been set correcly. Check required."
     
@@ -18,7 +18,8 @@ class VLMModule:
     # Otherwise, the few-shot prompting would not work as intended.
     def infer_step(self, 
                    cur_inputs: list[list[tuple[str, Any]]], 
-                   k_shots_examples: list[list[tuple[str, Any]]]=[]
+                   k_shots_examples: list[list[tuple[str, Any]]]=[],
+                   instructions: list[str]=[]
                 ) -> list[str]:
         if isinstance(self.source_module, OpenAIModule):
             processed_cur_inputs, processed_k_shots_examples = self._process_inputs_for_api(cur_inputs, k_shots_examples)
@@ -37,7 +38,7 @@ class VLMModule:
                         else:
                             self.source_module.add_text_data('output', data)
 
-                output = self.source_module.infer_step_with_images(processed_cur_inputs[b])
+                output = self.source_module.infer_step_with_images(processed_cur_inputs[b], instructions[b])
                 outputs.append(output)
 
                 # Clearing the record.

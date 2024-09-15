@@ -13,25 +13,21 @@ import numpy as np
 
 class OpenAIModuleTest(unittest.TestCase):
     def test_constructor(self):
-        system_prompt = "This is a test system prompt1."
         model = "random-model"
         with self.assertRaises(KeyError):
-            module = OpenAIModule(system_prompt, model)
+            module = OpenAIModule(model)
 
         model = "gpt-4o-2024-05-13"
-        module = OpenAIModule(system_prompt, model)
+        module = OpenAIModule(model)
         self.assertEqual(module.model, model)
-        self.assertEqual(module.system_message, {'role': 'system', 'content': system_prompt})
         self.assertEqual(module.max_num_tokens, 128000)
         self.assertEqual(module.history, [])
         self.assertEqual(module.cur_num_tokens_cache, [])
         self.assertEqual(module.encoding.name, 'o200k_base')
 
-        system_prompt = "This is a test system prompt2."
         model = "gpt-4"
-        module = OpenAIModule(system_prompt, model)
+        module = OpenAIModule(model)
         self.assertEqual(module.model, model)
-        self.assertEqual(module.system_message, {'role': 'system', 'content': system_prompt})
         self.assertEqual(module.max_num_tokens, 8196)
         self.assertEqual(module.history, [])
         self.assertEqual(module.cur_num_tokens_cache, [])
@@ -41,7 +37,7 @@ class OpenAIModuleTest(unittest.TestCase):
         system_prompt = "This is a test system prompt."
         model = "gpt-4o-2024-05-13"
 
-        module = OpenAIModule(system_prompt, model)
+        module = OpenAIModule(model)
         queries = [
             "What's your name?",
             "What is the advantages of Python language?",
@@ -49,7 +45,7 @@ class OpenAIModuleTest(unittest.TestCase):
         ]
         for q, query in enumerate(queries):
             module._get_response_from_api = MagicMock(return_value=f"This is a response {q} for single query testing.")
-            response = module.infer_step_with_texts([query])
+            response = module.infer_step_with_texts([query], system_prompt)
             self.assertEqual(response, f"This is a response {q} for single query testing.")
             self.assertEqual(module.history[q*2], {'role': 'user', 'content': query})
             self.assertEqual(module.history[q*2+1], {'role': 'assistant', 'content': response})
@@ -58,7 +54,7 @@ class OpenAIModuleTest(unittest.TestCase):
             self.assertEqual(len(module.history), q*2+2)
             self.assertEqual(len(module.cur_num_tokens_cache), q*2+2)
 
-        module = OpenAIModule(system_prompt, model)
+        module = OpenAIModule(model)
         multi_queries = [
             ["This is a user message 1", "Additional user message."],
             ["What's your name?", "My name is Python.", "Nice to meet you."]
@@ -66,7 +62,7 @@ class OpenAIModuleTest(unittest.TestCase):
         cur_idx = 0
         for m, multi_query in enumerate(multi_queries):
             module._get_response_from_api = MagicMock(return_value=f"This is a response {m} for multi query testing.")
-            response = module.infer_step_with_texts(multi_query)
+            response = module.infer_step_with_texts(multi_query, system_prompt)
             self.assertEqual(response, f"This is a response {m} for multi query testing.")
             for q, query in enumerate(multi_query):
                 self.assertEqual(module.history[cur_idx+q], {'role': 'user', 'content': query})
@@ -82,41 +78,41 @@ class OpenAIModuleTest(unittest.TestCase):
     def test_infer_step_with_images(self):
         system_prompt = "This is a test system prompt."
         model = "gpt-4o-2024-05-13"
-        module = OpenAIModule(system_prompt, model)
+        module = OpenAIModule(model)
 
         queries = [
             [
-                {'image': np.random.randint(256, size=(128, 128, 3))},
-                {'image': np.random.randint(256, size=(128, 128, 3))},
-                {'image': np.random.randint(256, size=(128, 128, 3))},
+                {'image': np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)},
+                {'image': np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)},
+                {'image': np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)},
                 {'text': "What are these pictures showing?"}
             ],
             [
-                {'image': np.random.randint(256, size=(512, 512, 1))},
-                {'image': np.random.randint(256, size=(100, 200))},
-                {'image': np.random.randint(256, size=(256, 128, 3))},
-                {'image': np.random.randint(256, size=(1024, 120, 3))},
-                {'image': np.random.randint(256, size=(180, 260, 3))},
+                {'image': np.random.randint(256, size=(512, 512, 2)).astype(np.uint8)},
+                {'image': np.random.randint(256, size=(100, 200, 4)).astype(np.uint8)},
+                {'image': np.random.randint(256, size=(256, 128, 3)).astype(np.uint8)},
+                {'image': np.random.randint(256, size=(1024, 120, 3)).astype(np.uint8)},
+                {'image': np.random.randint(256, size=(180, 260, 3)).astype(np.uint8)},
                 {'text': "Find a picture of a dog from these pictures."}
             ],
             [
-                {'image': np.random.randint(256, size=(1920, 1080, 3))},
+                {'image': np.random.randint(256, size=(1920, 1080, 3)).astype(np.uint8)},
                 {'text': "This is an example figure."},
-                {'image': np.random.randint(256, size=(300, 500, 3))},
-                {'image': np.random.randint(256, size=(256, 256))},
+                {'image': np.random.randint(256, size=(300, 500, 3)).astype(np.uint8)},
+                {'image': np.random.randint(256, size=(256, 256, 2)).astype(np.uint8)},
                 {'text': "What do you think about other two pictures?"}
             ],
             [
-                {'image': np.random.randint(256, size=(1000, 1000, 3))}
+                {'image': np.random.randint(256, size=(1000, 1000, 4)).astype(np.uint8)}
             ],
             [
-                {'image': np.random.randint(256, size=(512, 512, 1))},
-                {'image': np.random.randint(256, size=(128, 64, 3))}
+                {'image': np.random.randint(256, size=(512, 512, 4)).astype(np.uint8)},
+                {'image': np.random.randint(256, size=(128, 64, 3)).astype(np.uint8)}
             ]
         ]
         for q, query in enumerate(queries):
             module._get_response_from_api = MagicMock(return_value=f"This is a response {q}.")
-            response = module.infer_step_with_images(query)
+            response = module.infer_step_with_images(query, system_prompt)
             self.assertEqual(response, f"This is a response {q}.")
             self.assertEqual(module.history[q*2+1], {'role': 'assistant', 'content': response})
             self.assertEqual(module.history[q*2]['role'], 'user')
@@ -141,29 +137,27 @@ class OpenAIModuleTest(unittest.TestCase):
             self.assertEqual(len(module.cur_num_tokens_cache), q*2+2)
 
     def test_invalid_inputs(self):
-        system_prompt = "This is a test system prompt."
         model = "gpt-4o-2024-05-13"
-        module = OpenAIModule(system_prompt, model)
+        module = OpenAIModule(model)
 
         with self.assertRaises(AssertionError):
-            response = module.infer_step_with_texts([])
+            response = module.infer_step_with_texts([], None)
 
         with self.assertRaises(AssertionError):
-            response = module.infer_step_with_images([])
+            response = module.infer_step_with_images([], None)
 
         with self.assertRaises(AssertionError):
             module.add_text_data('dummy', text="This is a correct text.")
         
         with self.assertRaises(AssertionError):
-            module.add_multi_modal_data('dummy', data=[{'image': np.random.randint(256, size=(100, 100, 3))}, {'text': "Test text."}])
+            module.add_multi_modal_data('dummy', data=[{'image': np.random.randint(256, size=(100, 100, 3)).astype(np.uint8)}, {'text': "Test text."}])
 
         with self.assertRaises(AssertionError):
             module.add_multi_modal_data('input', data=[])
 
     def test_clear_history(self):
-        system_prompt = "This is a test system prompt."
         model = "gpt-4o-2024-05-13"
-        module = OpenAIModule(system_prompt, model)
+        module = OpenAIModule(model)
 
         module.add_text_data('input', "This is a test message 1.")
         module.clear_history()
@@ -172,15 +166,14 @@ class OpenAIModuleTest(unittest.TestCase):
 
         module.add_text_data('input', "This is a test message 2.")
         module.add_text_data('output', "This is a test response.")
-        module.add_multi_modal_data('input', data=[{'image': np.random.randint(256, size=(100, 200, 1))}])
+        module.add_multi_modal_data('input', data=[{'image': np.random.randint(256, size=(100, 200, 4)).astype(np.uint8)}])
         module.clear_history()
         self.assertEqual(module.history, [])
         self.assertEqual(module.cur_num_tokens_cache, [])
 
     def test_get_num_image_tokens(self):
-        system_prompt = "This is a test system prompt."
         model = "gpt-4o-2024-05-13"
-        module = OpenAIModule(system_prompt, model)
+        module = OpenAIModule(model)
 
         self.assertEqual(module._get_num_image_tokens(128, 1024, 'low'), 85)
         self.assertEqual(module._get_num_image_tokens(4096, 4096, 'low'), 85)
@@ -197,7 +190,7 @@ class OpenAIModuleTest(unittest.TestCase):
     def test_get_message_num_tokens(self):
         system_prompt = "This is a test system prompt."
         model = "gpt-4o-2024-05-13"
-        module = OpenAIModule(system_prompt, model)
+        module = OpenAIModule(model)
 
         def side_effect_encode(text):
             if text == 'system' or text == 'user' or text == 'assistant': return [1]
@@ -215,7 +208,7 @@ class OpenAIModuleTest(unittest.TestCase):
         module.encoding.encode = MagicMock(side_effect=side_effect_encode)
         module._get_num_image_tokens = MagicMock(side_effect=side_effect_image)
 
-        self.assertEqual(module.get_text_message_num_tokens(module.system_message['role'], module.system_message['content']), 20)
+        self.assertEqual(module.get_text_message_num_tokens('system', system_prompt), 20)
         self.assertEqual(module.get_text_message_num_tokens('user', "What's your name?"), 14)
         self.assertEqual(module.get_text_message_num_tokens('assistant', "Live as if you were to die tomorrow."), 28)
 
@@ -245,22 +238,22 @@ class OpenAIModuleTest(unittest.TestCase):
     def test_find_starting_point(self):
         system_prompt = "This is a test system prompt."
         model = "gpt-4o-2024-05-13"
-        module = OpenAIModule(system_prompt, model)
+        module = OpenAIModule(model)
         module.max_num_tokens = 1152
 
         module.get_text_message_num_tokens = MagicMock(return_value=10)
         module.cur_num_tokens_cache = [100, 100, 100, 100, 100]
-        self.assertEqual(module._find_starting_point(), 0)
+        self.assertEqual(module._find_starting_point(system_prompt), 0)
         module.cur_num_tokens_cache = [500, 200, 300, 400]
-        self.assertEqual(module._find_starting_point(), 1)
+        self.assertEqual(module._find_starting_point(system_prompt), 1)
         module.cur_num_tokens_cache = [57, 100, 231, 10, 490, 126]
-        self.assertEqual(module._find_starting_point(), 0)
+        self.assertEqual(module._find_starting_point(system_prompt), 0)
         module.cur_num_tokens_cache = [68, 367, 111, 77, 132, 2, 100, 501, 92]
-        self.assertEqual(module._find_starting_point(), 3)
+        self.assertEqual(module._find_starting_point(system_prompt), 3)
 
         module.max_num_tokens = 11
         module.cur_num_tokens_cache = [10, 5, 18, 24]
-        self.assertEqual(module._find_starting_point(), 4)
+        self.assertEqual(module._find_starting_point(system_prompt), 4)
 
 
 if __name__=="__main__":

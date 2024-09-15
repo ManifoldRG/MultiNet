@@ -74,3 +74,10 @@ ACTION_EXCLUSIVENESS = {
         "put the ranch bottle into the pot": False
     }
 }
+
+ADDITIONAL_INSTRUCTIONS = {
+    "berkeley_autolab_ur5": [
+        "The continuous observation represents [joint0, joint1, joint2, joint3, joint4, joint5, x, y, z, qx, qy, qz, qw, gripper_is_closed, action_blocked].",
+        "action_blocked is binary: 1 if the gripper opening/closing action is being executed and no other actions can be performed; 0 otherwise."
+    ]
+}
