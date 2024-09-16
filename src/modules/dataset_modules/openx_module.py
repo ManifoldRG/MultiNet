@@ -45,14 +45,22 @@ class OpenXModule:
                 for k, v in batch.items():
                     print("#" * 100)
                     print(k)
-                    print(v)
+                    print([len(vv) for vv in v])
 
-                batch_size = len(batch.values[0])
+                    if k == 'image_observation':
+                        for vv in v:
+                            for vvv in vv:
+                                print(vvv.shape)
+                exit()
+
+                batch_size = len(batch['text_observation'])
                 episode_mses = [[] for b in batch_size]
 
                 # Consuming the batch until all timesteps in the batch.
-                for cur_inputs, k_shots_examples, instructions, labels, idxs in self._process_batch(batch):
-                    outputs = modality_module.infer_step(cur_inputs, k_shots_examples, instructions)  # (B)
+                for cur_inputs, k_shots_examples, instructions, labels, idxs, output_types in self._process_batch(batch, dataset):
+                    outputs = modality_module.infer_step(cur_inputs, k_shots_examples, instructions, output_types)  # (B)
+
+                    # TODO: This does not work for only one action value.
                     mses = np.mean((np.array(labels) - np.array(outputs)) ** 2, axis=-1)
                     assert len(mses) == len(idxs), "The calculated MSEs are not matched with the processed inputs."
 
@@ -82,9 +90,67 @@ class OpenXModule:
             return []
 
     # Forming the batch.
-    def _process_batch(self, batch: dict[str, list]):
-        cur_inputs, k_shots_examples, instructions, labels, idxs = [], [], [], [], []
-        # TODO: After the dataloader is completed.
-
-        yield cur_inputs, k_shots_examples, instructions, labels, idxs
+    def _process_batch(self, batch: dict[str, list[Any]], dataset: str):
+        # Getting the maxmimum length of episodes.
+        text_obs = batch['text_observation']
+        batch_size = len(text_obs)
+        max_timesteps = 0
+        for b in range(batch_size):
+            max_timesteps = max(max_timesteps, len(text_obs[b]))
+        batch.pop('is_last')
         
+        for t in range(max_timesteps):
+            cur_inputs, k_shots_examples, instructions, labels, idxs, output_types = [], [], [], [], [], []
+            
+            for b in range(batch_size):
+                if t < len(text_obs[b]):
+                    # This batch is consumed.
+                    idxs.append(b)
+                    cur_inputs.append([])
+
+                    # First, setting the instructions and output types.
+                    env_name = text_obs[b][t]
+                    instruction = self._get_vlm_instruction(dataset, env_name)
+                    instructions.append(instruction)
+
+                    output_type = self._get_output_type(dataset, env_name)
+                    output_types.append(output_type)
+
+                    labels.append(batch['action'][b][t])
+
+                    if 'image_observation' in batch and batch['image_observation'] is not None:
+                        image_obs = batch['image_observation'][b][t]
+                        if len(image_obs.shape) == 4:
+                            image_obs = [('image_observation', image) for image in image_obs]
+                            cur_inputs[-1] += image_obs
+                        else:
+                            cur_inputs[-1].append(('image_observation', image_obs))
+
+                    if 'continuous_observation' in batch and batch['continuous_observation'] is not None:
+                        contiunuous_obs = batch['continuous_observation'][b][t]
+                        cur_inputs[-1].append(('continuous_observation', contiunuous_obs))
+
+                    if 'discrete_observation' in batch and batch['discrete_observation'] is not None:
+                        discrete_obs = batch['discrete_observation'][b][t]
+                        cur_inputs[-1].append(('discrete_observation', discrete_obs))
+
+            yield cur_inputs, k_shots_examples, instructions, labels, idxs, output_types
+
+    # Generating the instruction text for VLMModule.
+    def _get_vlm_instruction(self, dataset: str, env_name: str):
+        instruction = format_instruction_prompt(
+            DESCRIPTIONS,
+            ACTION_SPACES,
+            ACTION_EXCLUSIVENESS,
+            dataset,
+            env_name,
+            additional_inst=ADDITIONAL_INSTRUCTIONS[dataset] if dataset in ADDITIONAL_INSTRUCTIONS else None
+        )
+        return instruction
+    
+    # Getting the output type for VLMModule.
+    def _get_output_type(self, dataset: str, env_name: str):
+        if ACTION_EXCLUSIVENESS[dataset][env_name]:
+            return tuple
+        else:
+            return list

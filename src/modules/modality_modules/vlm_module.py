@@ -1,6 +1,8 @@
 from src.modules.source_modules.openai_module import OpenAIModule
 from typing import Any, Union
 
+import ast
+
 
 class VLMModule:
     def __init__(self, source: str, model: str) -> None:
@@ -19,7 +21,8 @@ class VLMModule:
     def infer_step(self, 
                    cur_inputs: list[list[tuple[str, Any]]], 
                    k_shots_examples: list[list[tuple[str, Any]]]=[],
-                   instructions: list[str]=[]
+                   instructions: list[str]=[],
+                   output_type: type=str
                 ) -> list[str]:
         if isinstance(self.source_module, OpenAIModule):
             processed_cur_inputs, processed_k_shots_examples = self._process_inputs_for_api(cur_inputs, k_shots_examples)
@@ -39,7 +42,7 @@ class VLMModule:
                             self.source_module.add_text_data('output', data)
 
                 output = self.source_module.infer_step_with_images(processed_cur_inputs[b], instructions[b])
-                outputs.append(output)
+                outputs.append(self._convert_into_data(output, output_type))
 
                 # Clearing the record.
                 self.source_module.clear_history()
@@ -90,8 +93,21 @@ class VLMModule:
 
     # Converting the key-value pair in the input into a text form.
     def _convert_into_text(self, key: str, value: Any) -> str:
-        try:
-            value_str = str(value)
-            return f"{key}: {value_str}"
-        except:
-            raise ValueError(f"The value {value} cannot be converted into text.")
+        value_str = str(value)
+        return f"{key}: {value_str}"
+
+    # Converting the text output into the requested form of data type.
+    def _convert_into_data(self, text: str, data_type: type) -> Any:
+        if data_type == str:
+            return text
+        elif data_type == int:
+            return int(text)
+        elif data_type == float:
+            return float(text)
+        elif data_type == list:
+            return ast.literal_eval(text)
+        elif data_type == tuple:
+            first, second = text.split(' ')
+            return (first, second)
+        else:
+            raise NotImplementedError(f"The data type {data_type} is not currenly supported for VLM output.")

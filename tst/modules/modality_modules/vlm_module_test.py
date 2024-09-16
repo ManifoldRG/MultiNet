@@ -20,7 +20,7 @@ class VLMModuleTest(unittest.TestCase):
         module = VLMModule(source, model)
         self.assertTrue(isinstance(module.source_module, OpenAIModule))
 
-        # TODO: Add any source module constructor test. newly implemented.
+        # TODO: Add any source module constructor test after newly implemented.
         
         # Testing constructor failure.
         model = 'dummy-model'
@@ -37,6 +37,26 @@ class VLMModuleTest(unittest.TestCase):
         self.assertEqual(module._convert_into_text('key3', {'k1': 'v1', 'k2': 16, 'k3': [10, 20, '30']}), "key3: {'k1': 'v1', 'k2': 16, 'k3': [10, 20, '30']}")
         self.assertEqual(module._convert_into_text('key4', np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12]])), "key4: [[ 1  2  3  4]\n [ 5  6  7  8]\n [ 9 10 11 12]]")
         self.assertEqual(module._convert_into_text('key5', 100.2478), "key5: 100.2478")
+
+    def text_convert_into_data(self):
+        source = 'openai'
+        model = 'gpt-4o-2024-05-13'
+        module = VLMModule(source, model)
+
+        self.assertEqual(module._convert_into_data("1", int), 1)
+        self.assertEqual(module._convert_into_data("46", int), 46)
+        self.assertEqual(module._convert_into_data("2.51245", float), 2.51245)
+        self.assertEqual(module._convert_into_data("100.00", float), 100.00)
+        self.assertEqual(module._convert_into_data("[1,2,3,4,5,6]", list), [1, 2, 3, 4, 5, 6])
+        self.assertEqual(module._convert_into_data("[1, 2.4, 6.73, 10]", list), [1, 2.4, 6.73, 10])
+        self.assertEqual(module._convert_into_data("0 11.04957"), (0, 11.04957))
+        self.assertEqual(module._convert_into_data("8 100.09809"), (8, 100.09809))
+        with self.assertRaises(ValueError):
+            module._convert_into_data("46uin", int)
+        with self.assertRaises(SyntaxError):
+            module._convert_into_data("[1,5,2,09\fgjg]fs", list)
+        with self.assertRaises(ValueError):
+            module._convert_into_data("grgj84u982fu", tuple)
 
     def test_process_inputs_for_api_zero_shot(self):
         source = 'openai'
