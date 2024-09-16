@@ -5,8 +5,6 @@ from openx_dataloader import get_openx_dataloader
 
 def evaluate_jat_model(model, processor, tfds_shards):
 
-    model.reset_rl()  # clear key-value cache
-
     # Initialize the dataloader for the OpenX dataset
     dataloader = get_openx_dataloader(tfds_shards, batch_size=1)
 
@@ -17,6 +15,7 @@ def evaluate_jat_model(model, processor, tfds_shards):
     for batch in dataloader:
 
         episode_mse = []
+	model.reset_rl() # clear key-value cache for each episode
 
         #Because the batch size is 1, 1 batch contains 1 episode, which is why the first element is indexed
         for idx in range(len(batch['continuous_observation'][0])):
