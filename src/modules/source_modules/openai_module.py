@@ -184,7 +184,7 @@ class OpenAIModule:
     def _find_starting_point(self, system_prompt: str=None, max_response_tokens: int=128) -> int:
         num_tokens = 0
         if system_prompt is not None: 
-            num_tokens = self.get_text_message_num_tokens({'role': 'system', 'content': system_prompt})
+            num_tokens = self.get_text_message_num_tokens(role='system', content=system_prompt)
             assert num_tokens < self.max_num_tokens, "The number of tokens in the system message must be smaller than the context size."
         
         start_idx = len(self.cur_num_tokens_cache)

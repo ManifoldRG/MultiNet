@@ -22,7 +22,7 @@ class VLMModule:
                    cur_inputs: list[list[tuple[str, Any]]], 
                    k_shots_examples: list[list[tuple[str, Any]]]=[],
                    instructions: list[str]=[],
-                   output_type: type=str
+                   output_types: list[type]=[]
                 ) -> list[str]:
         if isinstance(self.source_module, OpenAIModule):
             processed_cur_inputs, processed_k_shots_examples = self._process_inputs_for_api(cur_inputs, k_shots_examples)
@@ -42,6 +42,7 @@ class VLMModule:
                             self.source_module.add_text_data('output', data)
 
                 output = self.source_module.infer_step_with_images(processed_cur_inputs[b], instructions[b])
+                output_type = str if len(output_types) == 0 else output_types[b]
                 outputs.append(self._convert_into_data(output, output_type))
 
                 # Clearing the record.
@@ -98,16 +99,20 @@ class VLMModule:
 
     # Converting the text output into the requested form of data type.
     def _convert_into_data(self, text: str, data_type: type) -> Any:
-        if data_type == str:
-            return text
-        elif data_type == int:
-            return int(text)
-        elif data_type == float:
-            return float(text)
-        elif data_type == list:
-            return ast.literal_eval(text)
-        elif data_type == tuple:
-            first, second = text.split(' ')
-            return (first, second)
-        else:
-            raise NotImplementedError(f"The data type {data_type} is not currenly supported for VLM output.")
+        try:
+            if data_type == str:
+                return text
+            elif data_type == int:
+                return int(text)
+            elif data_type == float:
+                return float(text)
+            elif data_type == list:
+                return ast.literal_eval(text)
+            elif data_type == tuple:
+                first, second = text.split(' ')
+                return (first, second)
+            else:
+                raise NotImplementedError(f"The data type {data_type} is not currenly supported for VLM output.")
+        except:
+            print(f"Cannot convert {text} into data type '{data_type}'.")
+            return None

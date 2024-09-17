@@ -6,6 +6,9 @@ from typing import Any, Union
 from glob import glob
 
 import numpy as np
+import json
+import string
+import time
 
 
 class OpenXModule:
@@ -26,6 +29,9 @@ class OpenXModule:
                 modality_module = VLMModule(self.source, self.model)
                 result = self._run_eval_dataset(dataset, modality_module)
 
+                with open(f"openx_{dataset}_results.json", 'w') as f:
+                    json.dump(result, f)
+
     # Evaluation of one dataset.
     def _run_eval_dataset(self, dataset: str, modality_module: Any) -> dict[str, Union[list, float]]:
         result = {}
@@ -35,32 +41,26 @@ class OpenXModule:
             if len(tfds_shards) == 0:
                 return {}
 
+            start_time = time.time()
+
             # Creating the dataloader.
-            dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size, num_workers=4)
+            dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size)
 
             avg_mse_list = []
             total_dataset_amse = 0.0
             episode_count = 0
             for batch in dataloader:
-                for k, v in batch.items():
-                    print("#" * 100)
-                    print(k)
-                    print([len(vv) for vv in v])
-
-                    if k == 'image_observation':
-                        for vv in v:
-                            for vvv in vv:
-                                print(vvv.shape)
-                exit()
-
                 batch_size = len(batch['text_observation'])
-                episode_mses = [[] for b in batch_size]
+                episode_mses = [[] for b in range(batch_size)]
 
                 # Consuming the batch until all timesteps in the batch.
                 for cur_inputs, k_shots_examples, instructions, labels, idxs, output_types in self._process_batch(batch, dataset):
                     outputs = modality_module.infer_step(cur_inputs, k_shots_examples, instructions, output_types)  # (B)
 
-                    # TODO: This does not work for only one action value.
+                    # Any invalid output 'None' should be initialized into a random action.
+                    outputs = [[np.random.random(size=(labels[o].shape))] if output is None else output for o, output in enumerate(outputs)]
+
+                    # TODO: This only works for continuous vector actions. (Okay for OpenX)
                     mses = np.mean((np.array(labels) - np.array(outputs)) ** 2, axis=-1)
                     assert len(mses) == len(idxs), "The calculated MSEs are not matched with the processed inputs."
 
@@ -72,7 +72,23 @@ class OpenXModule:
                 avg_mse_list += avg_episode_mses
                 total_dataset_amse += np.sum(avg_episode_mses)
                 episode_count += batch_size
+
+            end_time = time.time()
+            eval_time = end_time - start_time
         
+            result['avg_mse_list'] = avg_mse_list
+            result['episode_count'] = episode_count
+            result['total_dataset_amse'] = total_dataset_amse
+
+            # Calculating average AMSE over all episodes
+            avg_dataset_amse = total_dataset_amse / episode_count
+            
+            # Calculating min-max normalized AMSE
+            min_amse = min(avg_mse_list)
+            max_amse = max(avg_mse_list)
+            result['normalized_amse'] = (avg_dataset_amse - min_amse) / (max_amse - min_amse) if max_amse != min_amse else 0
+            result['eval_time'] = eval_time
+
         except KeyError:
             print(f"The VLMModule cannot be initialized since there is no dataset called {dataset} in OpenX. Moving on to the next one...")
             return {}
@@ -109,7 +125,7 @@ class OpenXModule:
                     cur_inputs.append([])
 
                     # First, setting the instructions and output types.
-                    env_name = text_obs[b][t]
+                    env_name = text_obs[b][t].strip().translate(str.maketrans('', '', string.punctuation)).lower()
                     instruction = self._get_vlm_instruction(dataset, env_name)
                     instructions.append(instruction)
 
