@@ -2,7 +2,6 @@ import os
 import numpy as np
 from transformers import AutoModelForCausalLM, AutoProcessor
 from openx_dataloader import get_openx_dataloader
-import wandb
 
 def evaluate_jat_model(model, processor, tfds_shards):
 

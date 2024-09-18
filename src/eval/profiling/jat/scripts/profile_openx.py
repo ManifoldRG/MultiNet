@@ -4,12 +4,9 @@ import json
 from transformers import AutoModelForCausalLM, AutoProcessor
 from jat_openx_eval import evaluate_jat_model
 import numpy as np
-import wandb
 
 def profile_jat_on_openx():
 
-    wandb.login()
-    run = wandb.init(project="jat-openx-eval", id="cc39qjbx", resume="must")
     # Load the model and processor
     model_name_or_path = "jat-project/jat"
     processor = AutoProcessor.from_pretrained(model_name_or_path, trust_remote_code=True)
@@ -62,8 +59,6 @@ def profile_jat_on_openx():
             'normalized_amse': normalized_amse,
             'eval_time': eval_time
         }
-
-        wandb.log({"action_success_rate": action_success_rate, "eval_time": eval_time, "episode_count": episode_count, "total_dataset_amse": total_dataset_amse, "normalized_amse": normalized_amse, "hover_info": f"Dataset: {openx_dataset}"})
 
         # Save intermediate results to a JSON file to ensure progress is not lost
         # Check if the file already exists
