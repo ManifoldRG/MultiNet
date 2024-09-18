@@ -77,8 +77,6 @@ def profile_jat_on_openx():
             json.dump(existing_results, f, indent=4, default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
 
         print(f'Evaluation time for {openx_dataset}: {eval_time:.2f} seconds')
-    
-    wandb.finish()
 
     # Print overall results
     print('\nOverall Results:')
