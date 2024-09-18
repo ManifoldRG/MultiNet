@@ -19,18 +19,18 @@ class OpenXDataset(Dataset):
         current_episode = []
 
         for shard_idx, shard in enumerate(self.tfds_shards):
-            #print(shard)
-            dataset = tf.data.Dataset.load(shard)
 
             # To prevent input processing overhead for shards that have already been processed
             if shard_idx < self.current_shard_idx:
                 continue
+            #print(shard)
+            dataset = tf.data.Dataset.load(shard)
 
             #Process the input data for each element in the shard
             for elem_idx, elem in enumerate(dataset):
 
                 # To prevent input processing overhead for elements of shardsthat have already been processed
-                if shard_idx == self.current_shard_idx and (self.current_elem_idx!=0 and elem_idx < self.current_elem_idx):
+                if shard_idx == self.current_shard_idx and elem_idx < self.current_elem_idx:
                     continue
                     
 
@@ -177,7 +177,7 @@ class OpenXDataset(Dataset):
                     #episodes.append(current_episode)
                     #print(len(current_episode))
                     #print(current_episode[-1])
-                    if shard_idx!=self.current_shard_idx:
+                    if elem_idx+1 == len(dataset):
                         self.current_elem_idx = 0
                     else:
                         self.current_elem_idx = elem_idx+1
@@ -188,12 +188,10 @@ class OpenXDataset(Dataset):
         if current_episode:  # Add the last episode if it's not empty
             #print(len(current_episode))
             #print(current_episode[-1])
-            if shard_idx!=self.current_shard_idx:
-                self.current_elem_idx = 0
-            else:
-                self.current_elem_idx = elem_idx+1
-            self.current_shard_idx = shard_idx
+            self.current_shard_idx = 0
+            self.current_elem_idx = 0
             yield current_episode
+            current_episode = []
             #episodes.append(current_episode)
 
         #return episodes
