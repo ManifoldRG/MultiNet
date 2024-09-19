@@ -179,9 +179,10 @@ class OpenXDataset(Dataset):
                     #print(current_episode[-1])
                     if elem_idx+1 == len(dataset):
                         self.current_elem_idx = 0
+                        self.current_shard_idx = shard_idx+1
                     else:
                         self.current_elem_idx = elem_idx+1
-                    self.current_shard_idx = shard_idx
+                        self.current_shard_idx = shard_idx
                     yield current_episode
                     current_episode = []
 
