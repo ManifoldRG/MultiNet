@@ -1,5 +1,5 @@
 INSTRUCTION = [
-    "You are an AI agent to solve the task called {env_name}.",
+    "You are an AI agent to solve the task called \"{env_name}\".",
     "In this environment: {env_desc}",
     "You should produce a proper action output to achieve the final goal given the current progress so far given the current state information.",
     "The current state can be any forms, such as images, continuous/discrete vectors, or texts.",

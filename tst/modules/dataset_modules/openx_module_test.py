@@ -4,8 +4,6 @@ ROOT_DIR = os.getcwd()
 sys.path.append(ROOT_DIR)
 
 from src.modules.dataset_modules.openx_module import OpenXModule
-from definitions.prompt import format_instruction_prompt
-from definitions.openx import DESCRIPTIONS, ACTION_SPACES, ACTION_EXCLUSIVENESS, ADDITIONAL_INSTRUCTIONS
 from unittest.mock import MagicMock
 
 import unittest
@@ -52,7 +50,12 @@ class OpenXModuleTest(unittest.TestCase):
                 [np.random.randint(256, size=(128,128,3)) for i in range(3)],
                 [np.random.randint(256, size=(128,128,3)) for i in range(5)],
             ],
-            'discrete_observation': None,
+            'discrete_observation': [
+                [None for i in range(4)],
+                [None for i in range(1)],
+                [None for i in range(3)],
+                [None for i in range(5)]
+            ],
             'action': [
                 [np.random.random(size=(8)) for i in range(4)],
                 [np.random.random(size=(8)) for i in range(1)],
@@ -162,7 +165,16 @@ class OpenXModuleTest(unittest.TestCase):
                 [np.random.randint(256, size=(640,320,3)) for i in range(12)],
                 [np.random.randint(256, size=(640,320,3)) for i in range(24)],
             ],
-            'discrete_observation': None,
+            'discrete_observation': [
+                [None for i in range(10)],
+                [None for i in range(21)],
+                [None for i in range(8)],
+                [None for i in range(32)],
+                [None for i in range(8)],
+                [None for i in range(12)],
+                [None for i in range(12)],
+                [None for i in range(24)]
+            ],
             'action': [
                 [np.random.random(size=(16)) for i in range(10)],
                 [np.random.random(size=(16)) for i in range(21)],

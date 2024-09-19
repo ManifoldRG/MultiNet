@@ -24,13 +24,16 @@ class OpenXModule:
     # Main evaluation function.
     def run_eval(self) -> None:
         # Since OpenX consists of multiple datasets, a modality module should be initialized per every evaluation step for each dataset.
+        total_results = {}
         for dataset in self.datasets:
             if self.modality == 'vlm':
                 modality_module = VLMModule(self.source, self.model)
                 result = self._run_eval_dataset(dataset, modality_module)
 
-                with open(f"openx_{dataset}_results.json", 'w') as f:
-                    json.dump(result, f)
+                total_results[dataset] = result
+
+        with open(f"openx_results.json", 'w') as f:
+            json.dump(total_results, f)
 
     # Evaluation of one dataset.
     def _run_eval_dataset(self, dataset: str, modality_module: Any) -> dict[str, Union[list, float]]:
@@ -60,7 +63,7 @@ class OpenXModule:
                     # Any invalid output 'None' should be initialized into a random action.
                     outputs = [[np.random.random(size=(labels[o].shape))] if output is None else output for o, output in enumerate(outputs)]
 
-                    # TODO: This only works for continuous vector actions. (Okay for OpenX)
+                    # This only works for continuous vector actions. (Okay for OpenX)
                     mses = np.mean((np.array(labels) - np.array(outputs)) ** 2, axis=-1)
                     assert len(mses) == len(idxs), "The calculated MSEs are not matched with the processed inputs."
 
@@ -125,7 +128,7 @@ class OpenXModule:
                     cur_inputs.append([])
 
                     # First, setting the instructions and output types.
-                    env_name = text_obs[b][t].strip().translate(str.maketrans('', '', string.punctuation)).lower()
+                    env_name = text_obs[b][t].strip(string.punctuation).lower()
                     instruction = self._get_vlm_instruction(dataset, env_name)
                     instructions.append(instruction)
 
@@ -134,7 +137,7 @@ class OpenXModule:
 
                     labels.append(batch['action'][b][t])
 
-                    if 'image_observation' in batch and batch['image_observation'] is not None:
+                    if 'image_observation' in batch and batch['image_observation'][b][t] is not None:
                         image_obs = batch['image_observation'][b][t]
                         if len(image_obs.shape) == 4:
                             image_obs = [('image_observation', image) for image in image_obs]
@@ -142,11 +145,11 @@ class OpenXModule:
                         else:
                             cur_inputs[-1].append(('image_observation', image_obs))
 
-                    if 'continuous_observation' in batch and batch['continuous_observation'] is not None:
+                    if 'continuous_observation' in batch and batch['continuous_observation'][b][t] is not None:
                         contiunuous_obs = batch['continuous_observation'][b][t]
                         cur_inputs[-1].append(('continuous_observation', contiunuous_obs))
 
-                    if 'discrete_observation' in batch and batch['discrete_observation'] is not None:
+                    if 'discrete_observation' in batch and batch['discrete_observation'][b][t] is not None:
                         discrete_obs = batch['discrete_observation'][b][t]
                         cur_inputs[-1].append(('discrete_observation', discrete_obs))
 
