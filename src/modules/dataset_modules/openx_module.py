@@ -52,16 +52,18 @@ class OpenXModule:
             avg_mse_list = []
             total_dataset_amse = 0.0
             episode_count = 0
+            total_success_counts = []
             for batch in dataloader:
                 batch_size = len(batch['text_observation'])
                 episode_mses = [[] for b in range(batch_size)]
+                success_counts = [0 for b in range(batch_size)]
 
                 # Consuming the batch until all timesteps in the batch.
-                for cur_inputs, k_shots_examples, instructions, labels, idxs, output_types in self._process_batch(batch, dataset):
+                for cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts in self._process_batch(batch, dataset):
                     outputs = modality_module.infer_step(cur_inputs, k_shots_examples, instructions, output_types)  # (B)
 
                     # Any invalid output 'None' should be initialized into a random action.
-                    outputs = [[np.random.random(size=(labels[o].shape))] if output is None else output for o, output in enumerate(outputs)]
+                    outputs = [np.random.random(size=(labels[o].shape)) if output is None else output for o, output in enumerate(outputs)]
 
                     # This only works for continuous vector actions. (Okay for OpenX)
                     mses = np.mean((np.array(labels) - np.array(outputs)) ** 2, axis=-1)
@@ -70,15 +72,21 @@ class OpenXModule:
                     for i, idx in enumerate(idxs):
                         episode_mses[idx].append(mses[i])
 
+                        # If any episodes are the last, recording the success rate.
+                        if is_lasts[i] and np.array_equal(np.array(outputs[i]), np.array(labels[i])):
+                            success_counts[idx] += 1
+
                 # Calculate average RMSE for the episode
                 avg_episode_mses = [np.mean(episode_mse) for episode_mse in episode_mses]
                 avg_mse_list += avg_episode_mses
                 total_dataset_amse += np.sum(avg_episode_mses)
                 episode_count += batch_size
+                total_success_counts += success_counts
 
             end_time = time.time()
             eval_time = end_time - start_time
-        
+
+            result['action_success_rate'] = (sum(total_success_counts) / len(total_success_counts)) * 100
             result['avg_mse_list'] = avg_mse_list
             result['episode_count'] = episode_count
             result['total_dataset_amse'] = total_dataset_amse
@@ -116,10 +124,9 @@ class OpenXModule:
         max_timesteps = 0
         for b in range(batch_size):
             max_timesteps = max(max_timesteps, len(text_obs[b]))
-        batch.pop('is_last')
         
         for t in range(max_timesteps):
-            cur_inputs, k_shots_examples, instructions, labels, idxs, output_types = [], [], [], [], [], []
+            cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts = [], [], [], [], [], [], []
             
             for b in range(batch_size):
                 if t < len(text_obs[b]):
@@ -128,7 +135,7 @@ class OpenXModule:
                     cur_inputs.append([])
 
                     # First, setting the instructions and output types.
-                    env_name = text_obs[b][t].strip(string.punctuation).lower()
+                    env_name = text_obs[b][t].strip().strip(string.punctuation).lower()
                     instruction = self._get_vlm_instruction(dataset, env_name)
                     instructions.append(instruction)
 
@@ -136,6 +143,7 @@ class OpenXModule:
                     output_types.append(output_type)
 
                     labels.append(batch['action'][b][t])
+                    is_lasts.append(batch['is_last'][b][t])
 
                     if 'image_observation' in batch and batch['image_observation'][b][t] is not None:
                         image_obs = batch['image_observation'][b][t]
@@ -153,7 +161,7 @@ class OpenXModule:
                         discrete_obs = batch['discrete_observation'][b][t]
                         cur_inputs[-1].append(('discrete_observation', discrete_obs))
 
-            yield cur_inputs, k_shots_examples, instructions, labels, idxs, output_types
+            yield cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts
 
     # Generating the instruction text for VLMModule.
     def _get_vlm_instruction(self, dataset: str, env_name: str):

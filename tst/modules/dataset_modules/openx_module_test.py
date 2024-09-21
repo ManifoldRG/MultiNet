@@ -96,13 +96,14 @@ class OpenXModuleTest(unittest.TestCase):
         module._get_vlm_instruction = MagicMock(side_effect=side_effect)
         module._get_output_type = MagicMock(return_value=list)
 
-        for i, (cur_inputs, k_shots_examples, instructions, labels, idxs, output_types) in enumerate(module._process_batch(batch, dataset)):
+        for i, (cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts) in enumerate(module._process_batch(batch, dataset)):
             self.assertEqual(k_shots_examples, [])
             if 0 <= i < 1:  # Batch 0, 1, 2, 3
                 self.assertEqual(idxs, [0, 1, 2, 3])
                 self.assertEqual(instructions, ["test-instruction-1", "test-instruction-1", "test-instruction-2", "test-instruction-2"])
                 self.assertEqual(labels, [batch['action'][b][i] for b in [0, 1, 2, 3]])
                 self.assertEqual(output_types, [list, list, list, list])
+                self.assertEqual(is_lasts, [batch['is_last'][b][i] for b in [0, 1, 2, 3]])
                 self.assertEqual(cur_inputs, [
                     [('image_observation', batch['image_observation'][b][i]), ('continuous_observation', batch['continuous_observation'][b][i])] for b in [0, 1, 2, 3]
                 ])
@@ -112,6 +113,7 @@ class OpenXModuleTest(unittest.TestCase):
                 self.assertEqual(instructions, ["test-instruction-1", "test-instruction-2", "test-instruction-2"])
                 self.assertEqual(labels, [batch['action'][b][i] for b in [0, 2, 3]])
                 self.assertEqual(output_types, [list, list, list])
+                self.assertEqual(is_lasts, [batch['is_last'][b][i] for b in [0, 2, 3]])
                 self.assertEqual(cur_inputs, [
                     [('image_observation', batch['image_observation'][b][i]), ('continuous_observation', batch['continuous_observation'][b][i])] for b in [0, 2, 3]
                 ])
@@ -120,6 +122,7 @@ class OpenXModuleTest(unittest.TestCase):
                 self.assertEqual(instructions, ["test-instruction-1", "test-instruction-2"])
                 self.assertEqual(labels, [batch['action'][b][i] for b in [0, 3]])
                 self.assertEqual(output_types, [list, list])
+                self.assertEqual(is_lasts, [batch['is_last'][b][i] for b in [0, 3]])
                 self.assertEqual(cur_inputs, [
                     [('image_observation', batch['image_observation'][b][i]), ('continuous_observation', batch['continuous_observation'][b][i])] for b in [0, 3]
                 ])
@@ -128,6 +131,7 @@ class OpenXModuleTest(unittest.TestCase):
                 self.assertEqual(instructions, ["test-instruction-2"])
                 self.assertEqual(labels, [batch['action'][b][i] for b in [3]])
                 self.assertEqual(output_types, [list])
+                self.assertEqual(is_lasts, [batch['is_last'][b][i] for b in [3]])
                 self.assertEqual(cur_inputs, [
                     [('image_observation', batch['image_observation'][b][i]), ('continuous_observation', batch['continuous_observation'][b][i])] for b in [3]
                 ])
@@ -227,7 +231,7 @@ class OpenXModuleTest(unittest.TestCase):
         module._get_vlm_instruction = MagicMock(side_effect=side_effect)
         module._get_output_type = MagicMock(return_value=list)
 
-        for i, (cur_inputs, k_shots_examples, instructions, labels, idxs, output_types) in enumerate(module._process_batch(batch, dataset)):
+        for i, (cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts) in enumerate(module._process_batch(batch, dataset)):
             self.assertEqual(k_shots_examples, [])
             if 0 <= i < 8:  # Batch 0, 1, 2, 3, 4, 5, 6, 7
                 self.assertEqual(idxs, [0, 1, 2, 3, 4, 5, 6, 7])
@@ -243,6 +247,7 @@ class OpenXModuleTest(unittest.TestCase):
                 ])
                 self.assertEqual(labels, [batch['action'][b][i] for b in [0, 1, 2, 3, 4, 5, 6, 7]])
                 self.assertEqual(output_types, [list, list, list, list, list, list, list, list])
+                self.assertEqual(is_lasts, [batch['is_last'][b][i] for b in [0, 1, 2, 3, 4, 5, 6, 7]])
                 expected_cur_inputs = []
                 for b in [0, 1, 2, 3, 4, 5, 6, 7]:
                     expected_cur_inputs.append([])
@@ -272,6 +277,7 @@ class OpenXModuleTest(unittest.TestCase):
                 ])
                 self.assertEqual(labels, [batch['action'][b][i] for b in [0, 1, 3, 5, 6, 7]])
                 self.assertEqual(output_types, [list, list, list, list, list, list])
+                self.assertEqual(is_lasts, [batch['is_last'][b][i] for b in [0, 1, 3, 5, 6, 7]])
                 expected_cur_inputs = []
                 for b in [0, 1, 3, 5, 6, 7]:
                     expected_cur_inputs.append([])
@@ -300,6 +306,7 @@ class OpenXModuleTest(unittest.TestCase):
                 ])
                 self.assertEqual(labels, [batch['action'][b][i] for b in [1, 3, 5, 6, 7]])
                 self.assertEqual(output_types, [list, list, list, list, list])
+                self.assertEqual(is_lasts, [batch['is_last'][b][i] for b in [1, 3, 5, 6, 7]])
                 expected_cur_inputs = []
                 for b in [1, 3, 5, 6, 7]:
                     expected_cur_inputs.append([])
@@ -326,6 +333,7 @@ class OpenXModuleTest(unittest.TestCase):
                 ])
                 self.assertEqual(labels, [batch['action'][b][i] for b in [1, 3, 7]])
                 self.assertEqual(output_types, [list, list, list])
+                self.assertEqual(is_lasts, [batch['is_last'][b][i] for b in [1, 3, 7]])
                 expected_cur_inputs = []
                 for b in [1, 3, 7]:
                     expected_cur_inputs.append([])
@@ -351,6 +359,7 @@ class OpenXModuleTest(unittest.TestCase):
                 ])
                 self.assertEqual(labels, [batch['action'][b][i] for b in [3, 7]])
                 self.assertEqual(output_types, [list, list])
+                self.assertEqual(is_lasts, [batch['is_last'][b][i] for b in [3, 7]])
                 expected_cur_inputs = []
                 for b in [3, 7]:
                     expected_cur_inputs.append([])
@@ -375,6 +384,7 @@ class OpenXModuleTest(unittest.TestCase):
                 ])
                 self.assertEqual(labels, [batch['action'][b][i] for b in [3]])
                 self.assertEqual(output_types, [list])
+                self.assertEqual(is_lasts, [batch['is_last'][b][i] for b in [3]])
                 expected_cur_inputs = []
                 for b in [3]:
                     expected_cur_inputs.append([])
