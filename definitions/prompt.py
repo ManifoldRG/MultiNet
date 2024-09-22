@@ -10,14 +10,8 @@ INSTRUCTION = [
 ]
 
 
-def format_instruction_prompt(descriptions: dict, action_spaces: dict, action_exclusiveness: dict, dataset: str, env_name: str, additional_inst: str=None) -> str:
-    assert dataset in descriptions, f"The dataset {dataset} is not included in the benchmark."
-    assert env_name in descriptions[dataset], f"The environment {env_name} is not included in the dataset {dataset}."
-
+def format_instruction_prompt(env_name: str, env_desc: str, action_space: dict, only_one_action: bool, additional_inst: str=None) -> str:
     instruction_format = ' '.join(INSTRUCTION)
-    env_desc = ' '.join(descriptions[dataset][env_name])
-    action_space = action_spaces[dataset][env_name]
-    only_one_action = action_exclusiveness[dataset][env_name]
 
     # Making the action description.
     action_desc = [

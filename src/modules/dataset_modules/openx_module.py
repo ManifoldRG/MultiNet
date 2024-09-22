@@ -165,14 +165,17 @@ class OpenXModule:
 
     # Generating the instruction text for VLMModule.
     def _get_vlm_instruction(self, dataset: str, env_name: str):
-        instruction = format_instruction_prompt(
-            DESCRIPTIONS,
-            ACTION_SPACES,
-            ACTION_EXCLUSIVENESS,
-            dataset,
-            env_name,
-            additional_inst=ADDITIONAL_INSTRUCTIONS[dataset] if dataset in ADDITIONAL_INSTRUCTIONS else None
-        )
+        assert dataset in DESCRIPTIONS, f"The dataset {dataset} is not included in the OpenX group."
+        assert env_name in DESCRIPTIONS[dataset], f"The environment {env_name} is not included in the OpenX group."
+
+        env_desc = ' '.join(DESCRIPTIONS[dataset][env_name])
+        action_space = ACTION_SPACES[dataset][env_name]
+        only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name]
+        additional_inst = None
+        if dataset in ADDITIONAL_INSTRUCTIONS and env_name in ADDITIONAL_INSTRUCTIONS[dataset]:
+            additional_inst = ' '.join(ADDITIONAL_INSTRUCTIONS[dataset][env_name])
+
+        instruction = format_instruction_prompt(env_name, env_desc, action_space, only_one_action, additional_inst)
         return instruction
     
     # Getting the output type for VLMModule.
