@@ -623,6 +623,46 @@ DESCRIPTIONS = {
         "pick up an object": [
             "Pick up an object."
         ]
+    },
+    "berkeley_rpt_data": {
+        "pick up a object": [
+            "Pick up an object."
+        ],
+        "stack an object": [
+            "Stack an object."
+        ],
+        "destack an object": [
+            "Destack an object."
+        ]
+    },
+    "kaist_nonprehensile_objects": {
+        "push an object": [
+            "Push an object.",
+            "Objects are subjected to external forces to induce translational movement."
+        ],
+        "drag an object": [
+            "Darg an object.",
+            "Objects are dragged across the surface without lifting."
+        ],
+        "rotate an object": [
+            "Rotate an object.",
+            "Objects are rotated around the vertical axis."
+        ],
+        "topple an object": [
+            "Topple an object.",
+            "Objects are caused to fall or rise from an initial stable position to another orientation."
+        ]
+    },
+    "qut_dynamic_grasping": {  # not used in our dataset
+        "placeholder": []
+    },
+    "stanford_maskvit_data": {
+        "pick up an object": [
+            "Pick up an object."
+        ],
+        "push an object": [
+            "Push an object."
+        ]
     }
 }
 
@@ -1166,6 +1206,52 @@ ACTION_SPACES = {
         "pick up an object": {
             0: None
         }
+    },
+    "berkeley_rpt_data": {
+        "pick up a object": {
+            0: None
+        }
+        "stack an object": {
+            0: None
+        }
+        "destack an object": {
+            0: None
+        }
+    },
+    "kaist_nonprehensile_objects": {
+        "push an object": {
+            0: None
+        }
+        "drag an object": {
+            0: None
+        }
+        "rotate an object": {
+            0: None
+        }
+        "topple an object": {
+            0: None
+        }
+    },
+    "qut_dynamic_grasping": {  # not used in our dataset
+        "placeholder": {
+            0: None
+        }
+    },
+    "stanford_maskvit_data": {
+        "pick up an object": {
+            0: ("The change in cartesian end-effector position X", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
+            1: ("The change in cartesian end-effector position Y", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
+            2: ("The change in cartesian end-effector position Z", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
+            3: ("The change in yaw", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
+            4: ("The gripper closing action", {0: "Close", 1: "Open"}),  # it was never mentioned what is closed and opened mapped to
+        },
+        "push an object": {
+            0: ("The change in cartesian end-effector position X", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
+            1: ("The change in cartesian end-effector position Y", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
+            2: ("The change in cartesian end-effector position Z", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
+            3: ("The change in yaw", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
+            4: ("The gripper closing action", {0: "Close", 1: "Open"}),  # it was never mentioned what is closed and opened mapped to
+        }
     }
 }
 
@@ -1385,6 +1471,24 @@ ACTION_EXCLUSIVENESS = {
         "reach to an object": False,
         "push an object": False,
         "pick up an object": False
+    },
+    "berkeley_rpt_data": {
+        "pick up a object": False,
+        "stack an object": False,
+        "destack an object": False
+    },
+    "kaist_nonprehensile_objects": {
+        "push an object": False,
+        "drag an object": False,
+        "rotate an object": False,
+        "topple an object": False
+    },
+    "qut_dynamic_grasping": {  # not used in our dataset
+        "placeholder": False
+    }
+    "stanford_maskvit_data": {
+        "pick up an object": False,
+        "push an object": False
     }
 }
 
