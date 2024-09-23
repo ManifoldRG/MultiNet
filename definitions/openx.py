@@ -1201,7 +1201,7 @@ ACTION_EXCLUSIVENESS = {
         "twist knobs": False,
         "flip a switch": False,
         "turn faucets": False,
-        "zip a zipper": False  # Fixed typo from "zipeer" to "zipper"
+        "zip a zipper": False
     },
     "freiburg_franka_play": {
         "interact with toy blocks": False,
@@ -1219,7 +1219,7 @@ ACTION_EXCLUSIVENESS = {
         "put an object down": False
     },
     "berkeley_cable_routing": {
-        "pick up an object": False,  # Fixed typo from "and object" to "an object"
+        "pick up an object": False,
         "route a cable": False
     },
     "roboturk": {
@@ -1250,7 +1250,7 @@ ACTION_EXCLUSIVENESS = {
         "slide objects": False
     },
     "columbia_pusht_dataset": {
-        "push t-shaped blocks": False  # Fixed typo from "t-shapped" to "t-shaped"
+        "push t-shaped blocks": False
     },
     "stanford_kuka_multimodal": {
         "insert pegs into holes": False
@@ -1262,7 +1262,7 @@ ACTION_EXCLUSIVENESS = {
         "reach": False,
         "hang mug": False,
         "hang bag": False,
-        "turn knob": False,  # Fixed typo from "tum" to "turn"
+        "turn knob": False,
         "stack cups": False,
         "press switch": False,
         "peg (easy)": False,
