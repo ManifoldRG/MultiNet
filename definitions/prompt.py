@@ -1,8 +1,8 @@
 INSTRUCTION = [
-    "You are an AI agent to solve the task called {env_name}.",
+    "You are an AI agent to solve the task called \"{env_name}\".",
     "In this environment: {env_desc}",
-    "You should produce a proper action output given the current progress so far including the observation images, actions you've taken, and reward you've got.",
-    "The last image frames represent the current status in the environment.",
+    "You should produce a proper action output to achieve the final goal given the current progress so far given the current state information.",
+    "The current state can be any forms, such as images, continuous/discrete vectors, or texts.",
     "The actions available: {action_desc}",
     "You must generate your output keeping the following format: {output_format}",
     "You should not include any other words or characters in your response.",
@@ -10,14 +10,8 @@ INSTRUCTION = [
 ]
 
 
-def format_instruction_prompt(descriptions: dict, action_spaces: dict, action_exclusiveness: dict, dataset: str, env_name: str, additional_inst: str=None) -> str:
-    assert dataset in descriptions, f"The dataset {dataset} is not included in the benchmark."
-    assert env_name in descriptions[dataset], f"The environment {env_name} is not included in the dataset {dataset}."
-
-    instruction_format = '\n'.join(INSTRUCTION)
-    env_desc = ' '.join(descriptions[dataset][env_name])
-    action_space = action_spaces[dataset][env_name]
-    only_one_action = action_exclusiveness[dataset][env_name]
+def format_instruction_prompt(env_name: str, env_desc: str, action_space: dict, only_one_action: bool, additional_inst: str=None) -> str:
+    instruction_format = ' '.join(INSTRUCTION)
 
     # Making the action description.
     action_desc = [

@@ -1,12 +1,14 @@
 from src.modules.source_modules.openai_module import OpenAIModule
 from typing import Any, Union
 
+import ast
+
 
 class VLMModule:
-    def __init__(self, source: str, model: str, system_prompt: str) -> None:
+    def __init__(self, source: str, model: str) -> None:
         self.source_module = None
         if source == 'openai': 
-            self.source_module = OpenAIModule(system_prompt, model)
+            self.source_module = OpenAIModule(model)
 
         assert self.source_module is not None, "The source module has not been set correcly. Check required."
     
@@ -18,7 +20,9 @@ class VLMModule:
     # Otherwise, the few-shot prompting would not work as intended.
     def infer_step(self, 
                    cur_inputs: list[list[tuple[str, Any]]], 
-                   k_shots_examples: list[list[tuple[str, Any]]]=[]
+                   k_shots_examples: list[list[tuple[str, Any]]]=[],
+                   instructions: list[str]=[],
+                   output_types: list[type]=[]
                 ) -> list[str]:
         if isinstance(self.source_module, OpenAIModule):
             processed_cur_inputs, processed_k_shots_examples = self._process_inputs_for_api(cur_inputs, k_shots_examples)
@@ -37,8 +41,9 @@ class VLMModule:
                         else:
                             self.source_module.add_text_data('output', data)
 
-                output = self.source_module.infer_step_with_images(processed_cur_inputs[b])
-                outputs.append(output)
+                output = self.source_module.infer_step_with_images(processed_cur_inputs[b], instructions[b])
+                output_type = str if len(output_types) == 0 else output_types[b]
+                outputs.append(self._convert_into_data(output, output_type))
 
                 # Clearing the record.
                 self.source_module.clear_history()
@@ -89,8 +94,25 @@ class VLMModule:
 
     # Converting the key-value pair in the input into a text form.
     def _convert_into_text(self, key: str, value: Any) -> str:
+        value_str = str(value)
+        return f"{key}: {value_str}"
+
+    # Converting the text output into the requested form of data type.
+    def _convert_into_data(self, text: str, data_type: type) -> Any:
         try:
-            value_str = str(value)
-            return f"{key}: {value_str}"
+            if data_type == str:
+                return text
+            elif data_type == int:
+                return int(text)
+            elif data_type == float:
+                return float(text)
+            elif data_type == list:
+                return ast.literal_eval(text)
+            elif data_type == tuple:
+                first, second = text.split(' ')
+                return (first, second)
+            else:
+                raise NotImplementedError(f"The data type {data_type} is not currenly supported for VLM output.")
         except:
-            raise ValueError(f"The value {value} cannot be converted into text.")
+            print(f"Cannot convert {text} into data type '{data_type}'.")
+            return None

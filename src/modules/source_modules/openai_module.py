@@ -26,7 +26,7 @@ CONTEXT_SIZE_MAP = {
 
 
 class OpenAIModule:
-    def __init__(self, system_prompt: str, model: str) -> None:
+    def __init__(self, model: str) -> None:
         if model not in CONTEXT_SIZE_MAP:
             raise KeyError(f"The model {model} is not currenly supported.")
         
@@ -35,7 +35,6 @@ class OpenAIModule:
         self.max_num_tokens = CONTEXT_SIZE_MAP[model]
         self.cur_num_tokens_cache = []
 
-        self.system_message = {'role': 'system', 'content': system_prompt}
         self.client = OpenAI()
         try:
             self.encoding = tiktoken.encoding_for_model(self.model)
@@ -43,19 +42,19 @@ class OpenAIModule:
             self.encoding = tiktoken.get_encoding('cl100k_base')
 
     # One inference step only with text inputs.
-    def infer_step_with_texts(self, inputs: list[str]) -> str:
+    def infer_step_with_texts(self, inputs: list[str], system_prompt: str=None) -> str:
         assert len(inputs) > 0, "The inputs cannot be empty. The text inputs should be included."
         for text in inputs:
             self.add_text_data('input', text)
-        response = self._get_response_from_api()
+        response = self._get_response_from_api(system_prompt)
         self.add_text_data('output', response)
         return response
     
     # One inference step with images (+ possibly texts)
-    def infer_step_with_images(self, inputs: list[dict]) -> str:
+    def infer_step_with_images(self, inputs: list[dict], system_prompt: str=None) -> str:
         assert len(inputs) > 0, "The inputs cannot be empty. The images or texts should be included."
         self.add_multi_modal_data('input', inputs)
-        response = self._get_response_from_api()
+        response = self._get_response_from_api(system_prompt)
         self.add_text_data('output', response)
         return response
         
@@ -102,9 +101,13 @@ class OpenAIModule:
         self.cur_num_tokens_cache = []
 
     # Calling the chat completion API.
-    def _get_response_from_api(self) -> str:
-        start_idx = self.find_starting_point()
-        messages = [self.system_message] + self.history[start_idx:]
+    def _get_response_from_api(self, system_prompt: str=None) -> str:
+        start_idx = self._find_starting_point(system_prompt)
+        system_message = []
+        if system_prompt is not None:
+            system_message.append({'role': 'user', 'content': system_prompt})
+
+        messages = system_message + self.history[start_idx:]
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
@@ -169,19 +172,8 @@ class OpenAIModule:
         return image_url, image_size
 
     # Converting the image array into URLs for API calls.
-    def _convert_image_into_url(self, image: np.array) -> str:
-        # Checking the data spec.
-        multiplier, mode = 1.0, 'RGB'
-        if len(image.shape) == 2:  # Grey-scaled image.
-            mode = 'L'
-        if len(image.shape) == 3 and image.shape[-1] == 1:  # Grey-scaled image with extra dimension.
-            mode = 'L'
-            image = np.squeeze(image, axis=-1)
-        if len(image.shape) == 3 and image.shape[-1] == 4:  # RGB with transparency mask.
-            mode = 'RGBA'
-        if np.max(image) <= 1.0:  # Setting the values in range of 0 ~ 255.
-            multiplier = 255
-        image_converted = Image.fromarray((image * multiplier).astype(np.uint8), mode)
+    def _convert_image_into_url(self, image: np.array) -> str:  # image: (W, H, 4)
+        image_converted = Image.fromarray(image)
         
         buffer = BytesIO()
         image_converted.save(buffer, format='png')
@@ -189,9 +181,11 @@ class OpenAIModule:
         return f"data:image/png;base64,{base64.b64encode(buffer.getvalue()).decode()}"
     
     # Finding the starting index of the chat history for adjusting the input size.
-    def _find_starting_point(self, max_response_tokens: int=128) -> int:
-        num_tokens = self.get_text_message_num_tokens(self.system_message)
-        assert num_tokens < self.max_num_tokens, "The number of tokens in the system message must be smaller than the context size."
+    def _find_starting_point(self, system_prompt: str=None, max_response_tokens: int=128) -> int:
+        num_tokens = 0
+        if system_prompt is not None: 
+            num_tokens = self.get_text_message_num_tokens(role='system', content=system_prompt)
+            assert num_tokens < self.max_num_tokens, "The number of tokens in the system message must be smaller than the context size."
         
         start_idx = len(self.cur_num_tokens_cache)
         for i in range(len(self.cur_num_tokens_cache)-1, -1, -1):
