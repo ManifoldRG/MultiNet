@@ -225,14 +225,6 @@ DESCRIPTIONS = {
             "Move to a fixed exit zone."
         ]
     },
-    "stanford_kuka_multimodal": {  # mentioned here it's been dropped https://docs.google.com/spreadsheets/d/1pwYeYQLkcBWVHwgt0OtL0KlL7VlfZ7q6Y3xfobbOZ7U/edit?usp=sharing
-        "insert pegs into holes": [
-            # "Move the arm in a free space to make contact with the box.",
-            # "Align the peg with the hole."
-            "Insert differently-shaped pegs into differently-shaped holes.",
-            "Holes have low tolerances (~2mm)."
-        ]
-    },
     "nyu_rot": {
         # robots task
         "close door": [
@@ -1309,11 +1301,6 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "stanford_kuka_multimodal": {
-        "insert pegs into holes": {
-            0: None
-        }
-    },
     "nyu_rot": {
         "close door": {
             0: None
@@ -2148,9 +2135,6 @@ ACTION_EXCLUSIVENESS = {
     },
     "columbia_pusht_dataset": {
         "push t-shaped blocks": False
-    },
-    "stanford_kuka_multimodal": {
-        "insert pegs into holes": False
     },
     "nyu_rot": {
         "close door": False,
