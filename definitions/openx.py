@@ -26,7 +26,7 @@ DESCRIPTIONS = {
         "move object near another object": [  # 337 tasks
             "Move the first object near the second."
         ],
-        "place objects up-right": [  # 7 tasks
+        "place objects upright": [  # 7 tasks
             "Place an elongated object upright."
         ],
         "open a drawer": [  # 3 tasks
@@ -48,7 +48,7 @@ DESCRIPTIONS = {
             "Update the grasp strategy continuously based on the most recent observations."
         ]
     },
-    "berkeley_bridge": {  # ! TODO: I attached examples, write a proper description of each skill
+    "berkeley_bridge": {
         "pick and place": [
             "Put corn in pot.",
             "Put carrot on plate."
@@ -162,7 +162,7 @@ DESCRIPTIONS = {
             "Create a tower from bowls."
         ],
         "search objects": [
-            "Search objects."
+            "Search for objects."
         ]
     },
     "nyu_vinn": {
@@ -245,7 +245,7 @@ DESCRIPTIONS = {
             "Erase the board."
         ],
         "reach": [
-            "Reach to an object."
+            "Reach for an object."
         ],
         "hang mug": [
             "Hang the mug."
@@ -289,10 +289,10 @@ DESCRIPTIONS = {
             "Insert the peg."
         ],
         "make coffee": [
-            "Pickup pod.",
+            "Pick up pod.",
             "Insert pod.",
             "Close lid.",
-            "Pickup mug.",
+            "Pick up mug.",
             "Place mug.",
             "Press button."
         ],
@@ -342,10 +342,10 @@ DESCRIPTIONS = {
     "maniskill": {
         "pick an object": [
             "Pick an isolated object.",
-            "Pick an object from the clutter up."
+            "Pick an object from the clutter."
         ],
         "move object to another position": [
-            "Move object to its goal position."
+            "Move the object to its goal position."
         ],
         "stack cubes": [
             "Stack a red cube onto a green cube."
@@ -422,14 +422,14 @@ DESCRIPTIONS = {
             "Open a dishwasher."
         ],
         "garbage can": [
-            "Garbage a can."
+            "Garbage can."
         ]
     },
     "ucsd_kitchen": {
     },
     "ucsd_pick_place": {
         "reach": [
-            "Reach to an object."
+            "Reach for an object."
         ],
         "pick": [
             "Pick an object."
@@ -576,7 +576,7 @@ DESCRIPTIONS = {
             "Pace backward slowly.",
         ],
         "back off": [
-            "Back off! don't hurt that squirrel."
+            "Back off! Don't hurt that squirrel."
         ],
         "act": [
             "Act as if the ground is very hot.",
@@ -600,9 +600,9 @@ DESCRIPTIONS = {
         ]
     },
     "utokyo_xarm_bimanual": {
-        "reach to an object": [
-            "Reach to an object.",
-            "Reach to the towel on the table."
+        "reach for an object": [
+            "Reach for an object.",
+            "Reach for the towel on the table."
         ],
         "unfold an object": [
             "Unfold an object.",
@@ -613,8 +613,8 @@ DESCRIPTIONS = {
         "placeholder": []
     },
     "berkeley_mvp_data": {
-        "reach to an object": [
-            "Reach to an object."
+        "reach for an object": [
+            "Reach for an object."
         ],
         "push an object": [
             "Push an object.",
@@ -625,7 +625,7 @@ DESCRIPTIONS = {
         ]
     },
     "berkeley_rpt_data": {
-        "pick up a object": [
+        "pick up an object": [
             "Pick up an object."
         ],
         "stack an object": [
@@ -641,7 +641,7 @@ DESCRIPTIONS = {
             "Objects are subjected to external forces to induce translational movement."
         ],
         "drag an object": [
-            "Darg an object.",
+            "Drag an object.",
             "Objects are dragged across the surface without lifting."
         ],
         "rotate an object": [
@@ -662,6 +662,426 @@ DESCRIPTIONS = {
         ],
         "push an object": [
             "Push an object."
+        ]
+    },
+    "lsmo_dataset": {
+        "avoid an obstacle": [
+            "Avoid the obstacle on the table."
+        ],
+        "reach for an object": [
+            "Reach for an object."
+        ]
+    },
+    "dlr_sara_pour_dataset": {
+        "move towards an object": [
+            "Move towards an object."
+        ],
+        "pour into a cup": [
+            "Pour ping-pong balls from a cup held in the end-effector into the cup placed on the table."
+        ]
+    },
+    "dlr_sara_grid_clamp_dataset": {
+        "place an object": [
+            "Place an object.",
+            "Place the grid clamp in the grids on the table, similar to placing a peg in the hole."
+        ]
+    },
+    "dlr_wheelchair_shared_control": {
+        "grasp an object": [
+            "Grasp an object on the tabletop.",
+            "Grasp an object on the shelf."
+        ]
+    },
+    "asu_tabletop_manipulation": {
+        "pick an object": [
+            "Pick an object."
+        ],
+        "push an object": [
+            "Push an object.",
+            "Push an object across the table."
+        ],
+        "rotate an object": [
+            "Rotate an object."
+        ],
+        "avoid an obstacle": [
+            "Avoid an obstacle."
+        ],
+        "place an object": [
+            "Place an object in relation to other objects in the environment."
+        ]
+    },
+    "stanford_robocook": {
+        "pinch the dough": [
+            "Pinch the dough with an asymmetric gripper.",
+            "Pinch the dough with a two-plane symmetric gripper.",
+            "Pinch the dough with a two-rod symmetric gripper."
+        ],
+        "press the dough": [
+            "Press the dough with a circle press.",
+            "Press the dough with a square press.",
+            "Press the dough with a circle punch.",
+            "Press the dough with a square punch.",
+        ],
+        "roll the dough": [
+            "Roll the dough with a small roller.",
+            "Roll the dough with a large roller."
+        ]
+    },
+    "eth_agent_affordances": {
+        "open door": [
+            "Open the door starting from different initial positions and door angles."
+        ],
+        "close door": [
+            "Close the door starting from different initial positions and door angles."
+        ],
+        "open drawer": [
+            "Open the drawer starting from different initial positions and drawer angles."
+        ],
+        "close drawer": [
+            "Close the drawer starting from different initial positions and drawer angles."
+        ]
+    },
+    "imperial_wrist_cam": {
+        "grasp can": [
+            "Grasp a can placed horizontally on a table and lift it."
+        ],
+        "hang cup": [
+            "Starting with a cup in the end-effector, place it on a tree mug holder."
+        ],
+        "insert cap in bottle": [
+            "Starting with a bottle cap in the end-effector, insert it in an empty bottle on the table."
+        ],
+        "insert toast": [
+            "Starting with a toy bread slice in the end-effector, insert it in a toy toaster on the table."
+        ],
+        "open bottle": [
+            "Remove the cap from a bottle on a table by grasping and lifting the cap."
+        ],
+        "open lid": [
+            "Remove the lid from a pot on the table by grasping it and lifting it."
+        ],
+        "pick up apple": [
+            "Pick up an apple from the table."
+        ],
+        "pick up bottle": [
+            "Pick up a bottle placed horizontally on the table."
+        ],
+        "pick up kettle": [
+            "Pick up a toy kettle from the handle."
+        ],
+        "pick up mug": [
+            "Pick up a mug from the table (no need to grasp it from the handle)."
+        ],
+        "pick up pan": [
+            "Pick up a toy pan from the table, grasping it from the handle."
+        ],
+        "pick up shoe": [
+            "Pick up a shoe from the table."
+        ],
+        "pour in mug": [
+            "Starting with a cup in the end-effector, pour into a mug on the table - success is detected by dropping a marble from the cup to the mug, mimicking a liquid."
+        ],
+        "put apple in pot": [
+            "Starting with an apple in the end-effector, drop it in a pot on the table."
+        ],
+        "put cup in dishwasher": [
+            "Starting with a cup in the end-effector, place it in an empty area of a toy dishwasher rack on the table."
+        ],
+        "stack bowls": [
+            "Starting with a bowl in the end-effector, stack it on top of another bowl on the table."
+        ],
+        "swipe": [
+            "Starting with a dust brush in the end-effector, swipe a marble into a dustpan on the table."
+        ]
+    },
+    "cmu_franka_pick_insert_data": {
+        "insert onto square peg": [
+            "For this task we restrict the orientations of the square ring (blue object) and the peg on which to insert.",
+            "This allows the robot to perform the task without changing gripper orientations.",
+            "Further, we use a region of 40cm × 30cm in front of the robot to spawn both the base and ring.",
+            "Finally, the default task configuration provides 20 different peg colors, of which we use the first 10 colors for training and remaining 10 colors for robustness experiments."
+        ],
+        "pick and lift small": [
+            "For this task, we again use a region of 40cm × 30cm in front of the robot to spawn all objects.",
+            "We also restrict the orientation of each object such that it can be grasped directly without requiring gripper orientation changes."
+        ],
+        "sort shapes": [
+            "The default configuration for the shape-sorting task considers 4 different shaped objects (see Figure 3 Bottom-Left) – square, cylinder, triangle, star, moon.",
+            "In the default RLBench configuration most objects directly stick to the robot finger and are simply dropped into the hole for task completion.",
+            "However, with closed loop control we find that non-symmetric objects (star, triangle, and moon) can have significant post-grasp displacement such that it is impossible to insert these objects without changing gripper orientation.",
+            "Hence, we exclude these two objects from evaluation and only use symmetric square and cylinder objects."
+        ],
+        "take usb out": [
+            "This task requires the robot to unplug a USB inserted into the computer.", 
+            "However, the default configuration for this task requires 6-dof control.",
+            "To avoid this, we create smaller computer and USB assets and mount them vertically on the table such that the USB can be unplugged without changing hand orientation."
+        ]
+    },
+    "austin_mutex": {
+        # this data has +150 different tasks, with not enough info about them in the paper
+        "put an object": [
+            "Put an object.",
+            "Put the bowl on the table."
+        ],
+        "open an object's door": [
+            "Open an object's door.",
+            "Open the air fryer door."
+        ],
+        "take out an object": [
+            "Take out a tray from the oven."
+        ],
+        "place an object": [
+            "Place bread on the tray."
+        ],
+        "hold an object": [
+            "Hold an object."
+        ],
+        "move an object": [
+            "Move an object."
+        ],
+        "grip an object": [
+            "Grip an object."
+        ]
+    },
+    "cmu_play_fusion": {
+        "pick up an object": [
+            "Pick up an object.",
+            "Pick up a block."
+        ],
+        "open an object": [
+            "Open an object.",
+            "Open a door.",
+            "Open a drawer."
+        ],
+        "place an object": [
+            "Place an object.",
+            "Place a block.",
+            "Place a block in the slider."
+        ],
+        "close an object": [
+            "Close an object.",
+            "Close a door.",
+            "Close a drawer."
+        ],
+        "turn on an object": [
+            "Turn on an object.",
+            "Turn on the LED.",
+            "Turn on the lights."
+        ],
+        "push an object": [
+            "Push an object.",
+            "Push the block."
+        ]
+    },
+    "cmu_stretch": {
+        # they didn't provide enough info about the tasks
+        "open an object": [
+            "Open an object.",
+            "Open a door.",
+            "Open a dishwasher.",
+            "Open a cabinet."
+        ],
+        "slide an object": [
+            "Slide an object.",
+            "Slide a door."
+        ],
+        "pull an object": [
+            "Pull an object.",
+            "Pull out a drawer."
+        ],
+        "lift an object": [
+            "Lift an object.",
+            "Lift a lid.",
+            "Lift a knife."
+        ],
+        "garbage an object": [
+            "Garbage an object.",
+            "Garbage a can."
+        ]
+    },
+    "recon": {
+        "explore environment": [
+            "Ignore distractors, and explore a non-stationary environment, successfully discovering and navigating to the visually-specified goal."
+        ]
+    },
+    "coryhall": {
+        "navigate hallways": [
+            "Autonomously navigate complex and unstructured environments such as roads, buildings, or forests."
+        ]
+    },
+    "sacson": {
+        "navigate environments": [
+            "Navigate pedestrian-rich indoor and outdoor environments such as offices, school buildings."
+        ]
+    },
+    "conqhose": {
+        "grab an object": [
+            "Grab an object.",
+            "Grab the end of the vacuum hose around in an office environment."
+        ],
+        "lift an object": [
+            "Lift an object.",
+            "Lift the end of the vacuum hose around in an office environment."
+        ],
+        "drag an object": [
+            "Drag an object.",
+            "Drag the end of the vacuum hose around in an office environment."
+        ]
+    },
+    "dobbe": {
+        "pick up an object": [
+            "Pick up an object.",
+            "Pick up paper towel roll.",
+            "Pick up paper bag.",
+            "Pick up hat.",
+            "Pick up trash bag.",
+            "Pick up hand towel.",
+            "Pick up kitchen towel.",
+            "Pick up tissue roll."
+        ],
+        "open an object": [
+            "Open an object.",
+            "Open a door.",
+            "Open cabinet door.",
+            "Open shower curtain.",
+            "Open dishwasher door.",
+            "Open air fryer door.",
+            "Open freezer door.",
+            "Open vertical window blinds."
+        ],
+        "close an object": [
+            "Close an object.",
+            "Close a door.",
+            "Close cabinet door.",
+            "Close shower curtain.",
+            "Close dishwasher door.",
+            "Close air fryer door."
+        ],
+        "place an object": [
+            "Place an object.",
+            "Place keychain.",
+            "Place spice.",
+            "Place massager."
+        ],
+        "pull an object": [
+            "Pull an object.",
+            "Pull out dining chair.",
+            "Pull book from shelf.",
+            "Pull chair.",
+            "Pull desk chair.",
+            "Pull out dining chair.",
+            "Pull side table.",
+            "Pull out dining stool."
+        ],
+        "flush toilet": [
+            "Flush toilet."
+        ],
+        "straighten cushion": [
+            "Straighten cushion."
+        ],
+        "pour an object": [
+            "Pour an object.",
+            "Pour chocolate almond."
+        ],
+        "unplug an object": [
+            "Unplug an object.",
+            "Unplug charger."
+        ],
+        "rotate an object": [
+            "Rotate an object.",
+            "Rotate speaker knob."
+        ],
+        "adjust an object": [
+            "Adjust an object.",
+            "Adjust oven knob."
+        ],
+        "push an object": [
+            "Push an object.",
+            "Push toaster button."
+        ],
+        "put an object": [
+            "Put an object.",
+            "Put rag in laundry."
+        ]
+    },
+    "io_ai_office_picknplace": {
+        "pick up an object": [
+            "Pick up an object.",
+            "Pick up the glue from the plate.",
+            "Pick up the stapler."
+        ],
+        "place an object": [
+            "Place an object.",
+            "Place the glue on the plate.",
+            "Place the stapler on the desk."
+        ]
+    },
+    "roboset": {
+        "wipe an object": [
+            "Wipe an object."
+        ],
+        "pick up an object": [
+            "Pick up an object."
+        ],
+        "place an object": [
+            "Place an object."
+        ],
+        "cap an object": [
+            "Cap an object."
+        ],
+        "uncap an object": [
+            "Uncap an object."
+        ]
+    },
+    "spoc": {
+        "fetch an object": [
+            "Find and pick up an object."
+        ],
+        "navigate to an object": [
+            "Locate an object."
+        ],
+        "search for an object": [
+            "Search for an object.",
+            "Search for a bed."
+        ],
+        "pick up an object": [
+            "Pick up a specified object in agent line of sight.",
+        ],
+        "find an object": [
+            "Find an object.",
+            "Find a hosueplant."
+        ],
+        "place an object": [
+            "Place an object."
+        ]
+    },
+    "plex_robotsuite": {
+        "open an object": [
+            "Open an object."
+        ],
+        "close an object": [
+            "Close an object."
+        ],
+        "pick up an object": [
+            "Pick up an object."
+        ],
+        "place an object": [
+            "Place an object."
+        ],
+        "put an object": [
+            "Put an object."
+        ],
+        "insert an object": [
+            "Insert an object."
+        ],
+        "lift an object": [
+            "Lift an object."
+        ],
+        "assemble an object": [
+            "Assemble an object."
+        ],
+        "stack an object": [
+            "Stack an object."
         ]
     }
 }
@@ -1184,7 +1604,7 @@ ACTION_SPACES = {
         },
     },
     "utokyo_xarm_bimanual": {
-        "reach to an object": {
+        "reach for an object": {
             0: None
         },
         "unfold an object": {
@@ -1197,7 +1617,7 @@ ACTION_SPACES = {
         }
     },
     "berkeley_mvp_data": {
-        "reach to an object": {
+        "reach for an object": {
             0: None
         },
         "push an object": {
@@ -1210,10 +1630,10 @@ ACTION_SPACES = {
     "berkeley_rpt_data": {
         "pick up a object": {
             0: None
-        }
+        },
         "stack an object": {
             0: None
-        }
+        },
         "destack an object": {
             0: None
         }
@@ -1221,13 +1641,13 @@ ACTION_SPACES = {
     "kaist_nonprehensile_objects": {
         "push an object": {
             0: None
-        }
+        },
         "drag an object": {
             0: None
-        }
+        },
         "rotate an object": {
             0: None
-        }
+        },
         "topple an object": {
             0: None
         }
@@ -1239,19 +1659,410 @@ ACTION_SPACES = {
     },
     "stanford_maskvit_data": {
         "pick up an object": {
-            0: ("The change in cartesian end-effector position X", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
-            1: ("The change in cartesian end-effector position Y", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
-            2: ("The change in cartesian end-effector position Z", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
-            3: ("The change in yaw", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
+            0: ("The change in cartesian end-effector position X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            1: ("The change in cartesian end-effector position Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            2: ("The change in cartesian end-effector position Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            3: ("The change in yaw", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
             4: ("The gripper closing action", {0: "Close", 1: "Open"}),  # it was never mentioned what is closed and opened mapped to
         },
         "push an object": {
-            0: ("The change in cartesian end-effector position X", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
-            1: ("The change in cartesian end-effector position Y", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
-            2: ("The change in cartesian end-effector position Z", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
-            3: ("The change in yaw", None, None)  # should be a continuous value, but they never said anything about the ranges in the paper
+            0: ("The change in cartesian end-effector position X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            1: ("The change in cartesian end-effector position Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            2: ("The change in cartesian end-effector position Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            3: ("The change in yaw", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
             4: ("The gripper closing action", {0: "Close", 1: "Open"}),  # it was never mentioned what is closed and opened mapped to
         }
+    },
+    "lsmo_dataset": {
+        "avoid an obstacle": {
+            0: None
+        },
+        "reach for an object": {
+            0: None
+        }
+    },
+    "dlr_sara_pour_dataset": {
+        "move towards an object": {
+            0: None
+        },
+        "pour into a cup": {
+            0: None
+        }
+    },
+    "dlr_sara_grid_clamp_dataset": {
+        "place an object": {
+            0: None
+        }
+    },
+    "dlr_wheelchair_shared_control": {
+        "grasp an object": {
+            0: None
+        }
+    },
+    "asu_tabletop_manipulation": {
+        "pick an object": {
+            0: ("The change in cartesian end-effector position X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            1: ("The change in cartesian end-effector position Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,
+            2: ("The change in cartesian end-effector position Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,
+            3: ("The change in end-effector orientation R", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,
+            4: ("The change in end-effector orientation P", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,,
+            5: ("The change in end-effector orientation Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,,
+            6: ("The gripper closing action", {0: "Close", 1: "Open"}),  # it was never mentioned what is closed and opened mapped to
+        },
+        "push an object": {
+            0: ("The change in cartesian end-effector position X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            1: ("The change in cartesian end-effector position Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,
+            2: ("The change in cartesian end-effector position Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,
+            3: ("The change in end-effector orientation R", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,
+            4: ("The change in end-effector orientation P", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,,
+            5: ("The change in end-effector orientation Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,,
+            6: ("The gripper closing action", {0: "Close", 1: "Open"}),  # it was never mentioned what is closed and opened mapped to
+        },
+        "rotate an object": {
+            0: ("The change in cartesian end-effector position X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            1: ("The change in cartesian end-effector position Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,
+            2: ("The change in cartesian end-effector position Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,
+            3: ("The change in end-effector orientation R", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,
+            4: ("The change in end-effector orientation P", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,,
+            5: ("The change in end-effector orientation Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,,
+            6: ("The gripper closing action", {0: "Close", 1: "Open"}),  # it was never mentioned what is closed and opened mapped to
+        },
+        "avoid an obstacle": {
+            0: ("The change in cartesian end-effector position X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            1: ("The change in cartesian end-effector position Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,
+            2: ("The change in cartesian end-effector position Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,
+            3: ("The change in end-effector orientation R", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,
+            4: ("The change in end-effector orientation P", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,,
+            5: ("The change in end-effector orientation Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,,
+            6: ("The gripper closing action", {0: "Close", 1: "Open"}),  # it was never mentioned what is closed and opened mapped to
+        },
+        "place an object": {
+            0: ("The change in cartesian end-effector position X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            1: ("The change in cartesian end-effector position Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,
+            2: ("The change in cartesian end-effector position Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,
+            3: ("The change in end-effector orientation R", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,
+            4: ("The change in end-effector orientation P", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,,
+            5: ("The change in end-effector orientation Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,,,
+            6: ("The gripper closing action", {0: "Close", 1: "Open"}),  # it was never mentioned what is closed and opened mapped to
+        }
+    },
+    "stanford_robocook": {
+        "pinch the dough": {
+            0: None
+        },
+        "press the dough": {
+            0: None
+        },
+        "roll the dough": {
+            0: None
+        }
+    },
+    "eth_agent_affordances": {
+        "open door": {
+            0: None
+        },
+        "close door": {
+            0: None
+        },
+        "open drawer": {
+            0: None
+        },
+        "close drawer": {
+            0: None
+        }
+    },
+    "imperial_wrist_cam": {
+        "grasp can": {
+            0: None
+        },
+        "hang cup": {
+            0: None
+        },
+        "insert cap in bottle": {
+            0: None
+        },
+        "insert toast": {
+            0: None
+        },
+        "open bottle": {
+            0: None
+        },
+        "open lid": {
+            0: None
+        },
+        "pick up apple": {
+            0: None
+        },
+        "pick up bottle": {
+            0: None
+        },
+        "pick up kettle": {
+            0: None
+        },
+        "pick up mug": {
+            0: None
+        },
+        "pick up pan": {
+            0: None
+        },
+        "pick up shoe": {
+            0: None
+        },
+        "pour in mug": {
+            0: None
+        },
+        "put apple in pot": {
+            0: None
+        },
+        "put cup in dishwasher": {
+            0: None
+        },
+        "stack bowls": {
+            0: None
+        },
+        "swipe": {
+            0: None
+        }
+    },
+    "cmu_franka_pick_insert_data": {
+        # they only mentioned it's 6D
+        "insert onto square peg": {
+            0: None
+        },
+        "pick and lift small": {
+            0: None
+        },
+        "sort shapes": {
+            0: None
+        },
+        "take usb out": {
+            0: None
+        },
+    },
+    "austin_mutex": {
+        "put an object": {
+            0: None
+        },
+        "open an object's door": {
+            0: None
+        },
+        "take out an object": {
+            0: None
+        },
+        "place an object": {
+            0: None
+        },
+        "hold an object": {
+            0: None
+        },
+        "move an object": {
+            0: None
+        },
+        "grip an object": {
+            0: None
+        }
+    },
+    "cmu_play_fusion": {
+        "pick up an object": {
+            0: None
+        },
+        "open an object": {
+            0: None
+        },
+        "place an object": {
+            0: None
+        },
+        "close an object": {
+            0: None
+        },
+        "turn on an object": {
+            0: None
+        },
+        "push an object": {
+            0: None
+        }
+    },
+    "cmu_stretch": {
+        # it's mentioned that it's a 6D action space
+        "open an object": {
+            0: None
+        },
+        "slide an object": {
+            0: None
+        },
+        "pull an object": {
+            0: None
+        },
+        "lift an object": {
+            0: None
+        },
+        "garbage an object": {
+            0: None
+        }
+    },
+    "recon": {
+        "explore environment": {
+            0: None
+        }
+    },
+    "coryhall": {
+        "navigate hallways": {
+            0: None
+        }
+    },
+    "sacson": {
+        "navigate environments": {
+            0: None
+        }
+    },
+    "conqhose": {
+        "grab an object": {
+            0: ("The delta pose of hand in current hand frame for X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            1: ("The delta pose of hand in current hand frame for Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            2: ("The delta pose of hand in current hand frame for Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            3: ("The delta pose of hand in current hand frame for R", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            4: ("The delta pose of hand in current hand frame for P", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            5: ("The delta pose of hand in current hand frame for Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            6: ("The delta pose of hand in gripper closing action", None),  # no info were found about this
+            7: ("Termination", {1: "True", 0: "False"})
+        },
+        "lift an object": {
+            0: ("The delta pose of hand in current hand frame for X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            1: ("The delta pose of hand in current hand frame for Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            2: ("The delta pose of hand in current hand frame for Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            3: ("The delta pose of hand in current hand frame for R", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            4: ("The delta pose of hand in current hand frame for P", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            5: ("The delta pose of hand in current hand frame for Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            6: ("The delta pose of hand in gripper closing action", None),  # no info were found about this
+            7: ("Termination", {1: "True", 0: "False"})
+        },
+        "drag an object": {
+            0: ("The delta pose of hand in current hand frame for X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            1: ("The delta pose of hand in current hand frame for Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            2: ("The delta pose of hand in current hand frame for Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            3: ("The delta pose of hand in current hand frame for R", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            4: ("The delta pose of hand in current hand frame for P", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            5: ("The delta pose of hand in current hand frame for Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
+            6: ("The delta pose of hand in gripper closing action", None),  # no info were found about this
+            7: ("Termination", {1: "True", 0: "False"})
+        },
+    },
+    "dobbe": {
+        # it's mentioned it's 7 dims, but not enough info given about to write the actions spaces descriptions
+        "pick up an object": {
+            0: None
+        },
+        "open an object": {
+            0: None
+        },
+        "close an object": {
+            0: None
+        },
+        "place an object": {
+            0: None
+        },
+        "pull an object": {
+            0: None
+        },
+        "flush toilet": {
+            0: None
+        },
+        "straighten cushion": {
+            0: None
+        },
+        "pour an object": {
+            0: None
+        },
+        "unplug an object": {
+            0: None
+        },
+        "rotate an object": {
+            0: None
+        },
+        "adjust an object": {
+            0: None
+        },
+        "push an object": {
+            0: None
+        },
+        "put an object": {
+            0: None
+        }
+    },
+    "io_ai_office_picknplace": {
+        "pick up an object": {
+            0: None
+        },
+        "place an object": {
+            0: None
+        }
+    },
+    "roboset": {
+        "wipe an object": {
+            0: None
+        },
+        "pick up an object": {
+            0: None
+        },
+        "place an object": {
+            0: None
+        },
+        "cap an object": {
+            0: None
+        },
+        "uncap an object": {
+            0: None
+        },
+    },
+    "spoc": {  # TODO: they described the action space in their paper, get back to it
+        "fetch an object": {
+            0: None,
+        },
+        "navigate to an object": {
+            0: None,
+        },
+        "search for an object": {
+            0: None,
+        },
+        "pick up an object": {
+            0: None,
+        },
+        "find an object": {
+            0: None,
+        },
+        "place an object": {
+            0: None,
+        }
+    },
+    "plex_robotsuite": {
+        # it's mentioned that the actions space is 7 dims, 6 dims for the gripper pose control, and 1 of opening and closing, that's it
+        "open an object": {
+            0: None,
+        },
+        "close an object": {
+            0: None,
+        },
+        "pick up an object": {
+            0: None,
+        },
+        "place an object": {
+            0: None,
+        },
+        "put an object": {
+            0: None,
+        },
+        "insert an object": {
+            0: None,
+        },
+        "lift an object": {
+            0: None,
+        },
+        "assemble an object": {
+            0: None,
+        },
+        "stack an object": {
+            0: None,
+        },
     }
 }
 
@@ -1265,7 +2076,7 @@ ACTION_EXCLUSIVENESS = {
     "rt_1_robot_action": {
         "pick and place items": False,
         "move object near another object": False,
-        "place objects up-right": False,
+        "place objects upright": False,
         "open a drawer": False,
         "close a drawer": False,
         "place object into receptacle": False,
@@ -1417,7 +2228,7 @@ ACTION_EXCLUSIVENESS = {
         "set up the table": False,
         "clean up the table": False,
     },
-     "austin_sirius": {
+    "austin_sirius": {
         "assemble nut": False,
         "hang tool": False,
         "insert gear": False,
@@ -1461,19 +2272,19 @@ ACTION_EXCLUSIVENESS = {
         "place an object": False
     },
     "utokyo_xarm_bimanual": {
-        "reach to an object": False,
+        "reach for an object": False,
         "unfold an object": False
     },
     "robonet": {  # not part of our used data
         "placeholder": False
     },
     "berkeley_mvp_data": {
-        "reach to an object": False,
+        "reach for an object": False,
         "push an object": False,
         "pick up an object": False
     },
     "berkeley_rpt_data": {
-        "pick up a object": False,
+        "pick up an object": False,
         "stack an object": False,
         "destack an object": False
     },
@@ -1485,10 +2296,150 @@ ACTION_EXCLUSIVENESS = {
     },
     "qut_dynamic_grasping": {  # not used in our dataset
         "placeholder": False
-    }
+    },
     "stanford_maskvit_data": {
         "pick up an object": False,
         "push an object": False
+    },
+    "lsmo_dataset": {
+        "avoid an obstacle": False,
+        "reach for an object": False
+    },
+    "dlr_sara_pour_dataset": {
+        "move towards an object": False,
+        "pour into a cup": False
+    },
+    "dlr_sara_grid_clamp_dataset": {
+        "place an object": False
+    },
+    "dlr_wheelchair_shared_control": {
+        "grasp an object": False
+    },
+    "asu_tabletop_manipulation": {
+        "pick an object": False,
+        "push an object": False,
+        "rotate an object": False,
+        "avoid an obstacle": False,
+        "place an object": False
+    },
+    "stanford_robocook": {
+        "pinch the dough": False,
+        "press the dough": False,
+        "roll the dough": False
+    },
+    "eth_agent_affordances": {
+        "open door": False,
+        "close door": False,
+        "open drawer": False,
+        "close drawer": False
+    },
+    "imperial_wrist_cam": {
+        "grasp can": False,
+        "hang cup": False,
+        "insert cap in bottle": False,
+        "insert toast": False,
+        "open bottle": False,
+        "open lid": False,
+        "pick up apple": False,
+        "pick up bottle": False,
+        "pick up kettle": False,
+        "pick up mug": False,
+        "pick up pan": False,
+        "pick up shoe": False,
+        "pour in mug": False,
+        "put apple in pot": False,
+        "put cup in dishwasher": False,
+        "stack bowls": False,
+        "swipe": False
+    },
+    "cmu_franka_pick_insert_data": {
+        "insert onto square peg": False,
+        "pick and lift small": False,
+        "sort shapes": False,
+        "take usb out": False
+    },
+    "austin_mutex": {
+        "put an object": False,
+        "open an object's door": False,
+        "take out an object": False,
+        "place an object": False,
+        "hold an object": False,
+        "move an object": False,
+        "grip an object": False
+    },
+    "cmu_play_fusion": {
+        "pick up an object": False,
+        "open an object": False,
+        "place an object": False,
+        "close an object": False,
+        "turn on an object": False,
+        "push an object": False,
+    },
+    "cmu_stretch": {
+        "open an object": False,
+        "slide an object": False,
+        "pull an object": False,
+        "lift an object": False,
+        "garbage an object": False,
+    },
+    "recon": {
+        "explore environment": False
+    },
+    "coryhall": {
+        "navigate hallways": False
+    },
+    "sacson": {
+        "navigate environments": False
+    },
+    "conqhose": {
+        "grab an object": False,
+        "lift an object": False,
+        "drag an object": False
+    },
+    "dobbe": {
+        "pick up an object": False,
+        "open an object": False,
+        "close an object": False,
+        "place an object": False,
+        "pull an object": False,
+        "flush toilet": False,
+        "straighten cushion": False,
+        "pour an object": False,
+        "unplug an object": False,
+        "rotate an object": False,
+        "adjust an object": False,
+        "push an object": False,
+        "put an object": False
+    },
+    "io_ai_office_picknplace": {
+        "pick up an object": False,
+        "place an object": False
+    },
+    "roboset": {
+        "wipe an object": False,
+        "pick up an object": False,
+        "place an object": False,
+        "cap an object": False,
+        "uncap an object": False
+    },
+    "spoc": {
+        "fetch an object": False,
+        "navigate to an object": False,
+        "search for an object": False,
+        "pick up an object": False,
+        "find an object": False,
+        "place an object": False
+    },
+    "plex_robotsuite": {
+        "open an object": False,
+        "close an object": False,
+        "pick up an object": False,
+        "place an object": False,
+        "put an object": False,
+        "insert an object": False,
+        "lift an object": False,
+        "assemble an object": False,
+        "stack an object": False
     }
 }
 
