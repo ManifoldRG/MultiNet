@@ -105,7 +105,11 @@ class OpenXModuleTest(unittest.TestCase):
                 self.assertEqual(output_types, [list, list, list, list])
                 self.assertEqual(is_lasts, [batch['is_last'][b][i] for b in [0, 1, 2, 3]])
                 self.assertEqual(cur_inputs, [
-                    [('image_observation', batch['image_observation'][b][i]), ('continuous_observation', batch['continuous_observation'][b][i])] for b in [0, 1, 2, 3]
+                    [
+                        ('image_observation', batch['image_observation'][b][i]), 
+                        ('continuous_observation', batch['continuous_observation'][b][i]), 
+                        ('text_observation', batch['text_observation'][b][i])
+                    ] for b in [0, 1, 2, 3]
                 ])
 
             elif 1 <= i < 3:  # Batch 0, 2, 3
@@ -115,7 +119,11 @@ class OpenXModuleTest(unittest.TestCase):
                 self.assertEqual(output_types, [list, list, list])
                 self.assertEqual(is_lasts, [batch['is_last'][b][i] for b in [0, 2, 3]])
                 self.assertEqual(cur_inputs, [
-                    [('image_observation', batch['image_observation'][b][i]), ('continuous_observation', batch['continuous_observation'][b][i])] for b in [0, 2, 3]
+                    [
+                        ('image_observation', batch['image_observation'][b][i]), 
+                        ('continuous_observation', batch['continuous_observation'][b][i]), 
+                        ('text_observation', batch['text_observation'][b][i])
+                    ] for b in [0, 2, 3]
                 ])
             elif 3 <= i < 4:  # Batch 0, 3
                 self.assertEqual(idxs, [0, 3])
@@ -124,7 +132,11 @@ class OpenXModuleTest(unittest.TestCase):
                 self.assertEqual(output_types, [list, list])
                 self.assertEqual(is_lasts, [batch['is_last'][b][i] for b in [0, 3]])
                 self.assertEqual(cur_inputs, [
-                    [('image_observation', batch['image_observation'][b][i]), ('continuous_observation', batch['continuous_observation'][b][i])] for b in [0, 3]
+                    [
+                        ('image_observation', batch['image_observation'][b][i]), 
+                        ('continuous_observation', batch['continuous_observation'][b][i]), 
+                        ('text_observation', batch['text_observation'][b][i])
+                    ] for b in [0, 3]
                 ])
             else:  # Batch 3
                 self.assertEqual(idxs, [3])
@@ -133,7 +145,11 @@ class OpenXModuleTest(unittest.TestCase):
                 self.assertEqual(output_types, [list])
                 self.assertEqual(is_lasts, [batch['is_last'][b][i] for b in [3]])
                 self.assertEqual(cur_inputs, [
-                    [('image_observation', batch['image_observation'][b][i]), ('continuous_observation', batch['continuous_observation'][b][i])] for b in [3]
+                    [
+                        ('image_observation', batch['image_observation'][b][i]), 
+                        ('continuous_observation', batch['continuous_observation'][b][i]), 
+                        ('text_observation', batch['text_observation'][b][i])
+                    ] for b in [3]
                 ])
         self.assertEqual(i, 4)  # Stopping check.
 
@@ -256,6 +272,7 @@ class OpenXModuleTest(unittest.TestCase):
                     else:
                         expected_cur_inputs[-1] += [('image_observation', image) for image in batch['image_observation'][b][i]]
                     expected_cur_inputs[-1].append(('continuous_observation', batch['continuous_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('text_observation', batch['text_observation'][b][i]))
 
                 self.assertEqual(len(cur_inputs), len(expected_cur_inputs))
                 for b in range(len(expected_cur_inputs)):
@@ -286,6 +303,7 @@ class OpenXModuleTest(unittest.TestCase):
                     else:
                         expected_cur_inputs[-1] += [('image_observation', image) for image in batch['image_observation'][b][i]]
                     expected_cur_inputs[-1].append(('continuous_observation', batch['continuous_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('text_observation', batch['text_observation'][b][i]))
 
                 self.assertEqual(len(cur_inputs), len(expected_cur_inputs))
                 for b in range(len(expected_cur_inputs)):
@@ -315,6 +333,7 @@ class OpenXModuleTest(unittest.TestCase):
                     else:
                         expected_cur_inputs[-1] += [('image_observation', image) for image in batch['image_observation'][b][i]]
                     expected_cur_inputs[-1].append(('continuous_observation', batch['continuous_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('text_observation', batch['text_observation'][b][i]))
 
                 self.assertEqual(len(cur_inputs), len(expected_cur_inputs))
                 for b in range(len(expected_cur_inputs)):
@@ -342,6 +361,7 @@ class OpenXModuleTest(unittest.TestCase):
                     else:
                         expected_cur_inputs[-1] += [('image_observation', image) for image in batch['image_observation'][b][i]]
                     expected_cur_inputs[-1].append(('continuous_observation', batch['continuous_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('text_observation', batch['text_observation'][b][i]))
 
                 self.assertEqual(len(cur_inputs), len(expected_cur_inputs))
                 for b in range(len(expected_cur_inputs)):
@@ -368,6 +388,7 @@ class OpenXModuleTest(unittest.TestCase):
                     else:
                         expected_cur_inputs[-1] += [('image_observation', image) for image in batch['image_observation'][b][i]]
                     expected_cur_inputs[-1].append(('continuous_observation', batch['continuous_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('text_observation', batch['text_observation'][b][i]))
 
                 self.assertEqual(len(cur_inputs), len(expected_cur_inputs))
                 for b in range(len(expected_cur_inputs)):
@@ -393,6 +414,7 @@ class OpenXModuleTest(unittest.TestCase):
                     else:
                         expected_cur_inputs[-1] += [('image_observation', image) for image in batch['image_observation'][b][i]]
                     expected_cur_inputs[-1].append(('continuous_observation', batch['continuous_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('text_observation', batch['text_observation'][b][i]))
 
                 self.assertEqual(len(cur_inputs), len(expected_cur_inputs))
                 for b in range(len(expected_cur_inputs)):

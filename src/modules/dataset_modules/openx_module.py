@@ -161,6 +161,8 @@ class OpenXModule:
                         discrete_obs = batch['discrete_observation'][b][t]
                         cur_inputs[-1].append(('discrete_observation', discrete_obs))
 
+                    cur_inputs[-1].append(('text_observation', text_obs[b][t]))
+
             yield cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts
 
     # Generating the instruction text for VLMModule.
