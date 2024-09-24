@@ -16,16 +16,15 @@ class OpenXDataset(Dataset):
         current_episode = []
 
         for shard_idx, shard in enumerate(self.tfds_shards):
-            dataset = tf.data.Dataset.load(shard)
-
             # To prevent input processing overhead for shards that have already been processed
             if shard_idx < self.current_shard_idx:
                 continue
+            dataset = tf.data.Dataset.load(shard)
 
             #Process the input data for each element in the shard
             for elem_idx, elem in enumerate(dataset):
                 # To prevent input processing overhead for elements of shardsthat have already been processed
-                if shard_idx == self.current_shard_idx and (self.current_elem_idx!=0 and elem_idx < self.current_elem_idx):
+                if shard_idx == self.current_shard_idx and elem_idx < self.current_elem_idx:
                     continue
                     
                 discrete_observation = None
@@ -136,12 +135,10 @@ class OpenXDataset(Dataset):
                     current_episode = []
 
         if current_episode:  # Add the last episode if it's not empty
-            if shard_idx!=self.current_shard_idx:
-                self.current_elem_idx = 0
-            else:
-                self.current_elem_idx = elem_idx+1
-            self.current_shard_idx = shard_idx
+            self.current_shard_idx = 0
+            self.current_elem_idx = 0
             yield current_episode
+            current_episode = []
 
     def _get_feature(self, elem, feature_name: str) -> Any:
         # Implement feature extraction based on your TFDS structure
