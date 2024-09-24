@@ -306,17 +306,6 @@ DESCRIPTIONS = {
             "Hang mug."
         ]
     },
-    "austin_buds": { # dropped during curation, and can't also find it
-        "pick object": [
-            "Pick the object."
-        ],
-        "place object in a pot": [
-            "Place the object in the pot."
-        ],
-        "pick up a tool and push objects together using the tool": [
-            "Push the object using the picked-up tool."
-        ]
-    },
     "nyu_franka_play": {
         "open microwave": [
             "Open the microwave door."
@@ -1365,17 +1354,6 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "austin_buds": {
-        "pick object": {
-            0: None
-        },
-        "place object in a pot": {
-            0: None
-        },
-        "pick up a tool and push objects together using the tool": {
-            0: None
-        }
-    },
     "nyu_franka_play": {
         "open microwave": {
             0: None
@@ -2159,11 +2137,6 @@ ACTION_EXCLUSIVENESS = {
         "make coffee": False,
         "make toast": False,
         "sort dishes": False
-    },
-    "austin_buds": {
-        "pick object": False,
-        "place object in a pot": False,
-        "pick up a tool and push objects together using the tool": False
     },
     "nyu_franka_play": {
         "open microwave": False,
