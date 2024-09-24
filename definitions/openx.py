@@ -556,9 +556,6 @@ DESCRIPTIONS = {
             "Unfold the wrinkled towel."
         ]
     },
-    "robonet": {  # not part of our used data
-        "placeholder": []
-    },
     "berkeley_mvp_data": {
         "reach for an object": [
             "Reach for an object."
@@ -1496,11 +1493,6 @@ ACTION_SPACES = {
             0: None
         },
     },
-    "robonet": {  # not part of our used data
-        "placeholder": {
-            0: None
-        }
-    },
     "berkeley_mvp_data": {
         "reach for an object": {
             0: None
@@ -2139,9 +2131,6 @@ ACTION_EXCLUSIVENESS = {
     "utokyo_xarm_bimanual": {
         "reach for an object": False,
         "unfold an object": False
-    },
-    "robonet": {  # not part of our used data
-        "placeholder": False
     },
     "berkeley_mvp_data": {
         "reach for an object": False,
