@@ -416,40 +416,6 @@ DESCRIPTIONS = {
             "Pick an object."
         ]
     },
-    "austin_sailor": {
-        "open": [
-            "Open a cabinet."
-        ],
-        "close": [
-            "Close a cabinet."
-        ],
-        "move": [
-            "Move a kettle."
-        ],
-        "turn on": [
-            "Turn on a stove.",
-            "Turn on lights."
-        ],
-        "turn off": [
-            "Turn off a stove.",
-            "Turn off lights."
-        ],
-        "pick": [
-            "Pick an object."
-        ],
-        "place": [
-            "Place an object."
-        ],
-        "push": [
-            "Push a block."
-        ],
-        "set up the table": [
-            "Set up the table."
-        ],
-        "clean up the table": [
-            "Clean up the table."
-        ]
-    },
     "austin_sirius": {
         "assemble nut": [
             "Assemble nut."
@@ -1435,52 +1401,6 @@ ACTION_SPACES = {
             0: None
         },
     },
-    "austin_sailor": {
-        "open": {
-            0: None
-        },
-        "close": {
-            0: None
-        },
-        "move": {
-            0: None
-        },
-        "turn on": {
-            0: None
-        },
-        "turn off": {
-            0: None
-        },
-        "pick": {
-            0: None
-        },
-        "place": {
-            0: None
-        },
-        "push": {
-            0: None
-        },
-        "set up the table": {
-            0: None
-        },
-        "clean up the table": {
-            0: None
-        },
-    },
-    "austin_sirius": {
-        "assemble nut": {
-            0: None
-        },
-        "hang tool": {
-            0: None
-        },
-        "insert gear": {
-            0: None
-        },
-        "pack coffee pod": {
-            0: None
-        },
-    },
     "bc_z": {
         "place an object": {
             0: None
@@ -2172,18 +2092,6 @@ ACTION_EXCLUSIVENESS = {
     "ucsd_pick_place": {
         "reach": False,
         "pick": False,
-    },
-    "austin_sailor": {
-        "open": False,
-        "close": False,
-        "move": False,
-        "turn on": False,
-        "turn off": False,
-        "pick": False,
-        "place": False,
-        "push": False,
-        "set up the table": False,
-        "clean up the table": False,
     },
     "austin_sirius": {
         "assemble nut": False,
