@@ -597,9 +597,6 @@ DESCRIPTIONS = {
             "Objects are caused to fall or rise from an initial stable position to another orientation."
         ]
     },
-    "qut_dynamic_grasping": {  # not used in our dataset
-        "placeholder": []
-    },
     "stanford_maskvit_data": {
         "pick up an object": [
             "Pick up an object."
@@ -1529,11 +1526,6 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "qut_dynamic_grasping": {  # not used in our dataset
-        "placeholder": {
-            0: None
-        }
-    },
     "stanford_maskvit_data": {
         "pick up an object": {
             0: ("The change in cartesian end-effector position X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
@@ -2147,9 +2139,6 @@ ACTION_EXCLUSIVENESS = {
         "drag an object": False,
         "rotate an object": False,
         "topple an object": False
-    },
-    "qut_dynamic_grasping": {  # not used in our dataset
-        "placeholder": False
     },
     "stanford_maskvit_data": {
         "pick up an object": False,
