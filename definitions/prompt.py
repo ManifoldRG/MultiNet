@@ -15,13 +15,15 @@ def format_instruction_prompt(env_name: str, env_desc: str, action_space: dict, 
 
     # Making the action description.
     action_desc = [
-        "A discrete action has the available options as key-value pairs, {Option index}: {Option description}. A continuous action has the range of {minimum} ~ {maximum}.",
+        "A discrete action has the available options as key-value pairs, {Option index}: {Option description}. A continuous action has the range of {minimum} ~ {maximum}. A continuous action without a verbal description is described using the statistics of the action space over the entire dataset, which includes the range for each dimension between {minimum} ~ {maximum} and a mean of {mean}.",
     ]
     for idx, tup in action_space.items():
         if len(tup) == 2:  # Discrete
             sent = f"{idx}. {tup[0]} => Discrete. Options: {tup[1]}."
-        else:
+        elif len(tup) == 3:  # Continuous
             sent = f"{idx}. {tup[0]} => Continous. Range: {tup[1]} ~ {tup[2]}."
+        elif len(tup) == 4:  # No verbal description
+            sent = f"{idx}. {tup[0]} => Continuous. Range: {tup[1]} ~ {tup[2]}. Mean: {tup[3]}."
         action_desc.append(sent)
     action_desc = '\n'.join(action_desc) + '\n'
 

@@ -20,6 +20,7 @@ class OpenXModule:
         self.model = model
         self.batch_size = batch_size
         self.k_shots = k_shots
+        self.action_stats_opxmodule = None
 
     # Main evaluation function.
     def run_eval(self) -> None:
@@ -47,13 +48,16 @@ class OpenXModule:
             start_time = time.time()
 
             # Creating the dataloader.
-            dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size)
+            dataloader_obj, dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size)
 
             avg_mse_list = []
             total_dataset_amse = 0.0
             episode_count = 0
             total_success_counts = []
             for batch in dataloader:
+                # Action stats need to be retrieved only once for each dataset, after they have been populated.
+                if self.action_stats_opxmodule is None:
+                    self.action_stats_opxmodule = dataloader_obj._get_action_stats()  
                 batch_size = len(batch['text_observation'])
                 episode_mses = [[] for b in range(batch_size)]
                 success_counts = [0 for b in range(batch_size)]
@@ -170,6 +174,13 @@ class OpenXModule:
         assert env_name in DESCRIPTIONS[dataset], f"The environment {env_name} is not included in the OpenX group."
 
         env_desc = ' '.join(DESCRIPTIONS[dataset][env_name])
+        # Handle the cases where the action space does not have a verbal description, and stats need to be used instead.
+        if len(ACTION_SPACES[dataset][env_name]) == 1:
+            # If there is a placeholder 'None' in the action space, it means that the action space is not given a verbal description.
+            if ACTION_SPACES[dataset][env_name][0] == None:
+                ACTION_SPACES[dataset][env_name] = {}
+                for i in range(self.action_stats_opxmodule['size'][0]):
+                    ACTION_SPACES[dataset][env_name][i] = ("The action space statistics of this dimension of the action space over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
         action_space = ACTION_SPACES[dataset][env_name]
         only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name]
         additional_inst = None
