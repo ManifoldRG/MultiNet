@@ -48,17 +48,11 @@ class OpenXModule:
 
             # Creating the dataloader.
             dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size)
-            # Get the action stats from the dataloader - size of action space, and min, max, mean of each dimension of action space
-
             avg_mse_list = []
             total_dataset_amse = 0.0
             episode_count = 0
             total_success_counts = []
-            action_stats = None
             for batch in dataloader:
-
-                if action_stats is None:
-                    action_stats = dataloader._get_action_stats()
 
                 batch_size = len(batch['text_observation'])
                 episode_mses = [[] for b in range(batch_size)]
