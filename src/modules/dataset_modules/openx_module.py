@@ -53,7 +53,6 @@ class OpenXModule:
             episode_count = 0
             total_success_counts = []
             for batch in dataloader:
-
                 batch_size = len(batch['text_observation'])
                 episode_mses = [[] for b in range(batch_size)]
                 success_counts = [0 for b in range(batch_size)]
@@ -170,7 +169,6 @@ class OpenXModule:
         assert env_name in DESCRIPTIONS[dataset], f"The environment {env_name} is not included in the OpenX group."
 
         env_desc = ' '.join(DESCRIPTIONS[dataset][env_name])
-
         action_space = ACTION_SPACES[dataset][env_name]
         only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name]
         additional_inst = None
