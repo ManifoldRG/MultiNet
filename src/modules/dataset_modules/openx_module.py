@@ -110,7 +110,8 @@ class OpenXModule:
     def _find_shards(self, dataset: str) -> list[str]:
         try:
             dataset_dir = glob(f"{self.disk_root_dir}/mount_dir*/openx_*_translated/{dataset}")[0]
-            tfds_shards = glob(f"{dataset_dir}/translated_shard_*")
+            shard_files = glob(f"{dataset_dir}/translated_shard_*")
+            tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
             return tfds_shards
         except IndexError:
             print(f"Cannot identify the directory to the dataset {dataset}. Skipping this dataset.")
