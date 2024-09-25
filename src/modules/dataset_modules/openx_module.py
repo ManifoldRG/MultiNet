@@ -48,12 +48,18 @@ class OpenXModule:
 
             # Creating the dataloader.
             dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size)
+            # Get the action stats from the dataloader - size of action space, and min, max, mean of each dimension of action space
 
             avg_mse_list = []
             total_dataset_amse = 0.0
             episode_count = 0
             total_success_counts = []
+            action_stats = None
             for batch in dataloader:
+
+                if action_stats is None:
+                    action_stats = dataloader._get_action_stats()
+
                 batch_size = len(batch['text_observation'])
                 episode_mses = [[] for b in range(batch_size)]
                 success_counts = [0 for b in range(batch_size)]
@@ -110,7 +116,8 @@ class OpenXModule:
     def _find_shards(self, dataset: str) -> list[str]:
         try:
             dataset_dir = glob(f"{self.disk_root_dir}/mount_dir*/openx_*_translated/{dataset}")[0]
-            tfds_shards = glob(f"{dataset_dir}/translated_shard_*")
+            shard_files = glob(f"{dataset_dir}/translated_shard_*")
+            tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
             return tfds_shards
         except IndexError:
             print(f"Cannot identify the directory to the dataset {dataset}. Skipping this dataset.")
@@ -169,6 +176,7 @@ class OpenXModule:
         assert env_name in DESCRIPTIONS[dataset], f"The environment {env_name} is not included in the OpenX group."
 
         env_desc = ' '.join(DESCRIPTIONS[dataset][env_name])
+
         action_space = ACTION_SPACES[dataset][env_name]
         only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name]
         additional_inst = None
