@@ -165,8 +165,8 @@ class OpenXDataset(Dataset):
     def _get_action_stats(self):
         if self.action_stats is None:
             raise AttributeError("action_stats is None, it has not been populated yet")
-        if self.action_stats['count'] == 0:
-            raise ValueError("No actions have been processed yet")
+        if self.action_stats_populated == False:
+            raise ValueError("Action stats population is not finished yet.")
         return {
             'min': self.action_stats['min'],
             'max': self.action_stats['max'],
