@@ -48,6 +48,7 @@ class OpenXModule:
 
             # Creating the dataloader.
             dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size)
+
             avg_mse_list = []
             total_dataset_amse = 0.0
             episode_count = 0
