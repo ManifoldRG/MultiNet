@@ -19,7 +19,7 @@ DESCRIPTIONS = {
             "The gripper's starting pose is fixed. This task involves both translation and rotation actions."
         ]
     },
-    "rt_1_robot_action": {
+    "fractal20220817_data": {
         "pick and place items": [  # 130 tasks
             "Lift the object off the surface."
         ],
@@ -42,13 +42,13 @@ DESCRIPTIONS = {
             "Pick an object up from a location and then place it on the counter."
         ]
     },
-    "qt_opt": {
+    "kuka": {
         "grasp and pick an object": [
             "Choose a grasp point, and then execute the desired grasp strategy.",
             "Update the grasp strategy continuously based on the most recent observations."
         ]
     },
-    "berkeley_bridge": {
+    "bridge": {
         "put corn in pot": [
             "Put corn in a pot."
         ],
@@ -101,7 +101,7 @@ DESCRIPTIONS = {
             "Zip a zipper."
         ]
     },
-    "freiburg_franka_play": {
+    "taco_play": {
         "rotate block left": [
             "Rotate block left."
         ],
@@ -178,7 +178,7 @@ DESCRIPTIONS = {
             "Turn blue light off pushing the button."
         ]
     },
-    "usc_jaco_play": {
+    "jaco_play": {
         "pick up an object": [
             "Pick up the orange fruit."
         ],
@@ -205,7 +205,7 @@ DESCRIPTIONS = {
             "Search for objects."
         ]
     },
-    "nyu_vinn": {
+    "nyu_door_opening_surprising_effectiveness": {
         "push objects": [
             "Push objects."
         ],
@@ -216,7 +216,7 @@ DESCRIPTIONS = {
             "Open a cabinet door."
         ]
     },
-    "austin_viola": {
+    "viola": {
         "sort": [
             "Arrange a dining table."
         ],
@@ -227,7 +227,7 @@ DESCRIPTIONS = {
             "Stack objects."
         ]
     },
-    "toto_benchmark": {
+    "toto": {
         "scoop": [
             "Take a scoop of mixed nuts from the gray ceramic bowl."
         ],
@@ -267,13 +267,13 @@ DESCRIPTIONS = {
             "Slide the heart right."
         ]
     },
-    "columbia_pusht_dataset": {
+    "columbia_cairlab_pusht_real": {
         "push t-shaped blocks": [
             "Push T-shaped block into a fixed goal pose.",
             "Move to a fixed exit zone."
         ]
     },
-    "nyu_rot": {
+    "nyu_rot_dataset_converted_externally_to_rlds": {
         # robots task
         "close door": [
             "Close the door."
@@ -318,7 +318,7 @@ DESCRIPTIONS = {
             "Pour the drink."
         ]
     },
-    "stanford_hydra": {
+    "stanford_hydra_dataset_converted_externally_to_rlds": {
         "assemble square": [
             "Assemble the square."
         ],
@@ -354,7 +354,7 @@ DESCRIPTIONS = {
             "Hang mug."
         ]
     },
-    "nyu_franka_play": {
+    "nyu_franka_play_dataset_converted_externally_to_rlds": {
         "open microwave": [
             "Open the microwave door."
         ],
@@ -368,7 +368,7 @@ DESCRIPTIONS = {
             "Operate the stove knobs."
         ],
     },
-    "maniskill": {
+    "maniskill_dataset_converted_externally_to_rlds": {
         "pick an object": [
             "Pick an isolated object.",
         ],
@@ -391,7 +391,7 @@ DESCRIPTIONS = {
             "Turn on a faucet."
         ]
     },
-    "furniture_bench": {   # TODO: check this
+    "furniture_bench_dataset_converted_externally_to_rlds": {   # TODO: check this
         "grasp a lamp": [
             "Grasp a lamp."
         ],
@@ -489,7 +489,7 @@ DESCRIPTIONS = {
             "Screw a chair."
         ]
     },
-    "cmu_franka_exploration": {
+    "cmu_franka_exploration_dataset_converted_externally_to_rlds": {
         "pick veggies": [
             "Pick veggies."
         ],
@@ -509,9 +509,9 @@ DESCRIPTIONS = {
             "Garbage can."
         ]
     },
-    "ucsd_kitchen": {  # TODO: check this
+    "ucsd_kitchen_dataset_converted_externally_to_rlds": {  # TODO: check this
     },
-    "ucsd_pick_place": {
+    "ucsd_pick_and_place_dataset_converted_externally_to_rlds": {
         "reach": [
             "Reach for an object."
         ],
@@ -519,7 +519,7 @@ DESCRIPTIONS = {
             "Pick an object."
         ]
     },
-    "austin_sirius": {
+    "austin_sirius_dataset_converted_externally_to_rlds": {
         "assemble nut": [
             "Assemble nut."
         ],
@@ -577,7 +577,7 @@ DESCRIPTIONS = {
             "Pick up grapes.",
         ]
     },
-    "usc_cloth_sim": {
+    "usc_cloth_sim_converted_externally_to_rlds": {
         "straighten a rope": [
             "Straighten a rope."
         ],
@@ -591,12 +591,12 @@ DESCRIPTIONS = {
             "Fold cloth diagonally unpinned."
         ]
     },
-    "tokyo_pr2_fridge_opening": {  # dropped during curation
+    "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {  # dropped during curation
         "open fridge": [
             "Open the fridge."
         ]
     },
-    "tokyo_pr2_tabletop_manipulation": {
+    "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": {
         "pick up an object": [
             "Pick up an object."
         ],
@@ -607,7 +607,7 @@ DESCRIPTIONS = {
             "Fold cloths."
         ]
     },
-    "saytap": {
+    "utokyo_saytap_converted_externally_to_rlds": {
         "trot forward slowly": [
             "Trot forward slowly."
         ],
@@ -660,7 +660,7 @@ DESCRIPTIONS = {
             "Go catch that squirrel on the tree."
         ]
     },
-    "utokyo_xarm_pickplace": {
+    "utokyo_xarm_pick_and_place_converted_externally_to_rlds": {
         "pick up an object": [
             "Pick up an object."
         ],
@@ -668,7 +668,7 @@ DESCRIPTIONS = {
             "Place an object."
         ]
     },
-    "utokyo_xarm_bimanual": {
+    "utokyo_xarm_bimanual_converted_externally_to_rlds": {
         "reach for an object": [
             "Reach for an object."
         ],
@@ -677,7 +677,7 @@ DESCRIPTIONS = {
             "Unfold the wrinkled towel."
         ]
     },
-    "berkeley_mvp_data": {
+    "berkeley_mvp_converted_externally_to_rlds": {
         "reach for an object": [
             "Reach for an object."
         ],
@@ -688,7 +688,7 @@ DESCRIPTIONS = {
             "Pick up an object."
         ]
     },
-    "berkeley_rpt_data": {
+    "berkeley_rpt_converted_externally_to_rlds": {
         "pick up an object": [
             "Pick up an object."
         ],
@@ -699,7 +699,7 @@ DESCRIPTIONS = {
             "Destack an object."
         ]
     },
-    "kaist_nonprehensile_objects": {
+    "kaist_nonprehensile_converted_externally_to_rlds": {
         "push an object": [
             "Push an object.",
             "Objects are subjected to external forces to induce translational movement."
@@ -717,7 +717,7 @@ DESCRIPTIONS = {
             "Objects are caused to fall or rise from an initial stable position to another orientation."
         ]
     },
-    "stanford_maskvit_data": {
+    "stanford_mask_vit_converted_externally_to_rlds": {
         "pick up an object": [
             "Pick up an object."
         ],
@@ -725,7 +725,7 @@ DESCRIPTIONS = {
             "Push an object."
         ]
     },
-    "lsmo_dataset": {
+    "tokyo_u_lsmo_converted_externally_to_rlds": {
         "avoid an obstacle": [
             "Avoid the obstacle on the table."
         ],
@@ -733,7 +733,7 @@ DESCRIPTIONS = {
             "Reach for an object."
         ]
     },
-    "dlr_sara_pour_dataset": {
+    "dlr_sara_pour_converted_externally_to_rlds": {
         "move towards an object": [
             "Move towards an object."
         ],
@@ -741,12 +741,12 @@ DESCRIPTIONS = {
             "Pour ping-pong balls from a cup held in the end-effector into the cup placed on the table."
         ]
     },
-    "dlr_sara_grid_clamp_dataset": {
+    "dlr_sara_grid_clamp_converted_externally_to_rlds": {
         "place an object": [
             "Place the grid clamp in the grids on the table, similar to placing a peg in the hole."
         ]
     },
-    "dlr_wheelchair_shared_control": {
+    "dlr_edan_shared_control_converted_externally_to_rlds": {
         "grasp an object on the tabletop": [
             "Grasp an object on the tabletop."
         ],
@@ -754,7 +754,7 @@ DESCRIPTIONS = {
             "Grasp an object on the shelf."
         ]
     },
-    "asu_tabletop_manipulation": {
+    "asu_table_top_converted_externally_to_rlds": {
         "pick an object": [
             "Pick an object."
         ],
@@ -771,7 +771,7 @@ DESCRIPTIONS = {
             "Place an object in relation to other objects in the environment."
         ]
     },
-    "stanford_robocook": {
+    "stanford_robocook_converted_externally_to_rlds": {
         "pinch the dough with an asymmetric gripper": [
             "Pinch the dough with an asymmetric gripper."
         ],
@@ -814,7 +814,7 @@ DESCRIPTIONS = {
             "Close the drawer starting from different initial positions and drawer angles."
         ]
     },
-    "imperial_wrist_cam": {
+    "imperialcollege_sawyer_wrist_cam": {
         "grasp can": [
             "Grasp a can placed horizontally on a table and lift it."
         ],
@@ -867,7 +867,7 @@ DESCRIPTIONS = {
             "Starting with a dust brush in the end-effector, swipe a marble into a dustpan on the table."
         ]
     },
-    "cmu_franka_pick_insert_data": {
+    "iamlab_cmu_pickup_insert_converted_externally_to_rlds": {
         "insert onto square peg": [
             "For this task we restrict the orientations of the square ring (blue object) and the peg on which to insert.",
             "This allows the robot to perform the task without changing gripper orientations.",
@@ -890,7 +890,7 @@ DESCRIPTIONS = {
             "To avoid this, we create smaller computer and USB assets and mount them vertically on the table such that the USB can be unplugged without changing hand orientation."
         ]
     },
-    "austin_mutex": {
+    "utaustin_mutex": {
         "put an object": [
             "Put an object.",
         ],
@@ -969,22 +969,22 @@ DESCRIPTIONS = {
             "Garbage a can."
         ]
     },
-    "recon": {
+    "berkeley_gnm_recon": {
         "explore environment": [
             "Ignore distractors, and explore a non-stationary environment, successfully discovering and navigating to the visually-specified goal."
         ]
     },
-    "coryhall": {
+    "berkeley_gnm_cory_hall": {
         "navigate hallways": [
             "Autonomously navigate complex and unstructured environments such as roads, buildings, or forests."
         ]
     },
-    "sacson": {
+    "berkeley_gnm_sac_son": {
         "navigate environments": [
             "Navigate pedestrian-rich indoor and outdoor environments such as offices, school buildings."
         ]
     },
-    "conqhose": {
+    "conq_hose_manipulation": {
         "grab the end of the vacuum hose around in an office environment": [
             "Grab the end of the vacuum hose around in an office environment."
         ],
@@ -1105,7 +1105,7 @@ DESCRIPTIONS = {
             "Put rag in laundry."
         ]
     },
-    "io_ai_office_picknplace": {
+    "io_ai_tech": {
         "pick up the glue from the plate": [
             "Pick up the glue from the plate."
         ],
@@ -1119,7 +1119,7 @@ DESCRIPTIONS = {
             "Place the stapler on the desk."
         ]
     },
-    "roboset": {
+    "robo_set": {
         "wipe an object": [
             "Wipe an object."
         ],
@@ -1156,7 +1156,7 @@ DESCRIPTIONS = {
             "Place an object."
         ]
     },
-    "plex_robotsuite": {
+    "plex_robosuite": {
         "open an object": [
             "Open an object."
         ],
@@ -1230,7 +1230,7 @@ ACTION_SPACES = {
             7: ("Termination", {1: "Yes", 0: "No"})
         }
     },
-    "rt_1_robot_action": {
+    "fractal20220817_data": {
         "pick and place items": {
             0: None
         },
@@ -1253,12 +1253,12 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "qt_opt": {
+    "kuka": {
         "grasp and pick an object": {
             0: None
         }
     },
-    "berkeley_bridge": {
+    "bridge": {
         "put corn in pot": {
             0: None
         },
@@ -1311,7 +1311,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "freiburg_franka_play": {
+    "taco_play": {
         "rotate block left": {
             0: ("Change in the end effector's position in 3D Space for X", -1, 1),
             1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
@@ -1538,7 +1538,7 @@ ACTION_SPACES = {
             6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         }
     },
-    "usc_jaco_play": {
+    "jaco_play": {
         "pick up an object": {
             0: None
         },
@@ -1565,7 +1565,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "nyu_vinn": {
+    "nyu_door_opening_surprising_effectiveness": {
         "push objects": {
             0: None
         },
@@ -1576,7 +1576,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "austin_viola": {
+    "viola": {
         "sort": {
             0 : None
         },
@@ -1587,7 +1587,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "toto_benchmark": {
+    "toto": {
         "scoop": {
             0: None
         },
@@ -1627,12 +1627,12 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "columbia_pusht_dataset": {
+    "columbia_cairlab_pusht_real": {
         "push t-shaped blocks": {
             0: None
         }
     },
-    "nyu_rot": {
+    "nyu_rot_dataset_converted_externally_to_rlds": {
         "close door": {
             0: None
         },
@@ -1676,7 +1676,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "stanford_hydra": {
+    "stanford_hydra_dataset_converted_externally_to_rlds": {
         "assemble square": {
             0: None
         },
@@ -1696,7 +1696,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "nyu_franka_play": {  # mentioned in the paper it's 7 dims + grpper, and the values are normalized to -1, 1 range, but no descriptions
+    "nyu_franka_play_dataset_converted_externally_to_rlds": {  # mentioned in the paper it's 7 dims + grpper, and the values are normalized to -1, 1 range, but no descriptions
         "open microwave": {
             0: None
         },
@@ -1710,7 +1710,7 @@ ACTION_SPACES = {
             0: None
         },
     },
-    "maniskill": {
+    "maniskill_dataset_converted_externally_to_rlds": {
         "pick an object": {
             0: None
         },
@@ -1733,7 +1733,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "furniture_bench": {
+    "furniture_bench_dataset_converted_externally_to_rlds": {
         "grasp a lamp": {
             0: ("Delta end-effector for X position", -1, 1),
             1: ("Delta end-effector for Y position", -1, 1),
@@ -2055,7 +2055,7 @@ ACTION_SPACES = {
             7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         }
     },
-    "cmu_franka_exploration": {
+    "cmu_franka_exploration_dataset_converted_externally_to_rlds": {
         "pick veggies": {
             0: None
         },
@@ -2075,9 +2075,9 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "ucsd_kitchen": {
+    "ucsd_kitchen_dataset_converted_externally_to_rlds": {
     },
-    "ucsd_pick_place": {
+    "ucsd_pick_and_place_dataset_converted_externally_to_rlds": {
         "reach": {
             0: None
         },
@@ -2085,7 +2085,7 @@ ACTION_SPACES = {
             0: None
         },
     },
-    "austin_sirius": {
+    "austin_sirius_dataset_converted_externally_to_rlds": {
         "assemble nut": {
             0: ("The delta change of position X", -1, 1),
             1: ("The delta change of position Y", -1, 1),
@@ -2167,7 +2167,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "usc_cloth_sim": {
+    "usc_cloth_sim_converted_externally_to_rlds": {
         "straighten a rope": {
             0: None
         },
@@ -2181,12 +2181,12 @@ ACTION_SPACES = {
             0: None
         },
     },
-    "tokyo_pr2_fridge_opening": {  # dropped during curation
+    "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {  # dropped during curation
         "open fridge": {
             0: None
         }
     },
-    "tokyo_pr2_tabletop_manipulation": {
+    "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": {
         "pick up an object": {
             0: None
         },
@@ -2197,7 +2197,7 @@ ACTION_SPACES = {
             0: None
         },
     },
-    "saytap": {
+    "utokyo_saytap_converted_externally_to_rlds": {
         "trot forward slowly": {
             0: None
         },
@@ -2250,7 +2250,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "utokyo_xarm_pickplace": {
+    "utokyo_xarm_pick_and_place_converted_externally_to_rlds": {
         "pick up an object": {
             0: None
         },
@@ -2258,7 +2258,7 @@ ACTION_SPACES = {
             0: None
         },
     },
-    "utokyo_xarm_bimanual": {
+    "utokyo_xarm_bimanual_converted_externally_to_rlds": {
         "reach for an object": {
             0: None
         },
@@ -2266,7 +2266,7 @@ ACTION_SPACES = {
             0: None
         },
     },
-    "berkeley_mvp_data": {
+    "berkeley_mvp_converted_externally_to_rlds": {
         "reach for an object": {
             0: None
         },
@@ -2277,7 +2277,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "berkeley_rpt_data": {
+    "berkeley_rpt_converted_externally_to_rlds": {
         "pick up a object": {
             0: None
         },
@@ -2288,7 +2288,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "kaist_nonprehensile_objects": {
+    "kaist_nonprehensile_converted_externally_to_rlds": {
         "push an object": {
             0: None
         },
@@ -2302,7 +2302,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "stanford_maskvit_data": {
+    "stanford_mask_vit_converted_externally_to_rlds": {
         "pick up an object": {
             0: ("The change in cartesian end-effector position X", 0, 0.035),
             1: ("The change in cartesian end-effector position Y", 0, 0.035),
@@ -2318,7 +2318,7 @@ ACTION_SPACES = {
             4: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         }
     },
-    "lsmo_dataset": {
+    "tokyo_u_lsmo_converted_externally_to_rlds": {
         "avoid an obstacle": {
             0: None
         },
@@ -2326,7 +2326,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "dlr_sara_pour_dataset": {
+    "dlr_sara_pour_converted_externally_to_rlds": {
         "move towards an object": {
             0: None
         },
@@ -2334,12 +2334,12 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "dlr_sara_grid_clamp_dataset": {
+    "dlr_sara_grid_clamp_converted_externally_to_rlds": {
         "place an object": {
             0: None
         }
     },
-    "dlr_wheelchair_shared_control": {
+    "dlr_edan_shared_control_converted_externally_to_rlds": {
         "grasp an object on the tabletop": {
             0: None
         },
@@ -2347,7 +2347,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "asu_tabletop_manipulation": {
+    "asu_table_top_converted_externally_to_rlds": {
         "pick an object": {
             0: ("The change in cartesian end-effector position X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
             1: ("The change in cartesian end-effector position Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper,
@@ -2394,7 +2394,7 @@ ACTION_SPACES = {
             6: ("The gripper closing action", {0: "Close", 1: "Open"}),  # it was never mentioned what is closed and opened mapped to
         }
     },
-    "stanford_robocook": {
+    "stanford_robocook_converted_externally_to_rlds": {
         "pinch the dough with an asymmetric gripper": {
             0: None
         },
@@ -2437,7 +2437,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "imperial_wrist_cam": {
+    "imperialcollege_sawyer_wrist_cam": {
         "grasp can": {
             0: None
         },
@@ -2490,7 +2490,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "cmu_franka_pick_insert_data": {
+    "iamlab_cmu_pickup_insert_converted_externally_to_rlds": {
         # they only mentioned it's 6D
         "insert onto square peg": {
             0: None
@@ -2505,7 +2505,7 @@ ACTION_SPACES = {
             0: None
         },
     },
-    "austin_mutex": {
+    "utaustin_mutex": {
         "put an object": {
             0: None
         },
@@ -2583,22 +2583,22 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "recon": {
+    "berkeley_gnm_recon": {
         "explore environment": {
             0: None
         }
     },
-    "coryhall": {
+    "berkeley_gnm_cory_hall": {
         "navigate hallways": {
             0: None
         }
     },
-    "sacson": {
+    "berkeley_gnm_sac_son": {
         "navigate environments": {
             0: None
         }
     },
-    "conqhose": {
+    "conq_hose_manipulation": {
         "grab the end of the vacuum hose around in an office environment": {
             0: ("The delta pose of hand in current hand frame for X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
             1: ("The delta pose of hand in current hand frame for Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
@@ -2740,7 +2740,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "io_ai_office_picknplace": {
+    "io_ai_tech": {
         "pick up the glue from the plate": {
             0: None
         },
@@ -2754,7 +2754,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "roboset": {
+    "robo_set": {
         "wipe an object": {
             0: None
         },
@@ -2791,7 +2791,7 @@ ACTION_SPACES = {
             0: None,
         }
     },
-    "plex_robotsuite": {
+    "plex_robosuite": {
         # it's mentioned that the actions space is 7 dims, 6 dims for the gripper pose control, and 1 of opening and closing, that's it
         "open an object": {
             0: None,
@@ -2830,7 +2830,7 @@ ACTION_EXCLUSIVENESS = {
         "pick up the blue cup and put it into the brown cup": False,
         "put the ranch bottle into the pot": False
     },
-    "rt_1_robot_action": {
+    "fractal20220817_data": {
         "pick and place items": False,
         "move object near another object": False,
         "place objects upright": False,
@@ -2839,10 +2839,10 @@ ACTION_EXCLUSIVENESS = {
         "place object into receptacle": False,
         "pick object into receptacle and place on the counter": False
     },
-    "qt_opt": {
+    "kuka": {
         "grasp and pick an object": False
     },
-    "berkeley_bridge": {
+    "bridge": {
         "put corn in pot": False,
         "put carrot on plate": False,
         "push": False,
@@ -2861,7 +2861,7 @@ ACTION_EXCLUSIVENESS = {
         "turn faucets": False,
         "zip a zipper": False
     },
-    "freiburg_franka_play": {
+    "taco_play": {
         "rotate block left": False,
         "rotate block right": False,
         "push block left": False,
@@ -2888,7 +2888,7 @@ ACTION_EXCLUSIVENESS = {
         "turn blue light on": False,
         "turn blue light off": False
     },
-    "usc_jaco_play": {
+    "jaco_play": {
         "pick up an object": False,
         "put an object down": False
     },
@@ -2901,17 +2901,17 @@ ACTION_EXCLUSIVENESS = {
         "build a tower from bowls": False,
         "search objects": False
     },
-    "nyu_vinn": {
+    "nyu_door_opening_surprising_effectiveness": {
         "push objects": False,
         "stack objects": False,
         "open door": False
     },
-    "austin_viola": {
+    "viola": {
         "sort": False,
         "BUDS kitchen": False,
         "stack": False
     },
-    "toto_benchmark": {
+    "toto": {
         "scoop": False,
         "pour": False
     },
@@ -2927,10 +2927,10 @@ ACTION_EXCLUSIVENESS = {
         "touch objects": False,
         "slide objects": False
     },
-    "columbia_pusht_dataset": {
+    "columbia_cairlab_pusht_real": {
         "push t-shaped blocks": False
     },
-    "nyu_rot": {
+    "nyu_rot_dataset_converted_externally_to_rlds": {
         "close door": False,
         "hang hanger": False,
         "erase board": False,
@@ -2946,7 +2946,7 @@ ACTION_EXCLUSIVENESS = {
         "open box": False,
         "pour": False
     },
-    "stanford_hydra": {
+    "stanford_hydra_dataset_converted_externally_to_rlds": {
         "assemble square": False,
         "hang tool": False,
         "insert peg": False,
@@ -2954,13 +2954,13 @@ ACTION_EXCLUSIVENESS = {
         "make toast": False,
         "sort dishes": False
     },
-    "nyu_franka_play": {
+    "nyu_franka_play_dataset_converted_externally_to_rlds": {
         "open microwave": False,
         "open oven door": False,
         "put the pot in the sink": False,
         "operate the stove knobs": False,
     },
-    "maniskill": {
+    "maniskill_dataset_converted_externally_to_rlds": {
         "pick an object": False,
         "move object to another position": False,
         "stack cubes": False,
@@ -2969,7 +2969,7 @@ ACTION_EXCLUSIVENESS = {
         "plug a charger": False,
         "turn on a faucet": False
     },
-    "furniture_bench": {
+    "furniture_bench_dataset_converted_externally_to_rlds": {
         "grasp a lamp": False,
         "grasp a square table": False,
         "grasp a drawer": False,
@@ -3003,7 +3003,7 @@ ACTION_EXCLUSIVENESS = {
         "screw a stool": False,
         "screw a chair": False
     },
-    "cmu_franka_exploration": {
+    "cmu_franka_exploration_dataset_converted_externally_to_rlds": {
         "pick veggies": False,
         "lift knife": False,
         "open cabinet": False,
@@ -3011,13 +3011,13 @@ ACTION_EXCLUSIVENESS = {
         "open dishwasher": False,
         "garbage can": False,
     },
-    "ucsd_kitchen": {
+    "ucsd_kitchen_dataset_converted_externally_to_rlds": {
     },
-    "ucsd_pick_place": {
+    "ucsd_pick_and_place_dataset_converted_externally_to_rlds": {
         "reach": False,
         "pick": False,
     },
-    "austin_sirius": {
+    "austin_sirius_dataset_converted_externally_to_rlds": {
         "assemble nut": False,
         "hang tool": False,
         "insert gear": False,
@@ -3039,21 +3039,21 @@ ACTION_EXCLUSIVENESS = {
         "empty bin": False,
         "pick up grapes": False
     },
-    "usc_cloth_sim": {
+    "usc_cloth_sim_converted_externally_to_rlds": {
         "straighten a rope": False,
         "fold cloth": False,
         "fold cloth diagonally pinned": False,
         "fold cloth diagonally unpinned": False
     },
-    "tokyo_pr2_fridge_opening": {  # dropped during curation
+    "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {  # dropped during curation
         "open fridge": False
     },
-    "tokyo_pr2_tabletop_manipulation": {
+    "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": {
         "pick up an object": False,
         "place an object": False,
         "fold cloths": False
     },
-    "saytap": {
+    "utokyo_saytap_converted_externally_to_rlds": {
         "trot forward slowly": False,
         "trot forward fast": False,
         "lift front right leg": False,
@@ -3072,57 +3072,57 @@ ACTION_EXCLUSIVENESS = {
         "act as if you have a limping rear left leg": False,
         "go": False
     },
-    "utokyo_xarm_pickplace": {
+    "utokyo_xarm_pick_and_place_converted_externally_to_rlds": {
         "pick up an object": False,
         "place an object": False
     },
-    "utokyo_xarm_bimanual": {
+    "utokyo_xarm_bimanual_converted_externally_to_rlds": {
         "reach for an object": False,
         "unfold an object": False
     },
-    "berkeley_mvp_data": {
+    "berkeley_mvp_converted_externally_to_rlds": {
         "reach for an object": False,
         "push an object": False,
         "pick up an object": False
     },
-    "berkeley_rpt_data": {
+    "berkeley_rpt_converted_externally_to_rlds": {
         "pick up an object": False,
         "stack an object": False,
         "destack an object": False
     },
-    "kaist_nonprehensile_objects": {
+    "kaist_nonprehensile_converted_externally_to_rlds": {
         "push an object": False,
         "drag an object": False,
         "rotate an object": False,
         "topple an object": False
     },
-    "stanford_maskvit_data": {
+    "stanford_mask_vit_converted_externally_to_rlds": {
         "pick up an object": False,
         "push an object": False
     },
-    "lsmo_dataset": {
+    "tokyo_u_lsmo_converted_externally_to_rlds": {
         "avoid an obstacle": False,
         "reach for an object": False
     },
-    "dlr_sara_pour_dataset": {
+    "dlr_sara_pour_converted_externally_to_rlds": {
         "move towards an object": False,
         "pour into a cup": False
     },
-    "dlr_sara_grid_clamp_dataset": {
+    "dlr_sara_grid_clamp_converted_externally_to_rlds": {
         "place an object": False
     },
-    "dlr_wheelchair_shared_control": {
+    "dlr_edan_shared_control_converted_externally_to_rlds": {
         "grasp an object on the tabletop": False,
         "grasp an object on the shelf": False
     },
-    "asu_tabletop_manipulation": {
+    "asu_table_top_converted_externally_to_rlds": {
         "pick an object": False,
         "push an object": False,
         "rotate an object": False,
         "avoid an obstacle": False,
         "place an object": False
     },
-    "stanford_robocook": {
+    "stanford_robocook_converted_externally_to_rlds": {
         "pinch the dough with an asymmetric gripper": False,
         "pinch the dough with a two-plane symmetric gripper": False,
         "pinch the dough with a two-rod symmetric gripper": False,
@@ -3139,7 +3139,7 @@ ACTION_EXCLUSIVENESS = {
         "open drawer": False,
         "close drawer": False
     },
-    "imperial_wrist_cam": {
+    "imperialcollege_sawyer_wrist_cam": {
         "grasp can": False,
         "hang cup": False,
         "insert cap in bottle": False,
@@ -3158,13 +3158,13 @@ ACTION_EXCLUSIVENESS = {
         "stack bowls": False,
         "swipe": False
     },
-    "cmu_franka_pick_insert_data": {
+    "iamlab_cmu_pickup_insert_converted_externally_to_rlds": {
         "insert onto square peg": False,
         "pick and lift small": False,
         "sort shapes": False,
         "take usb out": False
     },
-    "austin_mutex": {
+    "utaustin_mutex": {
         "put an object": False,
         "open an object's door": False,
         "take out an object": False,
@@ -3194,16 +3194,16 @@ ACTION_EXCLUSIVENESS = {
         "lift a knife": False,
         "garbage a can": False
     },
-    "recon": {
+    "berkeley_gnm_recon": {
         "explore environment": False
     },
-    "coryhall": {
+    "berkeley_gnm_cory_hall": {
         "navigate hallways": False
     },
-    "sacson": {
+    "berkeley_gnm_sac_son": {
         "navigate environments": False
     },
-    "conqhose": {
+    "conq_hose_manipulation": {
         "grab the end of the vacuum hose around in an office environment": False,
         "lift the end of the vacuum hose around in an office environment": False,
         "drag the end of the vacuum hose around in an office environment": False
@@ -3246,13 +3246,13 @@ ACTION_EXCLUSIVENESS = {
         "push toaster button": False,
         "put rag in laundry": False
     },
-    "io_ai_office_picknplace": {
+    "io_ai_tech": {
         "pick up the glue from the plate": False,
         "pick up the stapler": False,
         "place the glue on the plate": False,
         "place the stapler on the desk": False
     },
-    "roboset": {
+    "robo_set": {
         "wipe an object": False,
         "pick up an object": False,
         "place an object": False,
@@ -3267,7 +3267,7 @@ ACTION_EXCLUSIVENESS = {
         "find an object": False,
         "place an object": False
     },
-    "plex_robotsuite": {
+    "plex_robosuite": {
         "open an object": False,
         "close an object": False,
         "pick up an object": False,
