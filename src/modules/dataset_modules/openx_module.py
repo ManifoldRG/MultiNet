@@ -153,13 +153,10 @@ class OpenXModule:
                         else:
                             cur_inputs[-1].append(('image_observation', image_obs))
 
-                    if 'continuous_observation' in batch and batch['continuous_observation'][b][t] is not None:
-                        contiunuous_obs = batch['continuous_observation'][b][t]
-                        cur_inputs[-1].append(('continuous_observation', contiunuous_obs))
-
-                    if 'discrete_observation' in batch and batch['discrete_observation'][b][t] is not None:
-                        discrete_obs = batch['discrete_observation'][b][t]
-                        cur_inputs[-1].append(('discrete_observation', discrete_obs))
+                    # Processing additional observations.
+                    for key, value in batch.items():
+                        if 'observation' in key and key != 'image_observation' and key != 'text_observation' and value[b][t] is not None:
+                            cur_inputs[-1].append((key, value[b][t]))
 
                     cur_inputs[-1].append(('text_observation', text_obs[b][t]))
 

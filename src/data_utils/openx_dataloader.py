@@ -28,7 +28,6 @@ class OpenXDataset(Dataset):
                 if shard_idx == self.current_shard_idx and (self.current_elem_idx!=0 and elem_idx < self.current_elem_idx):
                     continue
                     
-                discrete_observation = None
                 concatenated_action_float = elem['action']
                 float_action_tensors = []
                 if isinstance(elem['action'], dict):
@@ -49,33 +48,12 @@ class OpenXDataset(Dataset):
                     if float_action_tensors:
                         concatenated_action_float = tf.concat(float_action_tensors, axis=0).numpy()
 
-                concatenated_obs_float = tf.Variable([0.0, 0.0], dtype=tf.float32).numpy()
-                float_obs_tensors = []
+                float_obs = {}
                 if isinstance(elem['observation'], dict):
                     #Input processing
                     for key, tensor in elem['observation'].items():
                         if 'language' not in key and 'image' not in key and 'pointcloud' not in key and 'rgb' not in key and 'instruction' not in key:
-                            if (tensor.dtype == tf.float32 or tensor.dtype==tf.float64) and tensor.shape.ndims>=1 and not tf.reduce_any(tf.math.is_inf(tensor)):
-                                if tensor.shape.ndims >= 2:
-                                # Flatten the 2D tensor
-                                    tensor = tf.reshape(tensor, (-1,))
-                                elif tensor.shape.ndims == 1:
-                                    tensor = tf.expand_dims(tensor, axis=0)
-                                    tensor = tf.reshape(tensor, (-1,))
-                                elif tensor.shape.ndims == 0:
-                                    tensor = tf.reshape(tensor, (1, ))
-                                float_obs_tensors.append(tensor)
-
-                    #Concatenate all fields of continuous observation space
-                    if float_obs_tensors:
-                        concatenated_obs_float = tf.concat(float_obs_tensors, axis=0) 
-                    else:
-                        #Dummy observation space if no observation other than images or language instruction
-                        concatenated_obs_float = tf.Variable([0.0, 0.0], dtype=tf.float32).numpy()
-
-                    #Final concatenated observation space shape
-                    if isinstance(concatenated_obs_float, tf.Tensor):
-                        concatenated_obs_float = concatenated_obs_float.numpy()
+                            float_obs[key] = tensor.numpy()
 
                 #Processing image observation
                 image_observation = None
@@ -114,14 +92,13 @@ class OpenXDataset(Dataset):
 
                 # Extract relevant features from the example
                 step_data = {
-                    'continuous_observation': concatenated_obs_float,
                     'text_observation': text_observation,
                     'image_observation': image_observation,
-                    'discrete_observation': discrete_observation,
                     'action': concatenated_action_float,
                     'reward': elem['reward'].numpy(),
                     'is_last': elem['is_last'].numpy()
                 }
+                step_data.update(float_obs)
                 
                 current_episode.append(step_data)
 
