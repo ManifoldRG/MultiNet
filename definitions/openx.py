@@ -49,9 +49,11 @@ DESCRIPTIONS = {
         ]
     },
     "berkeley_bridge": {
-        "pick and place": [
-            "Put corn in pot.",
-            "Put carrot on plate."
+        "put corn in pot": [
+            "Put corn in a pot."
+        ],
+        "put carrot on plate": [
+            "Put carrot on a plate."
         ],
         "push": [
             "Push an object."
@@ -62,19 +64,25 @@ DESCRIPTIONS = {
         "sweep": [
             "Sweep beans into a pile with a bar."
         ],
-        "open a door or drawer": [
-            "Open drawer.",
+        "open door": [
             "Open door."
         ],
-        "close a door or drawer": [
-            "Close drawer.",
+        "Open drawer": [
+            "Open drawer."
+        ],
+        "close door": [
             "Close door."
+        ],
+        "close drawer": [
+            "Close drawer."
         ],
         "stack blocks": [
             "Stack green block on yellow block."
         ],
-        "fold cloths": [
-            "Fold thin blue cloth over object.",
+        "fold thin blue cloth over object": [
+            "Fold thin blue cloth over object."
+        ],
+        "fold thick gray cloth over object": [
             "Fold thick gray cloth over object."
         ],
         "wipe a surface": [
@@ -94,23 +102,43 @@ DESCRIPTIONS = {
         ]
     },
     "freiburg_franka_play": {
-        "interact with toy blocks": [
-            "Rotate block left.", 
+        "rotate block left": [
+            "Rotate block left."
+        ],
+        "rotate block right": [
             "Rotate block right.", 
-            "Push block left.", 
+        ],
+        "push block left": [
+            "Push block left."
+        ],
+        "push block right": [
             "Push block right."
         ],
-        "pick an object": [
-            "Lift the block on top of the drawer.",
-            "Lift the block inside the drawer.", 
-            "Lift the block from the slider.",
-            "Lift the block from the container.", 
+        "lift the block on top of the drawer": [
+            "Lift the block on top of the drawer."
+        ],
+        "lift the block inside the drawer": [
+            "Lift the block inside the drawer."
+        ],
+        "lift the block from the slider": [
+            "Lift the block from the slider."
+        ],
+        "lift the block from the container": [
+            "Lift the block from the container."
+        ],
+        "lift the block from the table": [
             "Lift the block from the table."
         ],
-        "place an object": [
-            "Place the block on top of the drawer.",
-            "Place the block inside the drawer.",
-            "Place the block in the slider.", 
+        "place the block on top of the drawer": [
+            "Place the block on top of the drawer."
+        ],
+        "place the block inside the drawer": [
+            "Place the block inside the drawer."
+        ],
+        "place the block in the slider": [
+            "Place the block in the slider."
+        ],
+        "place the block in the container": [
             "Place the block in the container."
         ],
         "stack objects": [
@@ -125,17 +153,29 @@ DESCRIPTIONS = {
         "close drawer": [
             "Close drawer."
         ],
-        "open sliding door": [
-            "Move slider left.",
+        "move slider left": [
+            "Move slider left."
+        ],
+        "move slider right": [
             "Move slider right."
         ],
-        "turn LED lights by pushing buttons": [
-            "Turn red light on.",
-            "Turn red light off.", 
-            "Turn green light on.", 
-            "Turn green light off.", 
-            "Turn blue light on.",
-            "Turn blue light off."
+        "turn red light on": [
+            "Turn red light on by pushing the button."
+        ],
+        "turn red light off": [
+            "Turn red light off pushing the button."
+        ],
+        "turn green light on": [
+            "Turn green light on pushing the button."
+        ],
+        "turn green light off": [
+            "Turn green light off pushing the button."
+        ],
+        "turn blue light on": [
+            "Turn blue light on pushing the button."
+        ],
+        "turn blue light off": [
+            "Turn blue light off pushing the button."
         ]
     },
     "usc_jaco_play": {
@@ -196,17 +236,25 @@ DESCRIPTIONS = {
         ]
     },
     "language_table": {
-        "push objects": [ # push move nudge put touch 
-            "Push the yellow hexagon to the top right corner.",
-            "Push the red circle to the bottom right corner.",
+        "push the yellow hexagon to the top right corner": [
+            "Push the yellow hexagon to the top right corner."
+        ],
+        "push the red circle to the bottom right corner": [
+            "Push the red circle to the bottom right corner."
+        ],
+        "push the green star to the bottom left corner": [
             "Push the green star to the bottom left corner."
         ],
-        "move objects": [
-            "Move the yellow heart to the yellow hexagon.",
+        "move the yellow heart to the yellow hexagon": [
+            "Move the yellow heart to the yellow hexagon."
+        ],
+        "move the red star to the red circle": [
             "Move the red star to the red circle."
         ],
-        "nudge objects": [
-            "Nudge the green star down and left a bit.",
+        "nudge the green star down and left a bit": [
+            "Nudge the green star down and left a bit."
+        ],
+        "nudge the green circle closer to the green star": [
             "Nudge the green circle closer to the green star."
         ],
         "put objects": [
@@ -323,7 +371,6 @@ DESCRIPTIONS = {
     "maniskill": {
         "pick an object": [
             "Pick an isolated object.",
-            "Pick an object from the clutter."
         ],
         "move object to another position": [
             "Move the object to its goal position."
@@ -344,45 +391,101 @@ DESCRIPTIONS = {
             "Turn on a faucet."
         ]
     },
-    "furniture_bench": {
-        "grasp": [
-            "Grasp a lamp.",
-            "Grasp a square table.",
-            "Grasp a drawer.",
-            "Grasp a cabinet.",
-            "Grasp a round table.",
-            "Grasp a desk.", 
-            "Grasp a stool.",
+    "furniture_bench": {   # TODO: check this
+        "grasp a lamp": [
+            "Grasp a lamp."
+        ],
+        "grasp a square table": [
+            "Grasp a square table."
+        ],
+        "grasp a drawer": [
+            "Grasp a drawer."
+        ],
+        "grasp a cabinet": [
+            "Grasp a cabinet."
+        ],
+        "grasp a round table": [
+            "Grasp a round table."
+        ],
+        "grasp a desk": [
+            "Grasp a desk."
+        ],
+        "grasp a stool": [
+            "Grasp a stool."
+        ],
+        "grasp a chair": [
             "Grasp a chair."
         ],
-        "place": [
-            "Place a lamp.",
-            "Place a square table.",
-            "Place a drawer.",
-            "Place a cabinet.",
-            "Place a round table.",
-            "Place a desk.", 
-            "Place a stool.",
+        "place a lamp": [
+            "Place a lamp."
+        ],
+        "place a square table": [
+            "Place a square table."
+        ],
+        "place a drawer": [
+            "Place a drawer."
+        ],
+        "place a cabinet": [
+            "Place a cabinet."
+        ],
+        "place a round table": [
+            "Place a round table."
+        ],
+        "place a desk": [
+            "Place a desk."
+        ],
+        "place a stool": [
+            "Place a stool."
+        ],
+        "place a chair": [
             "Place a chair."
         ],
-        "insert": [
-            "Insert a lamp.",
-            "Insert a square table.",
-            "Insert a drawer.",
-            "Insert a cabinet.",
-            "Insert a round table.",
-            "Insert a desk.", 
-            "Insert a stool.",
+        "insert a lamp": [
+            "Insert a lamp."
+        ],
+        "insert a square table": [
+            "Insert a square table."
+        ],
+        "insert a drawer": [
+            "Insert a drawer."
+        ],
+        "insert a cabinet": [
+            "Insert a cabinet."
+        ],
+        "insert a round table": [
+            "Insert a round table."
+        ],
+        "insert a desk": [
+            "Insert a desk."
+        ],
+        "insert a stool": [
+            "Insert a stool."
+        ],
+        "insert a chair": [
             "Insert a chair."
         ],
-        "screw": [
-            "Screw a lamp.",
-            "Screw a square table.",
-            "Screw a drawer.",
-            "Screw a cabinet.",
-            "Screw a round table.",
-            "Screw a desk.", 
-            "Screw a stool.",
+        "screw a lamp": [
+            "Screw a lamp."
+        ],
+        "screw a square table": [
+            "Screw a square table."
+        ],
+        "screw a drawer": [
+            "Screw a drawer."
+        ],
+        "screw a cabinet": [
+            "Screw a cabinet."
+        ],
+        "screw a round table": [
+            "Screw a round table."
+        ],
+        "screw a desk": [
+            "Screw a desk."
+        ],
+        "screw a stool": [
+            "Screw a stool."
+        ],
+        "screw a chair": [
             "Screw a chair."
         ]
     },
@@ -406,7 +509,7 @@ DESCRIPTIONS = {
             "Garbage can."
         ]
     },
-    "ucsd_kitchen": {
+    "ucsd_kitchen": {  # TODO: check this
     },
     "ucsd_pick_place": {
         "reach": [
@@ -431,34 +534,38 @@ DESCRIPTIONS = {
         ]
     },
     "bc_z": {
-        "place an object": [
-            "Place an object.",
-            "Place bottle in ceramic bowl.",
-            "Place white sponge in purple bowl.",
-            "Place grapes in red bowl.",
+        "place bottle in ceramic bowl": [
+            "Place bottle in ceramic bowl"
+        ],
+        "place white sponge in purple bowl": [
+            "Place white sponge in purple bowl."
+        ],
+        "place grapes in red bowl": [
+            "Place grapes in red bowl."
+        ],
+        "place banana in ceramic cup.": [
             "Place banana in ceramic cup."
         ],
         "push an object": [
-            "Push an object.",
             "Push a purple bowl across the table.",
         ],
-        "wipe an object": [
-            "Wipe an object.",
-            "Wipe tray with sponge.",
+        "wipe tray with sponge": [
+            "Wipe tray with sponge."
+        ],
+        "wipe table surface with banana.": [
             "Wipe table surface with banana.",
+        ],
+        "wipe a surface with brush": [
             "Wipe a surface with brush."
         ],
-        "stack an object": [
-            "Stack an object.",
+        "stack bowls into tray": [
             "Stack bowls into tray.",
         ],
-        "knock an object over": [
-            "Knock an object over.",
+        "knock the paper cup over": [
             "Knock the paper cup over."
         ],
-        "drag an object": [
-            "Drag an object.",
-            "Drag grapes across the table.",
+        "drag grapes across the table": [
+            "Drag grapes across the table."
         ],
         "open": [
             "Open a door."
@@ -466,8 +573,7 @@ DESCRIPTIONS = {
         "empty bin": [
             "Empty a bin."
         ],
-        "pick up an object": [
-            "Pick up an object.",
+        "pick up grapes": [
             "Pick up grapes.",
         ]
     },
@@ -492,44 +598,62 @@ DESCRIPTIONS = {
     },
     "tokyo_pr2_tabletop_manipulation": {
         "pick up an object": [
-            "Pick up an object.",
-            "Pick up grape.",
-            "Pick up bread."
+            "Pick up an object."
         ],
         "place an object": [
-            "Place an object.",
-            "Place grape.",
-            "Place bread."
+            "Place an object."
         ],
         "fold cloths": [
             "Fold cloths."
         ]
     },
     "saytap": {
-        "trot": [
-            "Trot forward slowly.",
+        "trot forward slowly": [
+            "Trot forward slowly."
+        ],
+        "trot forward fast": [
             "Trot forward fast."
         ],
-        "lift": [
+        "lift front right leg": [
             "Lift front right leg.",
-            "Lift front left leg.",
-            "Lift rear right leg.",
-            "Lift rear left leg.",
         ],
-        "pace": [
-            "Pace forward fast.",
-            "Pace forward slowly.",
-            "Pace backward fast.",
-            "Pace backward slowly.",
+        "lift front left leg": [
+            "Lift front left leg."
+        ],
+        "lift rear right leg": [
+            "Lift rear right leg."
+        ],
+        "lift rear left leg": [
+            "Lift rear left leg."
+        ],
+        "pace forward fast": [
+            "Pace forward fast."
+        ],
+        "pace forward slowly": [
+            "Pace forward slowly."
+        ],
+        "pace backward fast": [
+            "Pace backward fast."
+        ],
+        "pace backward slowly": [
+            "Pace backward slowly."
         ],
         "back off": [
             "Back off! Don't hurt that squirrel."
         ],
-        "act": [
-            "Act as if the ground is very hot.",
-            "Act as if you have a limping front right leg.",
-            "Act as if you have a limping front left leg.",
-            "Act as if you have a limping rear right leg.",
+        "act as if the ground is very hot": [
+            "Act as if the ground is very hot."
+        ],
+        "act as if you have a limping front right leg": [
+            "Act as if you have a limping front right leg."
+        ],
+        "act as if you have a limping front left leg": [
+            "Act as if you have a limping front left leg."
+        ],
+        "act as if you have a limping rear right leg": [
+            "Act as if you have a limping rear right leg."
+        ],
+        "act as if you have a limping rear left leg": [
             "Act as if you have a limping rear left leg."
         ],
         "go": [
@@ -538,18 +662,15 @@ DESCRIPTIONS = {
     },
     "utokyo_xarm_pickplace": {
         "pick up an object": [
-            "Pick up an object.",
-            "Pick up the white plate."
+            "Pick up an object."
         ],
         "place an object": [
-            "Place an object.",
-            "Place the white plate on the red plate."
+            "Place an object."
         ]
     },
     "utokyo_xarm_bimanual": {
         "reach for an object": [
-            "Reach for an object.",
-            "Reach for the towel on the table."
+            "Reach for an object."
         ],
         "unfold an object": [
             "Unfold an object.",
@@ -561,8 +682,7 @@ DESCRIPTIONS = {
             "Reach for an object."
         ],
         "push an object": [
-            "Push an object.",
-            "Move an object."
+            "Push or move an object."
         ],
         "pick up an object": [
             "Pick up an object."
@@ -623,13 +743,14 @@ DESCRIPTIONS = {
     },
     "dlr_sara_grid_clamp_dataset": {
         "place an object": [
-            "Place an object.",
             "Place the grid clamp in the grids on the table, similar to placing a peg in the hole."
         ]
     },
     "dlr_wheelchair_shared_control": {
-        "grasp an object": [
-            "Grasp an object on the tabletop.",
+        "grasp an object on the tabletop": [
+            "Grasp an object on the tabletop."
+        ],
+        "grasp an object on the shelf": [
             "Grasp an object on the shelf."
         ]
     },
@@ -639,7 +760,6 @@ DESCRIPTIONS = {
         ],
         "push an object": [
             "Push an object.",
-            "Push an object across the table."
         ],
         "rotate an object": [
             "Rotate an object."
@@ -652,19 +772,31 @@ DESCRIPTIONS = {
         ]
     },
     "stanford_robocook": {
-        "pinch the dough": [
-            "Pinch the dough with an asymmetric gripper.",
-            "Pinch the dough with a two-plane symmetric gripper.",
+        "pinch the dough with an asymmetric gripper": [
+            "Pinch the dough with an asymmetric gripper."
+        ],
+        "pinch the dough with a two-plane symmetric gripper": [
+            "Pinch the dough with a two-plane symmetric gripper."
+        ],
+        "pinch the dough with a two-rod symmetric gripper": [
             "Pinch the dough with a two-rod symmetric gripper."
         ],
-        "press the dough": [
-            "Press the dough with a circle press.",
-            "Press the dough with a square press.",
-            "Press the dough with a circle punch.",
-            "Press the dough with a square punch.",
+        "press the dough with a circle press": [
+            "Press the dough with a circle press."
         ],
-        "roll the dough": [
-            "Roll the dough with a small roller.",
+        "press the dough with a square press": [
+            "Press the dough with a square press."
+        ],
+        "press the dough with a circle punch": [
+            "Press the dough with a circle punch."
+        ],
+        "press the dough with a square punch": [
+            "Press the dough with a square punch."
+        ],
+        "roll the dough with a small roller": [
+            "Roll the dough with a small roller."
+        ],
+        "roll the dough with a large roller": [
             "Roll the dough with a large roller."
         ]
     },
@@ -759,14 +891,11 @@ DESCRIPTIONS = {
         ]
     },
     "austin_mutex": {
-        # this data has +150 different tasks, with not enough info about them in the paper
         "put an object": [
             "Put an object.",
-            "Put the bowl on the table."
         ],
         "open an object's door": [
             "Open an object's door.",
-            "Open the air fryer door."
         ],
         "take out an object": [
             "Take out a tray from the oven."
@@ -786,57 +915,57 @@ DESCRIPTIONS = {
     },
     "cmu_play_fusion": {
         "pick up an object": [
-            "Pick up an object.",
-            "Pick up a block."
+            "Pick up an object."
         ],
-        "open an object": [
-            "Open an object.",
-            "Open a door.",
+        "open a door": [
+            "Open a door."
+        ],
+        "open a drawer": [
             "Open a drawer."
         ],
         "place an object": [
             "Place an object.",
-            "Place a block.",
-            "Place a block in the slider."
         ],
-        "close an object": [
-            "Close an object.",
+        "close a door": [
             "Close a door.",
+        ],
+        "close a drawer": [
             "Close a drawer."
         ],
-        "turn on an object": [
-            "Turn on an object.",
-            "Turn on the LED.",
-            "Turn on the lights."
+        "turn on lights": [
+            "Turn on the LED lights."
         ],
         "push an object": [
-            "Push an object.",
-            "Push the block."
+            "Push an object."
         ]
     },
     "cmu_stretch": {
         # they didn't provide enough info about the tasks
-        "open an object": [
-            "Open an object.",
-            "Open a door.",
-            "Open a dishwasher.",
+        "open a door": [
+            "Open a door."
+        ],
+        "open a dishwasher": [
+            "Open a dishwasher."
+        ],
+        "open a cabinet": [
             "Open a cabinet."
         ],
-        "slide an object": [
-            "Slide an object.",
+        "open a drawer": [
+            "Open a drawer."
+        ],
+        "slide a door": [
             "Slide a door."
         ],
-        "pull an object": [
-            "Pull an object.",
+        "pull out a drawer": [
             "Pull out a drawer."
         ],
-        "lift an object": [
-            "Lift an object.",
-            "Lift a lid.",
+        "lift a lid": [
+            "Lift a lid."
+        ],
+        "lift a knife": [
             "Lift a knife."
         ],
-        "garbage an object": [
-            "Garbage an object.",
+        "garbage a can": [
             "Garbage a can."
         ]
     },
@@ -856,62 +985,99 @@ DESCRIPTIONS = {
         ]
     },
     "conqhose": {
-        "grab an object": [
-            "Grab an object.",
+        "grab the end of the vacuum hose around in an office environment": [
             "Grab the end of the vacuum hose around in an office environment."
         ],
-        "lift an object": [
-            "Lift an object.",
+        "lift the end of the vacuum hose around in an office environment": [
             "Lift the end of the vacuum hose around in an office environment."
         ],
-        "drag an object": [
-            "Drag an object.",
+        "drag the end of the vacuum hose around in an office environment": [
             "Drag the end of the vacuum hose around in an office environment."
         ]
     },
     "dobbe": {
-        "pick up an object": [
-            "Pick up an object.",
-            "Pick up paper towel roll.",
-            "Pick up paper bag.",
-            "Pick up hat.",
-            "Pick up trash bag.",
-            "Pick up hand towel.",
-            "Pick up kitchen towel.",
+        "pick up paper towel roll": [
+            "Pick up paper towel roll."
+        ],
+        "pick up paper bag": [
+            "Pick up paper bag."
+        ],
+        "pick up hat": [
+            "Pick up hat."
+        ],
+        "pick up trash bag": [
+            "Pick up trash bag."
+        ],
+        "pick up hand towel": [
+            "Pick up hand towel."
+        ],
+        "pick up kitchen towel": [
+            "Pick up kitchen towel."
+        ],
+        "pick up tissue roll": [
             "Pick up tissue roll."
         ],
-        "open an object": [
-            "Open an object.",
-            "Open a door.",
-            "Open cabinet door.",
-            "Open shower curtain.",
-            "Open dishwasher door.",
-            "Open air fryer door.",
-            "Open freezer door.",
+        "open a door": [
+            "Open a door."
+        ],
+        "open cabinet door": [
+            "Open cabinet door."
+        ],
+        "open shower curtain": [
+            "Open shower curtain."
+        ],
+        "open dishwasher door": [
+            "Open dishwasher door."
+        ],
+        "open air fryer door": [
+            "Open air fryer door."
+        ],
+        "open freezer door": [
+            "Open freezer door."
+        ],
+        "open vertical window blinds": [
             "Open vertical window blinds."
         ],
-        "close an object": [
-            "Close an object.",
-            "Close a door.",
-            "Close cabinet door.",
-            "Close shower curtain.",
-            "Close dishwasher door.",
+        "close a door": [
+            "Close a door."
+        ],
+        "close cabinet door": [
+            "Close cabinet door."
+        ],
+        "close shower curtain": [
+            "Close shower curtain."
+        ],
+        "close dishwasher door": [
+            "Close dishwasher door."
+        ],
+        "close air fryer door": [
             "Close air fryer door."
         ],
-        "place an object": [
-            "Place an object.",
-            "Place keychain.",
-            "Place spice.",
+        "place keychain": [
+            "Place keychain."
+        ],
+        "place spice": [
+            "Place spice."
+        ],
+        "place massager": [
             "Place massager."
         ],
-        "pull an object": [
-            "Pull an object.",
-            "Pull out dining chair.",
-            "Pull book from shelf.",
-            "Pull chair.",
-            "Pull desk chair.",
-            "Pull out dining chair.",
-            "Pull side table.",
+        "pull out dining chair": [
+            "Pull out dining chair."
+        ],
+        "pull book from shelf": [
+            "Pull book from shelf."
+        ],
+        "pull chair": [
+            "Pull chair."
+        ],
+        "pull desk chair": [
+            "Pull desk chair."
+        ],
+        "pull side table": [
+            "Pull side table."
+        ],
+        "pull out dining stool": [
             "Pull out dining stool."
         ],
         "flush toilet": [
@@ -920,40 +1086,36 @@ DESCRIPTIONS = {
         "straighten cushion": [
             "Straighten cushion."
         ],
-        "pour an object": [
-            "Pour an object.",
+        "pour chocolate almond": [
             "Pour chocolate almond."
         ],
-        "unplug an object": [
-            "Unplug an object.",
+        "unplug charger": [
             "Unplug charger."
         ],
-        "rotate an object": [
-            "Rotate an object.",
+        "rotate speaker knob": [
             "Rotate speaker knob."
         ],
-        "adjust an object": [
-            "Adjust an object.",
+        "adjust oven knob": [
             "Adjust oven knob."
         ],
-        "push an object": [
-            "Push an object.",
+        "push toaster button": [
             "Push toaster button."
         ],
-        "put an object": [
-            "Put an object.",
+        "put rag in laundry": [
             "Put rag in laundry."
         ]
     },
     "io_ai_office_picknplace": {
-        "pick up an object": [
-            "Pick up an object.",
-            "Pick up the glue from the plate.",
+        "pick up the glue from the plate": [
+            "Pick up the glue from the plate."
+        ],
+        "pick up the stapler": [
             "Pick up the stapler."
         ],
-        "place an object": [
-            "Place an object.",
-            "Place the glue on the plate.",
+        "place the glue on the plate": [
+            "Place the glue on the plate."
+        ],
+        "place the stapler on the desk": [
             "Place the stapler on the desk."
         ]
     },
@@ -983,14 +1145,12 @@ DESCRIPTIONS = {
         ],
         "search for an object": [
             "Search for an object.",
-            "Search for a bed."
         ],
         "pick up an object": [
             "Pick up a specified object in agent line of sight.",
         ],
         "find an object": [
             "Find an object.",
-            "Find a hosueplant."
         ],
         "place an object": [
             "Place an object."
@@ -1099,7 +1259,10 @@ ACTION_SPACES = {
         }
     },
     "berkeley_bridge": {
-        "pick and place": {
+        "put corn in pot": {
+            0: None
+        },
+        "put carrot on plate": {
             0: None
         },
         "push": {
@@ -1111,16 +1274,25 @@ ACTION_SPACES = {
         "sweep": {
             0: None
         },
-        "open a door or drawer": {
+        "open door": {
             0: None
         },
-        "close a door or drawer": {
+        "Open drawer": {
+            0: None
+        },
+        "close door": {
+            0: None
+        },
+        "close drawer": {
             0: None
         },
         "stack blocks": {
             0: None
         },
-        "fold cloths": {
+        "fold thin blue cloth over object": {
+            0: None
+        },
+        "fold thick gray cloth over object": {
             0: None
         },
         "wipe a surface": {
@@ -1140,13 +1312,43 @@ ACTION_SPACES = {
         }
     },
     "freiburg_franka_play": {
-        "interact with toy blocks": {
+        "rotate block left": {
             0: None
         },
-        "pick an object": {
+        "rotate block right": {
             0: None
         },
-        "place an object": {
+        "push block left": {
+            0: None
+        },
+        "push block right": {
+            0: None
+        },
+        "lift the block on top of the drawer": {
+            0: None
+        },
+        "lift the block inside the drawer": {
+            0: None
+        },
+        "lift the block from the slider": {
+            0: None
+        },
+        "lift the block from the container": {
+            0: None
+        },
+        "lift the block from the table": {
+            0: None
+        },
+        "place the block on top of the drawer": {
+            0: None
+        },
+        "place the block inside the drawer": {
+            0: None
+        },
+        "place the block in the slider": {
+            0: None
+        },
+        "place the block in the container": {
             0: None
         },
         "stack objects": {
@@ -1161,10 +1363,28 @@ ACTION_SPACES = {
         "close drawer": {
             0: None
         },
-        "open sliding door": {
+        "move slider left": {
             0: None
         },
-        "turn LED lights by pushing buttons": {
+        "move slider right": {
+            0: None
+        },
+        "turn red light on": {
+            0: None
+        },
+        "turn red light off": {
+            0: None
+        },
+        "turn green light on": {
+            0: None
+        },
+        "turn green light off": {
+            0: None
+        },
+        "turn blue light on": {
+            0: None
+        },
+        "turn blue light off": {
             0: None
         }
     },
@@ -1226,13 +1446,25 @@ ACTION_SPACES = {
         }
     },
     "language_table": {
-        "push objects": {
+        "push the yellow hexagon to the top right corner": {
             0: None
         },
-        "move objects": {
+        "push the red circle to the bottom right corner": {
             0: None
         },
-        "nudge objects": {
+        "push the green star to the bottom left corner": {
+            0: None
+        },
+        "move the yellow heart to the yellow hexagon": {
+            0: None
+        },
+        "move the red star to the red circle": {
+            0: None
+        },
+        "nudge the green star down and left a bit": {
+            0: None
+        },
+        "nudge the green circle closer to the green star": {
             0: None
         },
         "put objects": {
@@ -1352,16 +1584,100 @@ ACTION_SPACES = {
         }
     },
     "furniture_bench": {
-        "grasp": {
+        "grasp a lamp": {
             0: None
         },
-        "place": {
+        "grasp a square table": {
             0: None
         },
-        "insert": {
+        "grasp a drawer": {
             0: None
         },
-        "screw": {
+        "grasp a cabinet": {
+            0: None
+        },
+        "grasp a round table": {
+            0: None
+        },
+        "grasp a desk": {
+            0: None
+        },
+        "grasp a stool": {
+            0: None
+        },
+        "grasp a chair": {
+            0: None
+        },
+        "place a lamp": {
+            0: None
+        },
+        "place a square table": {
+            0: None
+        },
+        "place a drawer": {
+            0: None
+        },
+        "place a cabinet": {
+            0: None
+        },
+        "place a round table": {
+            0: None
+        },
+        "place a desk": {
+            0: None
+        },
+        "place a stool": {
+            0: None
+        },
+        "place a chair": {
+            0: None
+        },
+        "insert a lamp": {
+            0: None
+        },
+        "insert a square table": {
+            0: None
+        },
+        "insert a drawer": {
+            0: None
+        },
+        "insert a cabinet": {
+            0: None
+        },
+        "insert a round table": {
+            0: None
+        },
+        "insert a desk": {
+            0: None
+        },
+        "insert a stool": {
+            0: None
+        },
+        "insert a chair": {
+            0: None
+        },
+        "screw a lamp": {
+            0: None
+        },
+        "screw a square table": {
+            0: None
+        },
+        "screw a drawer": {
+            0: None
+        },
+        "screw a cabinet": {
+            0: None
+        },
+        "screw a round table": {
+            0: None
+        },
+        "screw a desk": {
+            0: None
+        },
+        "screw a stool": {
+            0: None
+        },
+        "screw a chair": {
             0: None
         }
     },
@@ -1396,22 +1712,37 @@ ACTION_SPACES = {
         },
     },
     "bc_z": {
-        "place an object": {
+        "place bottle in ceramic bowl": {
+            0: None
+        },
+        "place white sponge in purple bowl": {
+            0: None
+        },
+        "place grapes in red bowl": {
+            0: None
+        },
+        "place banana in ceramic cup.": {
             0: None
         },
         "push an object": {
             0: None
         },
-        "wipe an object": {
+        "wipe tray with sponge": {
             0: None
         },
-        "stack an object": {
+        "wipe table surface with banana.": {
             0: None
         },
-        "knock an object over": {
+        "wipe a surface with brush": {
             0: None
         },
-        "drag an object": {
+        "stack bowls into tray": {
+            0: None
+        },
+        "knock the paper cup over": {
+            0: None
+        },
+        "drag grapes across the table": {
             0: None
         },
         "open": {
@@ -1420,9 +1751,9 @@ ACTION_SPACES = {
         "empty bin": {
             0: None
         },
-        "pick up an object": {
+        "pick up grapes": {
             0: None
-        },
+        }
     },
     "usc_cloth_sim": {
         "straighten a rope": {
@@ -1455,24 +1786,57 @@ ACTION_SPACES = {
         },
     },
     "saytap": {
-        "trot": {
+        "trot forward slowly": {
             0: None
         },
-        "lift": {
+        "trot forward fast": {
             0: None
         },
-        "pace": {
+        "lift front right leg": {
+            0: None
+        },
+        "lift front left leg": {
+            0: None
+        },
+        "lift rear right leg": {
+            0: None
+        },
+        "lift rear left leg": {
+            0: None
+        },
+        "pace forward fast": {
+            0: None
+        },
+        "pace forward slowly": {
+            0: None
+        },
+        "pace backward fast": {
+            0: None
+        },
+        "pace backward slowly": {
             0: None
         },
         "back off": {
             0: None
         },
-        "act": {
+        "act as if the ground is very hot": {
+            0: None
+        },
+        "act as if you have a limping front right leg": {
+            0: None
+        },
+        "act as if you have a limping front left leg": {
+            0: None
+        },
+        "act as if you have a limping rear right leg": {
+            0: None
+        },
+        "act as if you have a limping rear left leg": {
             0: None
         },
         "go": {
             0: None
-        },
+        }
     },
     "utokyo_xarm_pickplace": {
         "pick up an object": {
@@ -1564,7 +1928,10 @@ ACTION_SPACES = {
         }
     },
     "dlr_wheelchair_shared_control": {
-        "grasp an object": {
+        "grasp an object on the tabletop": {
+            0: None
+        },
+        "grasp an object on the shelf": {
             0: None
         }
     },
@@ -1616,13 +1983,31 @@ ACTION_SPACES = {
         }
     },
     "stanford_robocook": {
-        "pinch the dough": {
+        "pinch the dough with an asymmetric gripper": {
             0: None
         },
-        "press the dough": {
+        "pinch the dough with a two-plane symmetric gripper": {
             0: None
         },
-        "roll the dough": {
+        "pinch the dough with a two-rod symmetric gripper": {
+            0: None
+        },
+        "press the dough with a circle press": {
+            0: None
+        },
+        "press the dough with a square press": {
+            0: None
+        },
+        "press the dough with a circle punch": {
+            0: None
+        },
+        "press the dough with a square punch": {
+            0: None
+        },
+        "roll the dough with a small roller": {
+            0: None
+        },
+        "roll the dough with a large roller": {
             0: None
         }
     },
@@ -1735,16 +2120,22 @@ ACTION_SPACES = {
         "pick up an object": {
             0: None
         },
-        "open an object": {
+        "open a door": {
+            0: None
+        },
+        "open a drawer": {
             0: None
         },
         "place an object": {
             0: None
         },
-        "close an object": {
+        "close a door": {
             0: None
         },
-        "turn on an object": {
+        "close a drawer": {
+            0: None
+        },
+        "turn on lights": {
             0: None
         },
         "push an object": {
@@ -1752,20 +2143,31 @@ ACTION_SPACES = {
         }
     },
     "cmu_stretch": {
-        # it's mentioned that it's a 6D action space
-        "open an object": {
+        "open a door": {
             0: None
         },
-        "slide an object": {
+        "open a dishwasher": {
             0: None
         },
-        "pull an object": {
+        "open a cabinet": {
             0: None
         },
-        "lift an object": {
+        "open a drawer": {
             0: None
         },
-        "garbage an object": {
+        "slide a door": {
+            0: None
+        },
+        "pull out a drawer": {
+            0: None
+        },
+        "lift a lid": {
+            0: None
+        },
+        "lift a knife": {
+            0: None
+        },
+        "garbage a can": {
             0: None
         }
     },
@@ -1785,7 +2187,7 @@ ACTION_SPACES = {
         }
     },
     "conqhose": {
-        "grab an object": {
+        "grab the end of the vacuum hose around in an office environment": {
             0: ("The delta pose of hand in current hand frame for X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
             1: ("The delta pose of hand in current hand frame for Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
             2: ("The delta pose of hand in current hand frame for Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
@@ -1795,7 +2197,7 @@ ACTION_SPACES = {
             6: ("The delta pose of hand in gripper closing action", None),  # no info were found about this
             7: ("Termination", {1: "True", 0: "False"})
         },
-        "lift an object": {
+        "lift the end of the vacuum hose around in an office environment": {
             0: ("The delta pose of hand in current hand frame for X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
             1: ("The delta pose of hand in current hand frame for Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
             2: ("The delta pose of hand in current hand frame for Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
@@ -1805,7 +2207,7 @@ ACTION_SPACES = {
             6: ("The delta pose of hand in gripper closing action", None),  # no info were found about this
             7: ("Termination", {1: "True", 0: "False"})
         },
-        "drag an object": {
+        "drag the end of the vacuum hose around in an office environment": {
             0: ("The delta pose of hand in current hand frame for X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
             1: ("The delta pose of hand in current hand frame for Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
             2: ("The delta pose of hand in current hand frame for Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
@@ -1817,20 +2219,88 @@ ACTION_SPACES = {
         },
     },
     "dobbe": {
-        # it's mentioned it's 7 dims, but not enough info given about to write the actions spaces descriptions
-        "pick up an object": {
+        "pick up paper towel roll": {
             0: None
         },
-        "open an object": {
+        "pick up paper bag": {
             0: None
         },
-        "close an object": {
+        "pick up hat": {
             0: None
         },
-        "place an object": {
+        "pick up trash bag": {
             0: None
         },
-        "pull an object": {
+        "pick up hand towel": {
+            0: None
+        },
+        "pick up kitchen towel": {
+            0: None
+        },
+        "pick up tissue roll": {
+            0: None
+        },
+        "open a door": {
+            0: None
+        },
+        "open cabinet door": {
+            0: None
+        },
+        "open shower curtain": {
+            0: None
+        },
+        "open dishwasher door": {
+            0: None
+        },
+        "open air fryer door": {
+            0: None
+        },
+        "open freezer door": {
+            0: None
+        },
+        "open vertical window blinds": {
+            0: None
+        },
+        "close a door": {
+            0: None
+        },
+        "close cabinet door": {
+            0: None
+        },
+        "close shower curtain": {
+            0: None
+        },
+        "close dishwasher door": {
+            0: None
+        },
+        "close air fryer door": {
+            0: None
+        },
+        "place keychain": {
+            0: None
+        },
+        "place spice": {
+            0: None
+        },
+        "place massager": {
+            0: None
+        },
+        "pull out dining chair": {
+            0: None
+        },
+        "pull book from shelf": {
+            0: None
+        },
+        "pull chair": {
+            0: None
+        },
+        "pull desk chair": {
+            0: None
+        },
+        "pull side table": {
+            0: None
+        },
+        "pull out dining stool": {
             0: None
         },
         "flush toilet": {
@@ -1839,30 +2309,36 @@ ACTION_SPACES = {
         "straighten cushion": {
             0: None
         },
-        "pour an object": {
+        "pour chocolate almond": {
             0: None
         },
-        "unplug an object": {
+        "unplug charger": {
             0: None
         },
-        "rotate an object": {
+        "rotate speaker knob": {
             0: None
         },
-        "adjust an object": {
+        "adjust oven knob": {
             0: None
         },
-        "push an object": {
+        "push toaster button": {
             0: None
         },
-        "put an object": {
+        "put rag in laundry": {
             0: None
         }
     },
     "io_ai_office_picknplace": {
-        "pick up an object": {
+        "pick up the glue from the plate": {
             0: None
         },
-        "place an object": {
+        "pick up the stapler": {
+            0: None
+        },
+        "place the glue on the plate": {
+            0: None
+        },
+        "place the stapler on the desk": {
             0: None
         }
     },
@@ -1955,14 +2431,18 @@ ACTION_EXCLUSIVENESS = {
         "grasp and pick an object": False
     },
     "berkeley_bridge": {
-        "pick and place": False,
+        "put corn in pot": False,
+        "put carrot on plate": False,
         "push": False,
         "reorient objects": False,
         "sweep": False,
-        "open a door or drawer": False,
-        "close a door or drawer": False,
+        "open door": False,
+        "Open drawer": False,
+        "close door": False,
+        "close drawer": False,
         "stack blocks": False,
-        "fold cloths": False,
+        "fold thin blue cloth over object": False,
+        "fold thick gray cloth over object": False,
         "wipe a surface": False,
         "twist knobs": False,
         "flip a switch": False,
@@ -1970,15 +2450,31 @@ ACTION_EXCLUSIVENESS = {
         "zip a zipper": False
     },
     "freiburg_franka_play": {
-        "interact with toy blocks": False,
-        "pick an object": False,
-        "place an object": False,
+        "rotate block left": False,
+        "rotate block right": False,
+        "push block left": False,
+        "push block right": False,
+        "lift the block on top of the drawer": False,
+        "lift the block inside the drawer": False,
+        "lift the block from the slider": False,
+        "lift the block from the container": False,
+        "lift the block from the table": False,
+        "place the block on top of the drawer": False,
+        "place the block inside the drawer": False,
+        "place the block in the slider": False,
+        "place the block in the container": False,
         "stack objects": False,
         "unstack objects": False,
         "open drawer": False,
         "close drawer": False,
-        "open sliding door": False,
-        "turn LED lights by pushing buttons": False
+        "move slider left": False,
+        "move slider right": False,
+        "turn red light on": False,
+        "turn red light off": False,
+        "turn green light on": False,
+        "turn green light off": False,
+        "turn blue light on": False,
+        "turn blue light off": False
     },
     "usc_jaco_play": {
         "pick up an object": False,
@@ -2008,9 +2504,13 @@ ACTION_EXCLUSIVENESS = {
         "pour": False
     },
     "language_table": {
-        "push objects": False,
-        "move objects": False,
-        "nudge objects": False,
+        "push the yellow hexagon to the top right corner": False,
+        "push the red circle to the bottom right corner": False,
+        "push the green star to the bottom left corner": False,
+        "move the yellow heart to the yellow hexagon": False,
+        "move the red star to the red circle": False,
+        "nudge the green star down and left a bit": False,
+        "nudge the green circle closer to the green star": False,
         "put objects": False,
         "touch objects": False,
         "slide objects": False
@@ -2058,10 +2558,38 @@ ACTION_EXCLUSIVENESS = {
         "turn on a faucet": False
     },
     "furniture_bench": {
-        "grasp": False,
-        "place": False,
-        "insert": False,
-        "screw": False,
+        "grasp a lamp": False,
+        "grasp a square table": False,
+        "grasp a drawer": False,
+        "grasp a cabinet": False,
+        "grasp a round table": False,
+        "grasp a desk": False,
+        "grasp a stool": False,
+        "grasp a chair": False,
+        "place a lamp": False,
+        "place a square table": False,
+        "place a drawer": False,
+        "place a cabinet": False,
+        "place a round table": False,
+        "place a desk": False,
+        "place a stool": False,
+        "place a chair": False,
+        "insert a lamp": False,
+        "insert a square table": False,
+        "insert a drawer": False,
+        "insert a cabinet": False,
+        "insert a round table": False,
+        "insert a desk": False,
+        "insert a stool": False,
+        "insert a chair": False,
+        "screw a lamp": False,
+        "screw a square table": False,
+        "screw a drawer": False,
+        "screw a cabinet": False,
+        "screw a round table": False,
+        "screw a desk": False,
+        "screw a stool": False,
+        "screw a chair": False
     },
     "cmu_franka_exploration": {
         "pick veggies": False,
@@ -2084,15 +2612,20 @@ ACTION_EXCLUSIVENESS = {
         "pack coffee pod": False
     },
     "bc_z": {
-        "place an object": False,
+        "place bottle in ceramic bowl": False,
+        "place white sponge in purple bowl": False,
+        "place grapes in red bowl": False,
+        "place banana in ceramic cup.": False,
         "push an object": False,
-        "wipe an object": False,
-        "stack an object": False,
-        "knock an object over": False,
-        "drag an object": False,
+        "wipe tray with sponge": False,
+        "wipe table surface with banana.": False,
+        "wipe a surface with brush": False,
+        "stack bowls into tray": False,
+        "knock the paper cup over": False,
+        "drag grapes across the table": False,
         "open": False,
         "empty bin": False,
-        "pick up an object": False,
+        "pick up grapes": False
     },
     "usc_cloth_sim": {
         "straighten a rope": False,
@@ -2109,11 +2642,22 @@ ACTION_EXCLUSIVENESS = {
         "fold cloths": False
     },
     "saytap": {
-        "trot": False,
-        "lift": False,
-        "pace": False,
+        "trot forward slowly": False,
+        "trot forward fast": False,
+        "lift front right leg": False,
+        "lift front left leg": False,
+        "lift rear right leg": False,
+        "lift rear left leg": False,
+        "pace forward fast": False,
+        "pace forward slowly": False,
+        "pace backward fast": False,
+        "pace backward slowly": False,
         "back off": False,
-        "act": False,
+        "act as if the ground is very hot": False,
+        "act as if you have a limping front right leg": False,
+        "act as if you have a limping front left leg": False,
+        "act as if you have a limping rear right leg": False,
+        "act as if you have a limping rear left leg": False,
         "go": False
     },
     "utokyo_xarm_pickplace": {
@@ -2156,7 +2700,8 @@ ACTION_EXCLUSIVENESS = {
         "place an object": False
     },
     "dlr_wheelchair_shared_control": {
-        "grasp an object": False
+        "grasp an object on the tabletop": False,
+        "grasp an object on the shelf": False
     },
     "asu_tabletop_manipulation": {
         "pick an object": False,
@@ -2166,9 +2711,15 @@ ACTION_EXCLUSIVENESS = {
         "place an object": False
     },
     "stanford_robocook": {
-        "pinch the dough": False,
-        "press the dough": False,
-        "roll the dough": False
+        "pinch the dough with an asymmetric gripper": False,
+        "pinch the dough with a two-plane symmetric gripper": False,
+        "pinch the dough with a two-rod symmetric gripper": False,
+        "press the dough with a circle press": False,
+        "press the dough with a square press": False,
+        "press the dough with a circle punch": False,
+        "press the dough with a square punch": False,
+        "roll the dough with a small roller": False,
+        "roll the dough with a large roller": False
     },
     "eth_agent_affordances": {
         "open door": False,
@@ -2212,18 +2763,24 @@ ACTION_EXCLUSIVENESS = {
     },
     "cmu_play_fusion": {
         "pick up an object": False,
-        "open an object": False,
+        "open a door": False,
+        "open a drawer": False,
         "place an object": False,
-        "close an object": False,
-        "turn on an object": False,
-        "push an object": False,
+        "close a door": False,
+        "close a drawer": False,
+        "turn on lights": False,
+        "push an object": False
     },
     "cmu_stretch": {
-        "open an object": False,
-        "slide an object": False,
-        "pull an object": False,
-        "lift an object": False,
-        "garbage an object": False,
+        "open a door": False,
+        "open a dishwasher": False,
+        "open a cabinet": False,
+        "open a drawer": False,
+        "slide a door": False,
+        "pull out a drawer": False,
+        "lift a lid": False,
+        "lift a knife": False,
+        "garbage a can": False
     },
     "recon": {
         "explore environment": False
@@ -2235,28 +2792,53 @@ ACTION_EXCLUSIVENESS = {
         "navigate environments": False
     },
     "conqhose": {
-        "grab an object": False,
-        "lift an object": False,
-        "drag an object": False
+        "grab the end of the vacuum hose around in an office environment": False,
+        "lift the end of the vacuum hose around in an office environment": False,
+        "drag the end of the vacuum hose around in an office environment": False
     },
     "dobbe": {
-        "pick up an object": False,
-        "open an object": False,
-        "close an object": False,
-        "place an object": False,
-        "pull an object": False,
+        "pick up paper towel roll": False,
+        "pick up paper bag": False,
+        "pick up hat": False,
+        "pick up trash bag": False,
+        "pick up hand towel": False,
+        "pick up kitchen towel": False,
+        "pick up tissue roll": False,
+        "open a door": False,
+        "open cabinet door": False,
+        "open shower curtain": False,
+        "open dishwasher door": False,
+        "open air fryer door": False,
+        "open freezer door": False,
+        "open vertical window blinds": False,
+        "close a door": False,
+        "close cabinet door": False,
+        "close shower curtain": False,
+        "close dishwasher door": False,
+        "close air fryer door": False,
+        "place keychain": False,
+        "place spice": False,
+        "place massager": False,
+        "pull out dining chair": False,
+        "pull book from shelf": False,
+        "pull chair": False,
+        "pull desk chair": False,
+        "pull side table": False,
+        "pull out dining stool": False,
         "flush toilet": False,
         "straighten cushion": False,
-        "pour an object": False,
-        "unplug an object": False,
-        "rotate an object": False,
-        "adjust an object": False,
-        "push an object": False,
-        "put an object": False
+        "pour chocolate almond": False,
+        "unplug charger": False,
+        "rotate speaker knob": False,
+        "adjust oven knob": False,
+        "push toaster button": False,
+        "put rag in laundry": False
     },
     "io_ai_office_picknplace": {
-        "pick up an object": False,
-        "place an object": False
+        "pick up the glue from the plate": False,
+        "pick up the stapler": False,
+        "place the glue on the plate": False,
+        "place the stapler on the desk": False
     },
     "roboset": {
         "wipe an object": False,
