@@ -1313,79 +1313,229 @@ ACTION_SPACES = {
     },
     "freiburg_franka_play": {
         "rotate block left": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "rotate block right": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "push block left": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "push block right": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "lift the block on top of the drawer": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "lift the block inside the drawer": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "lift the block from the slider": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "lift the block from the container": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "lift the block from the table": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "place the block on top of the drawer": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "place the block inside the drawer": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "place the block in the slider": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "place the block in the container": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "stack objects": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "unstack objects": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "open drawer": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "close drawer": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "move slider left": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "move slider right": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "turn red light on": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "turn red light off": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "turn green light on": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "turn green light off": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "turn blue light on": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
         },
         "turn blue light off": {
-            0: None
+            0: ("Change in the end effector's position in 3D Space for X", -1, 1),
+            1: ("Change in the end effector's position in 3D Space for Y", -1, 1),
+            2: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            3: ("Change in the end effector's orientation in the robot's base frame for Beta", -1, 1),
+            4: ("Change in the end effector's orientation in the robot's base frame for Gamma", -1, 1),
+            5: ("Change in the end effector's orientation in the robot's base frame for Alpha", -1, 1),
+            6: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         }
     },
     "usc_jaco_play": {
@@ -1546,7 +1696,7 @@ ACTION_SPACES = {
             0: None
         }
     },
-    "nyu_franka_play": {
+    "nyu_franka_play": {  # mentioned in the paper it's 7 dims + grpper, and the values are normalized to -1, 1 range, but no descriptions
         "open microwave": {
             0: None
         },
@@ -1585,100 +1735,324 @@ ACTION_SPACES = {
     },
     "furniture_bench": {
         "grasp a lamp": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "grasp a square table": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "grasp a drawer": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "grasp a cabinet": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "grasp a round table": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "grasp a desk": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "grasp a stool": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "grasp a chair": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "place a lamp": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "place a square table": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "place a drawer": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "place a cabinet": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "place a round table": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "place a desk": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "place a stool": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "place a chair": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "insert a lamp": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "insert a square table": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "insert a drawer": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "insert a cabinet": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "insert a round table": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "insert a desk": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "insert a stool": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "insert a chair": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "screw a lamp": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "screw a square table": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "screw a drawer": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "screw a cabinet": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "screw a round table": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "screw a desk": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "screw a stool": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "screw a chair": {
-            0: None
+            0: ("Delta end-effector for X position", -1, 1),
+            1: ("Delta end-effector for Y position", -1, 1),
+            2: ("Delta end-effector for Z position", -1, 1),
+            3: ("Delta orientation for A position", -1, 1),  # not mentioned the what it's called (the symbol), so we called it A
+            4: ("Delta orientation for B position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it B
+            5: ("Delta orientation for C position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it C
+            6: ("Delta orientation for D position", -1, 1),   # not mentioned the what it's called (the symbol), so we called it D
+            7: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         }
     },
     "cmu_franka_exploration": {
@@ -1710,6 +2084,44 @@ ACTION_SPACES = {
         "pick": {
             0: None
         },
+    },
+    "austin_sirius": {
+        "assemble nut": {
+            0: ("The delta change of position X", -1, 1),
+            1: ("The delta change of position Y", -1, 1),
+            2: ("The delta change of position Z", -1, 1),
+            3: ("The delta change in roll", -1, 1),
+            4: ("The delta change in pitch", -1, 1),
+            5: ("The delta change in yaw", -1, 1),
+            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
+        },
+        "hang tool": {
+            0: ("The delta change of position X", -1, 1),
+            1: ("The delta change of position Y", -1, 1),
+            2: ("The delta change of position Z", -1, 1),
+            3: ("The delta change in roll", -1, 1),
+            4: ("The delta change in pitch", -1, 1),
+            5: ("The delta change in yaw", -1, 1),
+            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
+        },
+        "insert gear": {
+            0: ("The delta change of position X", -1, 1),
+            1: ("The delta change of position Y", -1, 1),
+            2: ("The delta change of position Z", -1, 1),
+            3: ("The delta change in roll", -1, 1),
+            4: ("The delta change in pitch", -1, 1),
+            5: ("The delta change in yaw", -1, 1),
+            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
+        },
+        "pack coffee pod": {
+            0: ("The delta change of position X", -1, 1),
+            1: ("The delta change of position Y", -1, 1),
+            2: ("The delta change of position Z", -1, 1),
+            3: ("The delta change in roll", -1, 1),
+            4: ("The delta change in pitch", -1, 1),
+            5: ("The delta change in yaw", -1, 1),
+            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
+        }
     },
     "bc_z": {
         "place bottle in ceramic bowl": {
@@ -1892,18 +2304,18 @@ ACTION_SPACES = {
     },
     "stanford_maskvit_data": {
         "pick up an object": {
-            0: ("The change in cartesian end-effector position X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
-            1: ("The change in cartesian end-effector position Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
-            2: ("The change in cartesian end-effector position Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
-            3: ("The change in yaw", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
-            4: ("The gripper closing action", {0: "Close", 1: "Open"}),  # it was never mentioned what is closed and opened mapped to
+            0: ("The change in cartesian end-effector position X", 0, 0.035),
+            1: ("The change in cartesian end-effector position Y", 0, 0.035),
+            2: ("The change in cartesian end-effector position Z", 0, 0.08),
+            3: ("The change in yaw", 0, 0.73),
+            4: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         },
         "push an object": {
-            0: ("The change in cartesian end-effector position X", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
-            1: ("The change in cartesian end-effector position Y", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
-            2: ("The change in cartesian end-effector position Z", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
-            3: ("The change in yaw", None, None),  # should be a continuous value, but they never said anything about the ranges in the paper
-            4: ("The gripper closing action", {0: "Close", 1: "Open"}),  # it was never mentioned what is closed and opened mapped to
+            0: ("The change in cartesian end-effector position X", 0, 0.035),
+            1: ("The change in cartesian end-effector position Y", 0, 0.035),
+            2: ("The change in cartesian end-effector position Z", 0, 0.08),
+            3: ("The change in yaw", 0, 0.73),
+            4: ("The change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state"}),
         }
     },
     "lsmo_dataset": {
