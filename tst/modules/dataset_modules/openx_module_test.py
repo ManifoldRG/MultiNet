@@ -50,7 +50,7 @@ class OpenXModuleTest(unittest.TestCase):
                 [np.random.randint(256, size=(128,128,3)) for i in range(3)],
                 [np.random.randint(256, size=(128,128,3)) for i in range(5)],
             ],
-            'discrete_observation': [
+            'unknown': [
                 [None for i in range(4)],
                 [None for i in range(1)],
                 [None for i in range(3)],
@@ -155,7 +155,7 @@ class OpenXModuleTest(unittest.TestCase):
 
     def test_process_batch_zero_shot_2(self):
         batch = {
-            'continuous_observation': [
+            'environment_observation': [
                 [np.random.random(size=(32)) for i in range(10)],
                 [np.random.random(size=(32)) for i in range(21)],
                 [np.random.random(size=(32)) for i in range(8)],
@@ -185,7 +185,7 @@ class OpenXModuleTest(unittest.TestCase):
                 [np.random.randint(256, size=(640,320,3)) for i in range(12)],
                 [np.random.randint(256, size=(640,320,3)) for i in range(24)],
             ],
-            'discrete_observation': [
+            'control_observation': [
                 [None for i in range(10)],
                 [None for i in range(21)],
                 [None for i in range(8)],
@@ -194,6 +194,16 @@ class OpenXModuleTest(unittest.TestCase):
                 [None for i in range(12)],
                 [None for i in range(12)],
                 [None for i in range(24)]
+            ],
+            'random_vector': [
+                [np.random.random(size=(12)) for i in range(10)],
+                [np.random.random(size=(12)) for i in range(21)],
+                [np.random.random(size=(12)) for i in range(8)],
+                [np.random.random(size=(12)) for i in range(32)],
+                [np.random.random(size=(12)) for i in range(8)],
+                [np.random.random(size=(12)) for i in range(12)],
+                [np.random.random(size=(12)) for i in range(12)],
+                [np.random.random(size=(12)) for i in range(24)]
             ],
             'action': [
                 [np.random.random(size=(16)) for i in range(10)],
@@ -271,7 +281,8 @@ class OpenXModuleTest(unittest.TestCase):
                         expected_cur_inputs[-1].append(('image_observation', batch['image_observation'][b][i]))
                     else:
                         expected_cur_inputs[-1] += [('image_observation', image) for image in batch['image_observation'][b][i]]
-                    expected_cur_inputs[-1].append(('continuous_observation', batch['continuous_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('environment_observation', batch['environment_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('random_vector', batch['random_vector'][b][i]))
                     expected_cur_inputs[-1].append(('text_observation', batch['text_observation'][b][i]))
 
                 self.assertEqual(len(cur_inputs), len(expected_cur_inputs))
@@ -302,7 +313,8 @@ class OpenXModuleTest(unittest.TestCase):
                         expected_cur_inputs[-1].append(('image_observation', batch['image_observation'][b][i]))
                     else:
                         expected_cur_inputs[-1] += [('image_observation', image) for image in batch['image_observation'][b][i]]
-                    expected_cur_inputs[-1].append(('continuous_observation', batch['continuous_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('environment_observation', batch['environment_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('random_vector', batch['random_vector'][b][i]))
                     expected_cur_inputs[-1].append(('text_observation', batch['text_observation'][b][i]))
 
                 self.assertEqual(len(cur_inputs), len(expected_cur_inputs))
@@ -332,7 +344,8 @@ class OpenXModuleTest(unittest.TestCase):
                         expected_cur_inputs[-1].append(('image_observation', batch['image_observation'][b][i]))
                     else:
                         expected_cur_inputs[-1] += [('image_observation', image) for image in batch['image_observation'][b][i]]
-                    expected_cur_inputs[-1].append(('continuous_observation', batch['continuous_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('environment_observation', batch['environment_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('random_vector', batch['random_vector'][b][i]))
                     expected_cur_inputs[-1].append(('text_observation', batch['text_observation'][b][i]))
 
                 self.assertEqual(len(cur_inputs), len(expected_cur_inputs))
@@ -360,7 +373,8 @@ class OpenXModuleTest(unittest.TestCase):
                         expected_cur_inputs[-1].append(('image_observation', batch['image_observation'][b][i]))
                     else:
                         expected_cur_inputs[-1] += [('image_observation', image) for image in batch['image_observation'][b][i]]
-                    expected_cur_inputs[-1].append(('continuous_observation', batch['continuous_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('environment_observation', batch['environment_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('random_vector', batch['random_vector'][b][i]))
                     expected_cur_inputs[-1].append(('text_observation', batch['text_observation'][b][i]))
 
                 self.assertEqual(len(cur_inputs), len(expected_cur_inputs))
@@ -387,7 +401,8 @@ class OpenXModuleTest(unittest.TestCase):
                         expected_cur_inputs[-1].append(('image_observation', batch['image_observation'][b][i]))
                     else:
                         expected_cur_inputs[-1] += [('image_observation', image) for image in batch['image_observation'][b][i]]
-                    expected_cur_inputs[-1].append(('continuous_observation', batch['continuous_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('environment_observation', batch['environment_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('random_vector', batch['random_vector'][b][i]))
                     expected_cur_inputs[-1].append(('text_observation', batch['text_observation'][b][i]))
 
                 self.assertEqual(len(cur_inputs), len(expected_cur_inputs))
@@ -413,7 +428,8 @@ class OpenXModuleTest(unittest.TestCase):
                         expected_cur_inputs[-1].append(('image_observation', batch['image_observation'][b][i]))
                     else:
                         expected_cur_inputs[-1] += [('image_observation', image) for image in batch['image_observation'][b][i]]
-                    expected_cur_inputs[-1].append(('continuous_observation', batch['continuous_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('environment_observation', batch['environment_observation'][b][i]))
+                    expected_cur_inputs[-1].append(('random_vector', batch['random_vector'][b][i]))
                     expected_cur_inputs[-1].append(('text_observation', batch['text_observation'][b][i]))
 
                 self.assertEqual(len(cur_inputs), len(expected_cur_inputs))

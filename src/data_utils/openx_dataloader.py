@@ -140,58 +140,49 @@ class OpenXDataset(Dataset):
         raise IndexError("Episode index out of range")
 
     def _process_episode(self, episode: List[Dict[str, Any]]) -> Dict[str, Any]:
-        concatenated_obs_float = []
         text_observation = []
-        img_obs = [] 
-        discrete_observations = []
+        image_observation = []
+        etc_observations = {}
         concatenated_action_float = []
         reward = []
         is_last = []
 
         for timestep in episode:
-            concatenated_obs_float.append(timestep['continuous_observation'])
             text_observation.append(timestep['text_observation'])
-            img_obs.append(timestep['image_observation'])
-            discrete_observations.append(timestep['discrete_observation'])
+            timestep.pop('text_observation')
+            image_observation.append(timestep['image_observation'])
+            timestep.pop('image_observation')
             concatenated_action_float.append(timestep['action'])
+            timestep.pop('action')
             reward.append(timestep['reward'])
+            timestep.pop('reward')
             is_last.append(timestep['is_last'])
+            timestep.pop('is_last')
 
-        return {
-            'continuous_observation': concatenated_obs_float,
+            for key, value in timestep.items():
+                if key not in etc_observations:
+                    etc_observations[key] = []
+                etc_observations[key].append(value)
+
+        result = {
             'text_observation': text_observation,
-            'image_observation': img_obs,
-            'discrete_observation': discrete_observations,
+            'image_observation': image_observation,
             'action': concatenated_action_float,
             'reward': reward,
             'is_last': is_last
         }
+        result.update(etc_observations)
+
+        return result
 
 
 def custom_collate(batch):
-    # Initialize dictionaries to store the collected data
-    collected_data = {
-        'continuous_observation': [],
-        'text_observation': [],
-        'image_observation': [],
-        'discrete_observation': [],
-        'action': [],
-        'reward': [],
-        'is_last': []
-    }
-
-    # Collect data from the batch
-    for item in batch:
-        for key in collected_data:
-            if item[key] is not None:
-                collected_data[key].append(item[key])
-
     result = {}
-    for key, value in collected_data.items():
-        if value:  # Check if the list is not empty and is not None
-            result[key] = value  # Keep as list for non-numeric data
-        else:
-            result[key] = None  # If no valid data, set to None
+    for item in batch:
+        for key, value in item.items():
+            if key not in result:
+                result[key] = []
+            result[key].append(value)
 
     return result
 
