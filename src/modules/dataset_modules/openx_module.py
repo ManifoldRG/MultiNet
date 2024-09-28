@@ -20,6 +20,7 @@ class OpenXModule:
         self.model = model
         self.batch_size = batch_size
         self.k_shots = k_shots
+        self.action_stats_opxmodule = None
 
     # Main evaluation function.
     def run_eval(self) -> None:
@@ -39,8 +40,72 @@ class OpenXModule:
     def _run_eval_dataset(self, dataset: str, modality_module: Any) -> dict[str, Union[list, float]]:
         result = {}
 
-        tfds_shards = self._find_shards(dataset)[:1]
-        if len(tfds_shards) == 0:
+        try:
+            tfds_shards = self._find_shards(dataset)
+            if len(tfds_shards) == 0:
+                return {}
+
+            start_time = time.time()
+
+            # Creating the dataloader.
+            dataloader_obj, dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size)
+
+            avg_mse_list = []
+            total_dataset_amse = 0.0
+            episode_count = 0
+            total_success_counts = []
+            for batch in dataloader:
+                # Action stats need to be retrieved only once for each dataset, after they have been populated.
+                if self.action_stats_opxmodule is None:
+                    self.action_stats_opxmodule = dataloader_obj._get_action_stats()  
+                batch_size = len(batch['text_observation'])
+                episode_mses = [[] for b in range(batch_size)]
+                success_counts = [0 for b in range(batch_size)]
+
+                # Consuming the batch until all timesteps in the batch.
+                for cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts in self._process_batch(batch, dataset):
+                    outputs = modality_module.infer_step(cur_inputs, k_shots_examples, instructions, output_types)  # (B)
+
+                    # Any invalid output 'None' should be initialized into a random action.
+                    outputs = [np.random.random(size=(labels[o].shape)) if output is None else output for o, output in enumerate(outputs)]
+
+                    # This only works for continuous vector actions. (Okay for OpenX)
+                    mses = np.mean((np.array(labels) - np.array(outputs)) ** 2, axis=-1)
+                    assert len(mses) == len(idxs), "The calculated MSEs are not matched with the processed inputs."
+
+                    for i, idx in enumerate(idxs):
+                        episode_mses[idx].append(mses[i])
+
+                        # If any episodes are the last, recording the success rate.
+                        if is_lasts[i] and np.array_equal(np.array(outputs[i]), np.array(labels[i])):
+                            success_counts[idx] += 1
+
+                # Calculate average RMSE for the episode
+                avg_episode_mses = [np.mean(episode_mse) for episode_mse in episode_mses]
+                avg_mse_list += avg_episode_mses
+                total_dataset_amse += np.sum(avg_episode_mses)
+                episode_count += batch_size
+                total_success_counts += success_counts
+
+            end_time = time.time()
+            eval_time = end_time - start_time
+
+            result['action_success_rate'] = (sum(total_success_counts) / len(total_success_counts)) * 100
+            result['avg_mse_list'] = avg_mse_list
+            result['episode_count'] = episode_count
+            result['total_dataset_amse'] = total_dataset_amse
+
+            # Calculating average AMSE over all episodes
+            avg_dataset_amse = total_dataset_amse / episode_count
+            
+            # Calculating min-max normalized AMSE
+            min_amse = min(avg_mse_list)
+            max_amse = max(avg_mse_list)
+            result['normalized_amse'] = (avg_dataset_amse - min_amse) / (max_amse - min_amse) if max_amse != min_amse else 0
+            result['eval_time'] = eval_time
+
+        except KeyError:
+            print(f"The VLMModule cannot be initialized since there is no dataset called {dataset} in OpenX. Moving on to the next one...")
             return {}
 
         start_time = time.time()
@@ -105,7 +170,8 @@ class OpenXModule:
     def _find_shards(self, dataset: str) -> list[str]:
         try:
             dataset_dir = glob(f"{self.disk_root_dir}/mount_dir*/openx_*_translated/{dataset}")[0]
-            tfds_shards = glob(f"{dataset_dir}/translated_shard_*")
+            shard_files = glob(f"{dataset_dir}/translated_shard_*")
+            tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
             return tfds_shards
         except IndexError:
             print(f"Cannot identify the directory to the dataset {dataset}. Skipping this dataset.")
@@ -163,6 +229,13 @@ class OpenXModule:
         assert env_name in DESCRIPTIONS[dataset], f"The environment {env_name} is not included in the OpenX group."
 
         env_desc = ' '.join(DESCRIPTIONS[dataset][env_name])
+        # Handle the cases where the action space does not have a verbal description, and stats need to be used instead.
+        if len(ACTION_SPACES[dataset][env_name]) == 1:
+            # If there is a placeholder 'None' in the action space, it means that the action space is not given a verbal description.
+            if ACTION_SPACES[dataset][env_name][0] == None:
+                ACTION_SPACES[dataset][env_name] = {}
+                for i in range(self.action_stats_opxmodule['size'][0]):
+                    ACTION_SPACES[dataset][env_name][i] = ("The action space statistics of this dimension of the action space over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
         action_space = ACTION_SPACES[dataset][env_name]
         only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name]
         additional_inst = None

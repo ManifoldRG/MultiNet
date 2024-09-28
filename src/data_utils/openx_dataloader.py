@@ -11,21 +11,24 @@ class OpenXDataset(Dataset):
         self.tfds_shards = tfds_shards
         self.current_elem_idx = 0
         self.current_shard_idx = 0
+        self.action_tensor_size = None
+        self.action_stats = None
+        self.action_stats_populated = False
+        
 
     def _process_shards(self):
         current_episode = []
 
         for shard_idx, shard in enumerate(self.tfds_shards):
-            dataset = tf.data.Dataset.load(shard)
-
             # To prevent input processing overhead for shards that have already been processed
             if shard_idx < self.current_shard_idx:
                 continue
+            dataset = tf.data.Dataset.load(shard)
 
             #Process the input data for each element in the shard
             for elem_idx, elem in enumerate(dataset):
                 # To prevent input processing overhead for elements of shardsthat have already been processed
-                if shard_idx == self.current_shard_idx and (self.current_elem_idx!=0 and elem_idx < self.current_elem_idx):
+                if shard_idx == self.current_shard_idx and elem_idx < self.current_elem_idx:
                     continue
                     
                 concatenated_action_float = elem['action']
@@ -99,7 +102,23 @@ class OpenXDataset(Dataset):
                     'is_last': elem['is_last'].numpy()
                 }
                 step_data.update(float_obs)
-                
+
+                #Track the min, max, sum, and count of the action space
+                if self.action_tensor_size is None and self.action_stats_populated==False:
+                    self.action_tensor_size = concatenated_action_float.shape
+                if self.action_stats is None and self.action_stats_populated==False:
+                    self.action_stats = {
+                        'min': np.full(self.action_tensor_size, np.inf),
+                        'max': np.full(self.action_tensor_size, -np.inf),
+                        'sum': np.zeros(self.action_tensor_size),
+                        'count': 0
+                    }
+                if self.action_stats_populated==False:
+                    self.action_stats['min'] = np.minimum(self.action_stats['min'], concatenated_action_float)
+                    self.action_stats['max'] = np.maximum(self.action_stats['max'], concatenated_action_float)
+                    self.action_stats['sum'] += concatenated_action_float
+                    self.action_stats['count'] += 1
+                    
                 current_episode.append(step_data)
 
                 if step_data['is_last']:
@@ -113,12 +132,23 @@ class OpenXDataset(Dataset):
                     current_episode = []
 
         if current_episode:  # Add the last episode if it's not empty
-            if shard_idx!=self.current_shard_idx:
-                self.current_elem_idx = 0
-            else:
-                self.current_elem_idx = elem_idx+1
-            self.current_shard_idx = shard_idx
+            self.current_shard_idx = 0
+            self.current_elem_idx = 0
             yield current_episode
+            current_episode = []
+
+    def _get_action_stats(self):
+        if self.action_stats is None:
+            raise AttributeError("action_stats is None, it has not been populated yet")
+        if self.action_stats_populated == False:
+            raise ValueError("Action stats population is not finished yet.")
+        return {
+            'min': self.action_stats['min'],
+            'max': self.action_stats['max'],
+            'mean': self.action_stats['sum'] / self.action_stats['count'],
+            'size': self.action_tensor_size
+        }
+        
 
     def _get_feature(self, elem, feature_name: str) -> Any:
         # Implement feature extraction based on your TFDS structure
@@ -129,7 +159,9 @@ class OpenXDataset(Dataset):
             return None
 
     def __len__(self) -> int:
-        return sum(1 for _ in self._process_shards())
+        length =sum(1 for _ in self._process_shards())
+        self.action_stats_populated = True
+        return length
 
     def __getitem__(self, idx: int) -> Dict[str, Any]:
         if idx == 0:    
@@ -188,7 +220,7 @@ def custom_collate(batch):
 
 def get_openx_dataloader(tfds_shards: List[str], batch_size: int, num_workers: int = 0) -> DataLoader:
     dataset = OpenXDataset(tfds_shards)
-    return DataLoader(
+    return dataset, DataLoader(
         dataset,
         batch_size=batch_size,
         shuffle=False,

@@ -5,18 +5,18 @@ from openx_dataloader import get_openx_dataloader
 
 def evaluate_jat_model(model, processor, tfds_shards):
 
-    model.reset_rl()  # clear key-value cache
-
     # Initialize the dataloader for the OpenX dataset
     dataloader = get_openx_dataloader(tfds_shards, batch_size=1)
 
     avg_mse_list = []
     total_dataset_amse = 0.0
     episode_count = 0
+    action_success = []
 
     for batch in dataloader:
 
         episode_mse = []
+        model.reset_rl()  # clear key-value cache for each episode
 
         #Because the batch size is 1, 1 batch contains 1 episode, which is why the first element is indexed
         for idx in range(len(batch['continuous_observation'][0])):
@@ -46,6 +46,16 @@ def evaluate_jat_model(model, processor, tfds_shards):
             mse = np.mean((np.array(predicted_action) - np.array(actual_action)) ** 2)
             episode_mse.append(mse)
 
+            # At the last timestep, check if the predicted action is the same as the actual action. If yes, it is considered a success
+            if batch['is_last'][0][idx] == True:
+                print(np.array(predicted_action))
+                print(np.array(actual_action))
+                if np.array_equal(np.array(predicted_action), np.array(actual_action)):
+                    action_success.append(1)
+                else:
+                    action_success.append(0)
+
+
         # Calculate average RMSE for the episode
         avg_episode_mse = np.mean(episode_mse)
         avg_mse_list.append(avg_episode_mse)
@@ -53,6 +63,12 @@ def evaluate_jat_model(model, processor, tfds_shards):
         episode_count += 1
 
         print(f"Episode {episode_count} - Average MSE: {avg_episode_mse:.4f}")
+
+        
+
+    #Action success rate
+    action_success_rate = (sum(action_success) / len(action_success)) * 100
+    print(f"Action Success Rate Percentage for the dataset: {action_success_rate:.4f}")
 
     # Calculate overall average RMSE across all episodes
     print(f"\nTotal Average MSE across {episode_count} episodes: {total_dataset_amse:.4f}")
@@ -68,5 +84,5 @@ def evaluate_jat_model(model, processor, tfds_shards):
 
     print(f"Normalized Average AMSE for dataset: {normalized_amse:.4f}")
 
-    return avg_mse_list, episode_count, total_dataset_amse, normalized_amse
+    return action_success_rate, avg_mse_list, episode_count, total_dataset_amse, normalized_amse
 
