@@ -1194,7 +1194,8 @@ ACTION_SPACES = {
             3: ("The delta change in roll with respect to the robot base frame", -0.06666666666, 0.06666666666),
             4: ("The delta change in pitch with respect to the robot base frame", -0.06666666666, 0.06666666666),
             5: ("The delta change in yaw with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"})
+            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
+            7: ("Termination", {1: "Yes", 0: "No"})
         },
         "sweep the green cloth to the left side of the table": {
             0: ("The delta change in X axis with respect to the robot base frame", -0.02, 0.02),
@@ -1203,7 +1204,8 @@ ACTION_SPACES = {
             3: ("The delta change in roll with respect to the robot base frame", -0.06666666666, 0.06666666666),
             4: ("The delta change in pitch with respect to the robot base frame", -0.06666666666, 0.06666666666),
             5: ("The delta change in yaw with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"})
+            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
+            7: ("Termination", {1: "Yes", 0: "No"})
         },
         "pick up the blue cup and put it into the brown cup": {
             0: ("The delta change in X axis with respect to the robot base frame", -0.02, 0.02),
@@ -1212,7 +1214,8 @@ ACTION_SPACES = {
             3: ("The delta change in roll with respect to the robot base frame", -0.06666666666, 0.06666666666),
             4: ("The delta change in pitch with respect to the robot base frame", -0.06666666666, 0.06666666666),
             5: ("The delta change in yaw with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"})
+            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
+            7: ("Termination", {1: "Yes", 0: "No"})
         },
         "put the ranch bottle into the pot": {
             0: ("The delta change in X axis with respect to the robot base frame", -0.02, 0.02),
@@ -1221,7 +1224,8 @@ ACTION_SPACES = {
             3: ("The delta change in roll with respect to the robot base frame", -0.06666666666, 0.06666666666),
             4: ("The delta change in pitch with respect to the robot base frame", -0.06666666666, 0.06666666666),
             5: ("The delta change in yaw with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"})
+            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
+            7: ("Termination", {1: "Yes", 0: "No"})
         }
     },
     "fractal20220817_data": {
