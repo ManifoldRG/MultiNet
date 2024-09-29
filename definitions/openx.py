@@ -190,7 +190,7 @@ DESCRIPTIONS = {
         "pick up an object": [
             "Pick up the cable."
         ],
-        "route a cable": [
+        "route cable": [
             "Route the cable through a number of tight-fitting clips mounted on the table."
         ] 
     },
@@ -225,6 +225,9 @@ DESCRIPTIONS = {
         ],
         "stack": [
             "Stack objects."
+        ],
+        "make coffee": [
+            "Make coffee."
         ]
     },
     "toto": {
@@ -1751,7 +1754,7 @@ ACTION_SPACES = {
             5: ("The Y axis displacement with respect to the robot's end effector frame"),
             6: ("The Z axis displacement with respect to the robot's end effector frame")
         },
-        "route a cable": {
+        "route cable": {
             0: ("The X axis rotation delta with respect to the robot's end effector frame"),
             1: ("The Y axis rotation delta with respect to the robot's end effector frame"),
             2: ("The Z axis rotation delta with respect to the robot's end effector frame"),
@@ -1774,66 +1777,76 @@ ACTION_SPACES = {
     },
     "nyu_door_opening_surprising_effectiveness": {
         "push objects": {
-            0: ("The X axis displacement in meters of the robot"),
-            1: ("The Y axis displacement in meters of the robot"),
-            2: ("The Z axis displacement in meters of the robot"),
-            3: ("Width of the gripper fingertips describing how open it is", 0.0, 3.0),
+            0: ("Width of the gripper fingertips describing how open it is", 0.0, 3.0),
+            1: ("The X axis rotation delta of the robot in Euler coordinates"),
+            2: ("The Y axis rotation delta of the robot in Euler coordinates"),
+            3: ("The Z axis rotation delta of the robot in Euler coordinates"),
             4: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
-            5: ("The X axis rotation delta of the robot in Euler coordinates"),
-            6: ("The Y axis rotation delta of the robot in Euler coordinates"),
-            7: ("The Z axis rotation delta of the robot in Euler coordinates")
+            5: ("The X axis displacement in meters of the robot"),
+            6: ("The Y axis displacement in meters of the robot"),
+            7: ("The Z axis displacement in meters of the robot")
         },
         "stack objects": {
-            0: ("The X axis displacement in meters of the robot"),
-            1: ("The Y axis displacement in meters of the robot"),
-            2: ("The Z axis displacement in meters of the robot"),
-            3: ("Width of the gripper fingertips describing how open it is", 0.0, 3.0),
+            0: ("Width of the gripper fingertips describing how open it is", 0.0, 3.0),
+            1: ("The X axis rotation delta of the robot in Euler coordinates"),
+            2: ("The Y axis rotation delta of the robot in Euler coordinates"),
+            3: ("The Z axis rotation delta of the robot in Euler coordinates"),
             4: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
-            5: ("The X axis rotation delta of the robot in Euler coordinates"),
-            6: ("The Y axis rotation delta of the robot in Euler coordinates"),
-            7: ("The Z axis rotation delta of the robot in Euler coordinates")
+            5: ("The X axis displacement in meters of the robot"),
+            6: ("The Y axis displacement in meters of the robot"),
+            7: ("The Z axis displacement in meters of the robot")
         },
         "open door": {
-            0: ("The X axis displacement in meters of the robot"),
-            1: ("The Y axis displacement in meters of the robot"),
-            2: ("The Z axis displacement in meters of the robot"),
-            3: ("Width of the gripper fingertips describing how open it is", 0.0, 3.0),
+            0: ("Width of the gripper fingertips describing how open it is", 0.0, 3.0),
+            1: ("The X axis rotation delta of the robot in Euler coordinates"),
+            2: ("The Y axis rotation delta of the robot in Euler coordinates"),
+            3: ("The Z axis rotation delta of the robot in Euler coordinates"),
             4: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
-            5: ("The X axis rotation delta of the robot in Euler coordinates"),
-            6: ("The Y axis rotation delta of the robot in Euler coordinates"),
-            7: ("The Z axis rotation delta of the robot in Euler coordinates")
+            5: ("The X axis displacement in meters of the robot"),
+            6: ("The Y axis displacement in meters of the robot"),
+            7: ("The Z axis displacement in meters of the robot")
         }
     },
     "viola": {
         "sort": {
             0 : ("Gripper closed or open", {-1.0: "Gripper open", 1.0: "Gripper closed"}),
-            1: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
-            2: ("The X axis displacement of the robot"),
-            3: ("The Y axis displacement of the robot"),
-            4: ("The Z axis displacement of the robot"),
-            5: ("The X axis rotation delta of the robot"),
-            6: ("The Y axis rotation delta of the robot"),
-            7: ("The Z axis rotation delta of the robot")
+            1: ("The X axis rotation delta of the robot"),
+            2: ("The Y axis rotation delta of the robot"),
+            3: ("The Z axis rotation delta of the robot"),
+            4: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            5: ("The X axis displacement of the robot"),
+            6: ("The Y axis displacement of the robot"),
+            7: ("The Z axis displacement of the robot")
         },
         "BUDS kitchen": {
             0 : ("Gripper closed or open", {-1.0: "Gripper open", 1.0: "Gripper closed"}),
-            1: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
-            2: ("The X axis displacement of the robot"),
-            3: ("The Y axis displacement of the robot"),
-            4: ("The Z axis displacement of the robot"),
-            5: ("The X axis rotation delta of the robot"),
-            6: ("The Y axis rotation delta of the robot"),
-            7: ("The Z axis rotation delta of the robot")
+            1: ("The X axis rotation delta of the robot"),
+            2: ("The Y axis rotation delta of the robot"),
+            3: ("The Z axis rotation delta of the robot"),
+            4: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            5: ("The X axis displacement of the robot"),
+            6: ("The Y axis displacement of the robot"),
+            7: ("The Z axis displacement of the robot")
         },
         "stack": {
             0 : ("Gripper closed or open", {-1.0: "Gripper open", 1.0: "Gripper closed"}),
-            1: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
-            2: ("The X axis displacement of the robot"),
-            3: ("The Y axis displacement of the robot"),
-            4: ("The Z axis displacement of the robot"),
-            5: ("The X axis rotation delta of the robot"),
-            6: ("The Y axis rotation delta of the robot"),
-            7: ("The Z axis rotation delta of the robot")
+            1: ("The X axis rotation delta of the robot"),
+            2: ("The Y axis rotation delta of the robot"),
+            3: ("The Z axis rotation delta of the robot"),
+            4: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            5: ("The X axis displacement of the robot"),
+            6: ("The Y axis displacement of the robot"),
+            7: ("The Z axis displacement of the robot")
+        },
+        "make coffee":{
+            0 : ("Gripper closed or open", {-1.0: "Gripper open", 1.0: "Gripper closed"}),
+            1: ("The X axis rotation delta of the robot"),
+            2: ("The Y axis rotation delta of the robot"),
+            3: ("The Z axis rotation delta of the robot"),
+            4: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            5: ("The X axis displacement of the robot"),
+            6: ("The Y axis displacement of the robot"),
+            7: ("The Z axis displacement of the robot")
         }
     },
     "toto": {
@@ -2845,7 +2858,7 @@ ACTION_EXCLUSIVENESS = {
     },
     "berkeley_cable_routing": {
         "pick up an object": False,
-        "route a cable": False
+        "route cable": False
     },
     "roboturk": {
         "flatten laundry": False,
@@ -2860,7 +2873,8 @@ ACTION_EXCLUSIVENESS = {
     "viola": {
         "sort": False,
         "BUDS kitchen": False,
-        "stack": False
+        "stack": False,
+        "make coffee": False
     },
     "toto": {
         "scoop": False,
