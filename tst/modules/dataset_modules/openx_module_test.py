@@ -30,6 +30,45 @@ class OpenXModuleTest(unittest.TestCase):
 
         # TODO: Add any source module constructor test after newly implemented.
 
+    def test_validate_text_output(self):
+        disk_root_dir = "/mnt/disks"
+        modality = "vlm"
+        source = "openai"
+        model = 'gpt-4o-2024-05-13'
+        batch_size = 1
+        k_shots = 2
+        module = OpenXModule(disk_root_dir, modality, source, model, batch_size, k_shots)
+
+        action_space_size = 8
+        model_output = np.random.random(size=(action_space_size)).tolist()
+        converted_output = module._validate_text_output(model_output, shape=([action_space_size]))
+        self.assertTrue(isinstance(converted_output, np.ndarray))
+        self.assertEqual(converted_output.tolist(), model_output)
+
+        model_output = None
+        converted_output = module._validate_text_output(model_output, shape=([action_space_size]))
+        self.assertTrue(isinstance(converted_output, np.ndarray))
+        self.assertEqual(len(converted_output.shape), 1)
+        self.assertEqual(converted_output.shape[0], action_space_size)
+
+        model_output = "random-text"
+        converted_output = module._validate_text_output(model_output, shape=([action_space_size]))
+        self.assertTrue(isinstance(converted_output, np.ndarray))
+        self.assertEqual(len(converted_output.shape), 1)
+        self.assertEqual(converted_output.shape[0], action_space_size)
+
+        model_output = 124837598476985
+        converted_output = module._validate_text_output(model_output, shape=([action_space_size]))
+        self.assertTrue(isinstance(converted_output, np.ndarray))
+        self.assertEqual(len(converted_output.shape), 1)
+        self.assertEqual(converted_output.shape[0], action_space_size)
+
+        model_output = [1] * action_space_size + [4,2,4,6]
+        converted_output = module._validate_text_output(model_output, shape=([action_space_size]))
+        self.assertTrue(isinstance(converted_output, np.ndarray))
+        self.assertEqual(len(converted_output.shape), 1)
+        self.assertEqual(converted_output.shape[0], action_space_size) 
+
     def test_process_batch_zero_shot_1(self):
         batch = {
             'continuous_observation': [
