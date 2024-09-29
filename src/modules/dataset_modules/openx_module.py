@@ -180,6 +180,13 @@ class OpenXModule:
                 ACTION_SPACES[dataset][env_name] = {}
                 for i in range(self.action_stats_opxmodule['size'][0]):
                     ACTION_SPACES[dataset][env_name][i] = ("The action space statistics of this dimension of the action space over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
+        
+        elif len(ACTION_SPACES[dataset][env_name]) != 1:
+            # For cases where the verbal description is present but not the ranges, so we augment the information given with the stats
+            for i in range(self.action_stats_opxmodule['size'][0]):
+                if len(ACTION_SPACES[dataset][env_name][i]) == 1:
+                    ACTION_SPACES[dataset][env_name][i] = (ACTION_SPACES[dataset][env_name][i][0]+". In addition to this verbal description, here are the action space statistics of this dimension over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
+        
         action_space = ACTION_SPACES[dataset][env_name]
         only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name]
         additional_inst = None

@@ -1230,176 +1230,535 @@ ACTION_SPACES = {
     },
     "fractal20220817_data": {
         "pick and place items": {
-            0: None
+            0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
+            1: ("X axis displacement for the robot's arm movement"),
+            2: ("Y axis displacement for the robot's arm movement"),
+            3: ("Z axis displacement for the robot's arm movement"),
+            4: ("Roll displacement for the robot's arm movement"),
+            5: ("Pitch displacement for the robot's arm movement"),
+            6: ("Yaw displacement for the robot's arm movement"),
+            7: ("Yaw displacement for the robot's base movement"),
+            8: ("X axis displacement for the robot's base movement"),
+            9: ("Y axis displacement for the robot's base movement")
         },
         "move object near another object": {
-            0: None
+            0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
+            1: ("X axis displacement for the robot's arm movement"),
+            2: ("Y axis displacement for the robot's arm movement"),
+            3: ("Z axis displacement for the robot's arm movement"),
+            4: ("Roll displacement for the robot's arm movement"),
+            5: ("Pitch displacement for the robot's arm movement"),
+            6: ("Yaw displacement for the robot's arm movement"),
+            7: ("Yaw displacement for the robot's base movement"),
+            8: ("X axis displacement for the robot's base movement"),
+            9: ("Y axis displacement for the robot's base movement")
         },
         "place objects up-right": {
-            0: None
+            0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
+            1: ("X axis displacement for the robot's arm movement"),
+            2: ("Y axis displacement for the robot's arm movement"),
+            3: ("Z axis displacement for the robot's arm movement"),
+            4: ("Roll displacement for the robot's arm movement"),
+            5: ("Pitch displacement for the robot's arm movement"),
+            6: ("Yaw displacement for the robot's arm movement"),
+            7: ("Yaw displacement for the robot's base movement"),
+            8: ("X axis displacement for the robot's base movement"),
+            9: ("Y axis displacement for the robot's base movement")
         },
         "open a drawer": {
-            0: None
+            0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
+            1: ("X axis displacement for the robot's arm movement"),
+            2: ("Y axis displacement for the robot's arm movement"),
+            3: ("Z axis displacement for the robot's arm movement"),
+            4: ("Roll displacement for the robot's arm movement"),
+            5: ("Pitch displacement for the robot's arm movement"),
+            6: ("Yaw displacement for the robot's arm movement"),
+            7: ("Yaw displacement for the robot's base movement"),
+            8: ("X axis displacement for the robot's base movement"),
+            9: ("Y axis displacement for the robot's base movement")
         },
         "close a drawer": {
-            0: None
+            0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
+            1: ("X axis displacement for the robot's arm movement"),
+            2: ("Y axis displacement for the robot's arm movement"),
+            3: ("Z axis displacement for the robot's arm movement"),
+            4: ("Roll displacement for the robot's arm movement"),
+            5: ("Pitch displacement for the robot's arm movement"),
+            6: ("Yaw displacement for the robot's arm movement"),
+            7: ("Yaw displacement for the robot's base movement"),
+            8: ("X axis displacement for the robot's base movement"),
+            9: ("Y axis displacement for the robot's base movement")
         },
         "place object into receptacle": {
-            0: None
+            0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
+            1: ("X axis displacement for the robot's arm movement"),
+            2: ("Y axis displacement for the robot's arm movement"),
+            3: ("Z axis displacement for the robot's arm movement"),
+            4: ("Roll displacement for the robot's arm movement"),
+            5: ("Pitch displacement for the robot's arm movement"),
+            6: ("Yaw displacement for the robot's arm movement"),
+            7: ("Yaw displacement for the robot's base movement"),
+            8: ("X axis displacement for the robot's base movement"),
+            9: ("Y axis displacement for the robot's base movement")
         },
         "pick object into receptacle and place on the counter": {
-            0: None
+            0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
+            1: ("X axis displacement for the robot's arm movement"),
+            2: ("Y axis displacement for the robot's arm movement"),
+            3: ("Z axis displacement for the robot's arm movement"),
+            4: ("Roll displacement for the robot's arm movement"),
+            5: ("Pitch displacement for the robot's arm movement"),
+            6: ("Yaw displacement for the robot's arm movement"),
+            7: ("Yaw displacement for the robot's base movement"),
+            8: ("X axis displacement for the robot's base movement"),
+            9: ("Y axis displacement for the robot's base movement")
         }
     },
     "kuka": {
         "grasp and pick an object": {
-            0: None
+           0: ("Gripper closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
+           1: ("X axis displacement of the robot gripper pose in meters", -1, 1),
+           2: ("Y axis displacement of the robot gripper pose in meters", -1, 1),
+           3: ("Z axis displacement of the robot gripper pose in meters", -1, 1),
+           4: ("The delta change in roll of the robot gripper pose in radians", 0, 0.6366),
+           5: ("The delta change in pitch of the robot gripper pose in radians", 0, 0.6366),
+           6: ("The delta change in yaw of the robot gripper pose in radians", 0, 0.6366),
+           7: ("The displacement in vertical rotation of the robot base in radians", 0, 0.6366),
+           8: ("X axis displacement of the robot base in meters", -1, 1),
+           9: ("Y axis displacement of the robot base in meters", -1, 1)
         }
     },
     "bridge": {
         "put corn in pot": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1.0: "The robot has reached the target location", 0.0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1.0: "Gripper open", 0.0: "Gripper closed"})
         },
         "put carrot on plate": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "push": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "reorient objects": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "sweep": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "open door": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "Open drawer": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "close door": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "close drawer": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "stack blocks": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "fold thin blue cloth over object": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "fold thick gray cloth over object": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "wipe a surface": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "twist knobs": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "flip a switch": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "turn faucets": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         },
         "zip a zipper": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("The delta change in the roll for the robot"),
+            4: ("The delta change in the pitch for the robot"),
+            5: ("The delta change in the yaw for the robot"),
+            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
         }
     },
     "taco_play": {
         "rotate block left": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "rotate block right": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "push block left": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "push block right": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "lift the block on top of the drawer": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "lift the block inside the drawer": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "lift the block from the slider": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "lift the block from the container": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "lift the block from the table": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "place the block on top of the drawer": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "place the block inside the drawer": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "place the block in the slider": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "place the block in the container": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "stack objects": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "unstack objects": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "open drawer": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "close drawer": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "move slider left": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "move slider right": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "turn red light on": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "turn red light off": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "turn green light on": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "turn green light off": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "turn blue light on": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         },
         "turn blue light off": {
-            0: None
+            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
+            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
+            6: ("Open or close the gripper", {-1.0: "Gripper open", 1.0: "Gripper closed"})
         }
     },
     "jaco_play": {
         "pick up an object": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("Gripper closed or open or doesn't move", {2.0: "Gripper closed", 0.0: "Gripper open", 1.0: "Gripper doesn't move"})
         },
         "put an object down": {
-            0: None
+            0: ("X axis displacement for the robot"),
+            1: ("Y axis displacement for the robot"),
+            2: ("Z axis displacement for the robot"),
+            3: ("Gripper closed or open or doesn't move", {2.0: "Gripper closed", 0.0: "Gripper open", 1.0: "Gripper doesn't move"})
         }
     },
     "berkeley_cable_routing": {
         "pick up an object": {
-            0: None
+            0: ("The delta X axis rotation delta with respect to the robot's end effector frame"),
+            1: ("The delta Y axis rotation delta with respect to the robot's end effector frame"),
+            2: ("The delta Z axis rotation delta with respect to the robot's end effector frame"),
+            3: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            4: ("The X axis displacement with respect to the robot's end effector frame"),
+            5: ("The Y axis displacement with respect to the robot's end effector frame"),
+            6: ("The Z axis displacement with respect to the robot's end effector frame")
         },
         "route a cable": {
-            0: None
+            0: ("The X axis rotation delta with respect to the robot's end effector frame"),
+            1: ("The Y axis rotation delta with respect to the robot's end effector frame"),
+            2: ("The Z axis rotation delta with respect to the robot's end effector frame"),
+            3: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            4: ("The X axis displacement with respect to the robot's end effector frame"),
+            5: ("The Y axis displacement with respect to the robot's end effector frame"),
+            6: ("The Z axis displacement with respect to the robot's end effector frame")
         }
     },
     "roboturk": {
@@ -1415,24 +1774,66 @@ ACTION_SPACES = {
     },
     "nyu_door_opening_surprising_effectiveness": {
         "push objects": {
-            0: None
+            0: ("The X axis displacement in meters of the robot"),
+            1: ("The Y axis displacement in meters of the robot"),
+            2: ("The Z axis displacement in meters of the robot"),
+            3: ("Width of the gripper fingertips describing how open it is", 0.0, 3.0),
+            4: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            5: ("The X axis rotation delta of the robot in Euler coordinates"),
+            6: ("The Y axis rotation delta of the robot in Euler coordinates"),
+            7: ("The Z axis rotation delta of the robot in Euler coordinates")
         },
         "stack objects": {
-            0: None
+            0: ("The X axis displacement in meters of the robot"),
+            1: ("The Y axis displacement in meters of the robot"),
+            2: ("The Z axis displacement in meters of the robot"),
+            3: ("Width of the gripper fingertips describing how open it is", 0.0, 3.0),
+            4: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            5: ("The X axis rotation delta of the robot in Euler coordinates"),
+            6: ("The Y axis rotation delta of the robot in Euler coordinates"),
+            7: ("The Z axis rotation delta of the robot in Euler coordinates")
         },
         "open door": {
-            0: None
+            0: ("The X axis displacement in meters of the robot"),
+            1: ("The Y axis displacement in meters of the robot"),
+            2: ("The Z axis displacement in meters of the robot"),
+            3: ("Width of the gripper fingertips describing how open it is", 0.0, 3.0),
+            4: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            5: ("The X axis rotation delta of the robot in Euler coordinates"),
+            6: ("The Y axis rotation delta of the robot in Euler coordinates"),
+            7: ("The Z axis rotation delta of the robot in Euler coordinates")
         }
     },
     "viola": {
         "sort": {
-            0 : None
+            0 : ("Gripper closed or open", {-1.0: "Gripper open", 1.0: "Gripper closed"}),
+            1: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            2: ("The X axis displacement of the robot"),
+            3: ("The Y axis displacement of the robot"),
+            4: ("The Z axis displacement of the robot"),
+            5: ("The X axis rotation delta of the robot"),
+            6: ("The Y axis rotation delta of the robot"),
+            7: ("The Z axis rotation delta of the robot")
         },
         "BUDS kitchen": {
-            0: None
+            0 : ("Gripper closed or open", {-1.0: "Gripper open", 1.0: "Gripper closed"}),
+            1: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            2: ("The X axis displacement of the robot"),
+            3: ("The Y axis displacement of the robot"),
+            4: ("The Z axis displacement of the robot"),
+            5: ("The X axis rotation delta of the robot"),
+            6: ("The Y axis rotation delta of the robot"),
+            7: ("The Z axis rotation delta of the robot")
         },
         "stack": {
-            0: None
+            0 : ("Gripper closed or open", {-1.0: "Gripper open", 1.0: "Gripper closed"}),
+            1: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            2: ("The X axis displacement of the robot"),
+            3: ("The Y axis displacement of the robot"),
+            4: ("The Z axis displacement of the robot"),
+            5: ("The X axis rotation delta of the robot"),
+            6: ("The Y axis rotation delta of the robot"),
+            7: ("The Z axis rotation delta of the robot")
         }
     },
     "toto": {
@@ -1445,34 +1846,45 @@ ACTION_SPACES = {
     },
     "language_table": {
         "push the yellow hexagon to the top right corner": {
-            0: None
+            0: ("X axis co-ordinate in the Cartesian setpoint of the end effector"),
+            1: ("Y axis co-ordinate in the Cartesian setpoint of the end effector")
+
         },
         "push the red circle to the bottom right corner": {
-            0: None
+            0: ("X axis co-ordinate in the Cartesian setpoint of the end effector"),
+            1: ("Y axis co-ordinate in the Cartesian setpoint of the end effector")
         },
         "push the green star to the bottom left corner": {
-            0: None
+            0: ("X axis co-ordinate in the Cartesian setpoint of the end effector"),
+            1: ("Y axis co-ordinate in the Cartesian setpoint of the end effector")
         },
         "move the yellow heart to the yellow hexagon": {
-            0: None
+            0: ("X axis co-ordinate in the Cartesian setpoint of the end effector"),
+            1: ("Y axis co-ordinate in the Cartesian setpoint of the end effector")
         },
         "move the red star to the red circle": {
-            0: None
+            0: ("X axis co-ordinate in the Cartesian setpoint of the end effector"),
+            1: ("Y axis co-ordinate in the Cartesian setpoint of the end effector")
         },
         "nudge the green star down and left a bit": {
-            0: None
+            0: ("X axis co-ordinate in the Cartesian setpoint of the end effector"),
+            1: ("Y axis co-ordinate in the Cartesian setpoint of the end effector")
         },
         "nudge the green circle closer to the green star": {
-            0: None
+            0: ("X axis co-ordinate in the Cartesian setpoint of the end effector"),
+            1: ("Y axis co-ordinate in the Cartesian setpoint of the end effector")
         },
         "put objects": {
-            0: None
+            0: ("X axis co-ordinate in the Cartesian setpoint of the end effector"),
+            1: ("Y axis co-ordinate in the Cartesian setpoint of the end effector")
         },
         "touch objects": {
-            0: None
+            0: ("X axis co-ordinate in the Cartesian setpoint of the end effector"),
+            1: ("Y axis co-ordinate in the Cartesian setpoint of the end effector")
         },
         "slide objects": {
-            0: None
+            0: ("X axis co-ordinate in the Cartesian setpoint of the end effector"),
+            1: ("Y axis co-ordinate in the Cartesian setpoint of the end effector")
         }
     },
     "columbia_cairlab_pusht_real": {

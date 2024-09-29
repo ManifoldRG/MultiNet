@@ -22,7 +22,7 @@ def format_instruction_prompt(env_name: str, env_desc: str, action_space: dict, 
             sent = f"{idx}. {tup[0]} => Discrete. Options: {tup[1]}."
         elif len(tup) == 3:  # Continuous
             sent = f"{idx}. {tup[0]} => Continous. Range: {tup[1]} ~ {tup[2]}."
-        elif len(tup) == 4:  # No verbal description
+        elif len(tup) == 4:  # No verbal description or just verbal description with no stats
             sent = f"{idx}. {tup[0]} => Continuous. Range: {tup[1]} ~ {tup[2]}. Mean: {tup[3]}."
         action_desc.append(sent)
     action_desc = '\n'.join(action_desc) + '\n'
