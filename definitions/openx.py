@@ -1,3 +1,5 @@
+import numpy as np
+
 DESCRIPTIONS = {
     "berkeley_autolab_ur5": {
         "take the tiger out of the red bowl and put it in the grey bowl": [
@@ -228,7 +230,14 @@ DESCRIPTIONS = {
         ],
         "make coffee": [
             "Make coffee."
+        ],
+        "pick up the bowl from the lazy susan and put bowl on the plate": [
+            "Pick up the bowl from the lazy Susan and put bowl on the plate."
+        ],
+        "arrange plate and fork": [
+            "Arrange plate and fork."
         ]
+
     },
     "toto": {
         "scoop": [
@@ -591,6 +600,9 @@ DESCRIPTIONS = {
         ],
         "fold cloth diagonally unpinned": [
             "Fold cloth diagonally unpinned."
+        ],
+        "fold cloth along diagonal": [
+            "Fold cloth along diagonal."
         ]
     },
     "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {
@@ -668,6 +680,9 @@ DESCRIPTIONS = {
         ],
         "place an object": [
             "Place an object."
+        ],
+        "pick up a white plate, and then place it on the red plate": [
+            "Pick up a white plate and then place it on the red plate."
         ]
     },
     "utokyo_xarm_bimanual_converted_externally_to_rlds": {
@@ -677,6 +692,12 @@ DESCRIPTIONS = {
         "unfold an object": [
             "Unfold an object.",
             "Unfold the wrinkled towel."
+        ],
+        "reach a towel": [
+            "Reach for a towel."
+        ],
+        "unfold a wrinkled towel": [
+            "Unfold a wrinkled towel."
         ]
     },
     "berkeley_mvp_converted_externally_to_rlds": {
@@ -814,6 +835,12 @@ DESCRIPTIONS = {
         ],
         "close drawer": [
             "Close the drawer starting from different initial positions and drawer angles."
+        ],
+        "open the oven": [
+            "Open the oven."
+        ],
+        "close the oven": [
+            "Close the oven."
         ]
     },
     "imperialcollege_sawyer_wrist_cam": {
@@ -1732,16 +1759,16 @@ ACTION_SPACES = {
     },
     "jaco_play": {
         "pick up an object": {
-            0: ("X axis displacement for the robot"),
-            1: ("Y axis displacement for the robot"),
-            2: ("Z axis displacement for the robot"),
-            3: ("Gripper closed or open or doesn't move", {2.0: "Gripper closed", 0.0: "Gripper open", 1.0: "Gripper doesn't move"})
+            0: ("Gripper closed or open or doesn't move", {2.0: "Gripper closed", 0.0: "Gripper open", 1.0: "Gripper doesn't move"}),
+            1: ("X axis displacement for the robot"),
+            2: ("Y axis displacement for the robot"),
+            3: ("Z axis displacement for the robot")
         },
         "put an object down": {
-            0: ("X axis displacement for the robot"),
-            1: ("Y axis displacement for the robot"),
-            2: ("Z axis displacement for the robot"),
-            3: ("Gripper closed or open or doesn't move", {2.0: "Gripper closed", 0.0: "Gripper open", 1.0: "Gripper doesn't move"})
+            0: ("Gripper closed or open or doesn't move", {2.0: "Gripper closed", 0.0: "Gripper open", 1.0: "Gripper doesn't move"}),
+            1: ("X axis displacement for the robot"),
+            2: ("Y axis displacement for the robot"),
+            3: ("Z axis displacement for the robot")
         }
     },
     "berkeley_cable_routing": {
@@ -1839,6 +1866,26 @@ ACTION_SPACES = {
             7: ("The Z axis displacement of the robot")
         },
         "make coffee":{
+            0 : ("Gripper closed or open", {-1.0: "Gripper open", 1.0: "Gripper closed"}),
+            1: ("The X axis rotation delta of the robot"),
+            2: ("The Y axis rotation delta of the robot"),
+            3: ("The Z axis rotation delta of the robot"),
+            4: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            5: ("The X axis displacement of the robot"),
+            6: ("The Y axis displacement of the robot"),
+            7: ("The Z axis displacement of the robot")
+        },
+        "pick up the bowl from the lazy susan and put bowl on the plate": {
+            0 : ("Gripper closed or open", {-1.0: "Gripper open", 1.0: "Gripper closed"}),
+            1: ("The X axis rotation delta of the robot"),
+            2: ("The Y axis rotation delta of the robot"),
+            3: ("The Z axis rotation delta of the robot"),
+            4: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            5: ("The X axis displacement of the robot"),
+            6: ("The Y axis displacement of the robot"),
+            7: ("The Z axis displacement of the robot")
+        },
+        "arrange plate and fork": {
             0 : ("Gripper closed or open", {-1.0: "Gripper open", 1.0: "Gripper closed"}),
             1: ("The X axis rotation delta of the robot"),
             2: ("The Y axis rotation delta of the robot"),
@@ -2194,18 +2241,37 @@ ACTION_SPACES = {
     },
     "usc_cloth_sim_converted_externally_to_rlds": {
         "straighten a rope": {
-            0: None
+            0: ("Movement of the picker along the X axis"),
+            1: ("Movement of the picker along the Y axis"),
+            2: ("Movement of the picker along the Z axis"),
+            3: ("Activation state of the picker. A value greater than or equal to 0.5 represents activation and picking of the cloth, while a value less than 0.5 represents deactivation.")
         },
         "fold cloth": {
-            0: None
+            0: ("Movement of the picker along the X axis"),
+            1: ("Movement of the picker along the Y axis"),
+            2: ("Movement of the picker along the Z axis"),
+            3: ("Activation state of the picker. A value greater than or equal to 0.5 represents activation and picking of the cloth, while a value less than 0.5 represents deactivation.")
         },
         "fold cloth diagonally pinned": {
-            0: None
+            0: ("Movement of the picker along the X axis"),
+            1: ("Movement of the picker along the Y axis"),
+            2: ("Movement of the picker along the Z axis"),
+            3: ("Activation state of the picker. A value greater than or equal to 0.5 represents activation and picking of the cloth, while a value less than 0.5 represents deactivation.")
         },
         "fold cloth diagonally unpinned": {
-            0: None
+            0: ("Movement of the picker along the X axis"),
+            1: ("Movement of the picker along the Y axis"),
+            2: ("Movement of the picker along the Z axis"),
+            3: ("Activation state of the picker. A value greater than or equal to 0.5 represents activation and picking of the cloth, while a value less than 0.5 represents deactivation.")
         },
+        "fold cloth along diagonal": {
+            0: ("Movement of the picker along the X axis"),
+            1: ("Movement of the picker along the Y axis"),
+            2: ("Movement of the picker along the Z axis"),
+            3: ("Activation state of the picker. A value greater than or equal to 0.5 represents activation and picking of the cloth, while a value less than 0.5 represents deactivation.")
+        }
     },
+
     "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {
         "open fridge": {
             0: None
@@ -2282,6 +2348,15 @@ ACTION_SPACES = {
         "place an object": {
             0: None
         },
+        "pick up a white plate, and then place it on the red plate": {
+            0: ("X axis displacement of the end-effector of the robot"),
+            1: ("Y axis displacement of the end-effector of the robot"),
+            2: ("Z axis displacement of the end-effector of the robot"),
+            3: ("Yaw of the robot"),
+            4: ("Pitch of the robot"),
+            5: ("Roll of the robot"),
+            6: ("Gripper open or closed position of the robot", {1: "closed", 0: "open"})
+        }
     },
     "utokyo_xarm_bimanual_converted_externally_to_rlds": {
         "reach for an object": {
@@ -2290,6 +2365,40 @@ ACTION_SPACES = {
         "unfold an object": {
             0: None
         },
+        "reach a towel":{
+            0: ("X axis displacement of the end-effector of the left arm of the robot"),
+            1: ("Y axis displacement of the end-effector of the left arm of the robot"),
+            2: ("Z axis displacement of the end-effector of the left arm of the robot"),
+            3: ("Yaw of the left arm of the robot"),
+            4: ("Pitch of the left arm of the robot"),
+            5: ("Roll of the left arm of the robot"),
+            6: ("Gripper open or closed position of the left arm of the robot", {1: "closed", 0: "open"}),
+            7: ("X axis displacement of the end-effector of the right arm of the robot"),
+            8: ("Y axis displacement of the end-effector of the right arm of the robot"),
+            9: ("Z axis displacement of the end-effector of the right arm of the robot"),
+            10: ("Yaw of the right arm of the robot"),
+            11: ("Pitch of the right arm of the robot"),
+            12: ("Roll of the right arm of the robot"),
+            13: ("Gripper open or closed position of the right arm of the robot", {1: "closed", 0: "open"}),
+        },
+        "unfold a wrinkled towel":{
+            0: ("X axis displacement of the end-effector of the left arm of the robot"),
+            1: ("Y axis displacement of the end-effector of the left arm of the robot"),
+            2: ("Z axis displacement of the end-effector of the left arm of the robot"),
+            3: ("Yaw of the left arm of the robot"),
+            4: ("Pitch of the left arm of the robot"),
+            5: ("Roll of the left arm of the robot"),
+            6: ("Gripper open or closed position of the left arm of the robot", {1: "closed", 0: "open"}),
+            7: ("X axis displacement of the end-effector of the right arm of the robot"),
+            8: ("Y axis displacement of the end-effector of the right arm of the robot"),
+            9: ("Z axis displacement of the end-effector of the right arm of the robot"),
+            10: ("Yaw of the right arm of the robot"),
+            11: ("Pitch of the right arm of the robot"),
+            12: ("Roll of the right arm of the robot"),
+            13: ("Gripper open or closed position of the right arm of the robot", {1: "closed", 0: "open"}),
+        }
+
+
     },
     "berkeley_mvp_converted_externally_to_rlds": {
         "reach for an object": {
@@ -2422,59 +2531,187 @@ ACTION_SPACES = {
         },
         "close drawer": {
             0: None
+        },
+        "open the oven":{
+            0: ("End effector velocity of the robot in the world X direction", -1, 1),
+            1: ("End effector velocity of the robot in the world Y direction", -1, 1),
+            2: ("End effector velocity of the robot in the world Z direction", -1, 1),
+            3: ("End effector angular velocity of the robot's rotation around the world X axis", -2*np.pi, 2*np.pi),
+            4: ("End effector angular velocity of the robot's rotation around the world Y axis", -2*np.pi, 2*np.pi),
+            5: ("End effector angular velocity of the robot's rotation around the world Z axis", -2*np.pi, 2*np.pi),
+        },
+        "close the oven": {
+            0: ("End effector velocity of the robot in the world X direction", -1, 1),
+            1: ("End effector velocity of the robot in the world Y direction", -1, 1),
+            2: ("End effector velocity of the robot in the world Z direction", -1, 1),
+            3: ("End effector angular velocity of the robot's rotation around the world X axis", -2*np.pi, 2*np.pi),
+            4: ("End effector angular velocity of the robot's rotation around the world Y axis", -2*np.pi, 2*np.pi),
+            5: ("End effector angular velocity of the robot's rotation around the world Z axis", -2*np.pi, 2*np.pi),
         }
     },
     "imperialcollege_sawyer_wrist_cam": {
         "grasp can": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "hang cup": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "insert cap in bottle": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "insert toast": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "open bottle": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "open lid": {
             0: None
         },
         "pick up apple": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "pick up bottle": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "pick up kettle": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "pick up mug": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "pick up pan": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "pick up shoe": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "pour in mug": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "put apple in pot": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "put cup in dishwasher": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "stack bowls": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         },
         "swipe": {
-            0: None
+            0: ("The delta change in the X axis of the robot's end-effector frame"),
+            1: ("The delta change in the Y axis of the robot's end-effector frame"),
+            2: ("The delta change in the Z axis of the robot's end-effector frame"),
+            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
+            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         }
     },
     "iamlab_cmu_pickup_insert_converted_externally_to_rlds": {
@@ -2874,7 +3111,9 @@ ACTION_EXCLUSIVENESS = {
         "sort": False,
         "BUDS kitchen": False,
         "stack": False,
-        "make coffee": False
+        "make coffee": False,
+        "pick up the bowl from the lazy susan and put bowl on the plate": False,
+        "arrange plate and fork": False
     },
     "toto": {
         "scoop": False,
@@ -3008,7 +3247,8 @@ ACTION_EXCLUSIVENESS = {
         "straighten a rope": False,
         "fold cloth": False,
         "fold cloth diagonally pinned": False,
-        "fold cloth diagonally unpinned": False
+        "fold cloth diagonally unpinned": False,
+        "fold cloth along diagonal": False
     },
     "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {
         "open fridge": False
@@ -3039,11 +3279,14 @@ ACTION_EXCLUSIVENESS = {
     },
     "utokyo_xarm_pick_and_place_converted_externally_to_rlds": {
         "pick up an object": False,
-        "place an object": False
+        "place an object": False,
+        "pick up a white plate, and then place it on the red plate": False
     },
     "utokyo_xarm_bimanual_converted_externally_to_rlds": {
         "reach for an object": False,
-        "unfold an object": False
+        "unfold an object": False,
+        "reach a towel": False,
+        "unfold a wrinkled towel": False
     },
     "berkeley_mvp_converted_externally_to_rlds": {
         "reach for an object": False,
@@ -3102,7 +3345,9 @@ ACTION_EXCLUSIVENESS = {
         "open door": False,
         "close door": False,
         "open drawer": False,
-        "close drawer": False
+        "close drawer": False,
+        "open the oven": False,
+        "close the oven": False
     },
     "imperialcollege_sawyer_wrist_cam": {
         "grasp can": False,

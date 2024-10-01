@@ -34,6 +34,7 @@ class OpenXDataset(Dataset):
                 concatenated_action_float = elem['action']
                 float_action_tensors = []
                 if isinstance(elem['action'], dict):
+                    elem['action'] = dict(sorted(elem['action'].items()))
                     #Input processing
                     for key, tensor in elem['action'].items():
                         if (tensor.dtype == tf.float32 or tensor.dtype==tf.float64):
@@ -54,6 +55,7 @@ class OpenXDataset(Dataset):
                 float_obs = {}
                 if isinstance(elem['observation'], dict):
                     #Input processing
+                    elem['observation'] = dict(sorted(elem['observation'].items()))
                     for key, tensor in elem['observation'].items():
                         if 'language' not in key and 'image' not in key and 'pointcloud' not in key and 'rgb' not in key and 'instruction' not in key:
                             float_obs[key] = tensor.numpy()
