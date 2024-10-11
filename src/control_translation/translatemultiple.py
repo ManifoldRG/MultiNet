@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 import tensorflow as tf
 import gc
 import psutil
+import pickle
 
 def build_arg_parser() -> ArgumentParser:
 
@@ -17,16 +18,21 @@ def build_arg_parser() -> ArgumentParser:
 
 def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, output_dir):
 
+    # Path to the pickle file to store the element specs
+    pickle_path = os.path.join(output_dir, 'element_specs.pkl')
+
     # Walk through the folder structure
     for root, dirs, files in os.walk(dataset_path):
         
         shard_files = [f for f in files]
+        sorted_shard_files = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
 
-        if shard_files:
+        if sorted_shard_files:
             print(f"Translating shards in {root}")
-            for idx, shard_file in enumerate(shard_files):
+            for idx, shard_file in enumerate(sorted_shard_files):
                 
                 shard_path = os.path.join(root, shard_file)
+                #print(shard_path)
                 if dataset_name=='dm_lab_rlu' or dataset_name=='dm_control_suite_rlu':
                     translated_ds = rlu(shard_path, limit_schema)
                     tf.data.Dataset.save(translated_ds,os.path.join(output_dir, 'translated_shard_'+str(idx)), shard_func = custom_shard_func)
@@ -41,6 +47,27 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
                         print(f'Skipping because shard {idx} is already translated and saved')
                         continue
                     translated_ds = torchrlds(shard_path, dataset_name, limit_schema)
+                    
+                    # Extract element_spec and store in pickle
+                    # Load existing specs if file exists, otherwise create new dict
+                    if os.path.exists(pickle_path):
+                        with open(pickle_path, 'rb') as f:
+                            element_specs = pickle.load(f)
+                    else:
+                        element_specs = {}
+                    
+                    # If dataset_name not in specs, add it
+                    if root.split('/')[-1] not in element_specs:
+                        element_specs[root.split('/')[-1]] = translated_ds.element_spec
+                        
+                        # Save updated specs
+                        with open(pickle_path, 'wb') as f:
+                            pickle.dump(element_specs, f)
+                        
+                        print(f"Element spec for {root.split('/')[-1]} added to {pickle_path}")
+                    else:
+                        print(f"Element spec for {root.split('/')[-1]} already exists in {pickle_path}")
+
                     tf.data.Dataset.save(translated_ds,os.path.join(os.path.join(output_dir, root.split('/')[-1])), shard_func = custom_shard_func)
                     print('Translated and stored')
                 elif dataset_name=='procgen':

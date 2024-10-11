@@ -32,6 +32,13 @@ class OpenXDataset(Dataset):
                 # To prevent input processing overhead for elements of shardsthat have already been processed
                 if shard_idx == self.current_shard_idx and elem_idx < self.current_elem_idx:
                     continue
+
+                '''if elem['is_first']:
+                    #episodes.append(current_episode)
+                    self.current_elem_idx = elem_idx
+                    self.current_shard_idx = shard_idx
+                    yield current_episode
+                    current_episode = []'''
                     
 
                 discrete_observations = None
@@ -39,6 +46,8 @@ class OpenXDataset(Dataset):
                 float_action_tensors = []
                 if isinstance(elem['action'], dict):
                     #Input processing
+                    #Sorting keys to maintain consistency in the order of action space fields
+                    elem['action'] = dict(sorted(elem['action'].items()))
                     for key, tensor in elem['action'].items():
                         if (tensor.dtype == tf.float32 or tensor.dtype==tf.float64):
                             if tensor.shape.ndims >= 2:
@@ -66,6 +75,8 @@ class OpenXDataset(Dataset):
                 float_obs_tensors = []
                 if isinstance(elem['observation'], dict):
                     #Input processing
+                    #Sorting keys to maintain consistency in the order of observation space fields
+                    elem['observation'] = dict(sorted(elem['observation'].items()))
                     for key, tensor in elem['observation'].items():
                         if 'language' not in key and 'image' not in key and 'pointcloud' not in key and 'rgb' not in key and 'instruction' not in key:
                             if (tensor.dtype == tf.float32 or tensor.dtype==tf.float64) and tensor.shape.ndims>=1 and not tf.reduce_any(tf.math.is_inf(tensor)):
@@ -109,6 +120,16 @@ class OpenXDataset(Dataset):
                         img_obs_pil = Image.fromarray(img_4channel)
                     else:
                         img_obs_pil = Image.fromarray(img_obs)
+                elif 'hand_image' in elem['observation']:
+                    print(elem['observation']['hand_image'])
+                    img_obs = elem['observation']['hand_image'].numpy().astype(np.uint8)
+                    if img_obs.shape[2] == 3:
+                        fourth_channel = img_obs[:,:,0]  # Use the red channel as the fourth channel
+                        img_4channel = np.dstack((img_obs, fourth_channel))
+                        img_obs_pil = Image.fromarray(img_4channel)
+                    elif img_obs.shape[2] == 2:
+                        img_4channel = np.dstack((img_obs, img_obs))
+                        img_obs_pil = Image.fromarray(img_4channel)
                 elif 'rgb' in elem['observation']:
                     img_obs = elem['observation']['rgb'].numpy().astype(np.uint8)
                     if img_obs.shape[2] == 3:
