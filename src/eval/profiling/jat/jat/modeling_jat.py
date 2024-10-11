@@ -736,9 +736,6 @@ class JatModel(GPTNeoPreTrainedModel):
 
         # Add a fake action to the end of the sequence
         #Initialize fake actions depending on the action space
-        #fake_continuous_action = None
-        #fake_discrete_action = None
-
         if continuous_observation is not None:
             if action_space.shape is None:
                 fake_continuous_action = [0.0]
@@ -757,7 +754,7 @@ class JatModel(GPTNeoPreTrainedModel):
         discrete_actions = [fake_discrete_action] if fake_discrete_action is not None else None
         rewards = [reward] if reward is not None else [0.0]
 
-        if self._last_key_values is not None:
+        '''if self._last_key_values is not None:
             # We concatenate the last observation with the current one
             continuous_observations = (
                 [self.last_continuous_observation] + continuous_observations
@@ -785,7 +782,7 @@ class JatModel(GPTNeoPreTrainedModel):
         self.last_discrete_observation = discrete_observations[-1] if discrete_observations is not None else None
         self.last_text_observation = text_observations[-1] if text_observations is not None else None
         self.last_image_observation = image_observations[-1] if image_observations is not None else None
-        self.last_reward = rewards[-1]
+        self.last_reward = rewards[-1]'''
 
         # Add the batch dimension
         continuous_observations = [continuous_observations] if continuous_observations is not None else None
@@ -813,12 +810,12 @@ class JatModel(GPTNeoPreTrainedModel):
         processed.to(self.device)
 
         # Forward pass
-        outputs = self(**processed, past_key_values=self._last_key_values, return_loss=False)
+        #outputs = self(**processed, past_key_values=self._last_key_values, return_loss=False)
+        outputs = self(**processed, past_key_values = None, return_loss=False)
 
-        print('OUTPUTS\n')
-        print(outputs)
-        # Truncate the past key-values
-        self._last_key_values = tuple(
+        # Not caching past key values as implementing zero-shot
+        self._last_key_values = None
+        '''self._last_key_values = tuple(
             tuple(pkv[:, :, -self.config.max_position_embeddings + 2 :] for pkv in pkvs)
             for pkvs in outputs.past_key_values
         )
@@ -830,12 +827,13 @@ class JatModel(GPTNeoPreTrainedModel):
         if context_window is not None:
             self._last_key_values = tuple(
                 tuple(pkv[:, :, -context_window:] for pkv in pkvs) for pkvs in self._last_key_values
-            )
+            )'''
 
         # Return the predicted action
         if continuous_actions is not None:
-            self.last_continuous_action = outputs.pred_actions[0, -1].cpu().tolist()
-            return self.last_continuous_action
+            #self.last_continuous_action = outputs.pred_actions[0, -1].cpu().tolist()
+            #return self.last_continuous_action
+            return outputs.pred_actions[0, -1].cpu().tolist()
         elif discrete_actions is not None:
             logits = outputs.pred_actions[0, -1, : action_space.n]
             if deterministic:

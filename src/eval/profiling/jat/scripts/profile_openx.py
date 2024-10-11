@@ -42,8 +42,8 @@ def profile_jat_on_openx():
         start_time = time.time()
 
         # Evaluate JAT model on the current dataset
-        action_success_rate, avg_mse_list, episode_count, total_dataset_amse, normalized_amse = evaluate_jat_model(model, processor, tfds_shards)
-
+        #action_success_rate, avg_mse_list, episode_count, total_dataset_amse, normalized_amse = evaluate_jat_model(model, processor, tfds_shards)
+        action_success_rate, total_dataset_amse, avg_dataset_amse, num_timesteps, normalized_amse = evaluate_jat_model(model, processor, tfds_shards)
         # End timing
         end_time = time.time()
 
@@ -53,11 +53,14 @@ def profile_jat_on_openx():
         # Store results
         eval_results[openx_dataset] = {
             'action_success_rate': action_success_rate,
-            'avg_mse_list': avg_mse_list,
-            'episode_count': episode_count,
+            #'avg_mse_list': avg_mse_list,
+            #'episode_count': episode_count,
             'total_dataset_amse': total_dataset_amse,
-            'normalized_amse': normalized_amse,
-            'eval_time': eval_time
+            #'normalized_amse': normalized_amse,
+            'eval_time': eval_time,
+            'num_timesteps': num_timesteps,
+            'avg_dataset_amse': avg_dataset_amse,
+            'normalized_amse': normalized_amse
         }
 
         # Save intermediate results to a JSON file to ensure progress is not lost
@@ -82,11 +85,14 @@ def profile_jat_on_openx():
     print('\nOverall Results:')
     for dataset, result in eval_results.items():
         print(f'\nDataset: {dataset}')
-        print(f'Episodes: {result["episode_count"]}')
+        #print(f'Episodes: {result["episode_count"]}')
         print(f'Total AMSE: {result["total_dataset_amse"]:.4f}')
-        print(f'Normalized AMSE: {result["normalized_amse"]:.4f}')
+        #print(f'Normalized AMSE: {result["normalized_amse"]:.4f}')
         print(f'Evaluation Time: {result["eval_time"]:.2f} seconds')
         print(f'Action Success Rate: {result["action_success_rate"]:.4f}')
+        print(f'Average MSE: {result["avg_dataset_amse"]:.4f}')
+        print(f'Number of Timesteps: {result["num_timesteps"]}')
+        print(f'Normalized AMSE: {result["normalized_amse"]:.4f}')
     print("\nEval results have been saved to 'jat_openx_evaluation_results.json'")
 
 if __name__ == "__main__":
