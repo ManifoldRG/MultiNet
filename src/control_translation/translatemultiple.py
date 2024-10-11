@@ -68,7 +68,8 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
                     else:
                         print(f"Element spec for {root.split('/')[-1]} already exists in {pickle_path}")
 
-                    tf.data.Dataset.save(translated_ds,os.path.join(os.path.join(output_dir, root.split('/')[-1])), shard_func = custom_shard_func)
+                    save_path = os.path.join(os.path.join(output_dir, root.split('/')[-1]))
+                    tf.data.Dataset.save(translated_ds, os.path.join(save_path, 'translated_shard_'+str(idx)), shard_func = custom_shard_func)
                     print('Translated and stored')
                 elif dataset_name=='procgen':
                     translated_ds = procgen(root, limit_schema) #Enter parent folder of a given procgen dataset
