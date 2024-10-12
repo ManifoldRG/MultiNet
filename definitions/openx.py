@@ -1,51 +1,9 @@
 import numpy as np
 
 DESCRIPTIONS = {
-    "berkeley_autolab_ur5": {
-        "take the tiger out of the red bowl and put it in the grey bowl": [
-            "The stuffed animal (tiger) always starts in the red bowl.",
-            "The positions of the two bowls are randomized on the table, while the gripper is initialized to a fixed pose.",
-            "Technically, the pick-and-place task only requires translation actions of the gripper."
-        ],
-        "sweep the green cloth to the left side of the table": [
-            "The cloth is randomly initialized at a place on the right side of the table, and the gripper needs to push it to the left side horizontally.",
-            "The gripper's starting pose is randomly initialized by adding noises from a fixed position.",
-            "Technically, the sweeping task only requires translation actions of the gripper."
-        ],
-        "pick up the blue cup and put it into the brown cup": [
-            "The positions of the two cups are randomized on the table, and the gripper's starting pose is random.",
-            "Technically, the stacking task only requires translation actions of the gripper."
-        ],
-        "put the ranch bottle into the pot": [
-            "The position of the pot is fixed, while the position of the ranch bottle is randomized.",
-            "The gripper's starting pose is fixed. This task involves both translation and rotation actions."
-        ]
-    },
-    "fractal20220817_data": {
-        "pick and place items": [  # 130 tasks
-            "Lift the object off the surface."
-        ],
-        "move object near another object": [  # 337 tasks
-            "Move the first object near the second."
-        ],
-        "place objects upright": [  # 7 tasks
-            "Place an elongated object upright."
-        ],
-        "open a drawer": [  # 3 tasks
-            "Open any of the cabinet drawers."
-        ],
-        "close a drawer": [  # 3 tasks
-            "Close any of the cabinet drawers."
-        ],
-        "place object into receptacle": [  # 84 tasks
-            "Place an object into a receptacle."
-        ],
-        "pick object into receptacle and place on the counter": [  # 162 tasks
-            "Pick an object up from a location and then place it on the counter."
-        ]
-    },
+    "fractal20220817_data": {},
     "kuka": {
-        "grasp and pick an object": [
+        "pick anything": [
             "Choose a grasp point, and then execute the desired grasp strategy.",
             "Update the grasp strategy continuously based on the most recent observations."
         ]
@@ -237,7 +195,26 @@ DESCRIPTIONS = {
         "arrange plate and fork": [
             "Arrange plate and fork."
         ]
-
+    },
+    "berkeley_autolab_ur5": {
+        "take the tiger out of the red bowl and put it in the grey bowl": [
+            "The stuffed animal (tiger) always starts in the red bowl.",
+            "The positions of the two bowls are randomized on the table, while the gripper is initialized to a fixed pose.",
+            "Technically, the pick-and-place task only requires translation actions of the gripper."
+        ],
+        "sweep the green cloth to the left side of the table": [
+            "The cloth is randomly initialized at a place on the right side of the table, and the gripper needs to push it to the left side horizontally.",
+            "The gripper's starting pose is randomly initialized by adding noises from a fixed position.",
+            "Technically, the sweeping task only requires translation actions of the gripper."
+        ],
+        "pick up the blue cup and put it into the brown cup": [
+            "The positions of the two cups are randomized on the table, and the gripper's starting pose is random.",
+            "Technically, the stacking task only requires translation actions of the gripper."
+        ],
+        "put the ranch bottle into the pot": [
+            "The position of the pot is fixed, while the position of the ranch bottle is randomized.",
+            "The gripper's starting pose is fixed. This task involves both translation and rotation actions."
+        ]
     },
     "toto": {
         "scoop": [
@@ -1216,122 +1193,8 @@ DESCRIPTIONS = {
 }
 
 ACTION_SPACES = {
-    "berkeley_autolab_ur5": {
-        "take the tiger out of the red bowl and put it in the grey bowl": {
-            0: ("The delta change in X axis with respect to the robot base frame", -0.02, 0.02),
-            1: ("The delta change in Y axis with respect to the robot base frame", -0.02, 0.02),
-            2: ("The delta change in Z axis with respect to the robot base frame", -0.02, 0.02),
-            3: ("The delta change in roll with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            4: ("The delta change in pitch with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            5: ("The delta change in yaw with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
-            7: ("Termination", {1: "Yes", 0: "No"})
-        },
-        "sweep the green cloth to the left side of the table": {
-            0: ("The delta change in X axis with respect to the robot base frame", -0.02, 0.02),
-            1: ("The delta change in Y axis with respect to the robot base frame", -0.02, 0.02),
-            2: ("The delta change in Z axis with respect to the robot base frame", -0.02, 0.02),
-            3: ("The delta change in roll with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            4: ("The delta change in pitch with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            5: ("The delta change in yaw with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
-            7: ("Termination", {1: "Yes", 0: "No"})
-        },
-        "pick up the blue cup and put it into the brown cup": {
-            0: ("The delta change in X axis with respect to the robot base frame", -0.02, 0.02),
-            1: ("The delta change in Y axis with respect to the robot base frame", -0.02, 0.02),
-            2: ("The delta change in Z axis with respect to the robot base frame", -0.02, 0.02),
-            3: ("The delta change in roll with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            4: ("The delta change in pitch with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            5: ("The delta change in yaw with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
-            7: ("Termination", {1: "Yes", 0: "No"})
-        },
-        "put the ranch bottle into the pot": {
-            0: ("The delta change in X axis with respect to the robot base frame", -0.02, 0.02),
-            1: ("The delta change in Y axis with respect to the robot base frame", -0.02, 0.02),
-            2: ("The delta change in Z axis with respect to the robot base frame", -0.02, 0.02),
-            3: ("The delta change in roll with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            4: ("The delta change in pitch with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            5: ("The delta change in yaw with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
-            7: ("Termination", {1: "Yes", 0: "No"})
-        }
-    },
     "fractal20220817_data": {
-        "pick and place items": {
-            0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
-            1: ("X axis displacement for the robot's arm movement"),
-            2: ("Y axis displacement for the robot's arm movement"),
-            3: ("Z axis displacement for the robot's arm movement"),
-            4: ("Roll displacement for the robot's arm movement"),
-            5: ("Pitch displacement for the robot's arm movement"),
-            6: ("Yaw displacement for the robot's arm movement"),
-            7: ("Yaw displacement for the robot's base movement"),
-            8: ("X axis displacement for the robot's base movement"),
-            9: ("Y axis displacement for the robot's base movement")
-        },
-        "move object near another object": {
-            0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
-            1: ("X axis displacement for the robot's arm movement"),
-            2: ("Y axis displacement for the robot's arm movement"),
-            3: ("Z axis displacement for the robot's arm movement"),
-            4: ("Roll displacement for the robot's arm movement"),
-            5: ("Pitch displacement for the robot's arm movement"),
-            6: ("Yaw displacement for the robot's arm movement"),
-            7: ("Yaw displacement for the robot's base movement"),
-            8: ("X axis displacement for the robot's base movement"),
-            9: ("Y axis displacement for the robot's base movement")
-        },
-        "place objects up-right": {
-            0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
-            1: ("X axis displacement for the robot's arm movement"),
-            2: ("Y axis displacement for the robot's arm movement"),
-            3: ("Z axis displacement for the robot's arm movement"),
-            4: ("Roll displacement for the robot's arm movement"),
-            5: ("Pitch displacement for the robot's arm movement"),
-            6: ("Yaw displacement for the robot's arm movement"),
-            7: ("Yaw displacement for the robot's base movement"),
-            8: ("X axis displacement for the robot's base movement"),
-            9: ("Y axis displacement for the robot's base movement")
-        },
-        "open a drawer": {
-            0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
-            1: ("X axis displacement for the robot's arm movement"),
-            2: ("Y axis displacement for the robot's arm movement"),
-            3: ("Z axis displacement for the robot's arm movement"),
-            4: ("Roll displacement for the robot's arm movement"),
-            5: ("Pitch displacement for the robot's arm movement"),
-            6: ("Yaw displacement for the robot's arm movement"),
-            7: ("Yaw displacement for the robot's base movement"),
-            8: ("X axis displacement for the robot's base movement"),
-            9: ("Y axis displacement for the robot's base movement")
-        },
-        "close a drawer": {
-            0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
-            1: ("X axis displacement for the robot's arm movement"),
-            2: ("Y axis displacement for the robot's arm movement"),
-            3: ("Z axis displacement for the robot's arm movement"),
-            4: ("Roll displacement for the robot's arm movement"),
-            5: ("Pitch displacement for the robot's arm movement"),
-            6: ("Yaw displacement for the robot's arm movement"),
-            7: ("Yaw displacement for the robot's base movement"),
-            8: ("X axis displacement for the robot's base movement"),
-            9: ("Y axis displacement for the robot's base movement")
-        },
-        "place object into receptacle": {
-            0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
-            1: ("X axis displacement for the robot's arm movement"),
-            2: ("Y axis displacement for the robot's arm movement"),
-            3: ("Z axis displacement for the robot's arm movement"),
-            4: ("Roll displacement for the robot's arm movement"),
-            5: ("Pitch displacement for the robot's arm movement"),
-            6: ("Yaw displacement for the robot's arm movement"),
-            7: ("Yaw displacement for the robot's base movement"),
-            8: ("X axis displacement for the robot's base movement"),
-            9: ("Y axis displacement for the robot's base movement")
-        },
-        "pick object into receptacle and place on the counter": {
+        "all": {
             0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
             1: ("X axis displacement for the robot's arm movement"),
             2: ("Y axis displacement for the robot's arm movement"),
@@ -1894,6 +1757,48 @@ ACTION_SPACES = {
             5: ("The X axis displacement of the robot"),
             6: ("The Y axis displacement of the robot"),
             7: ("The Z axis displacement of the robot")
+        }
+    },
+    "berkeley_autolab_ur5": {
+        "take the tiger out of the red bowl and put it in the grey bowl": {
+            0: ("The delta change in X axis with respect to the robot base frame", -0.02, 0.02),
+            1: ("The delta change in Y axis with respect to the robot base frame", -0.02, 0.02),
+            2: ("The delta change in Z axis with respect to the robot base frame", -0.02, 0.02),
+            3: ("The delta change in roll with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            4: ("The delta change in pitch with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            5: ("The delta change in yaw with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
+            7: ("Termination", {1: "Yes", 0: "No"})
+        },
+        "sweep the green cloth to the left side of the table": {
+            0: ("The delta change in X axis with respect to the robot base frame", -0.02, 0.02),
+            1: ("The delta change in Y axis with respect to the robot base frame", -0.02, 0.02),
+            2: ("The delta change in Z axis with respect to the robot base frame", -0.02, 0.02),
+            3: ("The delta change in roll with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            4: ("The delta change in pitch with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            5: ("The delta change in yaw with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
+            7: ("Termination", {1: "Yes", 0: "No"})
+        },
+        "pick up the blue cup and put it into the brown cup": {
+            0: ("The delta change in X axis with respect to the robot base frame", -0.02, 0.02),
+            1: ("The delta change in Y axis with respect to the robot base frame", -0.02, 0.02),
+            2: ("The delta change in Z axis with respect to the robot base frame", -0.02, 0.02),
+            3: ("The delta change in roll with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            4: ("The delta change in pitch with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            5: ("The delta change in yaw with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
+            7: ("Termination", {1: "Yes", 0: "No"})
+        },
+        "put the ranch bottle into the pot": {
+            0: ("The delta change in X axis with respect to the robot base frame", -0.02, 0.02),
+            1: ("The delta change in Y axis with respect to the robot base frame", -0.02, 0.02),
+            2: ("The delta change in Z axis with respect to the robot base frame", -0.02, 0.02),
+            3: ("The delta change in roll with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            4: ("The delta change in pitch with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            5: ("The delta change in yaw with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
+            7: ("Termination", {1: "Yes", 0: "No"})
         }
     },
     "toto": {
@@ -3025,20 +2930,8 @@ ACTION_SPACES = {
 }
 
 ACTION_EXCLUSIVENESS = {
-    "berkeley_autolab_ur5": {
-        "take the tiger out of the red bowl and put it in the grey bowl": False,
-        "sweep the green cloth to the left side of the table": False,
-        "pick up the blue cup and put it into the brown cup": False,
-        "put the ranch bottle into the pot": False
-    },
     "fractal20220817_data": {
-        "pick and place items": False,
-        "move object near another object": False,
-        "place objects upright": False,
-        "open a drawer": False,
-        "close a drawer": False,
-        "place object into receptacle": False,
-        "pick object into receptacle and place on the counter": False
+        'all': False
     },
     "kuka": {
         "grasp and pick an object": False
@@ -3114,6 +3007,12 @@ ACTION_EXCLUSIVENESS = {
         "make coffee": False,
         "pick up the bowl from the lazy susan and put bowl on the plate": False,
         "arrange plate and fork": False
+    },
+    "berkeley_autolab_ur5": {
+        "take the tiger out of the red bowl and put it in the grey bowl": False,
+        "sweep the green cloth to the left side of the table": False,
+        "pick up the blue cup and put it into the brown cup": False,
+        "put the ranch bottle into the pot": False
     },
     "toto": {
         "scoop": False,

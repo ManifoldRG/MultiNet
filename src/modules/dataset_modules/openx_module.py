@@ -170,28 +170,42 @@ class OpenXModule:
     # Generating the instruction text for VLMModule.
     def _get_vlm_instruction(self, dataset: str, env_name: str):
         assert dataset in DESCRIPTIONS, f"The dataset {dataset} is not included in the OpenX group."
-        assert env_name in DESCRIPTIONS[dataset], f"The environment {env_name} is not included in the OpenX group."
 
-        env_desc = ' '.join(DESCRIPTIONS[dataset][env_name])
-        # Handle the cases where the action space does not have a verbal description, and stats need to be used instead.
-        if len(ACTION_SPACES[dataset][env_name]) == 1:
-            # If there is a placeholder 'None' in the action space, it means that the action space is not given a verbal description.
-            if ACTION_SPACES[dataset][env_name][0] == None:
-                ACTION_SPACES[dataset][env_name] = {}
-                for i in range(self.action_stats_opxmodule['size'][0]):
-                    ACTION_SPACES[dataset][env_name][i] = ("The action space statistics of this dimension of the action space over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
+        if env_name in DESCRIPTIONS[dataset]:
+            # If env_name exists, the description of that environment is defined specifically.
+            env_desc = ' '.join(DESCRIPTIONS[dataset][env_name])
+        else:
+            # If not, the env_name itself becomes the description.
+            env_desc = env_name.capitalize() + "."
+
+        if env_name in ACTION_SPACES[dataset]:
+            # If env_name exists, the action space of that environment is defined specifically.
+            action_space = ACTION_SPACES[dataset][env_name]
+        else:
+            # If not, the action space is the one shared by all environments.
+            action_space = ACTION_SPACES[dataset]['all']
         
-        elif len(ACTION_SPACES[dataset][env_name]) != 1:
+        # Handle the cases where the action space does not have a verbal description, and stats need to be used instead.
+        if len(action_space) == 1:
+            # If there is a placeholder 'None' in the action space, it means that the action space is not given a verbal description.
+            if action_space[0] == None:
+                action_space = {}
+                for i in range(self.action_stats_opxmodule['size'][0]):
+                    action_space[i] = ("The action space statistics of this dimension of the action space over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
+        
+        elif len(action_space) != 1:
             # For cases where the verbal description is present but not the ranges, so we augment the information given with the stats
             for i in range(self.action_stats_opxmodule['size'][0]):
-                if not isinstance (ACTION_SPACES[dataset][env_name][i], tuple):
-                    ACTION_SPACES[dataset][env_name][i] = (ACTION_SPACES[dataset][env_name][i]+". In addition to this verbal description, here are the action space statistics of this dimension over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
+                if not isinstance (action_space[i], tuple):
+                    action_space[i] = (action_space[i]+". In addition to this verbal description, here are the action space statistics of this dimension over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
         
-        action_space = ACTION_SPACES[dataset][env_name]
-        only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name]
+        only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name] if env_name in ACTION_EXCLUSIVENESS[dataset] else ACTION_EXCLUSIVENESS[dataset]['all']
         additional_inst = None
-        if dataset in ADDITIONAL_INSTRUCTIONS and env_name in ADDITIONAL_INSTRUCTIONS[dataset]:
-            additional_inst = ' '.join(ADDITIONAL_INSTRUCTIONS[dataset][env_name])
+        if dataset in ADDITIONAL_INSTRUCTIONS:
+            if env_name in ADDITIONAL_INSTRUCTIONS[dataset]:
+                additional_inst = ' '.join(ADDITIONAL_INSTRUCTIONS[dataset][env_name])
+            else:
+                additional_inst = ADDITIONAL_INSTRUCTIONS[dataset]['all']
 
         instruction = format_instruction_prompt(env_name, env_desc, action_space, only_one_action, additional_inst)
         return instruction
