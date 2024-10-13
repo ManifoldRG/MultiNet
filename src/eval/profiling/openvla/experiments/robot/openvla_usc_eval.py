@@ -1,7 +1,4 @@
 import sys
-import os
-import time
-import json
 from dataclasses import dataclass
 from typing import Union
 from pathlib import Path
@@ -13,13 +10,8 @@ project_root = next(
 )
 sys.path.append(str(project_root))
 
-from PIL import Image
-from src.eval.profiling.jat.scripts.openx_dataloader import get_openx_dataloader
-from src.eval.profiling.openvla.experiments.robot.robot_utils import (get_model,
-                                                                      get_image_resize_size,
-                                                                      set_seed_everywhere,
-                                                                      get_action)
-from src.eval.profiling.openvla.experiments.robot.openvla_utils import get_processor
+from src.eval.profiling.openvla.experiments.robot.openvla_openx_dataloader import get_openx_dataloader
+from src.eval.profiling.openvla.experiments.robot.robot_utils import get_action
 
 import numpy as np
 
@@ -38,10 +30,48 @@ class EvalConfig:
     seed: int = 7
     unnorm_key = "bridge_orig"
 
+def standardize_predicted_action(predicted_action, dataset_name):
+    def convert_usc(pred):
+        return np.array([pred[0], pred[1], pred[2], to_discrete(pred[6])])
+    
+    def convert_utokyo_pr2(pred):
+        # utokyo_pr2 uses 8D: [3x pos delta, 3x RPY angles, 1x gripper, 1x terminal]
+        # We'll use the first 6 dimensions as-is, discretize the gripper, and add a dummy terminal action
+        pos_range_scaler = 1000  # 1m = 1000mm
 
-def evaluate_openvla_model(model, processor, tfds_shards, resize_size):
-    # Initialize the dataloader for the OpenX dataset
-    dataloader = get_openx_dataloader(tfds_shards, batch_size=1)
+        """
+        TODO:
+        1. Robot-specific unnormalization
+        2. Reference frame conversion
+        3. Unit conversion
+        """
+        return np.array([
+            pred[0] * pos_range_scaler, pred[1] * pos_range_scaler, pred[2] * pos_range_scaler,  # positional delta
+            pred[3], pred[4], pred[5],  # RPY angles
+            to_discrete(pred[6]),       # discretized gripper command
+            0                           # dummy terminal action (always 0 as OpenVLA doesn't predict this)
+        ])
+
+    
+    def convert_nyu_rot(pred):
+        # FIXME: NYU ROT actually is 7D but the google sheet says it uses 4D: [del_x, del_y, del_z, gripper]?
+        return np.array([pred[0], pred[1], pred[2], 0, 0, 0, to_discrete(pred[6])])
+
+    conversion_functions = {
+        "usc_cloth_sim_converted_externally_to_rlds": convert_usc,
+        "nyu_rot_dataset_converted_externally_to_rlds": convert_nyu_rot,
+        "utokyo_pr2_opening_fridge_converted_externally_to_rlds": convert_utokyo_pr2
+    }
+    
+    convert_func = conversion_functions.get(dataset_name)
+    
+    if convert_func is None:
+        raise ValueError(f"Dataset {dataset_name} action space standardization not implemented")
+    
+    return convert_func(predicted_action)
+
+def evaluate_openvla_model(cfg, model, processor, tfds_shards, resize_size, dataset_name):
+    dataloader = get_openx_dataloader(tfds_shards, batch_size=1, resize_size=resize_size)
 
     avg_mse_list = []
     total_dataset_amse = 0.0
@@ -73,29 +103,26 @@ def evaluate_openvla_model(model, processor, tfds_shards, resize_size):
 
             mse = 0.0
 
-            # Re-format the observation for OpenVLA
-            image_raw = batch['image_observation'][0][idx]
-            image = np.array(image_raw)
-            image = Image.fromarray(image)
-            image = image.resize((resize_size, resize_size))
-            image = np.array(image).astype(np.uint8)
-            obs['full_image'] = image
+            obs['full_image'] = batch['image_observation'][0][idx]
             
             # Get the model's predicted action
-            predicted_action = get_action(cfg, model, obs, batch['text_observation'][0][idx], processor)
-
-            predicted_action_4d = np.array([predicted_action[0], 
-                                            predicted_action[1], 
-                                            predicted_action[2], 
-                                            to_discrete(predicted_action[6])])
+            predicted_action = get_action(cfg, 
+                                          model, 
+                                          obs, 
+                                          batch['text_observation'][0][idx], 
+                                          processor)
 
             # Get the actual (expert) action
             actual_action = batch['action'][0][idx]
-            # print(f"actual_action: {actual_action}")
-            # print(f"predicted_action: {predicted_action_4d}")
+
+            # Standardize the predicted action to match the actual action space
+            standardized_predicted_action = standardize_predicted_action(predicted_action, dataset_name)
+
+            print(f"Predicted action: {standardized_predicted_action}")
+            print(f"Actual action: {actual_action}")
 
             # Calculate RMSE for this timestep
-            mse = np.mean((np.array(predicted_action_4d) - np.array(actual_action)) ** 2)
+            mse = np.mean((np.array(standardized_predicted_action) - np.array(actual_action)) ** 2)
             episode_mse.append(mse)
 
         # Calculate average RMSE for the episode
@@ -122,73 +149,3 @@ def evaluate_openvla_model(model, processor, tfds_shards, resize_size):
     print(f"Timesteps for each episode: {timesteps}")
     print(f"Total timesteps: {sum(timesteps)}")
     return avg_mse_list, episode_count, total_dataset_amse, normalized_amse
-
-
-def profile_openvla_on_openx(cfg: EvalConfig):
-    model = get_model(cfg)
-    processor = get_processor(cfg)
-
-    resize_size = get_image_resize_size(cfg)
-
-    # Path to OpenX datasets
-    openx_datasets_path = '/home/locke/ManifoldRG/MultiNet/data/translated'  # TODO: Add the path
-
-    # Get list of all OpenX datasets
-    openx_dataset_paths = os.listdir(openx_datasets_path)
-
-    eval_results = {}
-
-    for openx_dataset in openx_dataset_paths:
-        print(f'\nEvaluating dataset: {openx_dataset}\n')
-
-        # Get all shards for the current dataset
-        shard_files = os.listdir(os.path.join(openx_datasets_path, openx_dataset))
-        sorted_shard_files = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
-        tfds_shards = [os.path.join(openx_datasets_path, openx_dataset, f) 
-                       for f in sorted_shard_files]
-
-        # Start timing
-        start_time = time.time()
-
-        # Evaluate OpenVLA model on the current dataset
-        avg_mse_list, episode_count, total_dataset_amse, normalized_amse = evaluate_openvla_model(model, 
-                                                                                                  processor, 
-                                                                                                  tfds_shards, 
-                                                                                                  resize_size)
-
-        # End timing
-        end_time = time.time()
-
-        # Calculate evaluation time
-        eval_time = end_time - start_time
-
-        # Store results
-        eval_results[openx_dataset] = {
-            'avg_mse_list': avg_mse_list,
-            'episode_count': episode_count,
-            'total_dataset_amse': total_dataset_amse,
-            'normalized_amse': normalized_amse,
-            'eval_time': eval_time
-        }
-
-        print(f'Evaluation time for {openx_dataset}: {eval_time:.2f} seconds')
-
-    # Print overall results
-    print('\nOverall Results:')
-    for dataset, result in eval_results.items():
-        print(f'\nDataset: {dataset}')
-        print(f'Episodes: {result["episode_count"]}')
-        print(f'Total AMSE: {result["total_dataset_amse"]:.4f}')
-        print(f'Normalized AMSE: {result["normalized_amse"]:.4f}')
-        print(f'Evaluation Time: {result["eval_time"]:.2f} seconds')
-
-    # Save results to a JSON file
-    with open('openvla_openx_usc_evaluation_results.json', 'w') as f:
-        json.dump(eval_results, f, indent=4, default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
-
-    print("\nEval results have been saved to 'openvla_openx_usc_evaluation_results.json'")
-
-
-if __name__ == "__main__":
-    cfg = EvalConfig()
-    profile_openvla_on_openx(cfg)
