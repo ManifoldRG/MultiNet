@@ -1,10 +1,12 @@
 # MultiNet
 
-### We’re always looking forward to quick and longer term collaborators getting involved! So, if you are interested in contributing please take a look at our [open issues](https://github.com/ManifoldRG/MultiNet/issues) or reach out to us via [Discord](https://discord.gg/Tad7wAX8)
+* ### This work is being done in close collaboration with [Metarch](https://metarch.ai/), who is also sponsoring the project.
+
+* ### We’re always looking forward to quick and longer term collaborators getting involved! So, if you are interested in contributing please take a look at our [open issues](https://github.com/ManifoldRG/MultiNet/issues) or reach out to us via [Discord](https://discord.gg/Tad7wAX8)
 
 ## Overview
 
-This repo contains simple code that can be used to **download** one of the largest open-source vision-language + control (RL, Robotics) datasets, and **translate** control data of various tasks and sources to a unified [Tensorflow Dataset format](https://www.tensorflow.org/datasets/api_docs/python/tfds). 
+This repo contains simple code that can be used to **download** what aims to be the largest open-source vision-language + control (RL, Robotics) datasets, and **translate** control data of various tasks and sources to a unified [Tensorflow Dataset format](https://www.tensorflow.org/datasets/api_docs/python/tfds). 
 
 We are currently working towards a **new Multimodal Generalist Benchmark to evaluate the generalist capabilities of Vision-Language-Action (VLAs) style models**. 
 
