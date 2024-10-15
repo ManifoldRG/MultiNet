@@ -67,86 +67,8 @@ DESCRIPTIONS = {
             "Move to a fixed exit zone."
         ]
     },
-    "nyu_rot_dataset_converted_externally_to_rlds": {
-        "close door": [
-            "Close the door."
-        ],
-        "hang hanger": [
-            "Hang the hanger."
-        ],
-        "erase board": [
-            "Erase the board."
-        ],
-        "reach": [
-            "Reach for an object."
-        ],
-        "hang mug": [
-            "Hang the mug."
-        ],
-        "hang bag": [
-            "Hang the bag."
-        ],
-        "turn knob": [
-            "Turn the knob."
-        ],
-        "stack cups": [
-            "Stack the cups."
-        ],
-        "press switch": [
-            "Press the switch."
-        ],
-        "peg (easy)": [
-            "Peg an object into a box with high tolerance."
-        ],
-        "peg (medium)": [
-            "Peg an object into a box with medium tolerance."
-        ],
-        "peg (hard)": [
-            "Peg an object into a box with small tolerance."
-        ],
-        "open box": [
-            "Open the box."
-        ],
-        "pour": [
-            "Pour the drink."
-        ]
-    },
-    "stanford_hydra_dataset_converted_externally_to_rlds": {
-        "assemble square": [
-            "Assemble the square."
-        ],
-        "hang tool": [
-            "Hang the tool."
-        ],
-        "insert peg": [
-            "Insert the peg."
-        ],
-        "make coffee": [
-            "Pick up pod.",
-            "Insert pod.",
-            "Close lid.",
-            "Pick up mug.",
-            "Place mug.",
-            "Press button."
-        ],
-        "make toast": [
-            "Open toaster.",
-            "Pick spatula.",
-            "Pick bread.",
-            "Place bread.",
-            "Place spatula.",
-            "Close toaster.",
-            "Turn on."
-        ],
-        "sort dishes": [
-            "Pick spoon.",
-            "Place spoon.",
-            "Grasp plate.",
-            "Insert plate.",
-            "Pick mug.",
-            "Hang mug."
-        ]
-    },
+    "nyu_rot_dataset_converted_externally_to_rlds": {},
+    "stanford_hydra_dataset_converted_externally_to_rlds": {},
     "nyu_franka_play_dataset_converted_externally_to_rlds": {
         "open microwave": [
             "Open the microwave door."
@@ -999,7 +921,7 @@ DESCRIPTIONS = {
 
 ACTION_SPACES = {
     "fractal20220817_data": {
-        "all": {
+        "default": {
             0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
             1: ("X axis displacement for the robot's arm movement"),
             2: ("Y axis displacement for the robot's arm movement"),
@@ -1013,7 +935,7 @@ ACTION_SPACES = {
         }
     },
     "kuka": {
-        "all": {
+        "default": {
            0: ("Gripper closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
            1: ("X axis displacement of the robot gripper pose in meters", -1, 1),
            2: ("Y axis displacement of the robot gripper pose in meters", -1, 1),
@@ -1027,7 +949,7 @@ ACTION_SPACES = {
         }
     },
     "bridge": {
-        "all": {
+        "default": {
             0: ("X axis displacement for the robot"),
             1: ("Y axis displacement for the robot"),
             2: ("Z axis displacement for the robot"),
@@ -1039,7 +961,7 @@ ACTION_SPACES = {
         }
     },
     "taco_play": {
-        "all": {
+        "default": {
             0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
             1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
             2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
@@ -1050,7 +972,7 @@ ACTION_SPACES = {
         }
     },
     "jaco_play": {
-        "all": {
+        "default": {
             0: ("Gripper closed or open or doesn't move", {2: "Gripper closed", 0: "Gripper open", 1: "Gripper doesn't move"}),
             1: ("X axis displacement for the robot"),
             2: ("Y axis displacement for the robot"),
@@ -1058,7 +980,7 @@ ACTION_SPACES = {
         }
     },
     "berkeley_cable_routing": {
-        "all": {
+        "default": {
             0: ("The X axis rotation delta with respect to the robot's end effector frame"),
             1: ("The Y axis rotation delta with respect to the robot's end effector frame"),
             2: ("The Z axis rotation delta with respect to the robot's end effector frame"),
@@ -1069,12 +991,12 @@ ACTION_SPACES = {
         }
     },
     "roboturk": {
-        "all": {
+        "default": {
             0: None
         }
     },
     "nyu_door_opening_surprising_effectiveness": {
-        "all": {
+        "default": {
             0: ("Width of the gripper fingertips describing how open it is", 0.0, 3.0),
             1: ("The X axis rotation delta of the robot in Euler coordinates"),
             2: ("The Y axis rotation delta of the robot in Euler coordinates"),
@@ -1086,7 +1008,7 @@ ACTION_SPACES = {
         }
     },
     "viola": {
-        "all": {
+        "default": {
             0: ("Gripper closed or open", {-1: "Gripper open", 1: "Gripper closed"}),
             1: ("The X axis rotation delta of the robot"),
             2: ("The Y axis rotation delta of the robot"),
@@ -1098,7 +1020,7 @@ ACTION_SPACES = {
         }
     },
     "berkeley_autolab_ur5": {
-        "all": {
+        "default": {
             0: ("The delta change in X axis with respect to the robot base frame", -0.02, 0.02),
             1: ("The delta change in Y axis with respect to the robot base frame", -0.02, 0.02),
             2: ("The delta change in Z axis with respect to the robot base frame", -0.02, 0.02),
@@ -1115,77 +1037,23 @@ ACTION_SPACES = {
         }
     },
     "language_table": {
-        "all": {
+        "default": {
             0: ("X axis co-ordinate in the Cartesian setpoint of the end effector"),
             1: ("Y axis co-ordinate in the Cartesian setpoint of the end effector")
         }
     },
     "columbia_cairlab_pusht_real": {
-        "all": {
+        "default": {
             0: None
         }
     },
     "nyu_rot_dataset_converted_externally_to_rlds": {
-        "close door": {
-            0: None
-        },
-        "hang hanger": {
-            0: None
-        },
-        "erase board": {
-            0: None
-        },
-        "reach": {
-            0: None
-        },
-        "hang mug": {
-            0: None
-        },
-        "hang bag": {
-            0: None
-        },
-        "turn knob": {
-            0: None
-        },
-        "stack cups": {
-            0: None
-        },
-        "press switch": {
-            0: None
-        },
-        "peg (easy)": {
-            0: None
-        },
-        "peg (medium)": {
-            0: None
-        },
-        "peg (hard)": {
-            0: None
-        },
-        "open box": {
-            0: None
-        },
-        "pour": {
+        "default": {
             0: None
         }
     },
     "stanford_hydra_dataset_converted_externally_to_rlds": {
-        "assemble square": {
-            0: None
-        },
-        "hang tool": {
-            0: None
-        },
-        "insert peg": {
-            0: None
-        },
-        "make coffee": {
-            0: None
-        },
-        "make toast": {
-            0: None
-        },
-        "sort dishes": {
+        "default": {
             0: None
         }
     },
@@ -2199,67 +2067,49 @@ ACTION_SPACES = {
 
 ACTION_EXCLUSIVENESS = {
     "fractal20220817_data": {
-        "all": False
+        "default": False
     },
     "kuka": {
-        "all": False
+        "default": False
     },
     "bridge": {
-        "all": False
+        "default": False
     },
     "taco_play": {
-        "all": False
+        "default": False
     },
     "jaco_play": {
-        "all": False
+        "default": False
     },
     "berkeley_cable_routing": {
-        "all": False
+        "default": False
     },
     "roboturk": {
-        "all": False
+        "default": False
     },
     "nyu_door_opening_surprising_effectiveness": {
-        "all": False
+        "default": False
     },
     "viola": {
-        "all": False
+        "default": False
     },
     "berkeley_autolab_ur5": {
-        "all": False
+        "default": False
     },
     "toto": {
-        "all": False
+        "default": False
     },
     "language_table": {
-        "all": False
+        "default": False
     },
     "columbia_cairlab_pusht_real": {
-        "all": False
+        "default": False
     },
     "nyu_rot_dataset_converted_externally_to_rlds": {
-        "close door": False,
-        "hang hanger": False,
-        "erase board": False,
-        "reach": False,
-        "hang mug": False,
-        "hang bag": False,
-        "turn knob": False,
-        "stack cups": False,
-        "press switch": False,
-        "peg (easy)": False,
-        "peg (medium)": False,
-        "peg (hard)": False,
-        "open box": False,
-        "pour": False
+        "default": False
     },
     "stanford_hydra_dataset_converted_externally_to_rlds": {
-        "assemble square": False,
-        "hang tool": False,
-        "insert peg": False,
-        "make coffee": False,
-        "make toast": False,
-        "sort dishes": False
+        "default": False
     },
     "nyu_franka_play_dataset_converted_externally_to_rlds": {
         "open microwave": False,

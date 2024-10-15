@@ -183,7 +183,7 @@ class OpenXModule:
             action_space = ACTION_SPACES[dataset][env_name]
         else:
             # If not, the action space is the one shared by all environments.
-            action_space = ACTION_SPACES[dataset]['all']
+            action_space = ACTION_SPACES[dataset]['default']
         
         # Handle the cases where the action space does not have a verbal description, and stats need to be used instead.
         if len(action_space) == 1:
@@ -199,13 +199,13 @@ class OpenXModule:
                 if not isinstance (action_space[i], tuple):
                     action_space[i] = (action_space[i]+". In addition to this verbal description, here are the action space statistics of this dimension over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
         
-        only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name] if env_name in ACTION_EXCLUSIVENESS[dataset] else ACTION_EXCLUSIVENESS[dataset]['all']
+        only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name] if env_name in ACTION_EXCLUSIVENESS[dataset] else ACTION_EXCLUSIVENESS[dataset]['default']
         additional_inst = None
         if dataset in ADDITIONAL_INSTRUCTIONS:
             if env_name in ADDITIONAL_INSTRUCTIONS[dataset]:
                 additional_inst = ' '.join(ADDITIONAL_INSTRUCTIONS[dataset][env_name])
             else:
-                additional_inst = ADDITIONAL_INSTRUCTIONS[dataset]['all']
+                additional_inst = ADDITIONAL_INSTRUCTIONS[dataset]['default']
 
         instruction = format_instruction_prompt(env_name, env_desc, action_space, only_one_action, additional_inst)
         return instruction
