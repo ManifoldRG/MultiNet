@@ -69,341 +69,20 @@ DESCRIPTIONS = {
     },
     "nyu_rot_dataset_converted_externally_to_rlds": {},
     "stanford_hydra_dataset_converted_externally_to_rlds": {},
-    "nyu_franka_play_dataset_converted_externally_to_rlds": {
-        "open microwave": [
-            "Open the microwave door."
-        ],
-        "open oven door": [
-            "Open the oven door."
-        ],
-        "put the pot in the sink": [
-            "Put the pot in the sink."
-        ],
-        "operate the stove knobs": [
-            "Operate the stove knobs."
-        ],
-    },
-    "maniskill_dataset_converted_externally_to_rlds": {
-        "pick an object": [
-            "Pick an isolated object.",
-        ],
-        "move object to another position": [
-            "Move the object to its goal position."
-        ],
-        "stack cubes": [
-            "Stack a red cube onto a green cube."
-        ],
-        "insert peg into box": [
-            "Insert a peg into the box."
-        ],
-        "assemble kits": [
-            "Assemble the kits."
-        ],
-        "plug a charger": [
-            "Plug the charger into the outlet on the wall."
-        ],
-        "turn on a faucet": [
-            "Turn on a faucet."
-        ]
-    },
-    "furniture_bench_dataset_converted_externally_to_rlds": {
-        "grasp a lamp": [
-            "Grasp a lamp."
-        ],
-        "grasp a square table": [
-            "Grasp a square table."
-        ],
-        "grasp a drawer": [
-            "Grasp a drawer."
-        ],
-        "grasp a cabinet": [
-            "Grasp a cabinet."
-        ],
-        "grasp a round table": [
-            "Grasp a round table."
-        ],
-        "grasp a desk": [
-            "Grasp a desk."
-        ],
-        "grasp a stool": [
-            "Grasp a stool."
-        ],
-        "grasp a chair": [
-            "Grasp a chair."
-        ],
-        "place a lamp": [
-            "Place a lamp."
-        ],
-        "place a square table": [
-            "Place a square table."
-        ],
-        "place a drawer": [
-            "Place a drawer."
-        ],
-        "place a cabinet": [
-            "Place a cabinet."
-        ],
-        "place a round table": [
-            "Place a round table."
-        ],
-        "place a desk": [
-            "Place a desk."
-        ],
-        "place a stool": [
-            "Place a stool."
-        ],
-        "place a chair": [
-            "Place a chair."
-        ],
-        "insert a lamp": [
-            "Insert a lamp."
-        ],
-        "insert a square table": [
-            "Insert a square table."
-        ],
-        "insert a drawer": [
-            "Insert a drawer."
-        ],
-        "insert a cabinet": [
-            "Insert a cabinet."
-        ],
-        "insert a round table": [
-            "Insert a round table."
-        ],
-        "insert a desk": [
-            "Insert a desk."
-        ],
-        "insert a stool": [
-            "Insert a stool."
-        ],
-        "insert a chair": [
-            "Insert a chair."
-        ],
-        "screw a lamp": [
-            "Screw a lamp."
-        ],
-        "screw a square table": [
-            "Screw a square table."
-        ],
-        "screw a drawer": [
-            "Screw a drawer."
-        ],
-        "screw a cabinet": [
-            "Screw a cabinet."
-        ],
-        "screw a round table": [
-            "Screw a round table."
-        ],
-        "screw a desk": [
-            "Screw a desk."
-        ],
-        "screw a stool": [
-            "Screw a stool."
-        ],
-        "screw a chair": [
-            "Screw a chair."
-        ]
-    },
-    "cmu_franka_exploration_dataset_converted_externally_to_rlds": {
-        "pick veggies": [
-            "Pick veggies."
-        ],
-        "lift knife": [
-            "Lift a knife."
-        ],
-        "open cabinet": [
-            "Open a cabinet."
-        ],
-        "pull drawer": [
-            "Pull a drawer."
-        ],
-        "open dishwasher": [
-            "Open a dishwasher."
-        ],
-        "garbage can": [
-            "Garbage can."
-        ]
-    },
-    "ucsd_kitchen_dataset_converted_externally_to_rlds": {  # TODO: check this
-    },
-    "ucsd_pick_and_place_dataset_converted_externally_to_rlds": {
-        "reach": [
-            "Reach for an object."
-        ],
-        "pick": [
-            "Pick an object."
-        ]
-    },
-    "austin_sirius_dataset_converted_externally_to_rlds": {
-        "assemble nut": [
-            "Assemble nut."
-        ],
-        "hang tool": [
-            "Hang a tool."
-        ],
-        "insert gear": [
-            "Insert a gear."
-        ],
-        "pack coffee pod": [
-            "Pack coffee pod."
-        ]
-    },
-    "bc_z": {
-        "place bottle in ceramic bowl": [
-            "Place bottle in ceramic bowl"
-        ],
-        "place white sponge in purple bowl": [
-            "Place white sponge in purple bowl."
-        ],
-        "place grapes in red bowl": [
-            "Place grapes in red bowl."
-        ],
-        "place banana in ceramic cup.": [
-            "Place banana in ceramic cup."
-        ],
-        "push an object": [
-            "Push a purple bowl across the table.",
-        ],
-        "wipe tray with sponge": [
-            "Wipe tray with sponge."
-        ],
-        "wipe table surface with banana.": [
-            "Wipe table surface with banana.",
-        ],
-        "wipe a surface with brush": [
-            "Wipe a surface with brush."
-        ],
-        "stack bowls into tray": [
-            "Stack bowls into tray.",
-        ],
-        "knock the paper cup over": [
-            "Knock the paper cup over."
-        ],
-        "drag grapes across the table": [
-            "Drag grapes across the table."
-        ],
-        "open": [
-            "Open a door."
-        ],
-        "empty bin": [
-            "Empty a bin."
-        ],
-        "pick up grapes": [
-            "Pick up grapes.",
-        ]
-    },
-    "usc_cloth_sim_converted_externally_to_rlds": {
-        "straighten a rope": [
-            "Straighten a rope."
-        ],
-        "fold cloth": [
-            "Fold cloth."
-        ],
-        "fold cloth diagonally pinned": [
-            "Fold cloth diagonally pinned."
-        ],
-        "fold cloth diagonally unpinned": [
-            "Fold cloth diagonally unpinned."
-        ],
-        "fold cloth along diagonal": [
-            "Fold cloth along diagonal."
-        ]
-    },
-    "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {
-        "open fridge": [
-            "Open the fridge."
-        ]
-    },
-    "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": {
-        "pick up an object": [
-            "Pick up an object."
-        ],
-        "place an object": [
-            "Place an object."
-        ],
-        "fold cloths": [
-            "Fold cloths."
-        ]
-    },
-    "utokyo_saytap_converted_externally_to_rlds": {
-        "trot forward slowly": [
-            "Trot forward slowly."
-        ],
-        "trot forward fast": [
-            "Trot forward fast."
-        ],
-        "lift front right leg": [
-            "Lift front right leg.",
-        ],
-        "lift front left leg": [
-            "Lift front left leg."
-        ],
-        "lift rear right leg": [
-            "Lift rear right leg."
-        ],
-        "lift rear left leg": [
-            "Lift rear left leg."
-        ],
-        "pace forward fast": [
-            "Pace forward fast."
-        ],
-        "pace forward slowly": [
-            "Pace forward slowly."
-        ],
-        "pace backward fast": [
-            "Pace backward fast."
-        ],
-        "pace backward slowly": [
-            "Pace backward slowly."
-        ],
-        "back off": [
-            "Back off! Don't hurt that squirrel."
-        ],
-        "act as if the ground is very hot": [
-            "Act as if the ground is very hot."
-        ],
-        "act as if you have a limping front right leg": [
-            "Act as if you have a limping front right leg."
-        ],
-        "act as if you have a limping front left leg": [
-            "Act as if you have a limping front left leg."
-        ],
-        "act as if you have a limping rear right leg": [
-            "Act as if you have a limping rear right leg."
-        ],
-        "act as if you have a limping rear left leg": [
-            "Act as if you have a limping rear left leg."
-        ],
-        "go": [
-            "Go catch that squirrel on the tree."
-        ]
-    },
-    "utokyo_xarm_pick_and_place_converted_externally_to_rlds": {
-        "pick up an object": [
-            "Pick up an object."
-        ],
-        "place an object": [
-            "Place an object."
-        ],
-        "pick up a white plate, and then place it on the red plate": [
-            "Pick up a white plate and then place it on the red plate."
-        ]
-    },
-    "utokyo_xarm_bimanual_converted_externally_to_rlds": {
-        "reach for an object": [
-            "Reach for an object."
-        ],
-        "unfold an object": [
-            "Unfold an object.",
-            "Unfold the wrinkled towel."
-        ],
-        "reach a towel": [
-            "Reach for a towel."
-        ],
-        "unfold a wrinkled towel": [
-            "Unfold a wrinkled towel."
-        ]
-    },
+    "nyu_franka_play_dataset_converted_externally_to_rlds": {},
+    "maniskill_dataset_converted_externally_to_rlds": {},
+    "furniture_bench_dataset_converted_externally_to_rlds": {},
+    "cmu_franka_exploration_dataset_converted_externally_to_rlds": {},
+    "ucsd_kitchen_dataset_converted_externally_to_rlds": {},
+    "ucsd_pick_and_place_dataset_converted_externally_to_rlds": {},
+    "austin_sirius_dataset_converted_externally_to_rlds": {},
+    "bc_z": {},
+    "usc_cloth_sim_converted_externally_to_rlds": {},
+    "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {},
+    "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": {},
+    "utokyo_saytap_converted_externally_to_rlds": {},
+    "utokyo_xarm_pick_and_place_converted_externally_to_rlds": {},
+    "utokyo_xarm_bimanual_converted_externally_to_rlds": {},
     "berkeley_mvp_converted_externally_to_rlds": {
         "reach for an object": [
             "Reach for an object."
@@ -1058,254 +737,54 @@ ACTION_SPACES = {
         }
     },
     "nyu_franka_play_dataset_converted_externally_to_rlds": {
-        "open microwave": {
+        "default": {
             0: None
-        },
-        "open oven door": {
-            0: None
-        },
-        "put the pot in the sink": {
-            0: None
-        },
-        "operate the stove knobs": {
-            0: None
-        },
+        }
     },
     "maniskill_dataset_converted_externally_to_rlds": {
-        "pick an object": {
-            0: None
-        },
-        "move object to another position": {
-            0: None
-        },
-        "stack cubes": {
-            0: None
-        },
-        "insert peg into box": {
-            0: None
-        },
-        "assemble kits": {
-            0: None
-        },
-        "plug a charger": {
-            0: None
-        },
-        "turn on a faucet": {
+        "default": {
             0: None
         }
     },
     "furniture_bench_dataset_converted_externally_to_rlds": {
-        "grasp a lamp": {
-            0: None
-        },
-        "grasp a square table": {
-            0: None
-        },
-        "grasp a drawer": {
-            0: None
-        },
-        "grasp a cabinet": {
-            0: None
-        },
-        "grasp a round table": {
-            0: None
-        },
-        "grasp a desk": {
-            0: None
-        },
-        "grasp a stool": {
-            0: None
-        },
-        "grasp a chair": {
-            0: None
-        },
-        "place a lamp": {
-            0: None
-        },
-        "place a square table": {
-            0: None
-        },
-        "place a drawer": {
-            0: None
-        },
-        "place a cabinet": {
-            0: None
-        },
-        "place a round table": {
-            0: None
-        },
-        "place a desk": {
-            0: None
-        },
-        "place a stool": {
-            0: None
-        },
-        "place a chair": {
-            0: None
-        },
-        "insert a lamp": {
-            0: None
-        },
-        "insert a square table": {
-            0: None
-        },
-        "insert a drawer": {
-            0: None
-        },
-        "insert a cabinet": {
-            0: None
-        },
-        "insert a round table": {
-            0: None
-        },
-        "insert a desk": {
-            0: None
-        },
-        "insert a stool": {
-            0: None
-        },
-        "insert a chair": {
-            0: None
-        },
-        "screw a lamp": {
-            0: None
-        },
-        "screw a square table": {
-            0: None
-        },
-        "screw a drawer": {
-            0: None
-        },
-        "screw a cabinet": {
-            0: None
-        },
-        "screw a round table": {
-            0: None
-        },
-        "screw a desk": {
-            0: None
-        },
-        "screw a stool": {
-            0: None
-        },
-        "screw a chair": {
+        "default": {
             0: None
         }
     },
     "cmu_franka_exploration_dataset_converted_externally_to_rlds": {
-        "pick veggies": {
-            0: None
-        },
-        "lift knife": {
-            0: None
-        },
-        "open cabinet": {
-            0: None
-        },
-        "pull drawer": {
-            0: None
-        },
-        "open dishwasher": {
-            0: None
-        },
-        "garbage can": {
+        "default": {
             0: None
         }
     },
     "ucsd_kitchen_dataset_converted_externally_to_rlds": {
+        "default": {
+            0: ("The X axis displacement for the end-effector position", -1.0, 1.0),
+            1: ("The Y axis displacement for the end-effector position", -1.0, 1.0),
+            2: ("The Z axis displacement for the end-effector position", -1.0, 1.0),
+            3: ("The X axis rotation delta with respect to the robot's end effector frame", -2*np.pi, 2*np.pi),
+            4: ("The Y axis rotation delta with respect to the robot's end effector frame", -2*np.pi, 2*np.pi),
+            5: ("The Z axis rotation delta with respect to the robot's end effector frame", -2*np.pi, 2*np.pi),
+            6: ("The gripper open/close", {1: "Gripper open", -1: "Gripper close"}),
+            7: ("Termination", {1: "Yes", 0: "No"})
+        }
     },
     "ucsd_pick_and_place_dataset_converted_externally_to_rlds": {
-        "reach": {
+        "default": {
             0: None
-        },
-        "pick": {
-            0: None
-        },
+        }
     },
     "austin_sirius_dataset_converted_externally_to_rlds": {
-        "assemble nut": {
-            0: None
-        },
-        "hang tool": {
-            0: None
-        },
-        "insert gear": {
-            0: None
-        },
-        "pack coffee pod": {
+        "default": {
             0: None
         }
     },
     "bc_z": {
-        "place bottle in ceramic bowl": {
-            0: None
-        },
-        "place white sponge in purple bowl": {
-            0: None
-        },
-        "place grapes in red bowl": {
-            0: None
-        },
-        "place banana in ceramic cup.": {
-            0: None
-        },
-        "push an object": {
-            0: None
-        },
-        "wipe tray with sponge": {
-            0: None
-        },
-        "wipe table surface with banana.": {
-            0: None
-        },
-        "wipe a surface with brush": {
-            0: None
-        },
-        "stack bowls into tray": {
-            0: None
-        },
-        "knock the paper cup over": {
-            0: None
-        },
-        "drag grapes across the table": {
-            0: None
-        },
-        "open": {
-            0: None
-        },
-        "empty bin": {
-            0: None
-        },
-        "pick up grapes": {
+        "default": {
             0: None
         }
     },
     "usc_cloth_sim_converted_externally_to_rlds": {
-        "straighten a rope": {
-            0: ("Movement of the picker along the X axis"),
-            1: ("Movement of the picker along the Y axis"),
-            2: ("Movement of the picker along the Z axis"),
-            3: ("Activation state of the picker. A value greater than or equal to 0.5 represents activation and picking of the cloth, while a value less than 0.5 represents deactivation.")
-        },
-        "fold cloth": {
-            0: ("Movement of the picker along the X axis"),
-            1: ("Movement of the picker along the Y axis"),
-            2: ("Movement of the picker along the Z axis"),
-            3: ("Activation state of the picker. A value greater than or equal to 0.5 represents activation and picking of the cloth, while a value less than 0.5 represents deactivation.")
-        },
-        "fold cloth diagonally pinned": {
-            0: ("Movement of the picker along the X axis"),
-            1: ("Movement of the picker along the Y axis"),
-            2: ("Movement of the picker along the Z axis"),
-            3: ("Activation state of the picker. A value greater than or equal to 0.5 represents activation and picking of the cloth, while a value less than 0.5 represents deactivation.")
-        },
-        "fold cloth diagonally unpinned": {
-            0: ("Movement of the picker along the X axis"),
-            1: ("Movement of the picker along the Y axis"),
-            2: ("Movement of the picker along the Z axis"),
-            3: ("Activation state of the picker. A value greater than or equal to 0.5 represents activation and picking of the cloth, while a value less than 0.5 represents deactivation.")
-        },
-        "fold cloth along diagonal": {
+        "default": {
             0: ("Movement of the picker along the X axis"),
             1: ("Movement of the picker along the Y axis"),
             2: ("Movement of the picker along the Z axis"),
@@ -1314,82 +793,22 @@ ACTION_SPACES = {
     },
 
     "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {
-        "open fridge": {
+        "default": {
             0: None
         }
     },
     "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": {
-        "pick up an object": {
+        "default": {
             0: None
-        },
-        "place an object": {
-            0: None
-        },
-        "fold cloths": {
-            0: None
-        },
+        }
     },
     "utokyo_saytap_converted_externally_to_rlds": {
-        "trot forward slowly": {
-            0: None
-        },
-        "trot forward fast": {
-            0: None
-        },
-        "lift front right leg": {
-            0: None
-        },
-        "lift front left leg": {
-            0: None
-        },
-        "lift rear right leg": {
-            0: None
-        },
-        "lift rear left leg": {
-            0: None
-        },
-        "pace forward fast": {
-            0: None
-        },
-        "pace forward slowly": {
-            0: None
-        },
-        "pace backward fast": {
-            0: None
-        },
-        "pace backward slowly": {
-            0: None
-        },
-        "back off": {
-            0: None
-        },
-        "act as if the ground is very hot": {
-            0: None
-        },
-        "act as if you have a limping front right leg": {
-            0: None
-        },
-        "act as if you have a limping front left leg": {
-            0: None
-        },
-        "act as if you have a limping rear right leg": {
-            0: None
-        },
-        "act as if you have a limping rear left leg": {
-            0: None
-        },
-        "go": {
+        "default": {
             0: None
         }
     },
     "utokyo_xarm_pick_and_place_converted_externally_to_rlds": {
-        "pick up an object": {
-            0: None
-        },
-        "place an object": {
-            0: None
-        },
-        "pick up a white plate, and then place it on the red plate": {
+        "default": {
             0: ("X axis displacement of the end-effector of the robot"),
             1: ("Y axis displacement of the end-effector of the robot"),
             2: ("Z axis displacement of the end-effector of the robot"),
@@ -1400,29 +819,7 @@ ACTION_SPACES = {
         }
     },
     "utokyo_xarm_bimanual_converted_externally_to_rlds": {
-        "reach for an object": {
-            0: None
-        },
-        "unfold an object": {
-            0: None
-        },
-        "reach a towel":{
-            0: ("X axis displacement of the end-effector of the left arm of the robot"),
-            1: ("Y axis displacement of the end-effector of the left arm of the robot"),
-            2: ("Z axis displacement of the end-effector of the left arm of the robot"),
-            3: ("Yaw of the left arm of the robot"),
-            4: ("Pitch of the left arm of the robot"),
-            5: ("Roll of the left arm of the robot"),
-            6: ("Gripper open or closed position of the left arm of the robot", {1: "closed", 0: "open"}),
-            7: ("X axis displacement of the end-effector of the right arm of the robot"),
-            8: ("Y axis displacement of the end-effector of the right arm of the robot"),
-            9: ("Z axis displacement of the end-effector of the right arm of the robot"),
-            10: ("Yaw of the right arm of the robot"),
-            11: ("Pitch of the right arm of the robot"),
-            12: ("Roll of the right arm of the robot"),
-            13: ("Gripper open or closed position of the right arm of the robot", {1: "closed", 0: "open"}),
-        },
-        "unfold a wrinkled towel":{
+        "default":{
             0: ("X axis displacement of the end-effector of the left arm of the robot"),
             1: ("Y axis displacement of the end-effector of the left arm of the robot"),
             2: ("Z axis displacement of the end-effector of the left arm of the robot"),
@@ -1438,8 +835,6 @@ ACTION_SPACES = {
             12: ("Roll of the right arm of the robot"),
             13: ("Gripper open or closed position of the right arm of the robot", {1: "closed", 0: "open"}),
         }
-
-
     },
     "berkeley_mvp_converted_externally_to_rlds": {
         "reach for an object": {
@@ -2112,134 +1507,46 @@ ACTION_EXCLUSIVENESS = {
         "default": False
     },
     "nyu_franka_play_dataset_converted_externally_to_rlds": {
-        "open microwave": False,
-        "open oven door": False,
-        "put the pot in the sink": False,
-        "operate the stove knobs": False,
+        "default": False
     },
     "maniskill_dataset_converted_externally_to_rlds": {
-        "pick an object": False,
-        "move object to another position": False,
-        "stack cubes": False,
-        "insert peg into box": False,
-        "assemble kits": False,
-        "plug a charger": False,
-        "turn on a faucet": False
+        "default": False
     },
     "furniture_bench_dataset_converted_externally_to_rlds": {
-        "grasp a lamp": False,
-        "grasp a square table": False,
-        "grasp a drawer": False,
-        "grasp a cabinet": False,
-        "grasp a round table": False,
-        "grasp a desk": False,
-        "grasp a stool": False,
-        "grasp a chair": False,
-        "place a lamp": False,
-        "place a square table": False,
-        "place a drawer": False,
-        "place a cabinet": False,
-        "place a round table": False,
-        "place a desk": False,
-        "place a stool": False,
-        "place a chair": False,
-        "insert a lamp": False,
-        "insert a square table": False,
-        "insert a drawer": False,
-        "insert a cabinet": False,
-        "insert a round table": False,
-        "insert a desk": False,
-        "insert a stool": False,
-        "insert a chair": False,
-        "screw a lamp": False,
-        "screw a square table": False,
-        "screw a drawer": False,
-        "screw a cabinet": False,
-        "screw a round table": False,
-        "screw a desk": False,
-        "screw a stool": False,
-        "screw a chair": False
+        "default": False
     },
     "cmu_franka_exploration_dataset_converted_externally_to_rlds": {
-        "pick veggies": False,
-        "lift knife": False,
-        "open cabinet": False,
-        "pull drawer": False,
-        "open dishwasher": False,
-        "garbage can": False,
+        "default": False
     },
     "ucsd_kitchen_dataset_converted_externally_to_rlds": {
+        "default": False
     },
     "ucsd_pick_and_place_dataset_converted_externally_to_rlds": {
-        "reach": False,
-        "pick": False,
+        "default": False
     },
     "austin_sirius_dataset_converted_externally_to_rlds": {
-        "assemble nut": False,
-        "hang tool": False,
-        "insert gear": False,
-        "pack coffee pod": False
+        "default": False
     },
     "bc_z": {
-        "place bottle in ceramic bowl": False,
-        "place white sponge in purple bowl": False,
-        "place grapes in red bowl": False,
-        "place banana in ceramic cup.": False,
-        "push an object": False,
-        "wipe tray with sponge": False,
-        "wipe table surface with banana.": False,
-        "wipe a surface with brush": False,
-        "stack bowls into tray": False,
-        "knock the paper cup over": False,
-        "drag grapes across the table": False,
-        "open": False,
-        "empty bin": False,
-        "pick up grapes": False
+        "default": False
     },
     "usc_cloth_sim_converted_externally_to_rlds": {
-        "straighten a rope": False,
-        "fold cloth": False,
-        "fold cloth diagonally pinned": False,
-        "fold cloth diagonally unpinned": False,
-        "fold cloth along diagonal": False
+        "default": False
     },
     "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {
-        "open fridge": False
+        "default": False
     },
     "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": {
-        "pick up an object": False,
-        "place an object": False,
-        "fold cloths": False
+        "default": False
     },
     "utokyo_saytap_converted_externally_to_rlds": {
-        "trot forward slowly": False,
-        "trot forward fast": False,
-        "lift front right leg": False,
-        "lift front left leg": False,
-        "lift rear right leg": False,
-        "lift rear left leg": False,
-        "pace forward fast": False,
-        "pace forward slowly": False,
-        "pace backward fast": False,
-        "pace backward slowly": False,
-        "back off": False,
-        "act as if the ground is very hot": False,
-        "act as if you have a limping front right leg": False,
-        "act as if you have a limping front left leg": False,
-        "act as if you have a limping rear right leg": False,
-        "act as if you have a limping rear left leg": False,
-        "go": False
+        "default": False
     },
     "utokyo_xarm_pick_and_place_converted_externally_to_rlds": {
-        "pick up an object": False,
-        "place an object": False,
-        "pick up a white plate, and then place it on the red plate": False
+        "default": False
     },
     "utokyo_xarm_bimanual_converted_externally_to_rlds": {
-        "reach for an object": False,
-        "unfold an object": False,
-        "reach a towel": False,
-        "unfold a wrinkled towel": False
+        "default": False
     },
     "berkeley_mvp_converted_externally_to_rlds": {
         "reach for an object": False,
@@ -2445,19 +1752,7 @@ ACTION_EXCLUSIVENESS = {
 
 ADDITIONAL_INSTRUCTIONS = {
     "berkeley_autolab_ur5": {
-        "take the tiger out of the red bowl and put it in the grey bowl": [
-            "The robot state represents [joint0, joint1, joint2, joint3, joint4, joint5, x, y, z, qx, qy, qz, qw, gripper_is_closed, action_blocked].",
-            "action_blocked is binary: 1 if the gripper opening/closing action is being executed and no other actions can be performed; 0 otherwise."
-        ],
-        "sweep the green cloth to the left side of the table": [
-            "The robot state represents [joint0, joint1, joint2, joint3, joint4, joint5, x, y, z, qx, qy, qz, qw, gripper_is_closed, action_blocked].",
-            "action_blocked is binary: 1 if the gripper opening/closing action is being executed and no other actions can be performed; 0 otherwise."
-        ],
-        "pick up the blue cup and put it into the brown cup": [
-            "The robot state represents [joint0, joint1, joint2, joint3, joint4, joint5, x, y, z, qx, qy, qz, qw, gripper_is_closed, action_blocked].",
-            "action_blocked is binary: 1 if the gripper opening/closing action is being executed and no other actions can be performed; 0 otherwise."
-        ],
-        "put the ranch bottle into the pot": [
+        "default": [
             "The robot state represents [joint0, joint1, joint2, joint3, joint4, joint5, x, y, z, qx, qy, qz, qw, gripper_is_closed, action_blocked].",
             "action_blocked is binary: 1 if the gripper opening/closing action is being executed and no other actions can be performed; 0 otherwise."
         ]
