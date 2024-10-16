@@ -78,51 +78,14 @@ DESCRIPTIONS = {
     "austin_sirius_dataset_converted_externally_to_rlds": {},
     "bc_z": {},
     "usc_cloth_sim_converted_externally_to_rlds": {},
-    "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {},
+    "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {}, 
     "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": {},
     "utokyo_saytap_converted_externally_to_rlds": {},
     "utokyo_xarm_pick_and_place_converted_externally_to_rlds": {},
     "utokyo_xarm_bimanual_converted_externally_to_rlds": {},
-    "berkeley_mvp_converted_externally_to_rlds": {
-        "reach for an object": [
-            "Reach for an object."
-        ],
-        "push an object": [
-            "Push or move an object."
-        ],
-        "pick up an object": [
-            "Pick up an object."
-        ]
-    },
-    "berkeley_rpt_converted_externally_to_rlds": {
-        "pick up an object": [
-            "Pick up an object."
-        ],
-        "stack an object": [
-            "Stack an object."
-        ],
-        "destack an object": [
-            "Destack an object."
-        ]
-    },
-    "kaist_nonprehensile_converted_externally_to_rlds": {
-        "push an object": [
-            "Push an object.",
-            "Objects are subjected to external forces to induce translational movement."
-        ],
-        "drag an object": [
-            "Drag an object.",
-            "Objects are dragged across the surface without lifting."
-        ],
-        "rotate an object": [
-            "Rotate an object.",
-            "Objects are rotated around the vertical axis."
-        ],
-        "topple an object": [
-            "Topple an object.",
-            "Objects are caused to fall or rise from an initial stable position to another orientation."
-        ]
-    },
+    "berkeley_mvp_converted_externally_to_rlds": {},
+    "berkeley_rpt_converted_externally_to_rlds": {},
+    "kaist_nonprehensile_converted_externally_to_rlds": {},
     "stanford_mask_vit_converted_externally_to_rlds": {
         "pick up an object": [
             "Pick up an object."
@@ -791,7 +754,6 @@ ACTION_SPACES = {
             3: ("Activation state of the picker. A value greater than or equal to 0.5 represents activation and picking of the cloth, while a value less than 0.5 represents deactivation.")
         }
     },
-
     "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {
         "default": {
             0: None
@@ -837,38 +799,17 @@ ACTION_SPACES = {
         }
     },
     "berkeley_mvp_converted_externally_to_rlds": {
-        "reach for an object": {
-            0: None
-        },
-        "push an object": {
-            0: None
-        },
-        "pick up an object": {
+        "default": {
             0: None
         }
     },
     "berkeley_rpt_converted_externally_to_rlds": {
-        "pick up a object": {
-            0: None
-        },
-        "stack an object": {
-            0: None
-        },
-        "destack an object": {
+        "default": {
             0: None
         }
     },
     "kaist_nonprehensile_converted_externally_to_rlds": {
-        "push an object": {
-            0: None
-        },
-        "drag an object": {
-            0: None
-        },
-        "rotate an object": {
-            0: None
-        },
-        "topple an object": {
+        "default": {
             0: None
         }
     },
@@ -1549,20 +1490,13 @@ ACTION_EXCLUSIVENESS = {
         "default": False
     },
     "berkeley_mvp_converted_externally_to_rlds": {
-        "reach for an object": False,
-        "push an object": False,
-        "pick up an object": False
+        "default": False
     },
     "berkeley_rpt_converted_externally_to_rlds": {
-        "pick up an object": False,
-        "stack an object": False,
-        "destack an object": False
+        "default": False
     },
     "kaist_nonprehensile_converted_externally_to_rlds": {
-        "push an object": False,
-        "drag an object": False,
-        "rotate an object": False,
-        "topple an object": False
+        "default": False
     },
     "stanford_mask_vit_converted_externally_to_rlds": {
         "pick up an object": False,
