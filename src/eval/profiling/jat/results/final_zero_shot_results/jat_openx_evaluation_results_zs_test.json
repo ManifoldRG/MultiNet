@@ -1,0 +1,82 @@
+{
+    "jaco_play": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 9699.274448231694,
+        "eval_time": 388.0418064594269,
+        "num_timesteps": 7838,
+        "avg_dataset_amse": 1.2374680337116222,
+        "normalized_amse": 0.2954185331373279
+    },
+    "nyu_door_opening_surprising_effectiveness": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 17.50672113849064,
+        "eval_time": 192.22344970703125,
+        "num_timesteps": 2209,
+        "avg_dataset_amse": 0.007925179329330304,
+        "normalized_amse": 0.06084916248317361
+    },
+    "berkeley_autolab_ur5": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 404.8745150812385,
+        "eval_time": 1160.710116147995,
+        "num_timesteps": 10156,
+        "avg_dataset_amse": 0.03986554894458827,
+        "normalized_amse": 0.07291345223461027
+    },
+    "bridge": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 58954.110937708865,
+        "eval_time": 9643.296013593674,
+        "num_timesteps": 118603,
+        "avg_dataset_amse": 0.4970709926199916,
+        "normalized_amse": 0.036897775792649766
+    },
+    "toto": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 42121.25316749409,
+        "eval_time": 2132.134113550186,
+        "num_timesteps": 31560,
+        "avg_dataset_amse": 1.3346404679180637,
+        "normalized_amse": 0.23757218320363582
+    },
+    "viola": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 7389.168104322539,
+        "eval_time": 322.41642236709595,
+        "num_timesteps": 7411,
+        "avg_dataset_amse": 0.9970541228339683,
+        "normalized_amse": 0.3313258185878306
+    },
+    "berkeley_cable_routing": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 2177.564102576603,
+        "eval_time": 262.6861529350281,
+        "num_timesteps": 4088,
+        "avg_dataset_amse": 0.5326722364424176,
+        "normalized_amse": 0.41069768702660153
+    },
+    "columbia_cairlab_pusht_real": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 698.5197340411848,
+        "eval_time": 148.47084188461304,
+        "num_timesteps": 2884,
+        "avg_dataset_amse": 0.2422051782389684,
+        "normalized_amse": 0.3472461973061172
+    },
+    "taco_play": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 18877.48877290022,
+        "eval_time": 1812.4517579078674,
+        "num_timesteps": 23826,
+        "avg_dataset_amse": 0.7923062525350549,
+        "normalized_amse": 0.060099788506192534
+    },
+    "roboturk": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 2496.298274113224,
+        "eval_time": 1051.8215491771698,
+        "num_timesteps": 19084,
+        "avg_dataset_amse": 0.1308058202742205,
+        "normalized_amse": 0.023716245742190202
+    }
+}

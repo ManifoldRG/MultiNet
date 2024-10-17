@@ -1,0 +1,74 @@
+{
+    "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 748575144.537156,
+        "eval_time": 216.3350043296814,
+        "num_timesteps": 6362,
+        "avg_dataset_amse": 117663.49332555108,
+        "normalized_amse": 0.364012456814437
+    },
+    "usc_cloth_sim_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 2177.192581304675,
+        "eval_time": 668.256255865097,
+        "num_timesteps": 20000,
+        "avg_dataset_amse": 0.10885962906523375,
+        "normalized_amse": 0.3754660396710839
+    },
+    "stanford_mask_vit_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 2990.1877321035745,
+        "eval_time": 137.25869345664978,
+        "num_timesteps": 2821,
+        "avg_dataset_amse": 1.0599743821707106,
+        "normalized_amse": 0.5714634838411943
+    },
+    "plex_robosuite": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 8637.0012978423,
+        "eval_time": 300.99147605895996,
+        "num_timesteps": 9096,
+        "avg_dataset_amse": 0.9495384012579485,
+        "normalized_amse": 0.1418649697276188
+    },
+    "utokyo_xarm_pick_and_place_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 1838.7877328577672,
+        "eval_time": 26.931408882141113,
+        "num_timesteps": 701,
+        "avg_dataset_amse": 2.6230923435916793,
+        "normalized_amse": 0.2539165115003356
+    },
+    "utokyo_xarm_bimanual_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 429.28470263699455,
+        "eval_time": 5.4832353591918945,
+        "num_timesteps": 126,
+        "avg_dataset_amse": 3.4070214494999567,
+        "normalized_amse": 0.23976610923039973
+    },
+    "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 528009676.5383581,
+        "eval_time": 82.80346155166626,
+        "num_timesteps": 2382,
+        "avg_dataset_amse": 221666.5308725265,
+        "normalized_amse": 0.3243225913407736
+    },
+    "nyu_franka_play_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 7519.087721765836,
+        "eval_time": 399.7313220500946,
+        "num_timesteps": 10427,
+        "avg_dataset_amse": 0.7211170731529526,
+        "normalized_amse": 0.18494885623095925
+    },
+    "conq_hose_manipulation": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 2669.940214812581,
+        "eval_time": 231.0011088848114,
+        "num_timesteps": 1944,
+        "avg_dataset_amse": 1.3734260364262247,
+        "normalized_amse": 0.17768136266013881
+    }
+}

@@ -1,0 +1,274 @@
+{
+    "kaist_nonprehensile_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 57075268.33505753,
+        "eval_time": 413.71715807914734,
+        "num_timesteps": 6656,
+        "avg_dataset_amse": 8575.010266685325,
+        "normalized_amse": 0.5562586683845396
+    },
+    "eth_agent_affordances": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 32966.5174249311,
+        "eval_time": 1303.815122127533,
+        "num_timesteps": 30720,
+        "avg_dataset_amse": 1.0731288224261426,
+        "normalized_amse": 0.2900746854934128
+    },
+    "berkeley_rpt_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 132128.58936700353,
+        "eval_time": 5185.703681230545,
+        "num_timesteps": 78848,
+        "avg_dataset_amse": 1.6757379942040829,
+        "normalized_amse": 0.3477490805608558
+    },
+    "dlr_sara_grid_clamp_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 1424.494775574238,
+        "eval_time": 142.7198622226715,
+        "num_timesteps": 2048,
+        "avg_dataset_amse": 0.6955540896358584,
+        "normalized_amse": 0.2326583604672038
+    },
+    "berkeley_gnm_cory_hall": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 10725.598110869414,
+        "eval_time": 1853.571970462799,
+        "num_timesteps": 31596,
+        "avg_dataset_amse": 0.3394606314365557,
+        "normalized_amse": 0.043014293992778875
+    },
+    "kuka": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 285288.91308931034,
+        "eval_time": 129597.4444270134,
+        "num_timesteps": 1717248,
+        "avg_dataset_amse": 0.16613145747691094,
+        "normalized_amse": 0.15810802683011532
+    },
+    "robo_set": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 513306.3136938527,
+        "eval_time": 15683.22226858139,
+        "num_timesteps": 284160,
+        "avg_dataset_amse": 1.8063989079879388,
+        "normalized_amse": 0.22059428284212793
+    },
+    "language_table": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 617048.8073431393,
+        "eval_time": 85843.1494936943,
+        "num_timesteps": 1409536,
+        "avg_dataset_amse": 0.43776732722196476,
+        "normalized_amse": 0.4339189731427013
+    },
+    "dlr_edan_shared_control_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 1058.2465482751966,
+        "eval_time": 97.06254458427429,
+        "num_timesteps": 2048,
+        "avg_dataset_amse": 0.5167219473999983,
+        "normalized_amse": 0.21603167695761538
+    },
+    "imperialcollege_sawyer_wrist_cam": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 180.51622692987075,
+        "eval_time": 63.36902952194214,
+        "num_timesteps": 1536,
+        "avg_dataset_amse": 0.11752358524080127,
+        "normalized_amse": 0.3557782446452869
+    },
+    "bc_z": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 827709.8303167106,
+        "eval_time": 45740.73747205734,
+        "num_timesteps": 1094656,
+        "avg_dataset_amse": 0.7561369328051102,
+        "normalized_amse": 0.09500929133205577
+    },
+    "cmu_franka_exploration_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 176.7199580740126,
+        "eval_time": 70.87269735336304,
+        "num_timesteps": 1024,
+        "avg_dataset_amse": 0.17257808405665293,
+        "normalized_amse": 0.03411348895395413
+    },
+    "stanford_robocook_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 37775.373767135745,
+        "eval_time": 5646.147129058838,
+        "num_timesteps": 22868,
+        "avg_dataset_amse": 1.6518879555333106,
+        "normalized_amse": 0.17053302043718394
+    },
+    "berkeley_gnm_recon": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 284386.98389003996,
+        "eval_time": 5085.6699051856995,
+        "num_timesteps": 122368,
+        "avg_dataset_amse": 2.3240306607122774,
+        "normalized_amse": 0.2852387463199509
+    },
+    "ucsd_pick_and_place_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 8492.191430971165,
+        "eval_time": 592.0877261161804,
+        "num_timesteps": 13824,
+        "avg_dataset_amse": 0.6143078292079835,
+        "normalized_amse": 0.2095950299617181
+    },
+    "ucsd_kitchen_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 13467785.084913243,
+        "eval_time": 21.446519136428833,
+        "num_timesteps": 386,
+        "avg_dataset_amse": 34890.6349350084,
+        "normalized_amse": 0.3534909580097872
+    },
+    "utaustin_mutex": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 44405.13054790006,
+        "eval_time": 2847.516090154648,
+        "num_timesteps": 72704,
+        "avg_dataset_amse": 0.610765990150474,
+        "normalized_amse": 0.29748464259236485
+    },
+    "dobbe": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 518815.0732163441,
+        "eval_time": 8138.046665668488,
+        "num_timesteps": 228039,
+        "avg_dataset_amse": 2.2751155425885226,
+        "normalized_amse": 0.009278251404248586
+    },
+    "cmu_play_fusion": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 90537.0590458073,
+        "eval_time": 1837.0613310337067,
+        "num_timesteps": 47616,
+        "avg_dataset_amse": 1.9013999295574449,
+        "normalized_amse": 0.44982305343911927
+    },
+    "berkeley_gnm_sac_son": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 29440.953909459062,
+        "eval_time": 1991.5339925289154,
+        "num_timesteps": 48640,
+        "avg_dataset_amse": 0.6052827695201287,
+        "normalized_amse": 0.08531105964469697
+    },
+    "io_ai_tech": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 798275.0701551116,
+        "eval_time": 7712.576260328293,
+        "num_timesteps": 64000,
+        "avg_dataset_amse": 12.473047971173619,
+        "normalized_amse": 0.5136509153289845
+    },
+    "maniskill_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 3136822.710480087,
+        "eval_time": 44214.252469062805,
+        "num_timesteps": 907776,
+        "avg_dataset_amse": 3.4555030210978117,
+        "normalized_amse": 0.4391867421010522
+    },
+    "utokyo_saytap_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 10669.460750451171,
+        "eval_time": 212.93729853630066,
+        "num_timesteps": 5120,
+        "avg_dataset_amse": 2.0838790528224944,
+        "normalized_amse": 0.13961556847483303
+    },
+    "austin_sirius_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 43752.3004432288,
+        "eval_time": 2417.849522590637,
+        "num_timesteps": 56320,
+        "avg_dataset_amse": 0.7768519254834659,
+        "normalized_amse": 0.1736653148963381
+    },
+    "dlr_sara_pour_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 900.4080978918579,
+        "eval_time": 165.16851353645325,
+        "num_timesteps": 3072,
+        "avg_dataset_amse": 0.29310159436583916,
+        "normalized_amse": 0.07818887722966923
+    },
+    "stanford_hydra_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 52526.4435524833,
+        "eval_time": 3334.473395347595,
+        "num_timesteps": 72192,
+        "avg_dataset_amse": 0.7275936883932195,
+        "normalized_amse": 0.1468581640082371
+    },
+    "tokyo_u_lsmo_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 2691.2811669862235,
+        "eval_time": 103.86088585853577,
+        "num_timesteps": 2560,
+        "avg_dataset_amse": 1.0512817058539936,
+        "normalized_amse": 0.19171618104613392
+    },
+    "fractal20220817_data": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 534968.7681228829,
+        "eval_time": 42234.935468912125,
+        "num_timesteps": 757760,
+        "avg_dataset_amse": 0.7059870778648687,
+        "normalized_amse": 0.09198186821778188
+    },
+    "furniture_bench_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 794502.4590744193,
+        "eval_time": 33554.31597876549,
+        "num_timesteps": 790016,
+        "avg_dataset_amse": 1.005678947102868,
+        "normalized_amse": 0.0791924848955511
+    },
+    "berkeley_mvp_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 5814.224248378467,
+        "eval_time": 513.0534732341766,
+        "num_timesteps": 9216,
+        "avg_dataset_amse": 0.630883707506344,
+        "normalized_amse": 0.4560555200588654
+    },
+    "cmu_stretch": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 2634.38348542309,
+        "eval_time": 193.2109923362732,
+        "num_timesteps": 5120,
+        "avg_dataset_amse": 0.5145280244966972,
+        "normalized_amse": 0.24482335420733267
+    },
+    "nyu_rot_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 126.56989486494051,
+        "eval_time": 17.649048805236816,
+        "num_timesteps": 440,
+        "avg_dataset_amse": 0.2876588519657739,
+        "normalized_amse": 0.17731628441528519
+    },
+    "asu_table_top_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 15491.62607265622,
+        "eval_time": 248.75307393074036,
+        "num_timesteps": 5632,
+        "avg_dataset_amse": 2.7506438339233346,
+        "normalized_amse": 0.180959450065713
+    },
+    "iamlab_cmu_pickup_insert_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 12202.114283902194,
+        "eval_time": 1577.5482184886932,
+        "num_timesteps": 29696,
+        "avg_dataset_amse": 0.4109009389783875,
+        "normalized_amse": 0.05729193426200233
+    }
+}
