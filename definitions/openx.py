@@ -175,58 +175,53 @@ DESCRIPTIONS = {
 ACTION_SPACES = {
     "fractal20220817_data": {
         "default": {
-            0: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
-            1: ("X axis displacement for the robot's arm movement"),
-            2: ("Y axis displacement for the robot's arm movement"),
-            3: ("Z axis displacement for the robot's arm movement"),
+
+            0: ("X axis displacement for the robot's base movement"),
+            1: ("Y axis displacement for the robot's base movement"),
+            2: ("Vertical rotation displacement for the robot's base movement"),
+            3: ("Gripper of the robot closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
             4: ("Roll displacement for the robot's arm movement"),
             5: ("Pitch displacement for the robot's arm movement"),
             6: ("Yaw displacement for the robot's arm movement"),
-            7: ("Yaw displacement for the robot's base movement"),
-            8: ("X axis displacement for the robot's base movement"),
-            9: ("Y axis displacement for the robot's base movement")
+            7: ("X axis displacement for the robot's arm movement"),
+            8: ("Y axis displacement for the robot's arm movement"),
+            9: ("Z axis displacement for the robot's arm movement")
+
         }
     },
     "kuka": {
         "default": {
-           0: ("Gripper closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
-           1: ("X axis displacement of the robot gripper pose in meters", -1, 1),
-           2: ("Y axis displacement of the robot gripper pose in meters", -1, 1),
-           3: ("Z axis displacement of the robot gripper pose in meters", -1, 1),
+           0: ("X axis displacement of the robot base in meters", -1, 1),
+           1: ("Y axis displacement of the robot base in meters", -1, 1),
+           2: ("The displacement in vertical rotation of the robot base in radians", 0, 0.6366),
+           3: ("Gripper closed or open", {1.0: "Gripper closed", 0.0: "Gripper open"}),
            4: ("The delta change in roll of the robot gripper pose in radians", 0, 0.6366),
            5: ("The delta change in pitch of the robot gripper pose in radians", 0, 0.6366),
            6: ("The delta change in yaw of the robot gripper pose in radians", 0, 0.6366),
-           7: ("The displacement in vertical rotation of the robot base in radians", 0, 0.6366),
-           8: ("X axis displacement of the robot base in meters", -1, 1),
-           9: ("Y axis displacement of the robot base in meters", -1, 1)
+           7: ("X axis displacement of the robot gripper pose in meters", -1, 1),
+           8: ("Y axis displacement of the robot gripper pose in meters", -1, 1),
+           9: ("Z axis displacement of the robot gripper pose in meters", -1, 1)
         }
     },
     "bridge": {
         "default": {
-            0: ("X axis displacement for the robot"),
-            1: ("Y axis displacement for the robot"),
-            2: ("Z axis displacement for the robot"),
-            3: ("The delta change in the roll for the robot"),
-            4: ("The delta change in the pitch for the robot"),
-            5: ("The delta change in the yaw for the robot"),
-            6: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
-            7: ("Open or close the gripper", {1: "Gripper open", 0: "Gripper closed"})
+            0: ("The delta change in the roll for the robot"),
+            1: ("The delta change in the pitch for the robot"),
+            2: ("The delta change in the yaw for the robot"),
+            3: ("Termination", {1.0: "The robot has reached the target location", 0.0: "The robot has not reached the target location"}),
+            4: ("X axis displacement for the robot"),
+            5: ("Y axis displacement for the robot"),
+            6: ("Z axis displacement for the robot")
         }
     },
     "taco_play": {
         "default": {
-            0: ("X axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
-            1: ("Y axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
-            2: ("Z axis displacement for the end effector of the robot in 3D space",-1.0, 1.0),
-            3: ("X axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
-            4: ("Y axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
-            5: ("Z axis displacement for the end effector of the robot in the robot's base frame", -1.0, 1.0),
-            6: ("Open or close the gripper", {-1: "Gripper open", 1: "Gripper closed"})
+            0: None
         }
     },
     "jaco_play": {
         "default": {
-            0: ("Gripper closed or open or doesn't move", {2: "Gripper closed", 0: "Gripper open", 1: "Gripper doesn't move"}),
+            0: ("Gripper closed or open or doesn't move", {2.0: "Gripper closed", 0.0: "Gripper open", 1.0: "Gripper doesn't move"}),
             1: ("X axis displacement for the robot"),
             2: ("Y axis displacement for the robot"),
             3: ("Z axis displacement for the robot")
@@ -234,9 +229,9 @@ ACTION_SPACES = {
     },
     "berkeley_cable_routing": {
         "default": {
-            0: ("The X axis rotation delta with respect to the robot's end effector frame"),
-            1: ("The Y axis rotation delta with respect to the robot's end effector frame"),
-            2: ("The Z axis rotation delta with respect to the robot's end effector frame"),
+            0: ("The delta X axis rotation delta with respect to the robot's end effector frame"),
+            1: ("The delta Y axis rotation delta with respect to the robot's end effector frame"),
+            2: ("The delta Z axis rotation delta with respect to the robot's end effector frame"),
             3: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
             4: ("The X axis displacement with respect to the robot's end effector frame"),
             5: ("The Y axis displacement with respect to the robot's end effector frame"),
@@ -262,7 +257,7 @@ ACTION_SPACES = {
     },
     "viola": {
         "default": {
-            0: ("Gripper closed or open", {-1: "Gripper open", 1: "Gripper closed"}),
+            0 : ("Gripper closed or open", {-1.0: "Gripper open", 1.0: "Gripper closed"}),
             1: ("The X axis rotation delta of the robot"),
             2: ("The Y axis rotation delta of the robot"),
             3: ("The Z axis rotation delta of the robot"),
@@ -274,19 +269,25 @@ ACTION_SPACES = {
     },
     "berkeley_autolab_ur5": {
         "default": {
-            0: ("The delta change in X axis with respect to the robot base frame", -0.02, 0.02),
-            1: ("The delta change in Y axis with respect to the robot base frame", -0.02, 0.02),
-            2: ("The delta change in Z axis with respect to the robot base frame", -0.02, 0.02),
-            3: ("The delta change in roll with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            4: ("The delta change in pitch with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            5: ("The delta change in yaw with respect to the robot base frame", -0.06666666666, 0.06666666666),
-            6: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
-            7: ("Termination", {1: "Yes", 0: "No"})
+            0: ("The delta change in gripper closing action", {1: "Gripper closing from an open state", -1: "Gripper opening from a closed state", 0: "No change"}),
+            1: ("The delta change in roll with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            2: ("The delta change in pitch with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            3: ("The delta change in yaw with respect to the robot base frame", -0.06666666666, 0.06666666666),
+            4: ("Termination", {1: "Yes", 0: "No"}),
+            5: ("The delta change in X axis with respect to the robot base frame", -0.02, 0.02),
+            6: ("The delta change in Y axis with respect to the robot base frame", -0.02, 0.02),
+            7: ("The delta change in Z axis with respect to the robot base frame", -0.02, 0.02)
         }
     },
     "toto": {
         "pour": {
-            0: None
+            0: ("X axis rotation delta of the robot's end effector"),
+            1: ("Y axis rotation delta of the robot's end effector"),
+            2: ("Z axis rotation delta of the robot's end effector"),
+            3: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            4: ("The X axis displacement of the robot's end effector"),
+            5: ("The Y axis displacement of the robot's end effector"),
+            6: ("The Z axis displacement of the robot's end effector")
         }
     },
     "language_table": {
@@ -297,17 +298,36 @@ ACTION_SPACES = {
     },
     "columbia_cairlab_pusht_real": {
         "default": {
-            0: None
+            0: ("Absolute gripper closedness state", {0.0: "open", 1.0: "closed"}),
+            1: ("X axis rotation delta of the robot's end effector"),
+            2: ("Y axis rotation delta of the robot's end effector"),
+            3: ("Z axis rotation delta of the robot's end effector"),
+            4: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            5: ("The X axis displacement of the robot's end effector"),
+            6: ("The Y axis displacement of the robot's end effector"),
+            7: ("The Z axis displacement of the robot's end effector")
         }
     },
     "nyu_rot_dataset_converted_externally_to_rlds": {
         "default": {
-            0: None
+            0: ("X axis displacement of end effector of the robot"),
+            1: ("Y axis displacement of end effector of the robot"),
+            2: ("Z axis displacement of end effector of the robot"),
+            3: ("X axis rotation delta of end effector of the robot"),
+            4: ("Y axis rotation delta of end effector of the robot"),
+            5: ("Z axis rotation delta of end effector of the robot"),
+            6: ("Absolute gripper closedness state", {1: "closed", 0: "open"})
         }
     },
     "stanford_hydra_dataset_converted_externally_to_rlds": {
         "default": {
-            0: None
+            0: ("X axis displacement of end effector of the robot", -1,1),
+            1: ("Y axis displacement of end effector of the robot", -1,1),
+            2: ("Z axis displacement of end effector of the robot", -1,1),
+            3: ("X axis rotation delta of end effector of the robot in euler angles", -2*np.pi,2*np.pi),
+            4: ("Y axis rotation delta of end effector of the robot in euler angles", -2*np.pi,2*np.pi),
+            5: ("Z axis rotation delta of end effector of the robot in euler angles", -2*np.pi,2*np.pi),
+            6: ("Absolute gripper closedness state", {1: "closed", 0: "open"})
         }
     },
     "nyu_franka_play_dataset_converted_externally_to_rlds": {
@@ -322,7 +342,14 @@ ACTION_SPACES = {
     },
     "furniture_bench_dataset_converted_externally_to_rlds": {
         "default": {
-            0: None
+            0: ("X axis displacement of end effector of the robot in meters", -1,1),
+            1: ("Y axis displacement of end effector of the robot in meters", -1,1),
+            2: ("Z axis displacement of end effector of the robot in meters", -1,1),
+            3: ("Scalar component of the quarternion which encodes the amount of rotation around the xyz axes", -1,1),
+            4: ("Vector component of the qarternion which represents the X axis component of the rotation", -1,1),
+            5: ("Vector component of the qarternion which represents the Y axis component of the rotation", -1,1),
+            6: ("Vector component of the qarternion which represents the Z axis component of the rotation", -1,1),
+            7: ("Gripper closedness action", {1: "closed", -1: "open"})
         }
     },
     "cmu_franka_exploration_dataset_converted_externally_to_rlds": {
@@ -332,19 +359,22 @@ ACTION_SPACES = {
     },
     "ucsd_kitchen_dataset_converted_externally_to_rlds": {
         "default": {
-            0: ("The X axis displacement for the end-effector position", -1.0, 1.0),
-            1: ("The Y axis displacement for the end-effector position", -1.0, 1.0),
-            2: ("The Z axis displacement for the end-effector position", -1.0, 1.0),
-            3: ("The X axis rotation delta with respect to the robot's end effector frame", -2*np.pi, 2*np.pi),
-            4: ("The Y axis rotation delta with respect to the robot's end effector frame", -2*np.pi, 2*np.pi),
-            5: ("The Z axis rotation delta with respect to the robot's end effector frame", -2*np.pi, 2*np.pi),
-            6: ("The gripper open/close", {1: "Gripper open", -1: "Gripper close"}),
-            7: ("Termination", {1: "Yes", 0: "No"})
+            0: ("X axis displacement of end effector of the robot"),
+            1: ("Y axis displacement of end effector of the robot"),
+            2: ("Z axis displacement of end effector of the robot"),
+            3: ("Roll of the end effector of the robot"),
+            4: ("Pitch of the end effector of the robot"),
+            5: ("Yaw of the end effector of the robot"),
+            6: ("Gripper open or closed position of the robot", {1: "closed", 0: "open"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         }
     },
     "ucsd_pick_and_place_dataset_converted_externally_to_rlds": {
         "default": {
-            0: None
+            0: ("X axis velocity of robot gripper"),
+            1: ("Y axis velocity of robot gripper"),
+            2: ("Z axis velocity of robot gripper"),
+            3: ("Gripper open/close torque")
         }
     },
     "austin_sirius_dataset_converted_externally_to_rlds": {
@@ -367,12 +397,26 @@ ACTION_SPACES = {
     },
     "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {
         "default": {
-            0: None
+            0: ("X axis displacement of end effector of the robot"),
+            1: ("Y axis displacement of end effector of the robot"),
+            2: ("Z axis displacement of end effector of the robot"),
+            3: ("Roll of the end effector of the robot"),
+            4: ("Pitch of the end effector of the robot"),
+            5: ("Yaw of the end effector of the robot"),
+            6: ("Gripper open or closed", {1: "closed", 0: "open"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         }
     },
     "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": {
         "default": {
-            0: None
+            0: ("X axis displacement of end effector of the robot"),
+            1: ("Y axis displacement of end effector of the robot"),
+            2: ("Z axis displacement of end effector of the robot"),
+            3: ("Roll of the end effector of the robot"),
+            4: ("Pitch of the end effector of the robot"),
+            5: ("Yaw of the end effector of the robot"),
+            6: ("Gripper open or closed", {1: "closed", 0: "open"}),
+            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         }
     },
     "utokyo_saytap_converted_externally_to_rlds": {
@@ -421,12 +465,35 @@ ACTION_SPACES = {
     },
     "kaist_nonprehensile_converted_externally_to_rlds": {
         "default": {
-            0: None
+            0: ("X axis displacement of the end-effector of the robot in meters"),
+            1: ("Y axis displacement of the end-effector of the robot in meters"),
+            2: ("Z axis displacement of the end-effector of the robot in meters"),
+            3: ("Roll of the end-effector of the robot in radians"),
+            4: ("Pitch of the end-effector of the robot in radians"),
+            5: ("Yaw of the end-effector of the robot in radians"),
+            6: ("Proportional gain coefficient for joint 1 of the robot"),
+            7: ("Proportional gain coefficient for joint 2 of the robot"),
+            8: ("Proportional gain coefficient for joint 3 of the robot"),
+            9: ("Proportional gain coefficient for joint 4 of the robot"),
+            10: ("Proportional gain coefficient for joint 5 of the robot"),
+            11: ("Proportional gain coefficient for joint 6 of the robot"),
+            12: ("Proportional gain coefficient for joint 7 of the robot"),
+            13: ("Joint damping ratio coefficient for joint 1 of the robot"),
+            14: ("Joint damping ratio coefficient for joint 2 of the robot"),
+            15: ("Joint damping ratio coefficient for joint 3 of the robot"),
+            16: ("Joint damping ratio coefficient for joint 4 of the robot"),
+            17: ("Joint damping ratio coefficient for joint 5 of the robot"),
+            18: ("Joint damping ratio coefficient for joint 6 of the robot"),
+            19: ("Joint damping ratio coefficient for joint 7 of the robot")
         }
     },
     "stanford_mask_vit_converted_externally_to_rlds": {
         "default": {
-            0: None
+            0: ("X axis of the gripper position in meters"),
+            1: ("Y axis of the gripper position in meters"),
+            2: ("Z axis of the gripper position in meters"),
+            3: ("Change in Yaw angle of the end effector of the robot"),
+            4: ("Gripper closedness state", {1.0: "closed", -1.0: "open"})
         }
     },
     "tokyo_u_lsmo_converted_externally_to_rlds": {
@@ -476,12 +543,9 @@ ACTION_SPACES = {
             2: ("The delta change in the Z axis of the robot's end-effector frame"),
             3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
             4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            5: ("The rotation delta change in the X axis of the robot's end-effector frame in euler angles"),
+            6: ("The open or close state of the robot's gripper", {0.0: "open", 1.0: "closed"}),
             7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "open lid": {
-            0: None
         }
     },
     "iamlab_cmu_pickup_insert_converted_externally_to_rlds": {
@@ -490,10 +554,12 @@ ACTION_SPACES = {
         }
     },
     "utaustin_mutex": {
+
         "default": {
             0: None
         }
     },
+
     "cmu_play_fusion": {
         "default": {
             0: None
@@ -504,29 +570,45 @@ ACTION_SPACES = {
             0: None
         }
     },
+
     "berkeley_gnm_recon": {
         "default": {
             0: None
         }
     },
+
     "berkeley_gnm_cory_hall": {
         "default": {
             0: None
         }
     },
+
     "berkeley_gnm_sac_son": {
         "default": {
             0: None
         }
     },
+
     "conq_hose_manipulation": {
         "default": {
-            0: None
+            0: ("X axis displacement of end effector of the robot"),
+            1: ("Y axis displacement of end effector of the robot"),
+            2: ("Z axis displacement of end effector of the robot"),
+            3: ("Roll of the end effector of the robot"),
+            4: ("Pitch of the end effector of the robot"),
+            5: ("Yaw of the end effector of the robot"),
+            6: ("Gripper open or closed", {0.0: "closed", 1.0: "open"})
         }
     },
     "dobbe": {
         "default": {
-            0: None
+            0: ("Absolute X axis position of the robot's end-effector"),
+            1: ("Absolute Y axis position of the robot's end-effector"),
+            2: ("Absolute Z axis position of the robot's end-effector"),
+            3: ("Roll of the end effector of the robot"),
+            4: ("Pitch of the end effector of the robot"),
+            5: ("Yaw of the end effector of the robot"),
+            6: ("Gripper opening value", 0,1)
         }
     },
     "io_ai_tech": {
@@ -541,7 +623,14 @@ ACTION_SPACES = {
     },
     "plex_robosuite": {
         "default": {
-            0: None,
+            0: ("X axis displacement of the end-effector of the robot"),
+            1: ("Y axis displacement of the end-effector of the robot"),
+            2: ("Z axis displacement of the end-effector of the robot"),
+            3: ("X axis delta rotation of the end-effector of the robot"),
+            4: ("Y axis delta rotation of the end-effector of the robot"),
+            5: ("Z axis delta rotation of the end-effector of the robot"),
+            6: ("Gripper opening value", {1.0: "Gripper closed", -1.0: "Gripper open"})
+
         }
     }
 }
