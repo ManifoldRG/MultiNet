@@ -8,9 +8,9 @@ Any models that have not been explicitly trained on the control tasks requires t
 
 ### Category
 
-- **Descriptions**: These are descriptions of each dataset and environment. Any required information to understand a certain environment (e.g. the objects in the observation, the goal of the task, the restriction when performing a task, etc.) should be defined. (**Required**)
-- **Action spaces**: The action space helps the model to understand what kind of actions are allowed during the task. Each action has own index and it can be either continuous or discrete. If it is discrete, it can have a mapping from the value of an option and the description of that option. If it is continuous, it has the range of values allowed. (**Required**)
-- **Action exclusiveness**: These indicate whether the action output in each environment should be exclusive or not. If it is, that means the model should only one action at a time. (e.g. Atari) If it isn't, the action values can be multiple. (e.g. any robotics tasks) (**Required**)
+- **Descriptions**: These are descriptions of each dataset and environment. Any required information to understand a certain environment (e.g. the objects in the observation, the goal of the task, the restriction when performing a task, etc.) should be defined.
+- **Action spaces**: The action space helps the model to understand what kind of actions are allowed during the task. Each action has own index and it can be either continuous or discrete. If it is discrete, it can have a mapping from the value of an option and the description of that option. If it is continuous, it has the range of values allowed.
+- **Action exclusiveness**: These indicate whether the action output in each environment should be exclusive or not. If it is, that means the model should only one action at a time. (e.g. Atari) If it isn't, the action values can be multiple. (e.g. any robotics tasks)
 - **Additional instructions**: If we need to inject any additional information into the model's prompt, we define it here. This is not mandatory and some datasets don't have to have these.
 
 <br/>
@@ -38,7 +38,7 @@ First, make a file named `{dataset}.py`. (e.g. `openx.py`, `atari.py`, etc.) The
 
   `DESCRIPTIONS` is a dictionary which has the environment's name as a key and the list of strings as a value. Each string is just a sentence in the description.
 
-  *Note that each dataset can have various environments in it. In OpenX's case, `text_observation` works as a name of the environment. Make sure to research the specifications of the dataset carefully.*
+  *Note that each dataset can have various environments in it. In OpenX's case, `text_observation` works as a name of the environment. Make sure to research the specifications of the dataset carefully. If the environment name is not defined here, `text_observation` itself is used as the description.*
 
 - **Action spaces**
 
@@ -58,6 +58,8 @@ First, make a file named `{dataset}.py`. (e.g. `openx.py`, `atari.py`, etc.) The
   - Discrete action: In this case, the tuple's length is 2. The first element is the definition of the action. The second element is another dictionary, where the key is the actual value of an option and the value is the description of that option.
   - Continuous action: In this case, the tuple's length is 3. The first element is the definition of the action. The second element is the minimum value of that action. The third element is the maximum value of the action.
 
+  If all environments share the same action spaces, you don't have to define them for every environment. You just need to make an environment name "default" and define a single action space that is shared by all environments.
+
 - **Action exclusiveness**
 
   ```python
@@ -71,6 +73,8 @@ First, make a file named `{dataset}.py`. (e.g. `openx.py`, `atari.py`, etc.) The
 
   - `True`: The model will generate the output as `{ACTION_INDEX} {OPTION_INDEX}` (discrete) or `{ACTION_INDEX} {CONTINUOUS_VALUE}` (continuous).
   - `False`: The model will generate the output as a vector which contains all corresponding values for all actions.
+
+  If all environments share the same action exclusiveness, you don't have to define them for every environment. You just need to make an environment name "default" and define a single action exclusiveness that is shared by all environments.
 
 - **Additional instructions**
 
