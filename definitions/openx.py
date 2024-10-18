@@ -87,108 +87,21 @@ DESCRIPTIONS = {
     "berkeley_rpt_converted_externally_to_rlds": {},
     "kaist_nonprehensile_converted_externally_to_rlds": {},
     "stanford_mask_vit_converted_externally_to_rlds": {
-        "pick up an object": [
-            "Pick up an object."
-        ],
-        "push an object": [
-            "Push an object."
+        "push something": [
+            "Push the bowl or move the object into an unseen dustpan."
         ]
     },
-    "tokyo_u_lsmo_converted_externally_to_rlds": {
-        "avoid an obstacle": [
-            "Avoid the obstacle on the table."
-        ],
-        "reach for an object": [
-            "Reach for an object."
-        ]
-    },
-    "dlr_sara_pour_converted_externally_to_rlds": {
-        "move towards an object": [
-            "Move towards an object."
-        ],
-        "pour into a cup": [
-            "Pour ping-pong balls from a cup held in the end-effector into the cup placed on the table."
-        ]
-    },
+    "tokyo_u_lsmo_converted_externally_to_rlds": {},
+    "dlr_sara_pour_converted_externally_to_rlds": {},
     "dlr_sara_grid_clamp_converted_externally_to_rlds": {
-        "place an object": [
+        "place grid clamp": [
             "Place the grid clamp in the grids on the table, similar to placing a peg in the hole."
         ]
     },
-    "dlr_edan_shared_control_converted_externally_to_rlds": {
-        "grasp an object on the tabletop": [
-            "Grasp an object on the tabletop."
-        ],
-        "grasp an object on the shelf": [
-            "Grasp an object on the shelf."
-        ]
-    },
-    "asu_table_top_converted_externally_to_rlds": {
-        "pick an object": [
-            "Pick an object."
-        ],
-        "push an object": [
-            "Push an object.",
-        ],
-        "rotate an object": [
-            "Rotate an object."
-        ],
-        "avoid an obstacle": [
-            "Avoid an obstacle."
-        ],
-        "place an object": [
-            "Place an object in relation to other objects in the environment."
-        ]
-    },
-    "stanford_robocook_converted_externally_to_rlds": {
-        "pinch the dough with an asymmetric gripper": [
-            "Pinch the dough with an asymmetric gripper."
-        ],
-        "pinch the dough with a two-plane symmetric gripper": [
-            "Pinch the dough with a two-plane symmetric gripper."
-        ],
-        "pinch the dough with a two-rod symmetric gripper": [
-            "Pinch the dough with a two-rod symmetric gripper."
-        ],
-        "press the dough with a circle press": [
-            "Press the dough with a circle press."
-        ],
-        "press the dough with a square press": [
-            "Press the dough with a square press."
-        ],
-        "press the dough with a circle punch": [
-            "Press the dough with a circle punch."
-        ],
-        "press the dough with a square punch": [
-            "Press the dough with a square punch."
-        ],
-        "roll the dough with a small roller": [
-            "Roll the dough with a small roller."
-        ],
-        "roll the dough with a large roller": [
-            "Roll the dough with a large roller."
-        ]
-    },
-    "eth_agent_affordances": {
-        "open door": [
-            "Open the door starting from different initial positions and door angles."
-        ],
-        "close door": [
-            "Close the door starting from different initial positions and door angles."
-        ],
-        "open drawer": [
-            "Open the drawer starting from different initial positions and drawer angles."
-        ],
-        "close drawer": [
-            "Close the drawer starting from different initial positions and drawer angles."
-        ],
-        "open the oven": [
-            "Open the oven."
-        ],
-        "close the oven": [
-            "Close the oven."
-        ]
-    },
+    "dlr_edan_shared_control_converted_externally_to_rlds": {},
+    "asu_table_top_converted_externally_to_rlds": {},
+    "stanford_robocook_converted_externally_to_rlds": {},
+    "eth_agent_affordances": {},
     "imperialcollege_sawyer_wrist_cam": {
         "grasp can": [
             "Grasp a can placed horizontally on a table and lift it."
@@ -208,9 +121,6 @@ DESCRIPTIONS = {
         "open lid": [
             "Remove the lid from a pot on the table by grasping it and lifting it."
         ],
-        "pick up apple": [
-            "Pick up an apple from the table."
-        ],
         "pick up bottle": [
             "Pick up a bottle placed horizontally on the table."
         ],
@@ -223,14 +133,8 @@ DESCRIPTIONS = {
         "pick up pan": [
             "Pick up a toy pan from the table, grasping it from the handle."
         ],
-        "pick up shoe": [
-            "Pick up a shoe from the table."
-        ],
         "pour in mug": [
             "Starting with a cup in the end-effector, pour into a mug on the table - success is detected by dropping a marble from the cup to the mug, mimicking a liquid."
-        ],
-        "put apple in pot": [
-            "Starting with an apple in the end-effector, drop it in a pot on the table."
         ],
         "put cup in dishwasher": [
             "Starting with a cup in the end-effector, place it in an empty area of a toy dishwasher rack on the table."
@@ -242,323 +146,30 @@ DESCRIPTIONS = {
             "Starting with a dust brush in the end-effector, swipe a marble into a dustpan on the table."
         ]
     },
-    "iamlab_cmu_pickup_insert_converted_externally_to_rlds": {
-        "insert onto square peg": [
-            "For this task we restrict the orientations of the square ring (blue object) and the peg on which to insert.",
-            "This allows the robot to perform the task without changing gripper orientations.",
-            "Further, we use a region of 40cm × 30cm in front of the robot to spawn both the base and ring.",
-            "Finally, the default task configuration provides 20 different peg colors, of which we use the first 10 colors for training and remaining 10 colors for robustness experiments."
-        ],
-        "pick and lift small": [
-            "For this task, we again use a region of 40cm × 30cm in front of the robot to spawn all objects.",
-            "We also restrict the orientation of each object such that it can be grasped directly without requiring gripper orientation changes."
-        ],
-        "sort shapes": [
-            "The default configuration for the shape-sorting task considers 4 different shaped objects (see Figure 3 Bottom-Left) – square, cylinder, triangle, star, moon.",
-            "In the default RLBench configuration most objects directly stick to the robot finger and are simply dropped into the hole for task completion.",
-            "However, with closed loop control we find that non-symmetric objects (star, triangle, and moon) can have significant post-grasp displacement such that it is impossible to insert these objects without changing gripper orientation.",
-            "Hence, we exclude these two objects from evaluation and only use symmetric square and cylinder objects."
-        ],
-        "take usb out": [
-            "This task requires the robot to unplug a USB inserted into the computer.", 
-            "However, the default configuration for this task requires 6-dof control.",
-            "To avoid this, we create smaller computer and USB assets and mount them vertically on the table such that the USB can be unplugged without changing hand orientation."
-        ]
-    },
-    "utaustin_mutex": {
-        "put an object": [
-            "Put an object.",
-        ],
-        "open an object's door": [
-            "Open an object's door.",
-        ],
-        "take out an object": [
-            "Take out a tray from the oven."
-        ],
-        "place an object": [
-            "Place bread on the tray."
-        ],
-        "hold an object": [
-            "Hold an object."
-        ],
-        "move an object": [
-            "Move an object."
-        ],
-        "grip an object": [
-            "Grip an object."
-        ]
-    },
-    "cmu_play_fusion": {
-        "pick up an object": [
-            "Pick up an object."
-        ],
-        "open a door": [
-            "Open a door."
-        ],
-        "open a drawer": [
-            "Open a drawer."
-        ],
-        "place an object": [
-            "Place an object.",
-        ],
-        "close a door": [
-            "Close a door.",
-        ],
-        "close a drawer": [
-            "Close a drawer."
-        ],
-        "turn on lights": [
-            "Turn on the LED lights."
-        ],
-        "push an object": [
-            "Push an object."
-        ]
-    },
-    "cmu_stretch": {
-        "open a door": [
-            "Open a door."
-        ],
-        "open a dishwasher": [
-            "Open a dishwasher."
-        ],
-        "open a cabinet": [
-            "Open a cabinet."
-        ],
-        "open a drawer": [
-            "Open a drawer."
-        ],
-        "slide a door": [
-            "Slide a door."
-        ],
-        "pull out a drawer": [
-            "Pull out a drawer."
-        ],
-        "lift a lid": [
-            "Lift a lid."
-        ],
-        "lift a knife": [
-            "Lift a knife."
-        ],
-        "garbage a can": [
-            "Garbage a can."
-        ]
-    },
+    "iamlab_cmu_pickup_insert_converted_externally_to_rlds": {},
+    "utaustin_mutex": {},
+    "cmu_play_fusion": {},
+    "cmu_stretch": {},
     "berkeley_gnm_recon": {
-        "explore environment": [
+        "navigate to the goal": [
             "Ignore distractors, and explore a non-stationary environment, successfully discovering and navigating to the visually-specified goal."
         ]
     },
     "berkeley_gnm_cory_hall": {
-        "navigate hallways": [
+        "navigate to the goal": [
             "Autonomously navigate complex and unstructured environments such as roads, buildings, or forests."
         ]
     },
     "berkeley_gnm_sac_son": {
-        "navigate environments": [
+        "navigate to the goal": [
             "Navigate pedestrian-rich indoor and outdoor environments such as offices, school buildings."
         ]
     },
-    "conq_hose_manipulation": {
-        "grab the end of the vacuum hose around in an office environment": [
-            "Grab the end of the vacuum hose around in an office environment."
-        ],
-        "lift the end of the vacuum hose around in an office environment": [
-            "Lift the end of the vacuum hose around in an office environment."
-        ],
-        "drag the end of the vacuum hose around in an office environment": [
-            "Drag the end of the vacuum hose around in an office environment."
-        ]
-    },
-    "dobbe": {
-        "pick up paper towel roll": [
-            "Pick up paper towel roll."
-        ],
-        "pick up paper bag": [
-            "Pick up paper bag."
-        ],
-        "pick up hat": [
-            "Pick up hat."
-        ],
-        "pick up trash bag": [
-            "Pick up trash bag."
-        ],
-        "pick up hand towel": [
-            "Pick up hand towel."
-        ],
-        "pick up kitchen towel": [
-            "Pick up kitchen towel."
-        ],
-        "pick up tissue roll": [
-            "Pick up tissue roll."
-        ],
-        "open a door": [
-            "Open a door."
-        ],
-        "open cabinet door": [
-            "Open cabinet door."
-        ],
-        "open shower curtain": [
-            "Open shower curtain."
-        ],
-        "open dishwasher door": [
-            "Open dishwasher door."
-        ],
-        "open air fryer door": [
-            "Open air fryer door."
-        ],
-        "open freezer door": [
-            "Open freezer door."
-        ],
-        "open vertical window blinds": [
-            "Open vertical window blinds."
-        ],
-        "close a door": [
-            "Close a door."
-        ],
-        "close cabinet door": [
-            "Close cabinet door."
-        ],
-        "close shower curtain": [
-            "Close shower curtain."
-        ],
-        "close dishwasher door": [
-            "Close dishwasher door."
-        ],
-        "close air fryer door": [
-            "Close air fryer door."
-        ],
-        "place keychain": [
-            "Place keychain."
-        ],
-        "place spice": [
-            "Place spice."
-        ],
-        "place massager": [
-            "Place massager."
-        ],
-        "pull out dining chair": [
-            "Pull out dining chair."
-        ],
-        "pull book from shelf": [
-            "Pull book from shelf."
-        ],
-        "pull chair": [
-            "Pull chair."
-        ],
-        "pull desk chair": [
-            "Pull desk chair."
-        ],
-        "pull side table": [
-            "Pull side table."
-        ],
-        "pull out dining stool": [
-            "Pull out dining stool."
-        ],
-        "flush toilet": [
-            "Flush toilet."
-        ],
-        "straighten cushion": [
-            "Straighten cushion."
-        ],
-        "pour chocolate almond": [
-            "Pour chocolate almond."
-        ],
-        "unplug charger": [
-            "Unplug charger."
-        ],
-        "rotate speaker knob": [
-            "Rotate speaker knob."
-        ],
-        "adjust oven knob": [
-            "Adjust oven knob."
-        ],
-        "push toaster button": [
-            "Push toaster button."
-        ],
-        "put rag in laundry": [
-            "Put rag in laundry."
-        ]
-    },
-    "io_ai_tech": {
-        "pick up the glue from the plate": [
-            "Pick up the glue from the plate."
-        ],
-        "pick up the stapler": [
-            "Pick up the stapler."
-        ],
-        "place the glue on the plate": [
-            "Place the glue on the plate."
-        ],
-        "place the stapler on the desk": [
-            "Place the stapler on the desk."
-        ]
-    },
-    "robo_set": {
-        "wipe an object": [
-            "Wipe an object."
-        ],
-        "pick up an object": [
-            "Pick up an object."
-        ],
-        "place an object": [
-            "Place an object."
-        ],
-        "cap an object": [
-            "Cap an object."
-        ],
-        "uncap an object": [
-            "Uncap an object."
-        ]
-    },
-    "spoc": {
-        "fetch an object": [
-            "Find and pick up an object."
-        ],
-        "navigate to an object": [
-            "Locate an object."
-        ],
-        "search for an object": [
-            "Search for an object.",
-        ],
-        "pick up an object": [
-            "Pick up a specified object in agent line of sight.",
-        ],
-        "find an object": [
-            "Find an object.",
-        ],
-        "place an object": [
-            "Place an object."
-        ]
-    },
-    "plex_robosuite": {
-        "open an object": [
-            "Open an object."
-        ],
-        "close an object": [
-            "Close an object."
-        ],
-        "pick up an object": [
-            "Pick up an object."
-        ],
-        "place an object": [
-            "Place an object."
-        ],
-        "put an object": [
-            "Put an object."
-        ],
-        "insert an object": [
-            "Insert an object."
-        ],
-        "lift an object": [
-            "Lift an object."
-        ],
-        "assemble an object": [
-            "Assemble an object."
-        ],
-        "stack an object": [
-            "Stack an object."
-        ]
-    }
+    "conq_hose_manipulation": {},
+    "dobbe": {},
+    "io_ai_tech": {},
+    "robo_set": {},
+    "plex_robosuite": {}
 }
 
 ACTION_SPACES = {
@@ -814,110 +425,42 @@ ACTION_SPACES = {
         }
     },
     "stanford_mask_vit_converted_externally_to_rlds": {
-        "pick up an object": {
-            0: None
-        },
-        "push an object": {
+        "default": {
             0: None
         }
     },
     "tokyo_u_lsmo_converted_externally_to_rlds": {
-        "avoid an obstacle": {
-            0: None
-        },
-        "reach for an object": {
+        "default": {
             0: None
         }
     },
     "dlr_sara_pour_converted_externally_to_rlds": {
-        "move towards an object": {
-            0: None
-        },
-        "pour into a cup": {
+        "default": {
             0: None
         }
     },
     "dlr_sara_grid_clamp_converted_externally_to_rlds": {
-        "place an object": {
+        "default": {
             0: None
         }
     },
     "dlr_edan_shared_control_converted_externally_to_rlds": {
-        "grasp an object on the tabletop": {
-            0: None
-        },
-        "grasp an object on the shelf": {
+        "default": {
             0: None
         }
     },
     "asu_table_top_converted_externally_to_rlds": {
-        "pick an object": {
-            0: None
-        },
-        "push an object": {
-            0: None
-        },
-        "rotate an object": {
-            0: None
-        },
-        "avoid an obstacle": {
-            0: None
-        },
-        "place an object": {
+        "default": {
             0: None
         }
     },
     "stanford_robocook_converted_externally_to_rlds": {
-        "pinch the dough with an asymmetric gripper": {
-            0: None
-        },
-        "pinch the dough with a two-plane symmetric gripper": {
-            0: None
-        },
-        "pinch the dough with a two-rod symmetric gripper": {
-            0: None
-        },
-        "press the dough with a circle press": {
-            0: None
-        },
-        "press the dough with a square press": {
-            0: None
-        },
-        "press the dough with a circle punch": {
-            0: None
-        },
-        "press the dough with a square punch": {
-            0: None
-        },
-        "roll the dough with a small roller": {
-            0: None
-        },
-        "roll the dough with a large roller": {
+        "default": {
             0: None
         }
     },
     "eth_agent_affordances": {
-        "open door": {
-            0: None
-        },
-        "close door": {
-            0: None
-        },
-        "open drawer": {
-            0: None
-        },
-        "close drawer": {
-            0: None
-        },
-        "open the oven":{
-            0: ("End effector velocity of the robot in the world X direction", -1, 1),
-            1: ("End effector velocity of the robot in the world Y direction", -1, 1),
-            2: ("End effector velocity of the robot in the world Z direction", -1, 1),
-            3: ("End effector angular velocity of the robot's rotation around the world X axis", -2*np.pi, 2*np.pi),
-            4: ("End effector angular velocity of the robot's rotation around the world Y axis", -2*np.pi, 2*np.pi),
-            5: ("End effector angular velocity of the robot's rotation around the world Z axis", -2*np.pi, 2*np.pi),
-        },
-        "close the oven": {
+        "default":{
             0: ("End effector velocity of the robot in the world X direction", -1, 1),
             1: ("End effector velocity of the robot in the world Y direction", -1, 1),
             2: ("End effector velocity of the robot in the world Z direction", -1, 1),
@@ -927,47 +470,7 @@ ACTION_SPACES = {
         }
     },
     "imperialcollege_sawyer_wrist_cam": {
-        "grasp can": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "hang cup": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "insert cap in bottle": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "insert toast": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "open bottle": {
+        "default": {
             0: ("The delta change in the X axis of the robot's end-effector frame"),
             1: ("The delta change in the Y axis of the robot's end-effector frame"),
             2: ("The delta change in the Z axis of the robot's end-effector frame"),
@@ -979,425 +482,67 @@ ACTION_SPACES = {
         },
         "open lid": {
             0: None
-        },
-        "pick up apple": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "pick up bottle": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "pick up kettle": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "pick up mug": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "pick up pan": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "pick up shoe": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "pour in mug": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "put apple in pot": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "put cup in dishwasher": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "stack bowls": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
-        },
-        "swipe": {
-            0: ("The delta change in the X axis of the robot's end-effector frame"),
-            1: ("The delta change in the Y axis of the robot's end-effector frame"),
-            2: ("The delta change in the Z axis of the robot's end-effector frame"),
-            3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
-            5: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         }
     },
     "iamlab_cmu_pickup_insert_converted_externally_to_rlds": {
-        "insert onto square peg": {
+        "default": {
             0: None
-        },
-        "pick and lift small": {
-            0: None
-        },
-        "sort shapes": {
-            0: None
-        },
-        "take usb out": {
-            0: None
-        },
+        }
     },
     "utaustin_mutex": {
-        "put an object": {
-            0: None
-        },
-        "open an object's door": {
-            0: None
-        },
-        "take out an object": {
-            0: None
-        },
-        "place an object": {
-            0: None
-        },
-        "hold an object": {
-            0: None
-        },
-        "move an object": {
-            0: None
-        },
-        "grip an object": {
+        "default": {
             0: None
         }
     },
     "cmu_play_fusion": {
-        "pick up an object": {
-            0: None
-        },
-        "open a door": {
-            0: None
-        },
-        "open a drawer": {
-            0: None
-        },
-        "place an object": {
-            0: None
-        },
-        "close a door": {
-            0: None
-        },
-        "close a drawer": {
-            0: None
-        },
-        "turn on lights": {
-            0: None
-        },
-        "push an object": {
+        "default": {
             0: None
         }
     },
     "cmu_stretch": {
-        "open a door": {
-            0: None
-        },
-        "open a dishwasher": {
-            0: None
-        },
-        "open a cabinet": {
-            0: None
-        },
-        "open a drawer": {
-            0: None
-        },
-        "slide a door": {
-            0: None
-        },
-        "pull out a drawer": {
-            0: None
-        },
-        "lift a lid": {
-            0: None
-        },
-        "lift a knife": {
-            0: None
-        },
-        "garbage a can": {
+        "default": {
             0: None
         }
     },
     "berkeley_gnm_recon": {
-        "explore environment": {
+        "default": {
             0: None
         }
     },
     "berkeley_gnm_cory_hall": {
-        "navigate hallways": {
+        "default": {
             0: None
         }
     },
     "berkeley_gnm_sac_son": {
-        "navigate environments": {
+        "default": {
             0: None
         }
     },
     "conq_hose_manipulation": {
-        "grab the end of the vacuum hose around in an office environment": {
-            0: None
-        },
-        "lift the end of the vacuum hose around in an office environment": {
-            0: None
-        },
-        "drag the end of the vacuum hose around in an office environment": {
+        "default": {
             0: None
         }
     },
     "dobbe": {
-        "pick up paper towel roll": {
-            0: None
-        },
-        "pick up paper bag": {
-            0: None
-        },
-        "pick up hat": {
-            0: None
-        },
-        "pick up trash bag": {
-            0: None
-        },
-        "pick up hand towel": {
-            0: None
-        },
-        "pick up kitchen towel": {
-            0: None
-        },
-        "pick up tissue roll": {
-            0: None
-        },
-        "open a door": {
-            0: None
-        },
-        "open cabinet door": {
-            0: None
-        },
-        "open shower curtain": {
-            0: None
-        },
-        "open dishwasher door": {
-            0: None
-        },
-        "open air fryer door": {
-            0: None
-        },
-        "open freezer door": {
-            0: None
-        },
-        "open vertical window blinds": {
-            0: None
-        },
-        "close a door": {
-            0: None
-        },
-        "close cabinet door": {
-            0: None
-        },
-        "close shower curtain": {
-            0: None
-        },
-        "close dishwasher door": {
-            0: None
-        },
-        "close air fryer door": {
-            0: None
-        },
-        "place keychain": {
-            0: None
-        },
-        "place spice": {
-            0: None
-        },
-        "place massager": {
-            0: None
-        },
-        "pull out dining chair": {
-            0: None
-        },
-        "pull book from shelf": {
-            0: None
-        },
-        "pull chair": {
-            0: None
-        },
-        "pull desk chair": {
-            0: None
-        },
-        "pull side table": {
-            0: None
-        },
-        "pull out dining stool": {
-            0: None
-        },
-        "flush toilet": {
-            0: None
-        },
-        "straighten cushion": {
-            0: None
-        },
-        "pour chocolate almond": {
-            0: None
-        },
-        "unplug charger": {
-            0: None
-        },
-        "rotate speaker knob": {
-            0: None
-        },
-        "adjust oven knob": {
-            0: None
-        },
-        "push toaster button": {
-            0: None
-        },
-        "put rag in laundry": {
+        "default": {
             0: None
         }
     },
     "io_ai_tech": {
-        "pick up the glue from the plate": {
-            0: None
-        },
-        "pick up the stapler": {
-            0: None
-        },
-        "place the glue on the plate": {
-            0: None
-        },
-        "place the stapler on the desk": {
+        "default": {
             0: None
         }
     },
     "robo_set": {
-        "wipe an object": {
+        "default": {
             0: None
-        },
-        "pick up an object": {
-            0: None
-        },
-        "place an object": {
-            0: None
-        },
-        "cap an object": {
-            0: None
-        },
-        "uncap an object": {
-            0: None
-        },
-    },
-    "spoc": {
-        "fetch an object": {
-            0: None,
-        },
-        "navigate to an object": {
-            0: None,
-        },
-        "search for an object": {
-            0: None,
-        },
-        "pick up an object": {
-            0: None,
-        },
-        "find an object": {
-            0: None,
-        },
-        "place an object": {
-            0: None,
         }
     },
     "plex_robosuite": {
-        "open an object": {
+        "default": {
             0: None,
-        },
-        "close an object": {
-            0: None,
-        },
-        "pick up an object": {
-            0: None,
-        },
-        "place an object": {
-            0: None,
-        },
-        "put an object": {
-            0: None,
-        },
-        "insert an object": {
-            0: None,
-        },
-        "lift an object": {
-            0: None,
-        },
-        "assemble an object": {
-            0: None,
-        },
-        "stack an object": {
-            0: None,
-        },
+        }
     }
 }
 
@@ -1499,188 +644,67 @@ ACTION_EXCLUSIVENESS = {
         "default": False
     },
     "stanford_mask_vit_converted_externally_to_rlds": {
-        "pick up an object": False,
-        "push an object": False
+        "default": False
     },
     "tokyo_u_lsmo_converted_externally_to_rlds": {
-        "avoid an obstacle": False,
-        "reach for an object": False
+        "default": False
     },
     "dlr_sara_pour_converted_externally_to_rlds": {
-        "move towards an object": False,
-        "pour into a cup": False
+        "default": False
     },
     "dlr_sara_grid_clamp_converted_externally_to_rlds": {
-        "place an object": False
+        "default": False
     },
     "dlr_edan_shared_control_converted_externally_to_rlds": {
-        "grasp an object on the tabletop": False,
-        "grasp an object on the shelf": False
+        "default": False
     },
     "asu_table_top_converted_externally_to_rlds": {
-        "pick an object": False,
-        "push an object": False,
-        "rotate an object": False,
-        "avoid an obstacle": False,
-        "place an object": False
+        "default": False
     },
     "stanford_robocook_converted_externally_to_rlds": {
-        "pinch the dough with an asymmetric gripper": False,
-        "pinch the dough with a two-plane symmetric gripper": False,
-        "pinch the dough with a two-rod symmetric gripper": False,
-        "press the dough with a circle press": False,
-        "press the dough with a square press": False,
-        "press the dough with a circle punch": False,
-        "press the dough with a square punch": False,
-        "roll the dough with a small roller": False,
-        "roll the dough with a large roller": False
+        "default": False
     },
     "eth_agent_affordances": {
-        "open door": False,
-        "close door": False,
-        "open drawer": False,
-        "close drawer": False,
-        "open the oven": False,
-        "close the oven": False
+        "default": False
     },
     "imperialcollege_sawyer_wrist_cam": {
-        "grasp can": False,
-        "hang cup": False,
-        "insert cap in bottle": False,
-        "insert toast": False,
-        "open bottle": False,
-        "open lid": False,
-        "pick up apple": False,
-        "pick up bottle": False,
-        "pick up kettle": False,
-        "pick up mug": False,
-        "pick up pan": False,
-        "pick up shoe": False,
-        "pour in mug": False,
-        "put apple in pot": False,
-        "put cup in dishwasher": False,
-        "stack bowls": False,
-        "swipe": False
+        "default": False
     },
     "iamlab_cmu_pickup_insert_converted_externally_to_rlds": {
-        "insert onto square peg": False,
-        "pick and lift small": False,
-        "sort shapes": False,
-        "take usb out": False
+        "default": False
     },
     "utaustin_mutex": {
-        "put an object": False,
-        "open an object's door": False,
-        "take out an object": False,
-        "place an object": False,
-        "hold an object": False,
-        "move an object": False,
-        "grip an object": False
+        "default": False
     },
     "cmu_play_fusion": {
-        "pick up an object": False,
-        "open a door": False,
-        "open a drawer": False,
-        "place an object": False,
-        "close a door": False,
-        "close a drawer": False,
-        "turn on lights": False,
-        "push an object": False
+        "default": False
     },
     "cmu_stretch": {
-        "open a door": False,
-        "open a dishwasher": False,
-        "open a cabinet": False,
-        "open a drawer": False,
-        "slide a door": False,
-        "pull out a drawer": False,
-        "lift a lid": False,
-        "lift a knife": False,
-        "garbage a can": False
+        "default": False
     },
     "berkeley_gnm_recon": {
-        "explore environment": False
+        "default": False
     },
     "berkeley_gnm_cory_hall": {
-        "navigate hallways": False
+        "default": False
     },
     "berkeley_gnm_sac_son": {
-        "navigate environments": False
+        "default": False
     },
     "conq_hose_manipulation": {
-        "grab the end of the vacuum hose around in an office environment": False,
-        "lift the end of the vacuum hose around in an office environment": False,
-        "drag the end of the vacuum hose around in an office environment": False
+        "default": False
     },
     "dobbe": {
-        "pick up paper towel roll": False,
-        "pick up paper bag": False,
-        "pick up hat": False,
-        "pick up trash bag": False,
-        "pick up hand towel": False,
-        "pick up kitchen towel": False,
-        "pick up tissue roll": False,
-        "open a door": False,
-        "open cabinet door": False,
-        "open shower curtain": False,
-        "open dishwasher door": False,
-        "open air fryer door": False,
-        "open freezer door": False,
-        "open vertical window blinds": False,
-        "close a door": False,
-        "close cabinet door": False,
-        "close shower curtain": False,
-        "close dishwasher door": False,
-        "close air fryer door": False,
-        "place keychain": False,
-        "place spice": False,
-        "place massager": False,
-        "pull out dining chair": False,
-        "pull book from shelf": False,
-        "pull chair": False,
-        "pull desk chair": False,
-        "pull side table": False,
-        "pull out dining stool": False,
-        "flush toilet": False,
-        "straighten cushion": False,
-        "pour chocolate almond": False,
-        "unplug charger": False,
-        "rotate speaker knob": False,
-        "adjust oven knob": False,
-        "push toaster button": False,
-        "put rag in laundry": False
+        "default": False
     },
     "io_ai_tech": {
-        "pick up the glue from the plate": False,
-        "pick up the stapler": False,
-        "place the glue on the plate": False,
-        "place the stapler on the desk": False
+        "default": False
     },
     "robo_set": {
-        "wipe an object": False,
-        "pick up an object": False,
-        "place an object": False,
-        "cap an object": False,
-        "uncap an object": False
-    },
-    "spoc": {
-        "fetch an object": False,
-        "navigate to an object": False,
-        "search for an object": False,
-        "pick up an object": False,
-        "find an object": False,
-        "place an object": False
+        "default": False
     },
     "plex_robosuite": {
-        "open an object": False,
-        "close an object": False,
-        "pick up an object": False,
-        "place an object": False,
-        "put an object": False,
-        "insert an object": False,
-        "lift an object": False,
-        "assemble an object": False,
-        "stack an object": False
+        "default": False
     }
 }
 
