@@ -175,6 +175,7 @@ DESCRIPTIONS = {
 ACTION_SPACES = {
     "fractal20220817_data": {
         "default": {
+
             0: ("X axis displacement for the robot's base movement"),
             1: ("Y axis displacement for the robot's base movement"),
             2: ("Vertical rotation displacement for the robot's base movement"),
@@ -185,6 +186,7 @@ ACTION_SPACES = {
             7: ("X axis displacement for the robot's arm movement"),
             8: ("Y axis displacement for the robot's arm movement"),
             9: ("Z axis displacement for the robot's arm movement")
+
         }
     },
     "kuka": {
@@ -552,10 +554,12 @@ ACTION_SPACES = {
         }
     },
     "utaustin_mutex": {
+
         "default": {
             0: None
         }
     },
+
     "cmu_play_fusion": {
         "default": {
             0: None
@@ -566,21 +570,25 @@ ACTION_SPACES = {
             0: None
         }
     },
+
     "berkeley_gnm_recon": {
         "default": {
             0: None
         }
     },
+
     "berkeley_gnm_cory_hall": {
         "default": {
             0: None
         }
     },
+
     "berkeley_gnm_sac_son": {
         "default": {
             0: None
         }
     },
+
     "conq_hose_manipulation": {
         "default": {
             0: ("X axis displacement of end effector of the robot"),
@@ -622,6 +630,7 @@ ACTION_SPACES = {
             4: ("Y axis delta rotation of the end-effector of the robot"),
             5: ("Z axis delta rotation of the end-effector of the robot"),
             6: ("Gripper opening value", {1.0: "Gripper closed", -1.0: "Gripper open"})
+
         }
     }
 }
