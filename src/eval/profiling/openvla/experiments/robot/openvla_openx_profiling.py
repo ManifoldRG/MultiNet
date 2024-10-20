@@ -34,27 +34,6 @@ class EvalConfig:
     unnorm_key = "bridge_orig"  # default unnorm_key bridge_orig
 
 
-def get_unnorm_key(dataset_name: str) -> str:
-    """
-    Maps the dataset name to the appropriate unnorm_key for OpenVLA.
-    
-    Args:
-    dataset_name (str): The name of the dataset.
-    
-    Returns:
-    str: The corresponding unnorm_key for OpenVLA.
-    """
-    unnorm_key_mapping = {
-        "usc_cloth_sim_converted_externally_to_rlds": "usc",
-        "nyu_rot_dataset_converted_externally_to_rlds": "nyu_rot",
-        "utokyo_pr2_opening_fridge_converted_externally_to_rlds": "bridge_orig",
-        "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": "bridge_orig",
-        "utokyo_xarm_pick_and_place_converted_externally_to_rlds": "bridge_orig"
-    }
-    
-    return unnorm_key_mapping.get(dataset_name, "bridge_orig")
-
-
 def profile_openvla_on_openx(cfg: EvalConfig):
     # Path to OpenX datasets
     openx_datasets_path = '/home/locke/ManifoldRG/MultiNet/data/translated'  # TODO: Add the path
@@ -62,6 +41,8 @@ def profile_openvla_on_openx(cfg: EvalConfig):
     # Get list of all OpenX datasets
     # openx_dataset_paths = [d for d in os.listdir(openx_datasets_path) if os.path.isdir(os.path.join(openx_datasets_path, d))]
     openx_dataset_paths = ['utokyo_pr2_opening_fridge_converted_externally_to_rlds']
+    # openx_dataset_paths = ['usc_cloth_sim_converted_externally_to_rlds']
+    # openx_dataset_paths = ['nyu_rot_dataset_converted_externally_to_rlds']
 
     eval_results = {}
 
@@ -77,7 +58,7 @@ def profile_openvla_on_openx(cfg: EvalConfig):
 
         # Load models with the corresponding cfg that affects the unnormalization of the action space
         cfg = EvalConfig()
-        cfg.unnorm_key = "bridge_orig"
+        cfg.unnorm_key = openx_dataset
         model = get_model(cfg)
         processor = get_processor(cfg)
         resize_size = get_image_resize_size(cfg)
@@ -100,7 +81,7 @@ def profile_openvla_on_openx(cfg: EvalConfig):
         # Calculate evaluation time
         eval_time = end_time - start_time
 
-        # Store results
+        # Store resultsp
         eval_results[openx_dataset] = {
             'action_success_rate': action_success_rate,
             'total_dataset_amse': total_dataset_amse,
