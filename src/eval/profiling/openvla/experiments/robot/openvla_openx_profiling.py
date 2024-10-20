@@ -18,7 +18,7 @@ from src.eval.profiling.openvla.experiments.robot.robot_utils import (get_model,
                                                                       get_image_resize_size
                                                                       )
 from src.eval.profiling.openvla.experiments.robot.openvla_utils import get_processor
-from src.eval.profiling.openvla.experiments.robot.openvla_usc_eval import EvalConfig, evaluate_openvla_model
+from src.eval.profiling.openvla.experiments.robot.openvla_openx_eval import EvalConfig, evaluate_openvla_model
 
 
 def profile_openvla_on_openx(cfg: EvalConfig):
