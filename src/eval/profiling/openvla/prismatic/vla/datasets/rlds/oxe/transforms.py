@@ -348,6 +348,34 @@ def nyu_rot_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     trajectory["action"] = trajectory["action"][..., :7]
     return trajectory
 
+def multinet_nyu_rot_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
+    if 'continuous_observation' in trajectory:
+        # Assuming the first 3 elements are for position, and the last is for gripper
+        trajectory['observation'] = {
+            'eef_state': trajectory['continuous_observation'][:, :3],
+            'gripper_state': trajectory['continuous_observation'][:, -1:]
+        }
+    
+    if 'text_observation' in trajectory:
+        trajectory['language_instruction'] = trajectory['text_observation']
+    else:
+        trajectory['language_instruction'] = tf.fill(tf.shape(trajectory['action'][:, 0:1]), "")
+
+    if 'image_observation' in trajectory:
+        trajectory['observation']['image'] = trajectory['image_observation']
+
+    # NYU ROT uses 4D action: [del_x, del_y, del_z, gripper]
+    # We need to ensure it's 7D for OpenVLA
+    if 'action' in trajectory:
+        if trajectory['action'].shape[-1] == 4:
+            # Pad the action to 7D by adding 3 zeros for rotation
+            padded_action = tf.pad(trajectory['action'], [[0, 0], [0, 3]], constant_values=0)
+            trajectory['action'] = padded_action
+        elif trajectory['action'].shape[-1] < 7:
+            padded_action = tf.pad(trajectory['action'], [[0, 0], [0, 7 - trajectory['action'].shape[-1]]])
+            trajectory['action'] = padded_action
+
+    return trajectory
 
 def stanford_hydra_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     # invert gripper action, +1 = open, 0 = close
@@ -507,6 +535,61 @@ def bc_z_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
         axis=-1,
     )
     trajectory["language_instruction"] = trajectory["observation"]["natural_language_instruction"]
+    return trajectory
+
+def multinet_usc_cloth_sim_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
+    # The action is already concatenated in the dataloader
+    # No need to extract components or concatenate
+
+    # Process the observation
+    if 'continuous_observation' in trajectory:
+        # The first 3 elements are eef_state and the last element is gripper_state
+        trajectory['observation'] = {
+            'eef_state': trajectory['continuous_observation'][:, :3],
+            'gripper_state': trajectory['continuous_observation'][:, -1:]
+        }
+    
+    if 'text_observation' in trajectory:
+        trajectory['language_instruction'] = trajectory['text_observation']
+    else:
+        trajectory['language_instruction'] = tf.fill(tf.shape(trajectory['action'][:, 0:1]), "")
+
+    if 'image_observation' in trajectory:
+        trajectory['observation']['image'] = trajectory['image_observation']  # TODO: move the openx_dataloader image transform to here and by dataset
+
+    if 'action' in trajectory and trajectory['action'].shape[-1] != 7:
+        padded_action = tf.pad(trajectory['action'], [[0, 0], [0, 7 - trajectory['action'].shape[-1]]])
+        trajectory['action'] = padded_action
+
+    return trajectory
+
+def multinet_utokyo_pr2_opening_fridge_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
+    if 'continuous_observation' in trajectory:
+        # Assuming the first 6 elements are for position and orientation, and the last is for gripper
+        trajectory['observation'] = {
+            'robot_state': trajectory['continuous_observation'][:, :6],
+            'gripper_state': trajectory['continuous_observation'][:, -1:]
+        }
+    
+    if 'text_observation' in trajectory:
+        trajectory['language_instruction'] = trajectory['text_observation']
+    else:
+        trajectory['language_instruction'] = tf.fill(tf.shape(trajectory['action'][:, 0:1]), "")
+
+    if 'image_observation' in trajectory:
+        trajectory['observation']['image'] = trajectory['image_observation']
+
+    # UTokyo PR2 uses 8D action: [3x pos delta, 3x RPY angles, 1x gripper, 1x terminal]
+    # We need to ensure it's 7D for OpenVLA
+    if 'action' in trajectory:
+        # Remove the terminal action (last dimension) if it exists
+        if trajectory['action'].shape[-1] == 8:
+            trajectory['action'] = trajectory['action'][:, :7]
+        # If it's less than 7D, pad it
+        elif trajectory['action'].shape[-1] < 7:
+            padded_action = tf.pad(trajectory['action'], [[0, 0], [0, 7 - trajectory['action'].shape[-1]]])
+            trajectory['action'] = padded_action
+
     return trajectory
 
 
@@ -863,6 +946,7 @@ OXE_STANDARDIZATION_TRANSFORMS = {
     "columbia_cairlab_pusht_real": pusht_dataset_transform,
     "stanford_kuka_multimodal_dataset_converted_externally_to_rlds": stanford_kuka_multimodal_dataset_transform,
     "nyu_rot_dataset_converted_externally_to_rlds": nyu_rot_dataset_transform,
+    "multinet_nyu_rot_dataset_converted_externally_to_rlds": multinet_nyu_rot_dataset_transform,
     "stanford_hydra_dataset_converted_externally_to_rlds": stanford_hydra_dataset_transform,
     "austin_buds_dataset_converted_externally_to_rlds": austin_buds_dataset_transform,
     "nyu_franka_play_dataset_converted_externally_to_rlds": nyu_franka_play_dataset_transform,
@@ -874,6 +958,8 @@ OXE_STANDARDIZATION_TRANSFORMS = {
     "austin_sailor_dataset_converted_externally_to_rlds": austin_sailor_dataset_transform,
     "austin_sirius_dataset_converted_externally_to_rlds": austin_sirius_dataset_transform,
     "bc_z": bc_z_dataset_transform,
+    "multinet_usc_cloth_sim_converted_externally_to_rlds": multinet_usc_cloth_sim_dataset_transform,
+    "multinet_utokyo_pr2_opening_fridge_converted_externally_to_rlds": multinet_utokyo_pr2_opening_fridge_dataset_transform,
     "utokyo_pr2_opening_fridge_converted_externally_to_rlds": tokyo_pr2_opening_fridge_dataset_transform,
     "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": tokyo_pr2_tabletop_manipulation_dataset_transform,
     "utokyo_xarm_pick_and_place_converted_externally_to_rlds": utokyo_xarm_pick_place_dataset_transform,
