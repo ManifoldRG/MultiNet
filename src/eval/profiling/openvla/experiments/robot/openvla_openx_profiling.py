@@ -3,6 +3,8 @@ import time
 import json
 import numpy as np
 import sys
+import gc
+import torch
 from dataclasses import dataclass
 from typing import Union
 
@@ -55,6 +57,9 @@ def profile_openvla_on_openx(cfg: EvalConfig):
         tfds_shards = [os.path.join(openx_datasets_path, openx_dataset, f) 
                        for f in sorted_shard_files]
         
+        # Reset GPU memory
+        torch.cuda.empty_cache()
+        gc.collect()
 
         # Load models with the corresponding cfg that affects the unnormalization of the action space
         cfg = EvalConfig()
@@ -75,13 +80,18 @@ def profile_openvla_on_openx(cfg: EvalConfig):
                                                                                                   resize_size,
                                                                                                   openx_dataset)
 
+        del model
+        del processor
+        torch.cuda.empty_cache()
+        gc.collect()
+
         # End timing
         end_time = time.time()
 
         # Calculate evaluation time
         eval_time = end_time - start_time
 
-        # Store resultsp
+        # Store results
         eval_results[openx_dataset] = {
             'action_success_rate': action_success_rate,
             'total_dataset_amse': total_dataset_amse,

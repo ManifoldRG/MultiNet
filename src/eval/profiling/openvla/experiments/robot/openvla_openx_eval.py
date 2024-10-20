@@ -20,7 +20,7 @@ def to_discrete(action):
     return np.where(action >= 0.5, 1, 0)
 
 
-def standardize_predicted_action(predicted_action, dataset_name):
+def convert_predicted_action_to_dataset_standard(predicted_action, dataset_name):
     def convert_to_usc(pred):
         return np.array([pred[0], pred[1], pred[2], to_discrete(pred[6])])
     
@@ -28,16 +28,9 @@ def standardize_predicted_action(predicted_action, dataset_name):
         """
         - utokyo_pr2 uses 8D: [3x pos delta, 3x RPY angles, 1x gripper, 1x terminal]
           We'll use the first 6 dimensions as-is, discretize the gripper, and add a dummy terminal action
-
-        TODO:
-        1. Robot-specific unnormalization
-        2. Reference frame conversion
-        3. Unit conversion
         """
-        pos_range_scaler = 1000  # 1m = 1000mm
-
         return np.array([
-            pred[0] * pos_range_scaler, pred[1] * pos_range_scaler, pred[2] * pos_range_scaler,  # positional delta
+            pred[0], pred[1], pred[2],  # positional delta
             pred[3], pred[4], pred[5],  # RPY angles
             to_discrete(pred[6]),       # discretized gripper command
             0                           # dummy terminal action (always 0 as OpenVLA doesn't predict this)
@@ -128,7 +121,7 @@ def evaluate_openvla_model(cfg, model, processor, tfds_shards, resize_size, data
             actual_action = batch['action'][0][idx]
 
             # Standardize the predicted action to match the actual action space
-            standardized_predicted_action = standardize_predicted_action(predicted_action, dataset_name)
+            standardized_predicted_action = convert_predicted_action_to_dataset_standard(predicted_action, dataset_name)
 
             # actual_action = batch['action'][0][idx]
             # predicted_action = actual_action
