@@ -58,12 +58,17 @@ class OpenXDataset(Dataset):
                     elem['observation'] = dict(sorted(elem['observation'].items()))
                     for key, tensor in elem['observation'].items():
                         if 'language' not in key and 'image' not in key and 'pointcloud' not in key and 'rgb' not in key and 'instruction' not in key:
-                            float_obs[key] = tensor.numpy()
+                            if (tensor.dtype == tf.float32 or tensor.dtype==tf.float64) and tensor.shape.ndims>=1 and not tf.reduce_any(tf.math.is_inf(tensor)):
+                                float_obs[key] = tensor.numpy()
 
                 #Processing image observation
                 image_observation = None
                 if 'image' in elem['observation']:
                     image_observation = elem['observation']['image'].numpy().astype(np.uint8)
+                elif 'hand_image' in elem['observation']:
+                    image_observation = elem['observation']['hand_image'].numpy().astype(np.uint8)
+                elif 'wrist_image' in elem['observation']:
+                    image_observation = elem['observation']['wrist_image'].numpy().astype(np.uint8)
                 elif 'rgb' in elem['observation']:
                     image_observation = elem['observation']['rgb'].numpy().astype(np.uint8)
 

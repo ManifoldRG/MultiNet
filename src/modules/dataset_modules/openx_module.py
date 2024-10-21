@@ -9,7 +9,7 @@ import numpy as np
 import json
 import string
 import time
-
+import os
 
 class OpenXModule:
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int, k_shots: int) -> None:
@@ -25,16 +25,38 @@ class OpenXModule:
     # Main evaluation function.
     def run_eval(self) -> None:
         # Since OpenX consists of multiple datasets, a modality module should be initialized per every evaluation step for each dataset.
+
         total_results = {}
         for dataset in self.datasets:
+            
+            if os.path.exists('<path to results>'):
+                with open('<path to results>', 'r') as f:
+                    completed_datasets = json.load(f)
+            
+                if dataset in completed_datasets:
+                    print(f'\nSkipping dataset: {dataset} (already evaluated)\n')
+                    continue
+        
             if self.modality == 'vlm':
                 modality_module = VLMModule(self.source, self.model)
                 result = self._run_eval_dataset(dataset, modality_module)
 
                 total_results[dataset] = result
+            
+            if os.path.exists('<path to results>'):
+                # If it exists, load the existing data
+                with open('<path to results>', 'r') as f:
+                    existing_results = json.load(f)
+                # Append new data to existing data
+                existing_results.update(total_results)
+            else:
+                # If it doesn't exist, use the current eval_results
+                existing_results = total_results
 
-        with open(f"openx_results.json", 'w') as f:
-            json.dump(total_results, f)
+            # Write the updated or new results to the file
+            with open('<path to results>', 'w') as f:
+                json.dump(existing_results, f, indent=4, default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
+            self.action_stats_opxmodule = None
 
     # Evaluation of one dataset.
     def _run_eval_dataset(self, dataset: str, modality_module: Any) -> dict[str, Union[list, float]]:
@@ -50,17 +72,19 @@ class OpenXModule:
             # Creating the dataloader.
             dataloader_obj, dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size)
 
-            avg_mse_list = []
-            total_dataset_amse = 0.0
-            episode_count = 0
-            total_success_counts = []
+            #avg_mse_list = []
+            total_dataset_mse = 0.0
+            #episode_count = 0
+            action_success = []
+            timestep_mse = []
+
             for batch in dataloader:
                 # Action stats need to be retrieved only once for each dataset, after they have been populated.
                 if self.action_stats_opxmodule is None:
                     self.action_stats_opxmodule = dataloader_obj._get_action_stats()  
                 batch_size = len(batch['text_observation'])
-                episode_mses = [[] for b in range(batch_size)]
-                success_counts = [0 for b in range(batch_size)]
+                #episode_mses = [[] for b in range(batch_size)]
+                #success_counts = [0 for b in range(batch_size)]
 
                 # Consuming the batch until all timesteps in the batch.
                 for cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts in self._process_batch(batch, dataset):
@@ -69,28 +93,52 @@ class OpenXModule:
                     # Any invalid output 'None' should be initialized into a random action.
                     outputs = [self._validate_text_output(output, shape=labels[o].shape) for o, output in enumerate(outputs)]
 
+                    if isinstance(outputs[0][0], float)==False:
+                        outputs = [[float(item) for item in sublist] for sublist in outputs]
+
                     # This only works for continuous vector actions. (Okay for OpenX)
                     mses = np.mean((np.array(labels) - np.array(outputs)) ** 2, axis=-1)
                     assert len(mses) == len(idxs), "The calculated MSEs are not matched with the processed inputs."
 
                     for i, idx in enumerate(idxs):
-                        episode_mses[idx].append(mses[i])
-
+                        #episode_mses[idx].append(mses[i])
+                        timestep_mse.append(mses[i])
                         # If any episodes are the last, recording the success rate.
-                        if is_lasts[i] and np.array_equal(np.array(outputs[i]), np.array(labels[i])):
-                            success_counts[idx] += 1
+                        if is_lasts[i]:
+                            #print(outputs[i])
+                            #print(labels[i])
+                            if np.array_equal(np.array(outputs[i]), np.array(labels[i])):
+                                #success_counts[idx] += 1
+                                action_success.append(1)
+                            else:
+                                action_success.append(0)
 
                 # Calculate average RMSE for the episode
-                avg_episode_mses = [np.mean(episode_mse) for episode_mse in episode_mses]
-                avg_mse_list += avg_episode_mses
-                total_dataset_amse += np.sum(avg_episode_mses)
-                episode_count += batch_size
-                total_success_counts += success_counts
+                #avg_episode_mses = [np.mean(episode_mse) for episode_mse in episode_mses]
+                #avg_mse_list += avg_episode_mses
+                #total_dataset_amse += np.sum(avg_episode_mses)
+                #episode_count += batch_size
+                #total_success_counts += success_counts
+
+            action_success_rate = (sum(action_success) / len(action_success)) * 100
+            total_dataset_mse = sum(timestep_mse)
+            print(f"\nTotal MSE across {len(timestep_mse)} timesteps: {total_dataset_mse:.4f}")
+            num_timesteps = len(timestep_mse)
+            avg_dataset_mse = total_dataset_mse / num_timesteps
+
+            # Calculate average AMSE over all episodes
+            #avg_dataset_amse = total_dataset_amse / episode_count
+            
+            # Calculate min-max normalized AMSE
+            min_mse = min(timestep_mse)
+            max_mse = max(timestep_mse)
+            normalized_mse = (timestep_mse - min_mse) / (max_mse - min_mse) if max_mse != min_mse else 0
+            normalized_amse = sum(normalized_mse) / len(normalized_mse)
 
             end_time = time.time()
             eval_time = end_time - start_time
 
-            result['action_success_rate'] = (sum(total_success_counts) / len(total_success_counts)) * 100
+            '''result['action_success_rate'] = (sum(total_success_counts) / len(total_success_counts)) * 100
             result['avg_mse_list'] = avg_mse_list
             result['episode_count'] = episode_count
             result['total_dataset_amse'] = total_dataset_amse
@@ -102,6 +150,13 @@ class OpenXModule:
             min_amse = min(avg_mse_list)
             max_amse = max(avg_mse_list)
             result['normalized_amse'] = (avg_dataset_amse - min_amse) / (max_amse - min_amse) if max_amse != min_amse else 0
+            result['eval_time'] = eval_time'''
+
+            result['action_success_rate'] = action_success_rate
+            result['total_dataset_amse'] = total_dataset_mse
+            result['num_timesteps'] = num_timesteps
+            result['avg_dataset_amse'] = avg_dataset_mse
+            result['normalized_amse'] = normalized_amse
             result['eval_time'] = eval_time
 
         except KeyError:
@@ -170,28 +225,42 @@ class OpenXModule:
     # Generating the instruction text for VLMModule.
     def _get_vlm_instruction(self, dataset: str, env_name: str):
         assert dataset in DESCRIPTIONS, f"The dataset {dataset} is not included in the OpenX group."
-        assert env_name in DESCRIPTIONS[dataset], f"The environment {env_name} is not included in the OpenX group."
 
-        env_desc = ' '.join(DESCRIPTIONS[dataset][env_name])
-        # Handle the cases where the action space does not have a verbal description, and stats need to be used instead.
-        if len(ACTION_SPACES[dataset][env_name]) == 1:
-            # If there is a placeholder 'None' in the action space, it means that the action space is not given a verbal description.
-            if ACTION_SPACES[dataset][env_name][0] == None:
-                ACTION_SPACES[dataset][env_name] = {}
-                for i in range(self.action_stats_opxmodule['size'][0]):
-                    ACTION_SPACES[dataset][env_name][i] = ("The action space statistics of this dimension of the action space over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
+        if env_name in DESCRIPTIONS[dataset]:
+            # If env_name exists, the description of that environment is defined specifically.
+            env_desc = ' '.join(DESCRIPTIONS[dataset][env_name])
+        else:
+            # If not, the env_name itself becomes the description.
+            env_desc = env_name.capitalize() + "."
         
-        elif len(ACTION_SPACES[dataset][env_name]) != 1:
+        if env_name in ACTION_SPACES[dataset]:
+            # If env_name exists, the action space of that environment is defined specifically.
+            action_space = ACTION_SPACES[dataset][env_name]
+        else:
+            # If not, the action space is the one shared by all environments.
+            action_space = ACTION_SPACES[dataset]['default']
+        
+        # Handle the cases where the action space does not have a verbal description, and stats need to be used instead.
+        if len(action_space) == 1:
+            # If there is a placeholder 'None' in the action space, it means that the action space is not given a verbal description.
+            if action_space[0] == None:
+                action_space = {}
+                for i in range(self.action_stats_opxmodule['size'][0]):
+                    action_space[i] = ("The action space statistics of this dimension of the action space over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
+        
+        elif len(action_space) != 1:
             # For cases where the verbal description is present but not the ranges, so we augment the information given with the stats
             for i in range(self.action_stats_opxmodule['size'][0]):
-                if not isinstance (ACTION_SPACES[dataset][env_name][i], tuple):
-                    ACTION_SPACES[dataset][env_name][i] = (ACTION_SPACES[dataset][env_name][i]+". In addition to this verbal description, here are the action space statistics of this dimension over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
+                if not isinstance (action_space[i], tuple):
+                    action_space[i] = (action_space[i]+". In addition to this verbal description, here are the action space statistics of this dimension over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
         
-        action_space = ACTION_SPACES[dataset][env_name]
-        only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name]
+        only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name] if env_name in ACTION_EXCLUSIVENESS[dataset] else ACTION_EXCLUSIVENESS[dataset]['default']
         additional_inst = None
-        if dataset in ADDITIONAL_INSTRUCTIONS and env_name in ADDITIONAL_INSTRUCTIONS[dataset]:
-            additional_inst = ' '.join(ADDITIONAL_INSTRUCTIONS[dataset][env_name])
+        if dataset in ADDITIONAL_INSTRUCTIONS:
+            if env_name in ADDITIONAL_INSTRUCTIONS[dataset]:
+                additional_inst = ' '.join(ADDITIONAL_INSTRUCTIONS[dataset][env_name])
+            else:
+                additional_inst = ADDITIONAL_INSTRUCTIONS[dataset]['default']
 
         instruction = format_instruction_prompt(env_name, env_desc, action_space, only_one_action, additional_inst)
         return instruction
@@ -205,7 +274,7 @@ class OpenXModule:
         
     # Validating the final output from the VLM/LLM model.
     def _validate_text_output(self, output: Any, shape: tuple[int]) -> np.array:
-        if output is None or not isinstance(output, list) or len(output) != shape[0]:
+        if output is None or not isinstance(output, list) or len(output) != shape[0] or any(isinstance(x, (str, np.string_, set)) for x in output):
             output = np.random.random(size=shape)
         
         return np.array(output)
