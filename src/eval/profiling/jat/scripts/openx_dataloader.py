@@ -130,6 +130,15 @@ class OpenXDataset(Dataset):
                     elif img_obs.shape[2] == 2:
                         img_4channel = np.dstack((img_obs, img_obs))
                         img_obs_pil = Image.fromarray(img_4channel)
+                elif 'wrist_image' in elem['observation']:
+                    img_obs = elem['observation']['wrist_image'].numpy().astype(np.uint8)
+                    if img_obs.shape[2] == 3:
+                        fourth_channel = img_obs[:,:,0]  # Use the red channel as the fourth channel
+                        img_4channel = np.dstack((img_obs, fourth_channel))
+                        img_obs_pil = Image.fromarray(img_4channel)
+                    elif img_obs.shape[2] == 2:
+                        img_4channel = np.dstack((img_obs, img_obs))
+                        img_obs_pil = Image.fromarray(img_4channel)
                 elif 'rgb' in elem['observation']:
                     img_obs = elem['observation']['rgb'].numpy().astype(np.uint8)
                     if img_obs.shape[2] == 3:

@@ -1,0 +1,34 @@
+{
+    "berkeley_autolab_ur5": {
+        "action_success_rate": 1.9230769230769231,
+        "total_dataset_amse": 749.620213080081,
+        "num_timesteps": 10156,
+        "avg_dataset_amse": 0.0738105763174558,
+        "normalized_amse": 0.04878093800424255,
+        "eval_time": 28951.873731136322
+    },
+    "jaco_play": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 5802.75007643194,
+        "num_timesteps": 7838,
+        "avg_dataset_amse": 0.7403355545332917,
+        "normalized_amse": 0.3139787491625979,
+        "eval_time": 15151.50432395935
+    },
+    "columbia_cairlab_pusht_real": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 85.23943457701799,
+        "num_timesteps": 2884,
+        "avg_dataset_amse": 0.029555975928230924,
+        "normalized_amse": 0.04634220551303001,
+        "eval_time": 5309.376355409622
+    },
+    "toto": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 11396.57027407351,
+        "num_timesteps": 31560,
+        "avg_dataset_amse": 0.3611080568464357,
+        "normalized_amse": 0.0688690727925556,
+        "eval_time": 76075.78347039223
+    }
+}

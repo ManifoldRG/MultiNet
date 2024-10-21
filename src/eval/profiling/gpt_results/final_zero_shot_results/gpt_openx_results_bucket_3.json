@@ -1,0 +1,34 @@
+{
+    "nyu_rot_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 153.30585278734344,
+        "num_timesteps": 440,
+        "avg_dataset_amse": 0.34842239269850783,
+        "normalized_amse": 0.030033881285239043,
+        "eval_time": 735.1687004566193
+    },
+    "ucsd_pick_and_place_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 8989.84246231718,
+        "num_timesteps": 13824,
+        "avg_dataset_amse": 0.6503068910819719,
+        "normalized_amse": 0.0858786618437778,
+        "eval_time": 24392.52116584778
+    },
+    "ucsd_kitchen_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 4935753.94652446,
+        "num_timesteps": 386,
+        "avg_dataset_amse": 12786.927322602227,
+        "normalized_amse": 0.16242289460882187,
+        "eval_time": 1046.0351450443268
+    },
+    "stanford_hydra_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.8333333333333334,
+        "total_dataset_amse": 14500.662948832163,
+        "num_timesteps": 72192,
+        "avg_dataset_amse": 0.20086246327615476,
+        "normalized_amse": 0.009134259793548635,
+        "eval_time": 142744.80327630043
+    }
+}

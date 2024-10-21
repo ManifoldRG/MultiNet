@@ -1,0 +1,10 @@
+{
+    "kaist_nonprehensile_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 9029807476.203888,
+        "num_timesteps": 6656,
+        "avg_dataset_amse": 1356641.7482277476,
+        "normalized_amse": 0.00015089337797499446,
+        "eval_time": 24580.76447057724
+    }
+}
