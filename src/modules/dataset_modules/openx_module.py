@@ -232,7 +232,7 @@ class OpenXModule:
         else:
             # If not, the env_name itself becomes the description.
             env_desc = env_name.capitalize() + "."
-        
+
         if env_name in ACTION_SPACES[dataset]:
             # If env_name exists, the action space of that environment is defined specifically.
             action_space = ACTION_SPACES[dataset][env_name]
