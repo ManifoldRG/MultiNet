@@ -1,0 +1,42 @@
+{
+    "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 40676339.367871605,
+        "num_timesteps": 2382,
+        "avg_dataset_amse": 17076.54885301075,
+        "normalized_amse": 0.03979190668248023,
+        "eval_time": 4304.931730508804
+    },
+    "conq_hose_manipulation": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 247.15185113743664,
+        "num_timesteps": 1944,
+        "avg_dataset_amse": 0.1271357258937431,
+        "normalized_amse": 0.02404198702143704,
+        "eval_time": 2418.9575979709625
+    },
+    "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 17359589.74426715,
+        "num_timesteps": 6362,
+        "avg_dataset_amse": 2728.637180802759,
+        "normalized_amse": 0.017474166367328643,
+        "eval_time": 12327.510221004486
+    },
+    "stanford_mask_vit_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 1820.202144692518,
+        "num_timesteps": 2821,
+        "avg_dataset_amse": 0.6452329474273372,
+        "normalized_amse": 0.11953495148117718,
+        "eval_time": 5767.387697219849
+    },
+    "plex_robosuite": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 4284.097465739796,
+        "num_timesteps": 9096,
+        "avg_dataset_amse": 0.4709869685290013,
+        "normalized_amse": 0.06660421777177758,
+        "eval_time": 15759.11651968956
+    }
+}
