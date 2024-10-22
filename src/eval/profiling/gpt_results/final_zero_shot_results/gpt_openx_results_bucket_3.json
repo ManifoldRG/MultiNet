@@ -1,12 +1,4 @@
 {
-    "nyu_rot_dataset_converted_externally_to_rlds": {
-        "action_success_rate": 0.0,
-        "total_dataset_amse": 153.30585278734344,
-        "num_timesteps": 440,
-        "avg_dataset_amse": 0.34842239269850783,
-        "normalized_amse": 0.030033881285239043,
-        "eval_time": 735.1687004566193
-    },
     "ucsd_pick_and_place_dataset_converted_externally_to_rlds": {
         "action_success_rate": 0.0,
         "total_dataset_amse": 8989.84246231718,
@@ -15,14 +7,6 @@
         "normalized_amse": 0.0858786618437778,
         "eval_time": 24392.52116584778
     },
-    "ucsd_kitchen_dataset_converted_externally_to_rlds": {
-        "action_success_rate": 0.0,
-        "total_dataset_amse": 4935753.94652446,
-        "num_timesteps": 386,
-        "avg_dataset_amse": 12786.927322602227,
-        "normalized_amse": 0.16242289460882187,
-        "eval_time": 1046.0351450443268
-    },
     "stanford_hydra_dataset_converted_externally_to_rlds": {
         "action_success_rate": 0.8333333333333334,
         "total_dataset_amse": 14500.662948832163,
@@ -30,5 +14,37 @@
         "avg_dataset_amse": 0.20086246327615476,
         "normalized_amse": 0.009134259793548635,
         "eval_time": 142744.80327630043
+    },
+    "nyu_rot_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 7.142857142857142,
+        "total_dataset_amse": 193.91659178868906,
+        "num_timesteps": 440,
+        "avg_dataset_amse": 0.4407195267924751,
+        "normalized_amse": 0.03407789943070438,
+        "eval_time": 686.7167165279388
+    },
+    "ucsd_kitchen_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 4470251.527459471,
+        "num_timesteps": 386,
+        "avg_dataset_amse": 11580.962506371685,
+        "normalized_amse": 0.20701689366351306,
+        "eval_time": 877.2749886512756
+    },
+    "imperialcollege_sawyer_wrist_cam": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 112.36231419978839,
+        "num_timesteps": 1536,
+        "avg_dataset_amse": 0.0731525483071539,
+        "normalized_amse": 0.1832411607944919,
+        "eval_time": 2844.8172132968903
+    },
+    "eth_agent_affordances": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 35888.17371767255,
+        "num_timesteps": 30720,
+        "avg_dataset_amse": 1.16823482153882,
+        "normalized_amse": 0.05695680580677874,
+        "eval_time": 44533.179614543915
     }
 }
