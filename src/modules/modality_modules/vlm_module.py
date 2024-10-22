@@ -13,8 +13,6 @@ class VLMModule:
         assert self.source_module is not None, "The source module has not been set correcly. Check required."
     
     # cur_inputs: (B, N) => Each element is tuple (type, value)
-    # Any image inputs should be tagged with the type starting with 'image...' to be correctly converted into image input.
-    # Any other data will be considered into text data.
     # k_shots_examples: (B, k, N) => Each element is tuple (input/output, type, value)
     # Each element should indicate if it is input or output when included as a few-shot example.
     # Otherwise, the few-shot prompting would not work as intended.
@@ -24,12 +22,11 @@ class VLMModule:
                    instructions: list[str]=[],
                    output_types: list[type]=[]
                 ) -> list[str]:
-        if isinstance(self.source_module, OpenAIModule):
-            processed_cur_inputs, processed_k_shots_examples = self._process_inputs_for_api(cur_inputs, k_shots_examples)
-            batch_size = len(processed_cur_inputs)
+        processed_cur_inputs, processed_k_shots_examples = self._process_inputs(cur_inputs, k_shots_examples)
 
-            # The close-sourced API call only support batch size 1.
-            outputs = []
+        outputs = []
+        if isinstance(self.source_module, OpenAIModule):
+            batch_size = len(processed_cur_inputs)
             for b in range(batch_size):
                 num_examples = 0
                 if len(processed_cur_inputs) == len(processed_k_shots_examples):
@@ -48,10 +45,12 @@ class VLMModule:
                 # Clearing the record.
                 self.source_module.clear_history()
 
-            return outputs
+        return outputs
         
     # Translating the input data into image/text format.
-    def _process_inputs_for_api(self, 
+    # Any image inputs should be tagged with the type starting with 'image...' to be correctly converted into image input.
+    # Any other data will be considered into text data.
+    def _process_inputs(self, 
                    cur_inputs: list[list[tuple[str, Any]]], 
                    k_shots_examples: list[list[tuple[str, Any]]]=[]
                 ) -> tuple[list[list[dict]], list[list[Union[list[dict], str]]]]:

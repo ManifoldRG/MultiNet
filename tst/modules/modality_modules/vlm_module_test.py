@@ -58,7 +58,7 @@ class VLMModuleTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             module._convert_into_data("grgj84u982fu", tuple)
 
-    def test_process_inputs_for_api_zero_shot(self):
+    def test_process_inputs_zero_shot(self):
         source = 'openai'
         model = 'gpt-4o-2024-05-13'
         module = VLMModule(source, model)
@@ -86,7 +86,7 @@ class VLMModuleTest(unittest.TestCase):
                 ('continuous_observation', np.random.random_sample(size=(8)))
             ]
         ]
-        processed_cur_inputs, processed_k_shots_examples = module._process_inputs_for_api(cur_inputs)
+        processed_cur_inputs, processed_k_shots_examples = module._process_inputs(cur_inputs)
 
         self.assertEqual(processed_k_shots_examples, [])
         self.assertEqual(len(processed_cur_inputs), len(cur_inputs))
@@ -99,7 +99,7 @@ class VLMModuleTest(unittest.TestCase):
                 else:
                     self.assertEqual(processed_cur_inputs[b][i], {'text': f"{cur_inputs[b][i][0]}: {cur_inputs[b][i][1]}"})
 
-    def test_process_inputs_for_api_one_shot(self):
+    def test_process_inputs_one_shot(self):
         source = 'openai'
         model = 'gpt-4o-2024-05-13'
         module = VLMModule(source, model)
@@ -159,7 +159,7 @@ class VLMModuleTest(unittest.TestCase):
                 ]
             ]
         ]
-        processed_cur_inputs, processed_k_shots_examples = module._process_inputs_for_api(cur_inputs, k_shots_examples)
+        processed_cur_inputs, processed_k_shots_examples = module._process_inputs(cur_inputs, k_shots_examples)
 
         self.assertEqual(len(processed_cur_inputs), len(cur_inputs))
         self.assertEqual(len(processed_k_shots_examples), len(k_shots_examples))
@@ -189,7 +189,7 @@ class VLMModuleTest(unittest.TestCase):
                                 expected_data.append({'text': f"{type}: {value}"})
                         self.assertEqual(processed_k_shots_examples[b][k][i], expected_data)
 
-    def test_process_inputs_for_api_three_shots(self):
+    def test_process_inputs_three_shots(self):
         source = 'openai'
         model = 'gpt-4o-2024-05-13'
         module = VLMModule(source, model)
@@ -291,7 +291,7 @@ class VLMModuleTest(unittest.TestCase):
                 []
             ]
         ]
-        processed_cur_inputs, processed_k_shots_examples = module._process_inputs_for_api(cur_inputs, k_shots_examples)
+        processed_cur_inputs, processed_k_shots_examples = module._process_inputs(cur_inputs, k_shots_examples)
 
         self.assertEqual(len(processed_cur_inputs), len(cur_inputs))
         self.assertEqual(len(processed_k_shots_examples), len(k_shots_examples))
@@ -340,7 +340,7 @@ class VLMModuleTest(unittest.TestCase):
                 {'text': f"discrete_observation: {np.random.randint(8, size=(10))}"}
             ]
         ]
-        module._process_inputs_for_api = MagicMock(return_value=(processed_cur_inputs, []))
+        module._process_inputs = MagicMock(return_value=(processed_cur_inputs, []))
         def side_effect(input_data, system_prompt):
             if input_data == processed_cur_inputs[0]:
                 return "Correctly got the first data for zero-shot."
@@ -424,7 +424,7 @@ class VLMModuleTest(unittest.TestCase):
                 ]
             ]
         ]
-        module._process_inputs_for_api = MagicMock(return_value=(processed_cur_inputs, processed_k_shots_examples))
+        module._process_inputs = MagicMock(return_value=(processed_cur_inputs, processed_k_shots_examples))
         def side_effect(input_data, system_prompt):
             if input_data == processed_cur_inputs[0]:
                 return "Correctly got the first data for 2-shots."
