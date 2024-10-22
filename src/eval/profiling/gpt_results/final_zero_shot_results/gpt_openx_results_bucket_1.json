@@ -7,14 +7,6 @@
         "normalized_amse": 0.04878093800424255,
         "eval_time": 28951.873731136322
     },
-    "jaco_play": {
-        "action_success_rate": 0.0,
-        "total_dataset_amse": 5802.75007643194,
-        "num_timesteps": 7838,
-        "avg_dataset_amse": 0.7403355545332917,
-        "normalized_amse": 0.3139787491625979,
-        "eval_time": 15151.50432395935
-    },
     "columbia_cairlab_pusht_real": {
         "action_success_rate": 0.0,
         "total_dataset_amse": 85.23943457701799,
@@ -30,5 +22,37 @@
         "avg_dataset_amse": 0.3611080568464357,
         "normalized_amse": 0.0688690727925556,
         "eval_time": 76075.78347039223
+    },
+    "berkeley_cable_routing": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 476.7801196394461,
+        "num_timesteps": 4088,
+        "avg_dataset_amse": 0.11662918777872948,
+        "normalized_amse": 0.009584369482141928,
+        "eval_time": 7958.348947286606
+    },
+    "viola": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 2630.7539283200467,
+        "num_timesteps": 7411,
+        "avg_dataset_amse": 0.3549796152098295,
+        "normalized_amse": 0.1340788685206544,
+        "eval_time": 5562.039883613586
+    },
+    "jaco_play": {
+        "action_success_rate": 0.9174311926605505,
+        "total_dataset_amse": 2258.488155642577,
+        "num_timesteps": 7838,
+        "avg_dataset_amse": 0.2881459754583538,
+        "normalized_amse": 0.18815611865458087,
+        "eval_time": 12213.680035114288
+    },
+    "nyu_door_opening_surprising_effectiveness": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 208.52320409384387,
+        "num_timesteps": 2209,
+        "avg_dataset_amse": 0.09439710461468713,
+        "normalized_amse": 0.046396594694890665,
+        "eval_time": 6490.468587398529
     }
 }

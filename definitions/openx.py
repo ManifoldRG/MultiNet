@@ -221,7 +221,7 @@ ACTION_SPACES = {
     },
     "jaco_play": {
         "default": {
-            0: ("Gripper closed or open or doesn't move", {2.0: "Gripper closed", 0.0: "Gripper open", 1.0: "Gripper doesn't move"}),
+            0: ("Gripper closed or open or doesn't move", {1.0: "Gripper closed", -1.0: "Gripper open", 0.0: "Gripper doesn't move"}),
             1: ("X axis displacement for the robot"),
             2: ("Y axis displacement for the robot"),
             3: ("Z axis displacement for the robot")
@@ -245,11 +245,11 @@ ACTION_SPACES = {
     },
     "nyu_door_opening_surprising_effectiveness": {
         "default": {
-            0: ("Width of the gripper fingertips describing how open it is", 0.0, 3.0),
+            0: ("Closedness of the gripper", -1.0, 1.0),
             1: ("The X axis rotation delta of the robot in Euler coordinates"),
             2: ("The Y axis rotation delta of the robot in Euler coordinates"),
             3: ("The Z axis rotation delta of the robot in Euler coordinates"),
-            4: ("Termination", {1: "The robot has reached the target location", 0: "The robot has not reached the target location"}),
+            4: ("Termination", {1.0: "The robot has reached the target location", 0.0: "The robot has not reached the target location"}),
             5: ("The X axis displacement in meters of the robot"),
             6: ("The Y axis displacement in meters of the robot"),
             7: ("The Z axis displacement in meters of the robot")
@@ -316,7 +316,7 @@ ACTION_SPACES = {
             3: ("X axis rotation delta of end effector of the robot"),
             4: ("Y axis rotation delta of end effector of the robot"),
             5: ("Z axis rotation delta of end effector of the robot"),
-            6: ("Absolute gripper closedness state", {1: "closed", 0: "open"})
+            6: ("Absolute gripper closedness state", {0.0: "closed", 1.0: "open"})
         }
     },
     "stanford_hydra_dataset_converted_externally_to_rlds": {
@@ -365,7 +365,7 @@ ACTION_SPACES = {
             3: ("Roll of the end effector of the robot"),
             4: ("Pitch of the end effector of the robot"),
             5: ("Yaw of the end effector of the robot"),
-            6: ("Gripper open or closed position of the robot", {1: "closed", 0: "open"}),
+            6: ("Gripper open or closed position of the robot", {0.0: "closed", 1.0: "open"}),
             7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         }
     },
@@ -403,7 +403,7 @@ ACTION_SPACES = {
             3: ("Roll of the end effector of the robot"),
             4: ("Pitch of the end effector of the robot"),
             5: ("Yaw of the end effector of the robot"),
-            6: ("Gripper open or closed", {1: "closed", 0: "open"}),
+            6: ("Gripper open or closed", {0.0: "closed", 1.0: "open"}),
             7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         }
     },
@@ -415,7 +415,7 @@ ACTION_SPACES = {
             3: ("Roll of the end effector of the robot"),
             4: ("Pitch of the end effector of the robot"),
             5: ("Yaw of the end effector of the robot"),
-            6: ("Gripper open or closed", {1: "closed", 0: "open"}),
+            6: ("Gripper open or closed", {0.0: "closed", 1.0: "open"}),
             7: ("Termination status of the episode",{1: "Yes", 0: "No"})
         }
     },
@@ -432,7 +432,7 @@ ACTION_SPACES = {
             3: ("Yaw of the robot"),
             4: ("Pitch of the robot"),
             5: ("Roll of the robot"),
-            6: ("Gripper open or closed position of the robot", {1: "closed", 0: "open"})
+            6: ("Gripper open or closed position of the robot", {0.0: "closed", 1.0: "open"})
         }
     },
     "utokyo_xarm_bimanual_converted_externally_to_rlds": {
@@ -443,14 +443,14 @@ ACTION_SPACES = {
             3: ("Yaw of the left arm of the robot"),
             4: ("Pitch of the left arm of the robot"),
             5: ("Roll of the left arm of the robot"),
-            6: ("Gripper open or closed position of the left arm of the robot", {1: "closed", 0: "open"}),
+            6: ("Gripper open or closed position of the left arm of the robot", {0.0: "closed", 1.0: "open"}),
             7: ("X axis displacement of the end-effector of the right arm of the robot"),
             8: ("Y axis displacement of the end-effector of the right arm of the robot"),
             9: ("Z axis displacement of the end-effector of the right arm of the robot"),
             10: ("Yaw of the right arm of the robot"),
             11: ("Pitch of the right arm of the robot"),
             12: ("Roll of the right arm of the robot"),
-            13: ("Gripper open or closed position of the right arm of the robot", {1: "closed", 0: "open"}),
+            13: ("Gripper open or closed position of the right arm of the robot", {0.0: "closed", 1.0: "open"}),
         }
     },
     "berkeley_mvp_converted_externally_to_rlds": {
@@ -544,8 +544,8 @@ ACTION_SPACES = {
             3: ("The rotation delta change in the Z axis of the robot's end-effector frame in euler angles"),
             4: ("The rotation delta change in the Y axis of the robot's end-effector frame in euler angles"),
             5: ("The rotation delta change in the X axis of the robot's end-effector frame in euler angles"),
-            6: ("The open or close state of the robot's gripper", {0.0: "open", 1.0: "closed"}),
-            7: ("Termination status of the episode",{1: "Yes", 0: "No"})
+            6: ("The open or close state of the robot's gripper", {1.0: "open", 0.0: "closed"}),
+            7: ("Termination status of the episode",{1.0: "Yes", 0.0: "No"})
         }
     },
     "iamlab_cmu_pickup_insert_converted_externally_to_rlds": {
