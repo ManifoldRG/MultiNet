@@ -65,6 +65,10 @@ class OpenXDataset(Dataset):
                 image_observation = None
                 if 'image' in elem['observation']:
                     image_observation = elem['observation']['image'].numpy().astype(np.uint8)
+                elif 'hand_color_image' in elem['observation']:
+                    image_observation = elem['observation']['hand_color_image'].numpy().astype(np.uint8)
+                elif 'agentview_rgb' in elem['observation']:
+                    image_observation = elem['observation']['agentview_rgb'].numpy().astype(np.uint8)
                 elif 'hand_image' in elem['observation']:
                     image_observation = elem['observation']['hand_image'].numpy().astype(np.uint8)
                 elif 'wrist_image' in elem['observation']:
