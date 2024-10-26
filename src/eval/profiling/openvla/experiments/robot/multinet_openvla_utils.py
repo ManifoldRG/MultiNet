@@ -46,7 +46,7 @@ def convert_action(action: np.ndarray, dataset_name: str):
         standard_action = np.zeros(4)  # Initialize with 4 elements
         
         gripper_value = action[-1]
-        standard_action[-1] = -1 * discretize_range_0_to_pos_1_gripper_action_to_3_values(gripper_value)
+        standard_action[0] = -1 * discretize_range_0_to_pos_1_gripper_action_to_3_values(gripper_value)
         
         standard_action[1:4] = action[:3]  # Copy the first 3 elements
         return standard_action
