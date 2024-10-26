@@ -15,9 +15,15 @@ class OpenXModule:
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int, k_shots: int) -> None:
         self.disk_root_dir = disk_root_dir
         self.datasets = list(DESCRIPTIONS.keys())
+
         self.modality = modality
         self.source = source
         self.model = model
+        self.modality_module = None
+        if self.modality == 'vlm':
+            self.modality_module = VLMModule(self.source, self.model)
+        assert self.modality_module is not None, "The modality module has not been set correcly. Check required."
+
         self.batch_size = batch_size
         self.k_shots = k_shots
         self.action_stats_opxmodule = None
@@ -37,11 +43,8 @@ class OpenXModule:
                     print(f'\nSkipping dataset: {dataset} (already evaluated)\n')
                     continue
         
-            if self.modality == 'vlm':
-                modality_module = VLMModule(self.source, self.model)
-                result = self._run_eval_dataset(dataset, modality_module)
-
-                total_results[dataset] = result
+            result = self._run_eval_dataset(dataset)
+            total_results[dataset] = result
             
             if os.path.exists('<path to results>'):
                 # If it exists, load the existing data
@@ -59,7 +62,7 @@ class OpenXModule:
             self.action_stats_opxmodule = None
 
     # Evaluation of one dataset.
-    def _run_eval_dataset(self, dataset: str, modality_module: Any) -> dict[str, Union[list, float]]:
+    def _run_eval_dataset(self, dataset: str) -> dict[str, Union[list, float]]:
         result = {}
 
         try:
@@ -88,7 +91,7 @@ class OpenXModule:
 
                 # Consuming the batch until all timesteps in the batch.
                 for cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts in self._process_batch(batch, dataset):
-                    outputs = modality_module.infer_step(cur_inputs, k_shots_examples, instructions, output_types)  # (B)
+                    outputs = self.modality_module.infer_step(cur_inputs, k_shots_examples, instructions, output_types)  # (B)
 
                     # Any invalid output 'None' should be initialized into a random action.
                     outputs = [self._validate_text_output(output, shape=labels[o].shape) for o, output in enumerate(outputs)]

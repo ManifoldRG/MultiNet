@@ -2,8 +2,10 @@ import os
 import sys
 ROOT_DIR = os.getcwd()
 sys.path.append(ROOT_DIR)
+os.environ["OPENAI_API_KEY"] = "random-api-key"
 
 from src.modules.dataset_modules.openx_module import OpenXModule
+from src.modules.modality_modules.vlm_module import VLMModule
 from unittest.mock import MagicMock
 
 import unittest
@@ -25,6 +27,7 @@ class OpenXModuleTest(unittest.TestCase):
         self.assertEqual(module.modality, modality)
         self.assertEqual(module.source, source)
         self.assertEqual(module.model, model)
+        self.assertTrue(isinstance(module.modality_module, VLMModule))
         self.assertEqual(module.batch_size, batch_size)
         self.assertEqual(module.k_shots, k_shots)
 
