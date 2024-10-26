@@ -29,12 +29,13 @@ class EvalConfig:
     model_family: str = "openvla"
     pretrained_checkpoint: Union[str, Path] = "openvla/openvla-7b"
     load_in_8bit: bool = False
-    load_in_4bit: bool = True
+    load_in_4bit: bool = False
     center_crop: bool = True
     seed: int = 7
     unnorm_key = "bridge_orig"  # default unnorm_key bridge_orig
     dataset_statistics_path: str = ""
     openx_datasets_path: str = ""
+
 
 def profile_openvla_on_openx(cfg: EvalConfig, result_save_path: str):
     # Get list of all OpenX datasets
@@ -53,8 +54,18 @@ def profile_openvla_on_openx(cfg: EvalConfig, result_save_path: str):
         return
 
     eval_results = {}
+    result_file_path = Path(result_save_path) / 'openvla_openx_eval_results.json'
 
     for openx_dataset in openx_dataset_paths:
+        # Skip if the dataset is already in the eval_results
+        if os.path.exists(result_file_path):
+            with open(result_file_path, 'r') as f:
+                completed_datasets = json.load(f)
+            
+            if openx_dataset in completed_datasets:
+                print(f'\nSkipping dataset: {openx_dataset} (already evaluated)\n')
+                continue
+        
         dataset_path = Path(cfg.openx_datasets_path) / openx_dataset
         print(f'\nEvaluating dataset: {openx_dataset}')
         print(f'Dataset path: {dataset_path}')
@@ -126,7 +137,7 @@ def profile_openvla_on_openx(cfg: EvalConfig, result_save_path: str):
 
         # Save intermediate results to a JSON file to ensure progress is not lost
         # Check if the file already exists
-        result_file_path = Path(result_save_path) / 'openvla_openx_eval_results.json'
+
         if os.path.exists(result_file_path):
             # If it exists, load the existing data
             with open(result_file_path, 'r') as f:

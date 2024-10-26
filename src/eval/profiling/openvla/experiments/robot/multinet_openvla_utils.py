@@ -2,14 +2,39 @@ import numpy as np
 from typing import Callable
 from .robot_utils import normalize_gripper_action, invert_gripper_action
 
-def binarize_gripper_action(action: float) -> int:
+def binarize_gripper_action_for_0_1_range(action: float) -> int:
+    if action < 0:
+        raise ValueError("Gripper action is less than 0. use normalize_gripper_action(action, binarize=True) from robot_utils.py instead.")
+
     if action > 0.5:
         return 1
-    elif action < 0:
-        return -1
     else:
         return 0
 
+def discretize_range_0_to_pos_1_gripper_action_to_3_values(gripper_value: float) -> float:
+    """
+    Convert gripper action value to discrete format with closed (-1), open (1), and no movement (0) values
+    
+    Uses the thresholds based on binarize_gripper_actions() 
+    in src/eval/profiling/openvla/prismatic/vla/datasets/rlds/utils/data_utils.py
+
+    0.05 and 0.95 for range [0, 1]
+
+    Args:
+        gripper_value (float): The input gripper value.
+
+    Returns:
+        float: Standardized gripper action value.
+            -1.0 for closed gripper (gripper_value < 0.05)
+            1.0 for open gripper (gripper_value > 0.95)
+            0.0 for no movement (0.05 <= gripper_value <= 0.95)
+    """
+    if gripper_value < 0.05:
+        return -1.0  # Gripper closed
+    elif gripper_value > 0.95:
+        return 1.0  # Gripper open
+    else:
+        return 0.0  # Gripper doesn't move
 
 def convert_action(action: np.ndarray, dataset_name: str):
     """
@@ -17,82 +42,78 @@ def convert_action(action: np.ndarray, dataset_name: str):
 
     see definitions/openx.py for more details.
     """
-    def jaco_play_conversion(action: np.ndarray) -> np.ndarray:        
+    def jaco_play_conversion(action: np.ndarray) -> np.ndarray:
         standard_action = np.zeros(4)  # Initialize with 4 elements
         
         gripper_value = action[-1]
-        if gripper_value < 0.33:
-            standard_action[0] = 2.0  # Gripper closed
-        elif gripper_value > 0.67:
-            standard_action[0] = 0.0  # Gripper open
-        else:
-            standard_action[0] = 1.0  # Gripper doesn't move
+        standard_action[-1] = -1 * discretize_range_0_to_pos_1_gripper_action_to_3_values(gripper_value)
         
         standard_action[1:4] = action[:3]  # Copy the first 3 elements
         return standard_action
 
     def berkeley_cable_routing_conversion(action: np.ndarray) -> np.ndarray:
-        return np.array([action[3], action[4], action[5], action[3], action[4], action[5]])
+        return np.array([action[3], action[4], action[5], action[0], action[1], action[2]])
 
     def nyu_door_opening_conversion(action: np.ndarray) -> np.ndarray:
-        action = normalize_gripper_action(action, binarize=True)
+        action = normalize_gripper_action(action, binarize=False)
         return np.array([-1 * action[6], action[3], action[4], action[5], action[0], action[1], action[2]])
     
     def viola_conversion(action: np.ndarray) -> np.ndarray:
-        action = normalize_gripper_action(action, binarize=False)  # normalize to [-1, 1]
-        return np.array([binarize_gripper_action(-1 * action[6]), action[3], action[4], action[5], action[0], action[1], action[2]])
+        action = normalize_gripper_action(action, binarize=True)  # normalize to [-1, 1]
+        return np.array([-1 * action[6], action[3], action[4], action[5], action[0], action[1], action[2]])
 
     def berkeley_autolab_ur5_conversion(action: np.ndarray) -> np.ndarray:
-        action = normalize_gripper_action(action, binarize=True)
-        return np.array([-1 * action[6], action[3], action[4], action[5], action[0], action[1], action[2]])
+        action = normalize_gripper_action(action, binarize=False)
+        action[6] = -1 * discretize_range_0_to_pos_1_gripper_action_to_3_values(action[6])
+
+        return np.array([action[6], action[3], action[4], action[5], action[0], action[1], action[2]])
 
     def toto_conversion(action: np.ndarray) -> np.ndarray:
         return np.array([action[3], action[4], action[5], action[0], action[1], action[2]])
 
     def columbia_cairlab_pusht_real_conversion(action: np.ndarray) -> np.ndarray:
-        return np.array([1 - binarize_gripper_action(action[6]), action[3], action[4], action[5], action[0], action[1], action[2]])
+        return np.array([1 - binarize_gripper_action_for_0_1_range(action[6]), action[3], action[4], action[5], action[0], action[1], action[2]])
 
     def nyu_rot_conversion(action: np.ndarray) -> np.ndarray:
-        action[6] = 1 - binarize_gripper_action(action[6])
+        action[6] = binarize_gripper_action_for_0_1_range(action[6])
         return action
 
     def stanford_hydra_conversion(action: np.ndarray) -> np.ndarray:
-        action[6] = 1 - binarize_gripper_action(action[6])
+        action[6] = 1 - binarize_gripper_action_for_0_1_range(action[6])
         return action
 
     def ucsd_kitchen_conversion(action: np.ndarray) -> np.ndarray:
-        return np.array([action[0], action[1], action[2], action[3], action[4], action[5], 1 - binarize_gripper_action(action[6])])
+        return np.array([action[0], action[1], action[2], action[3], action[4], action[5], binarize_gripper_action_for_0_1_range(action[6])])
 
-    # FIXME: ucsd_pick_and_place is using velocity and torque for gripper not
+    # NOTE: ucsd_pick_and_place is using velocity and torque for gripper not position
     def ucsd_pick_and_place_conversion(action: np.ndarray) -> np.ndarray:
-        action = normalize_gripper_action(action, binarize=False)
+        # the last gripper dimension action gets scaled based on the dataset statistics during inference in predict_action() in modeling_prismatic.py
         return np.array([action[0], action[1], action[2], action[6]])
 
     def usc_cloth_sim_conversion(action: np.ndarray) -> np.ndarray:
-        return np.array([action[0], action[1], action[2], -1 * action[6]])
+        return np.array([action[0], action[1], action[2], 1 - action[6]])
 
     def utokyo_pr2_conversion(action: np.ndarray) -> np.ndarray:
 
         return np.array([
             action[0], action[1], action[2],  # positional delta
             action[3], action[4], action[5],  # RPY angles
-            1 - binarize_gripper_action(action[6])
+            binarize_gripper_action_for_0_1_range(action[6])
         ])
 
     def stanford_mask_vit_conversion(action: np.ndarray) -> np.ndarray:
-        action = normalize_gripper_action(action, binarize=False)  # normalize to [-1, 1]
-        return np.array([action[0], action[1], action[2], action[5], binarize_gripper_action(-1 * action[6])])
+        action = normalize_gripper_action(action, binarize=True)  # normalize to [-1, 1]
+        return np.array([action[0], action[1], action[2], action[5], -1 * action[6]])
 
-
-    #  FIXME: eth uses velocity and angular velocity
+    #  NOTE: eth uses velocity and angular velocity
     def eth_agent_affordances_conversion(action: np.ndarray) -> np.ndarray:
         return action[:6]
 
     def imperialcollege_sawyer_wrist_cam_conversion(action: np.ndarray) -> np.ndarray:
-        return np.array([action[0], action[1], action[2], action[3], action[4], action[5], 1 - binarize_gripper_action(action[6])])
+        return np.array([action[0], action[1], action[2], action[3], action[4], action[5], binarize_gripper_action_for_0_1_range(action[6])])
     
     def conq_hose_manipulation_conversion(action: np.ndarray) -> np.ndarray:
-        action[6] = binarize_gripper_action(action[6])
+        action[6] = binarize_gripper_action_for_0_1_range(action[6])
         return action
 
     def plex_robosuite_conversion(action: np.ndarray) -> np.ndarray:
