@@ -58,7 +58,8 @@ def get_vla(cfg):
 
     # Load dataset stats used during finetuning (for action un-normalization).
     # dataset_statistics_path = os.path.join(cfg.pretrained_checkpoint, "dataset_statistics.json")
-    dataset_statistics_path = "src/eval/profiling/openvla/data/dataset_statistics.json"
+    dataset_statistics_path = cfg.dataset_statistics_path
+    print(f"\n\ncfg dataset statistics path: {cfg.dataset_statistics_path}\n\n")
     if os.path.isfile(dataset_statistics_path):
         print(f"Loading dataset statistics from {dataset_statistics_path}")
         with open(dataset_statistics_path, "r") as f:
@@ -170,22 +171,3 @@ def get_vla_action(vla, processor, base_vla_name, obs, task_label, unnorm_key, c
     # Get action.
     action = vla.predict_action(**inputs, unnorm_key=unnorm_key, do_sample=False)
     return action
-
-
-def get_unnorm_key_from_dataset_name(dataset_name: str) -> str:
-    """
-    Maps the dataset name to the appropriate unnorm_key for OpenVLA.
-    
-    Args:
-    dataset_name (str): The name of the dataset.
-    
-    Returns:
-    str: The corresponding unnorm_key for OpenVLA.
-    """
-    unnorm_key_mapping = {
-        "usc_cloth_sim_converted_externally_to_rlds": "multinet_usc_cloth_sim_converted_externally_to_rlds",
-        "nyu_rot_dataset_converted_externally_to_rlds": "multinet_nyu_rot_dataset_converted_externally_to_rlds",
-        "utokyo_pr2_opening_fridge_converted_externally_to_rlds": "multinet_utokyo_pr2_opening_fridge_converted_externally_to_rlds",
-    }
-    
-    return unnorm_key_mapping.get(dataset_name, "bridge_orig")

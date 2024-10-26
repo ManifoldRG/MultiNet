@@ -9,11 +9,10 @@ from PIL import Image
 from torch.nn.utils.rnn import pad_sequence
 
 class OpenXDataset(Dataset):
-    def __init__(self, tfds_shards: List[str], resize_size: int = 224):
+    def __init__(self, tfds_shards: List[str]):
         self.tfds_shards = tfds_shards
         self.current_elem_idx = 0
         self.current_shard_idx = 0
-        self.resize_size = resize_size
 
     def _process_shards(self):
         
@@ -33,13 +32,21 @@ class OpenXDataset(Dataset):
                 # To prevent input processing overhead for elements of shardsthat have already been processed
                 if shard_idx == self.current_shard_idx and elem_idx < self.current_elem_idx:
                     continue
+
+                '''if elem['is_first']:
+                    #episodes.append(current_episode)
+                    self.current_elem_idx = elem_idx
+                    self.current_shard_idx = shard_idx
+                    yield current_episode
+                    current_episode = []'''
                     
 
-                discrete_observations = None
                 concatenated_action_float = elem['action']
                 float_action_tensors = []
                 if isinstance(elem['action'], dict):
                     #Input processing
+                    #Sorting keys to maintain consistency in the order of action space fields
+                    elem['action'] = dict(sorted(elem['action'].items()))
                     for key, tensor in elem['action'].items():
                         if (tensor.dtype == tf.float32 or tensor.dtype==tf.float64):
                             if tensor.shape.ndims >= 2:
@@ -67,6 +74,8 @@ class OpenXDataset(Dataset):
                 float_obs_tensors = []
                 if isinstance(elem['observation'], dict):
                     #Input processing
+                    #Sorting keys to maintain consistency in the order of observation space fields
+                    elem['observation'] = dict(sorted(elem['observation'].items()))
                     for key, tensor in elem['observation'].items():
                         if 'language' not in key and 'image' not in key and 'pointcloud' not in key and 'rgb' not in key and 'instruction' not in key:
                             if (tensor.dtype == tf.float32 or tensor.dtype==tf.float64) and tensor.shape.ndims>=1 and not tf.reduce_any(tf.math.is_inf(tensor)):
@@ -97,34 +106,44 @@ class OpenXDataset(Dataset):
                         concatenated_obs_float = concatenated_obs_float.numpy()
 
                 #Processing image observation
-                img_obs = self._process_image(elem['observation'])
+                img_obs = None
+                if 'image' in elem['observation']:
+                    img_obs = elem['observation']['image'].numpy().astype(np.uint8)
+                
+                elif 'hand_color_image' in elem['observation']:
+                    img_obs = elem['observation']['hand_color_image'].numpy().astype(np.uint8)
+
+                elif 'agentview_rgb' in elem['observation']:
+                    img_obs = elem['observation']['agentview_rgb'].numpy().astype(np.uint8)
+                    
+                elif 'hand_image' in elem['observation']:
+                    img_obs = elem['observation']['hand_image'].numpy().astype(np.uint8)
+                    
+                elif 'wrist_image' in elem['observation']:
+                    img_obs = elem['observation']['wrist_image'].numpy().astype(np.uint8)
+                    
+                elif 'rgb' in elem['observation']:
+                    img_obs = elem['observation']['rgb'].numpy().astype(np.uint8)
 
                 #Processing text observation
                 text_observation = None
+                
                 if 'instruction' in elem['observation'] and elem['observation']['instruction'].dtype == tf.int32:
-                    #Dummy discrete observations for text observations to work
-                    discrete_observations = tf.constant([0]).numpy()
                     #Decode language table's tokenized instructions
                     instruction = elem['observation']['instruction'].numpy()
                     text_observation = bytes(instruction[np.where(instruction != 0)].tolist()).decode("utf-8")
                 elif 'natural_language_instruction' in elem['observation']:
-                    #Dummy discrete observations for text observations to work
-                    discrete_observations = tf.constant([0]).numpy()
                     elem['observation']['natural_language_instruction'] = elem['observation']['natural_language_instruction'].numpy()
                     if isinstance(elem['observation']['natural_language_instruction'], bytes):
                         text_observation = elem['observation']['natural_language_instruction'].decode('utf-8')
                     else:
                         text_observation = elem['observation']['natural_language_instruction'].numpy().decode('utf-8')
                 elif 'language_instruction' in elem:
-                    #Dummy discrete observations for text observations to work
-                    discrete_observations = tf.constant([0]).numpy()
                     if isinstance(elem['language_instruction'], bytes):
                         text_observation = elem['language_instruction'].decode('utf-8')
                     else:
                         text_observation = elem['language_instruction'].numpy().decode('utf-8')
                 elif 'natural_language_instruction' in elem:
-                    #Dummy discrete observations for text observations to work
-                    discrete_observations = tf.constant([0]).numpy()
                     if isinstance(elem['natural_language_instruction'], bytes):
                         text_observation = elem['natural_language_instruction'].decode('utf-8')
                     else:
@@ -142,7 +161,6 @@ class OpenXDataset(Dataset):
                     'continuous_observation': concatenated_obs_float,
                     'text_observation': text_observation,
                     'image_observation': img_obs,
-                    'discrete_observation': discrete_observations,
                     'action': concatenated_action_float,
                     'reward': elem['reward'],
                     'is_last': elem['is_last']
@@ -199,8 +217,7 @@ class OpenXDataset(Dataset):
 
         concatenated_obs_float = []
         text_observation = []
-        img_obs = [] 
-        discrete_observations = []
+        img_obs_pil = [] 
         concatenated_action_float = []
         reward = []
         is_last = []
@@ -209,8 +226,7 @@ class OpenXDataset(Dataset):
 
             concatenated_obs_float.append(timestep['continuous_observation'])
             text_observation.append(timestep['text_observation'])
-            img_obs.append(timestep['image_observation'])
-            discrete_observations.append(timestep['discrete_observation'])
+            img_obs_pil.append(timestep['image_observation'])
             concatenated_action_float.append(timestep['action'])
             reward.append(timestep['reward'])
             is_last.append(timestep['is_last'])
@@ -219,45 +235,12 @@ class OpenXDataset(Dataset):
         return {
                     'continuous_observation': concatenated_obs_float,
                     'text_observation': text_observation,
-                    'image_observation': img_obs ,
-                    'discrete_observation': discrete_observations,
+                    'image_observation': img_obs_pil ,
                     'action': concatenated_action_float,
                     'reward': reward,
                     'is_last': is_last
                 }
     
-
-    def _process_image(self, observation):
-        img_obs = None
-        if 'image' in observation:
-            img_obs = observation['image'].numpy()
-        elif 'rgb' in observation:
-            img_obs = observation['rgb'].numpy()
-
-        if img_obs is not None:
-            img_obs = img_obs.astype(np.uint8)
-
-        if img_obs is not None:
-            img_obs = img_obs.astype(np.uint8)
-            
-            if img_obs.shape[2] == 3:
-                fourth_channel = img_obs[:,:,0]  # Use the red channel as the fourth channel
-                img_4channel = np.dstack((img_obs, fourth_channel))
-            elif img_obs.shape[2] == 2:
-                # If the image has 2 channels, duplicate channels to create a 4-channel image
-                img_4channel = np.dstack((img_obs, img_obs))
-            else:
-                img_4channel = img_obs
-                    
-            # Convert to PIL Image, resize, and convert back to numpy array
-            img_pil = Image.fromarray(img_4channel)
-            img_pil = img_pil.resize((self.resize_size, self.resize_size))
-            img_array = np.array(img_pil).astype(np.uint8)
-
-            return img_array
-        else:
-            return None
-
 
 def custom_collate(batch):
     # Initialize dictionaries to store the collected data
@@ -265,7 +248,6 @@ def custom_collate(batch):
         'continuous_observation': [],
         'text_observation': [],
         'image_observation': [],
-        'discrete_observation': [],
         'action': [],
         'reward': [],
         'is_last': []
@@ -286,8 +268,8 @@ def custom_collate(batch):
 
     return result
 
-def get_openx_dataloader(tfds_shards: List[str], batch_size: int, num_workers: int = 0, resize_size: int = 224) -> DataLoader:
-    dataset = OpenXDataset(tfds_shards, resize_size)
+def get_openx_dataloader(tfds_shards: List[str], batch_size: int, num_workers: int = 0) -> DataLoader:
+    dataset = OpenXDataset(tfds_shards)
     return DataLoader(
         dataset,
         batch_size=batch_size,

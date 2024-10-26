@@ -1,3 +1,4 @@
+import argparse
 import os
 import time
 import json
@@ -18,9 +19,7 @@ project_root = next(
 sys.path.append(str(project_root))
 
 
-from src.eval.profiling.openvla.experiments.robot.robot_utils import (get_model,
-                                                                      get_image_resize_size
-                                                                      )
+from src.eval.profiling.openvla.experiments.robot.robot_utils import get_model
 from src.eval.profiling.openvla.experiments.robot.openvla_utils import get_processor
 from src.eval.profiling.openvla.experiments.robot.openvla_openx_eval import evaluate_openvla_model
 
@@ -34,27 +33,49 @@ class EvalConfig:
     center_crop: bool = True
     seed: int = 7
     unnorm_key = "bridge_orig"  # default unnorm_key bridge_orig
+    dataset_statistics_path: str = ""
+    openx_datasets_path: str = ""
 
-
-def profile_openvla_on_openx(cfg: EvalConfig):
-    # Path to OpenX datasets
-    openx_datasets_path = '/home/locke/ManifoldRG/MultiNet/data/translated'  # TODO: Add the path
-
+def profile_openvla_on_openx(cfg: EvalConfig, result_save_path: str):
     # Get list of all OpenX datasets
-    # openx_dataset_paths = [d for d in os.listdir(openx_datasets_path) if os.path.isdir(os.path.join(openx_datasets_path, d))]
-    openx_dataset_paths = ['utokyo_pr2_opening_fridge_converted_externally_to_rlds']
-    # openx_dataset_paths = ['usc_cloth_sim_converted_externally_to_rlds']
-    # openx_dataset_paths = ['nyu_rot_dataset_converted_externally_to_rlds']
+    try:
+        openx_dataset_paths = [
+            d for d in os.listdir(cfg.openx_datasets_path) 
+            if os.path.isdir(os.path.join(cfg.openx_datasets_path, d))
+        ]
+        print(f"Found {len(openx_dataset_paths)} OpenX datasets in {cfg.openx_datasets_path}")
+    except FileNotFoundError:
+        print(f"Error: The specified openx_datasets_path does not exist: {cfg.openx_datasets_path}")
+        return
+    
+    if not openx_dataset_paths:
+        print(f"Warning: No subdirectories found in {cfg.openx_datasets_path}")
+        return
 
     eval_results = {}
 
     for openx_dataset in openx_dataset_paths:
-        print(f'\nEvaluating dataset: {openx_dataset}\n')
+        dataset_path = Path(cfg.openx_datasets_path) / openx_dataset
+        print(f'\nEvaluating dataset: {openx_dataset}')
+        print(f'Dataset path: {dataset_path}')
+
+        if not os.path.exists(dataset_path):
+            print(f"Warning: Dataset directory does not exist: {dataset_path}")
+            continue
 
         # Get all shards for the current dataset
-        shard_files = os.listdir(os.path.join(openx_datasets_path, openx_dataset))
+        try:
+            shard_files = os.listdir(dataset_path)
+        except FileNotFoundError:
+            print(f"Error: Unable to access dataset directory: {dataset_path}")
+            continue
+
+        if not shard_files:
+            print(f"Warning: No files found in dataset directory: {dataset_path}")
+            continue
+
         sorted_shard_files = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
-        tfds_shards = [os.path.join(openx_datasets_path, openx_dataset, f) 
+        tfds_shards = [os.path.join(cfg.openx_datasets_path, openx_dataset, f) 
                        for f in sorted_shard_files]
         
         # Reset GPU memory
@@ -63,10 +84,11 @@ def profile_openvla_on_openx(cfg: EvalConfig):
 
         # Load models with the corresponding cfg that affects the unnormalization of the action space
         cfg = EvalConfig()
+        cfg.openx_datasets_path = args.openx_datasets_path
+        cfg.dataset_statistics_path = args.dataset_statistics_path
         cfg.unnorm_key = openx_dataset
         model = get_model(cfg)
         processor = get_processor(cfg)
-        resize_size = get_image_resize_size(cfg)
 
         # Start timing
         start_time = time.time()
@@ -77,7 +99,6 @@ def profile_openvla_on_openx(cfg: EvalConfig):
                                                                                                   model, 
                                                                                                   processor, 
                                                                                                   tfds_shards, 
-                                                                                                  resize_size,
                                                                                                   openx_dataset)
 
         del model
@@ -105,9 +126,10 @@ def profile_openvla_on_openx(cfg: EvalConfig):
 
         # Save intermediate results to a JSON file to ensure progress is not lost
         # Check if the file already exists
-        if os.path.exists('openvla_openx_evaluation_results.json'):
+        result_file_path = Path(result_save_path) / 'openvla_openx_eval_results.json'
+        if os.path.exists(result_file_path):
             # If it exists, load the existing data
-            with open('openvla_openx_evaluation_results.json', 'r') as f:
+            with open(result_file_path, 'r') as f:
                 existing_results = json.load(f)
             # Append new data to existing data
             existing_results.update(eval_results)
@@ -116,7 +138,7 @@ def profile_openvla_on_openx(cfg: EvalConfig):
             existing_results = eval_results
 
         # Write the updated or new results to the file
-        with open('openvla_openx_evaluation_results.json', 'w') as f:
+        with open(result_file_path, 'w') as f:
             json.dump(existing_results, f, indent=4, default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
 
         print(f'Evaluation time for {openx_dataset}: {eval_time:.2f} seconds')
@@ -131,9 +153,17 @@ def profile_openvla_on_openx(cfg: EvalConfig):
         print(f'Average MSE: {result["avg_dataset_amse"]:.4f}')
         print(f'Number of Timesteps: {result["num_timesteps"]}')
         print(f'Normalized AMSE: {result["normalized_amse"]:.4f}')
-    print("\nEval results have been saved to 'openvla_openx_evaluation_results.json'")
+    print(f"\nEval results have been saved to '{result_file_path}'")
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Evaluate OpenVLA on OpenX datasets")
+    parser.add_argument("--openx_datasets_path", type=str, required=True, help="Path to the OpenX datasets")
+    parser.add_argument("--dataset_statistics_path", type=str, required=True, help="Path to the dataset statistics")
+    parser.add_argument("--result_save_path", type=str, required=True, help="Path to save the evaluation results")
+    args = parser.parse_args()
+
     cfg = EvalConfig()
-    profile_openvla_on_openx(cfg)
+    cfg.openx_datasets_path = args.openx_datasets_path
+    cfg.dataset_statistics_path = args.dataset_statistics_path
+    profile_openvla_on_openx(cfg, args.result_save_path)

@@ -12,52 +12,13 @@ sys.path.append(str(project_root))
 
 from src.eval.profiling.openvla.experiments.robot.openvla_openx_dataloader import get_openx_dataloader
 from src.eval.profiling.openvla.experiments.robot.robot_utils import get_action
+from src.eval.profiling.openvla.experiments.robot.multinet_openvla_utils import convert_action, drop_is_terminal_dim
 
 import numpy as np
 
 
-def to_discrete(action):
-    return np.where(action >= 0.5, 1, 0)
-
-
-def convert_predicted_action_to_dataset_standard(predicted_action, dataset_name):
-    def convert_to_usc(pred):
-        return np.array([pred[0], pred[1], pred[2], to_discrete(pred[6])])
-    
-    def convert_to_utokyo_pr2(pred):
-        """
-        - utokyo_pr2 uses 8D: [3x pos delta, 3x RPY angles, 1x gripper, 1x terminal]
-          We'll use the first 6 dimensions as-is, discretize the gripper, and add a dummy terminal action
-        """
-        return np.array([
-            pred[0], pred[1], pred[2],  # positional delta
-            pred[3], pred[4], pred[5],  # RPY angles
-            to_discrete(pred[6]),       # discretized gripper command
-            0                           # dummy terminal action (always 0 as OpenVLA doesn't predict this)
-        ])
-
-
-    def convert_to_nyu_rot(pred):
-        # FIXME: NYU ROT actually is 7D but the google sheet says it uses 4D: [del_x, del_y, del_z, gripper]?
-        return np.array([pred[0], pred[1], pred[2], 0, 0, 0, to_discrete(pred[6])])
-
-
-    conversion_functions = {
-        "usc_cloth_sim_converted_externally_to_rlds": convert_to_usc,
-        "nyu_rot_dataset_converted_externally_to_rlds": convert_to_nyu_rot,
-        "utokyo_pr2_opening_fridge_converted_externally_to_rlds": convert_to_utokyo_pr2
-    }
-    
-    convert_func = conversion_functions.get(dataset_name)
-    
-    if convert_func is None:
-        raise ValueError(f"Dataset {dataset_name} action space standardization not implemented")
-    
-    return convert_func(predicted_action)
-
-
-def evaluate_openvla_model(cfg, model, processor, tfds_shards, resize_size, dataset_name):
-    dataloader = get_openx_dataloader(tfds_shards, batch_size=1, resize_size=resize_size)
+def evaluate_openvla_model(cfg, model, processor, tfds_shards, dataset_name):
+    dataloader = get_openx_dataloader(tfds_shards, batch_size=1)
 
     total_dataset_amse = 0.0
     action_success = []
@@ -78,8 +39,6 @@ def evaluate_openvla_model(cfg, model, processor, tfds_shards, resize_size, data
 
         timesteps.append(num_timesteps)
 
-        # model.reset_rl()  # clear key-value cache for each episode
-
         #Because the batch size is 1, 1 batch contains 1 episode, which is why the first element is indexed
         for idx in range(len(batch['continuous_observation'][0])):
             # Get the actual (expert) action
@@ -94,20 +53,23 @@ def evaluate_openvla_model(cfg, model, processor, tfds_shards, resize_size, data
                 action_ranges['min'] = np.minimum(action_ranges['min'], actual_action)
                 action_ranges['max'] = np.maximum(action_ranges['max'], actual_action)
 
-
-
-
-            #Model is not given a reward prior to the first action it predicts
-            # if idx == 0:
-            #     reward = None
-            # else:
-            #     reward = batch['reward'][0][idx-1]
-
             reward = None
             mse = 0.0
 
+
             obs['full_image'] = batch['image_observation'][0][idx]
-            
+
+            # Debug information
+            print(f"  Timestep {idx}:")
+            # print(f"    Image shape: {batch['image_observation'][0][idx].shape if batch['image_observation'][0][idx] is not None else 'None'}")
+            print(f"    Text observation: {batch['text_observation'][0][idx]}")
+
+            # Check if the image is None
+            if obs['full_image'] is None:
+                print(f"    Warning: Image is None for timestep {idx} for dataset {dataset_name}. Skipping this timestep.")
+                continue
+
+
             # Get the model's predicted action
             predicted_action = get_action(cfg, 
                                           model, 
@@ -116,18 +78,15 @@ def evaluate_openvla_model(cfg, model, processor, tfds_shards, resize_size, data
                                           processor)
             
 
-
             # Get the actual (expert) action
-            actual_action = batch['action'][0][idx]
+            actual_action = drop_is_terminal_dim(batch['action'][0][idx], dataset_name)
 
             # Standardize the predicted action to match the actual action space
-            standardized_predicted_action = convert_predicted_action_to_dataset_standard(predicted_action, dataset_name)
+            standardized_predicted_action = convert_action(predicted_action,
+                                                           dataset_name)
 
-            # actual_action = batch['action'][0][idx]
-            # predicted_action = actual_action
-            # standardized_predicted_action = actual_action
-
-            print(f"Predicted action: {standardized_predicted_action}")
+            print(f"Predicted action: {predicted_action}")
+            print(f"Standardized predicted action: {standardized_predicted_action}")
             print(f"Actual action: {actual_action}")
 
             # Calculate RMSE for this timestep
@@ -143,7 +102,11 @@ def evaluate_openvla_model(cfg, model, processor, tfds_shards, resize_size, data
                 else:
                     action_success.append(0)
 
-    # action success rate
+
+    # If there are no action successes, return
+    if len(action_success) == 0:
+        return 0, 0, 0, 0, 0
+
     action_success_rate = (sum(action_success) / len(action_success)) * 100
     print(f"Action Success Rate Percentage for the dataset: {action_success_rate:.4f}")
 
@@ -177,5 +140,4 @@ def evaluate_openvla_model(cfg, model, processor, tfds_shards, resize_size, data
     print(f"Mean values: {np.mean(all_actions, axis=0)}")
     print(f"Std values: {np.std(all_actions, axis=0)}")
 
-    # return avg_mse_list, episode_count, total_dataset_amse, normalized_amse
     return action_success_rate, total_dataset_amse, avg_dataset_amse, num_timesteps, normalized_amse
