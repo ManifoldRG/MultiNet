@@ -24,9 +24,6 @@ class OpenXModuleTest(unittest.TestCase):
         k_shots = 2
         module = OpenXModule(disk_root_dir, modality, source, model, batch_size, k_shots)
         self.assertEqual(module.disk_root_dir, disk_root_dir)
-        self.assertEqual(module.modality, modality)
-        self.assertEqual(module.source, source)
-        self.assertEqual(module.model, model)
         self.assertTrue(isinstance(module.modality_module, VLMModule))
         self.assertEqual(module.batch_size, batch_size)
         self.assertEqual(module.k_shots, k_shots)

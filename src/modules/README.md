@@ -45,8 +45,6 @@ These are the main variables and functions that each module should support for G
 
 1. **Dataset Module**
    - Required variables
-     - `self.modality (str)`: The category of the modality module.
-     - `self.source (str)`: The name of the source module.
      - `self.modality_module (Object)`: The modality module object to be accessed.
      - `self.batch_size (int)`: The batch size to be used for inference.
      - `self.k_shots (int)`: The number of few-shot examples for each inference.
@@ -55,6 +53,8 @@ These are the main variables and functions that each module should support for G
        - This function is called from `src/eval/eval_main.py` to evaluate the model on one dataset in Multinet.
        - It should have the logic to load the dataloader, iterate through the loader to get the batch, call the modality module (and source module in it) to run the inference steps, and compare the answers and generated outputs to get the evaluation scores.
 2. **Modality Module**
+   - Required variables
+     - 
 3. **Source Module**
 
 <br/>

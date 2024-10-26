@@ -16,12 +16,9 @@ class OpenXModule:
         self.disk_root_dir = disk_root_dir
         self.datasets = list(DESCRIPTIONS.keys())
 
-        self.modality = modality
-        self.source = source
-        self.model = model
         self.modality_module = None
-        if self.modality == 'vlm':
-            self.modality_module = VLMModule(self.source, self.model)
+        if modality == 'vlm':
+            self.modality_module = VLMModule(source, model)
         assert self.modality_module is not None, "The modality module has not been set correcly. Check required."
 
         self.batch_size = batch_size
