@@ -120,6 +120,24 @@ class OpenXDataset(Dataset):
                         img_obs_pil = Image.fromarray(img_4channel)
                     else:
                         img_obs_pil = Image.fromarray(img_obs)
+                elif 'hand_color_image' in elem['observation']:
+                    img_obs = elem['observation']['hand_color_image'].numpy().astype(np.uint8)
+                    if img_obs.shape[2] == 3:
+                        fourth_channel = img_obs[:,:,0]  # Use the red channel as the fourth channel
+                        img_4channel = np.dstack((img_obs, fourth_channel))
+                        img_obs_pil = Image.fromarray(img_4channel)
+                    elif img_obs.shape[2] == 2:
+                        img_4channel = np.dstack((img_obs, img_obs))
+                        img_obs_pil = Image.fromarray(img_4channel)
+                elif 'agentview_rgb' in elem['observation']:
+                    img_obs = elem['observation']['agentview_rgb'].numpy().astype(np.uint8)
+                    if img_obs.shape[2] == 3:
+                        fourth_channel = img_obs[:,:,0]  # Use the red channel as the fourth channel
+                        img_4channel = np.dstack((img_obs, fourth_channel))
+                        img_obs_pil = Image.fromarray(img_4channel)
+                    elif img_obs.shape[2] == 2:
+                        img_4channel = np.dstack((img_obs, img_obs))
+                        img_obs_pil = Image.fromarray(img_4channel)
                 elif 'hand_image' in elem['observation']:
                     print(elem['observation']['hand_image'])
                     img_obs = elem['observation']['hand_image'].numpy().astype(np.uint8)
