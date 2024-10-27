@@ -103,7 +103,7 @@ def convert_action(action: np.ndarray, dataset_name: str):
     
     def utokyo_xarm_pick_and_place_conversion(action: np.ndarray) -> np.ndarray:
         action[6] = binarize_gripper_action_for_0_1_range(action[6])
-        return action
+        return np.array([action[0], action[1], action[2], action[5], action[4], action[3], action[6]])
 
     def stanford_mask_vit_conversion(action: np.ndarray) -> np.ndarray:
         action = normalize_gripper_action(action, binarize=True)  # normalize to [-1, 1]
