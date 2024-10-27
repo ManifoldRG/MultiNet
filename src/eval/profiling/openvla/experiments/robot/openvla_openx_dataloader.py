@@ -41,7 +41,6 @@ class OpenXDataset(Dataset):
                     current_episode = []'''
                     
 
-                discrete_observations = None
                 concatenated_action_float = elem['action']
                 float_action_tensors = []
                 if isinstance(elem['action'], dict):
@@ -107,95 +106,44 @@ class OpenXDataset(Dataset):
                         concatenated_obs_float = concatenated_obs_float.numpy()
 
                 #Processing image observation
-                img_obs_pil = None
+                img_obs = None
                 if 'image' in elem['observation']:
                     img_obs = elem['observation']['image'].numpy().astype(np.uint8)
-                    if img_obs.shape[2] == 3:
-                        fourth_channel = img_obs[:,:,0]  # Use the red channel as the fourth channel
-                        img_4channel = np.dstack((img_obs, fourth_channel))
-                        img_obs_pil = Image.fromarray(img_4channel)
-                    elif img_obs.shape[2] == 2:
-                        # If the image has 2 channels, duplicate channels to create a 4-channel image
-                        img_4channel = np.dstack((img_obs, img_obs))
-                        img_obs_pil = Image.fromarray(img_4channel)
-                    else:
-                        img_obs_pil = Image.fromarray(img_obs)
+                
                 elif 'hand_color_image' in elem['observation']:
                     img_obs = elem['observation']['hand_color_image'].numpy().astype(np.uint8)
-                    if img_obs.shape[2] == 3:
-                        fourth_channel = img_obs[:,:,0]  # Use the red channel as the fourth channel
-                        img_4channel = np.dstack((img_obs, fourth_channel))
-                        img_obs_pil = Image.fromarray(img_4channel)
-                    elif img_obs.shape[2] == 2:
-                        img_4channel = np.dstack((img_obs, img_obs))
-                        img_obs_pil = Image.fromarray(img_4channel)
+
                 elif 'agentview_rgb' in elem['observation']:
                     img_obs = elem['observation']['agentview_rgb'].numpy().astype(np.uint8)
-                    if img_obs.shape[2] == 3:
-                        fourth_channel = img_obs[:,:,0]  # Use the red channel as the fourth channel
-                        img_4channel = np.dstack((img_obs, fourth_channel))
-                        img_obs_pil = Image.fromarray(img_4channel)
-                    elif img_obs.shape[2] == 2:
-                        img_4channel = np.dstack((img_obs, img_obs))
-                        img_obs_pil = Image.fromarray(img_4channel)
+                    
                 elif 'hand_image' in elem['observation']:
-                    print(elem['observation']['hand_image'])
                     img_obs = elem['observation']['hand_image'].numpy().astype(np.uint8)
-                    if img_obs.shape[2] == 3:
-                        fourth_channel = img_obs[:,:,0]  # Use the red channel as the fourth channel
-                        img_4channel = np.dstack((img_obs, fourth_channel))
-                        img_obs_pil = Image.fromarray(img_4channel)
-                    elif img_obs.shape[2] == 2:
-                        img_4channel = np.dstack((img_obs, img_obs))
-                        img_obs_pil = Image.fromarray(img_4channel)
+                    
                 elif 'wrist_image' in elem['observation']:
                     img_obs = elem['observation']['wrist_image'].numpy().astype(np.uint8)
-                    if img_obs.shape[2] == 3:
-                        fourth_channel = img_obs[:,:,0]  # Use the red channel as the fourth channel
-                        img_4channel = np.dstack((img_obs, fourth_channel))
-                        img_obs_pil = Image.fromarray(img_4channel)
-                    elif img_obs.shape[2] == 2:
-                        img_4channel = np.dstack((img_obs, img_obs))
-                        img_obs_pil = Image.fromarray(img_4channel)
+                    
                 elif 'rgb' in elem['observation']:
                     img_obs = elem['observation']['rgb'].numpy().astype(np.uint8)
-                    if img_obs.shape[2] == 3:
-                        fourth_channel = img_obs[:,:,0]  # Use the red channel as the fourth channel
-                        img_4channel = np.dstack((img_obs, fourth_channel))
-                        img_obs_pil = Image.fromarray(img_4channel)
-                    elif img_obs.shape[2] == 2:
-                        # If the image has 2 channels, duplicate channels to create a 4-channel image
-                        img_4channel = np.dstack((img_obs, img_obs))
-                        img_obs_pil = Image.fromarray(img_4channel)
-                    else:
-                        img_obs_pil = Image.fromarray(img_obs)
 
                 #Processing text observation
                 text_observation = None
+                
                 if 'instruction' in elem['observation'] and elem['observation']['instruction'].dtype == tf.int32:
-                    #Dummy discrete observations for text observations to work
-                    discrete_observations = tf.constant([0]).numpy()
                     #Decode language table's tokenized instructions
                     instruction = elem['observation']['instruction'].numpy()
                     text_observation = bytes(instruction[np.where(instruction != 0)].tolist()).decode("utf-8")
                 elif 'natural_language_instruction' in elem['observation']:
-                    #Dummy discrete observations for text observations to work
-                    discrete_observations = tf.constant([0]).numpy()
                     elem['observation']['natural_language_instruction'] = elem['observation']['natural_language_instruction'].numpy()
                     if isinstance(elem['observation']['natural_language_instruction'], bytes):
                         text_observation = elem['observation']['natural_language_instruction'].decode('utf-8')
                     else:
                         text_observation = elem['observation']['natural_language_instruction'].numpy().decode('utf-8')
                 elif 'language_instruction' in elem:
-                    #Dummy discrete observations for text observations to work
-                    discrete_observations = tf.constant([0]).numpy()
                     if isinstance(elem['language_instruction'], bytes):
                         text_observation = elem['language_instruction'].decode('utf-8')
                     else:
                         text_observation = elem['language_instruction'].numpy().decode('utf-8')
                 elif 'natural_language_instruction' in elem:
-                    #Dummy discrete observations for text observations to work
-                    discrete_observations = tf.constant([0]).numpy()
                     if isinstance(elem['natural_language_instruction'], bytes):
                         text_observation = elem['natural_language_instruction'].decode('utf-8')
                     else:
@@ -212,8 +160,7 @@ class OpenXDataset(Dataset):
                 step_data = {
                     'continuous_observation': concatenated_obs_float,
                     'text_observation': text_observation,
-                    'image_observation': img_obs_pil,
-                    'discrete_observation': discrete_observations,
+                    'image_observation': img_obs,
                     'action': concatenated_action_float,
                     'reward': elem['reward'],
                     'is_last': elem['is_last']
@@ -271,7 +218,6 @@ class OpenXDataset(Dataset):
         concatenated_obs_float = []
         text_observation = []
         img_obs_pil = [] 
-        discrete_observations = []
         concatenated_action_float = []
         reward = []
         is_last = []
@@ -281,7 +227,6 @@ class OpenXDataset(Dataset):
             concatenated_obs_float.append(timestep['continuous_observation'])
             text_observation.append(timestep['text_observation'])
             img_obs_pil.append(timestep['image_observation'])
-            discrete_observations.append(timestep['discrete_observation'])
             concatenated_action_float.append(timestep['action'])
             reward.append(timestep['reward'])
             is_last.append(timestep['is_last'])
@@ -291,7 +236,6 @@ class OpenXDataset(Dataset):
                     'continuous_observation': concatenated_obs_float,
                     'text_observation': text_observation,
                     'image_observation': img_obs_pil ,
-                    'discrete_observation': discrete_observations,
                     'action': concatenated_action_float,
                     'reward': reward,
                     'is_last': is_last
@@ -304,7 +248,6 @@ def custom_collate(batch):
         'continuous_observation': [],
         'text_observation': [],
         'image_observation': [],
-        'discrete_observation': [],
         'action': [],
         'reward': [],
         'is_last': []
