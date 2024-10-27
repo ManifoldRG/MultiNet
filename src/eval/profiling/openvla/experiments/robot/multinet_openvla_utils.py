@@ -100,6 +100,10 @@ def convert_action(action: np.ndarray, dataset_name: str):
             action[3], action[4], action[5],  # RPY angles
             binarize_gripper_action_for_0_1_range(action[6])
         ])
+    
+    def utokyo_xarm_pick_and_place_conversion(action: np.ndarray) -> np.ndarray:
+        action[6] = binarize_gripper_action_for_0_1_range(action[6])
+        return action
 
     def stanford_mask_vit_conversion(action: np.ndarray) -> np.ndarray:
         action = normalize_gripper_action(action, binarize=True)  # normalize to [-1, 1]
@@ -135,6 +139,7 @@ def convert_action(action: np.ndarray, dataset_name: str):
         "usc_cloth_sim_converted_externally_to_rlds": usc_cloth_sim_conversion,
         "utokyo_pr2_opening_fridge_converted_externally_to_rlds": utokyo_pr2_conversion,
         'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds': utokyo_pr2_conversion,
+        'utokyo_xarm_pick_and_place_converted_externally_to_rlds': utokyo_xarm_pick_and_place_conversion,
         'stanford_mask_vit_converted_externally_to_rlds': stanford_mask_vit_conversion,
         'eth_agent_affordances': eth_agent_affordances_conversion,
         'imperialcollege_sawyer_wrist_cam': imperialcollege_sawyer_wrist_cam_conversion,
