@@ -82,7 +82,7 @@ These are the main variables and functions that each module should support for G
      - ```python
        def infer_step(self, 
                       cur_inputs: list[list[tuple[str, Any]]], 
-                      k_shots_examples: list[list[tuple[str, Any]]]=[],
+                      k_shots_examples: list[list[tuple[str, list[tuple[str, Any]]]]]=[],
                       instructions: list[str]=[],
                       output_types: list[type]=[]
                    ) -> list[Any]
@@ -95,8 +95,9 @@ These are the main variables and functions that each module should support for G
          - `cur_inputs`: The current inputs that the model should inference to get the outputs. $(B, N, 2, *)$
            - The reason why one input is a sequence of data is that some models require multiple inputs in one step. For example, a VLM often uses images and texts to generate one output.
            - Each data set is a tuple, with the first element being a string description (e.g., "image_observation", "robot_state") and the second element being the actual data. The description helps the source model understand what each data represents. It is up to the source module to decide whether to include this description in the model.
-         - `k_shots_examples`: The context examples for few-shot learning. $(B, K, N+1, 2, *)$
-           - Since the few-shot examples should have the answer outputs, the length of one sequence becomes $N+1$.
+         - `k_shots_examples`: The context examples for few-shot learning. $(B, K, *, 2, *, 2, *)$
+           - Each $k$-shot list has the tuples with the first element is either "input" or "output". Typically, the length of one $k$-shot example is $2$, since there is one input sequence and one output.
+           - Each input sequence is a list of input data similar with one input in `cur_inputs`.
          - `instructions`: The system prompt instructions for inference. $(B)$
          - `output_types`: The output types that the modality module should give to the dataset module.
        - Outputs

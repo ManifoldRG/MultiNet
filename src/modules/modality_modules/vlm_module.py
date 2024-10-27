@@ -18,7 +18,7 @@ class VLMModule:
     # Otherwise, the few-shot prompting would not work as intended.
     def infer_step(self, 
                    cur_inputs: list[list[tuple[str, Any]]], 
-                   k_shots_examples: list[list[tuple[str, Any]]]=[],
+                   k_shots_examples: list[list[tuple[str, list[tuple[str, Any]]]]]=[],
                    instructions: list[str]=[],
                    output_types: list[type]=[]
                 ) -> list[str]:
@@ -34,11 +34,11 @@ class VLMModule:
                 for k in range(num_examples):
                     for data in processed_k_shots_examples[b][k]:
                         if isinstance(data, list):
-                            self.source_module.add_multi_modal_data('input', data)
+                            self.source_module.add_data('input', data)
                         else:
-                            self.source_module.add_text_data('output', data)
+                            self.source_module.add_data('output', [('text', data)])
 
-                output = self.source_module.infer_step_with_images(processed_cur_inputs[b], instructions[b])
+                output = self.source_module.infer_step(processed_cur_inputs[b], instructions[b])
                 output_type = str if len(output_types) == 0 else output_types[b]
                 outputs.append(self._convert_into_data(output, output_type))
 
@@ -52,7 +52,7 @@ class VLMModule:
     # Any other data will be considered into text data.
     def _process_inputs(self, 
                    cur_inputs: list[list[tuple[str, Any]]], 
-                   k_shots_examples: list[list[tuple[str, Any]]]=[]
+                   k_shots_examples: list[list[tuple[str, list[tuple[str, Any]]]]]=[]
                 ) -> tuple[list[list[dict]], list[list[Union[list[dict], str]]]]:
         batch_size = len(cur_inputs)
         processed_cur_inputs, processed_k_shots_examples = [], []
@@ -60,9 +60,9 @@ class VLMModule:
             processed_inputs = []
             for type, value in cur_inputs[b]:
                 if type.startswith('image'):
-                    processed_inputs.append({'image': value})
+                    processed_inputs.append(('image', value))
                 else:
-                    processed_inputs.append({'text': self._convert_into_text(type, value)})
+                    processed_inputs.append(('text', self._convert_into_text(type, value)))
             processed_cur_inputs.append(processed_inputs)
 
         # If there are k-shots examples, processing them.
@@ -81,9 +81,9 @@ class VLMModule:
                             data = []
                             for type, value in tup[1]:
                                 if type.startswith('image'):
-                                    data.append({'image': value})
+                                    data.append(('image', value))
                                 else:
-                                    data.append({'text': self._convert_into_text(type, value)})
+                                    data.append(('text', self._convert_into_text(type, value)))
                             processed.append(data)
                         else:
                             raise NotImplementedError("The k-shot examples should have category either 'input' or 'output'.")

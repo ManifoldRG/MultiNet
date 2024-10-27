@@ -95,9 +95,9 @@ class VLMModuleTest(unittest.TestCase):
             self.assertEqual(len(processed_cur_inputs[b]), len(cur_inputs[b]))
             for i in range(len(cur_inputs[b])):
                 if cur_inputs[b][i][0].startswith('image_'):
-                    self.assertEqual(processed_cur_inputs[b][i], {'image': cur_inputs[b][i][1]})
+                    self.assertEqual(processed_cur_inputs[b][i], ('image', cur_inputs[b][i][1]))
                 else:
-                    self.assertEqual(processed_cur_inputs[b][i], {'text': f"{cur_inputs[b][i][0]}: {cur_inputs[b][i][1]}"})
+                    self.assertEqual(processed_cur_inputs[b][i], ('text', f"{cur_inputs[b][i][0]}: {cur_inputs[b][i][1]}"))
 
     def test_process_inputs_one_shot(self):
         source = 'openai'
@@ -168,9 +168,9 @@ class VLMModuleTest(unittest.TestCase):
             self.assertEqual(len(processed_cur_inputs[b]), len(cur_inputs[b]))
             for i in range(len(cur_inputs[b])):
                 if cur_inputs[b][i][0].startswith('image_'):
-                    self.assertEqual(processed_cur_inputs[b][i], {'image': cur_inputs[b][i][1]})
+                    self.assertEqual(processed_cur_inputs[b][i], ('image', cur_inputs[b][i][1]))
                 else:
-                    self.assertEqual(processed_cur_inputs[b][i], {'text': f"{cur_inputs[b][i][0]}: {cur_inputs[b][i][1]}"})
+                    self.assertEqual(processed_cur_inputs[b][i], ('text', f"{cur_inputs[b][i][0]}: {cur_inputs[b][i][1]}"))
 
         for b in range(len(k_shots_examples)):
             self.assertEqual(len(processed_k_shots_examples[b]), len(k_shots_examples[b]))
@@ -184,9 +184,9 @@ class VLMModuleTest(unittest.TestCase):
                         expected_data = []
                         for type, value in k_shots_examples[b][k][i][1]:
                             if type.startswith('image_'):
-                                expected_data.append({'image': value})
+                                expected_data.append(('image', value))
                             else:
-                                expected_data.append({'text': f"{type}: {value}"})
+                                expected_data.append(('text', f"{type}: {value}"))
                         self.assertEqual(processed_k_shots_examples[b][k][i], expected_data)
 
     def test_process_inputs_three_shots(self):
@@ -300,9 +300,9 @@ class VLMModuleTest(unittest.TestCase):
             self.assertEqual(len(processed_cur_inputs[b]), len(cur_inputs[b]))
             for i in range(len(cur_inputs[b])):
                 if cur_inputs[b][i][0].startswith('image_'):
-                    self.assertEqual(processed_cur_inputs[b][i], {'image': cur_inputs[b][i][1]})
+                    self.assertEqual(processed_cur_inputs[b][i], ('image', cur_inputs[b][i][1]))
                 else:
-                    self.assertEqual(processed_cur_inputs[b][i], {'text': f"{cur_inputs[b][i][0]}: {cur_inputs[b][i][1]}"})
+                    self.assertEqual(processed_cur_inputs[b][i], ('text', f"{cur_inputs[b][i][0]}: {cur_inputs[b][i][1]}"))
 
         for b in range(len(k_shots_examples)):
             self.assertEqual(len(processed_k_shots_examples[b]), len(k_shots_examples[b]))
@@ -316,9 +316,9 @@ class VLMModuleTest(unittest.TestCase):
                         expected_data = []
                         for type, value in k_shots_examples[b][k][i][1]:
                             if type.startswith('image_'):
-                                expected_data.append({'image': value})
+                                expected_data.append(('image', value))
                             else:
-                                expected_data.append({'text': f"{type}: {value}"})
+                                expected_data.append(('text', f"{type}: {value}"))
                         self.assertEqual(processed_k_shots_examples[b][k][i], expected_data)
 
     def test_infer_step_with_openai(self):
@@ -330,14 +330,14 @@ class VLMModuleTest(unittest.TestCase):
         # Zero-shot test.
         processed_cur_inputs = [
             [
-                {'image': np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)},
-                {'image': np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)},
-                {'text': "text_observation: This is a text description."},
-                {'text': f"continuous_observation: {np.random.random_sample(size=(12))}"}
+                ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
+                ('text', "text_observation: This is a text description."),
+                ('text', f"continuous_observation: {np.random.random_sample(size=(12))}")
             ],
             [
-                {'image': np.random.randint(256, size=(50, 100, 3)).astype(np.uint8)},
-                {'text': f"discrete_observation: {np.random.randint(8, size=(10))}"}
+                ('image', np.random.randint(256, size=(50, 100, 3)).astype(np.uint8)),
+                ('text', f"discrete_observation: {np.random.randint(8, size=(10))}")
             ]
         ]
         module._process_inputs = MagicMock(return_value=(processed_cur_inputs, []))
@@ -347,7 +347,7 @@ class VLMModuleTest(unittest.TestCase):
             elif input_data == processed_cur_inputs[1]:
                 return "Correctly got the second data for zero-shot."
             return None
-        module.source_module.infer_step_with_images = MagicMock(side_effect=side_effect)
+        module.source_module.infer_step = MagicMock(side_effect=side_effect)
         outputs = module.infer_step([], [], [system_prompt for i in range(2)])
         self.assertEqual(len(outputs), 2)
         self.assertEqual(outputs[0], "Correctly got the first data for zero-shot.")
@@ -356,35 +356,35 @@ class VLMModuleTest(unittest.TestCase):
         # Few-shot test.
         processed_cur_inputs = [
             [
-                {'image': np.random.randint(256, size=(256, 256, 3)).astype(np.uint8)},
-                {'image': np.random.randint(256, size=(20, 20, 4)).astype(np.uint8)},
-                {'text': f"discrete_observation: {np.random.randint(12, size=(24))}"}
+                ('image', np.random.randint(256, size=(256, 256, 3)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(20, 20, 4)).astype(np.uint8)),
+                ('text', f"discrete_observation: {np.random.randint(12, size=(24))}")
             ],
             [
-                {'image': np.random.randint(256, size=(240, 240, 4)).astype(np.uint8)},
-                {'text': f"text_observation: This is additional text description."},
-                {'image': np.random.randint(256, size=(64, 128, 3)).astype(np.uint8)},
-                {'text': f"continuous_observation: {np.random.random_sample(size=(100))}"}
+                ('image', np.random.randint(256, size=(240, 240, 4)).astype(np.uint8)),
+                ('text', f"text_observation: This is additional text description."),
+                ('image', np.random.randint(256, size=(64, 128, 3)).astype(np.uint8)),
+                ('text', f"continuous_observation: {np.random.random_sample(size=(100))}")
             ],
             [
-                {'image': np.random.randint(256, size=(100, 100, 4))},
+                ('image', np.random.randint(256, size=(100, 100, 4))),
             ]
         ]
         processed_k_shots_examples = [
             [
                 [
                     [
-                        {'image': np.random.randint(256, size=(256, 256, 3)).astype(np.uint8)},
-                        {'image': np.random.randint(256, size=(20, 20, 4)).astype(np.uint8)},
-                        {'text': f"discrete_observation: {np.random.randint(12, size=(24))}"}
+                        ('image', np.random.randint(256, size=(256, 256, 3)).astype(np.uint8)),
+                        ('image', np.random.randint(256, size=(20, 20, 4)).astype(np.uint8)),
+                        ('text', f"discrete_observation: {np.random.randint(12, size=(24))}")
                     ],
                     "The sample output 1 for batch 0."
                 ],
                 [
                     [
-                        {'image': np.random.randint(256, size=(256, 256, 3)).astype(np.uint8)},
-                        {'image': np.random.randint(256, size=(20, 20, 4)).astype(np.uint8)},
-                        {'text': f"discrete_observation: {np.random.randint(12, size=(24))}"}
+                        ('image', np.random.randint(256, size=(256, 256, 3)).astype(np.uint8)),
+                        ('image', np.random.randint(256, size=(20, 20, 4)).astype(np.uint8)),
+                        ('text', f"discrete_observation: {np.random.randint(12, size=(24))}")
                     ],
                     "The sample output 2 for batch 0."
                 ]
@@ -392,33 +392,33 @@ class VLMModuleTest(unittest.TestCase):
             [
                 [
                     [
-                        {'image': np.random.randint(256, size=(240, 240, 4)).astype(np.uint8)},
-                        {'text': f"text_observation: This is additional text description."},
-                        {'image': np.random.randint(256, size=(64, 128, 3)).astype(np.uint8)},
-                        {'text': f"continuous_observation: {np.random.random_sample(size=(100))}"}
+                        ('image', np.random.randint(256, size=(240, 240, 4)).astype(np.uint8)),
+                        ('text', f"text_observation: This is additional text description."),
+                        ('image', np.random.randint(256, size=(64, 128, 3)).astype(np.uint8)),
+                        ('text', f"continuous_observation: {np.random.random_sample(size=(100))}")
                     ],
                     "The sample output 1 for batch 1.",
                     [
-                        {'text': "reward: 100.00"}
+                        ('text', "reward: 100.00")
                     ]
                 ],
                 [
                     [
-                        {'image': np.random.randint(256, size=(240, 240, 4)).astype(np.uint8)},
-                        {'text': f"text_observation: This is additional text description."},
-                        {'image': np.random.randint(256, size=(64, 128, 3)).astype(np.uint8)},
-                        {'text': f"continuous_observation: {np.random.random_sample(size=(100))}"}
+                        ('image', np.random.randint(256, size=(240, 240, 4)).astype(np.uint8)),
+                        ('text', f"text_observation: This is additional text description."),
+                        ('image', np.random.randint(256, size=(64, 128, 3)).astype(np.uint8)),
+                        ('text', f"continuous_observation: {np.random.random_sample(size=(100))}")
                     ],
                     "The sample output 2 for batch 1.",
                     [
-                        {'text': "reward: 18.902"}
+                        ('text', "reward: 18.902")
                     ]
                 ]
             ],
             [
                 [
                     [
-                        {'image': np.random.randint(256, size=(100, 100, 4)).astype(np.uint8)},
+                        ('image', np.random.randint(256, size=(100, 100, 4)).astype(np.uint8)),
                     ],
                     "The sample output 3 for batch 2."
                 ]
@@ -433,30 +433,27 @@ class VLMModuleTest(unittest.TestCase):
             elif input_data == processed_cur_inputs[2]:
                 return "Correctly got the third data for 2-shots."
             return None
-        module.source_module.infer_step_with_images = MagicMock(side_effect=side_effect)
-        module.source_module.add_multi_modal_data = MagicMock()
-        module.source_module.add_text_data = MagicMock()
+        module.source_module.infer_step = MagicMock(side_effect=side_effect)
+        module.source_module.add_data = MagicMock()
 
         outputs = module.infer_step([], [], [system_prompt for i in range(3)])
         self.assertEqual(len(outputs), 3)
         self.assertEqual(outputs[0], "Correctly got the first data for 2-shots.")
         self.assertEqual(outputs[1], "Correctly got the second data for 2-shots.")
         self.assertEqual(outputs[2], "Correctly got the third data for 2-shots.")
-        module.source_module.add_multi_modal_data.assert_has_calls([
+        module.source_module.add_data.assert_has_calls([
             call('input', processed_k_shots_examples[0][0][0]),
+            call('output', [('text', processed_k_shots_examples[0][0][1])]),
             call('input', processed_k_shots_examples[0][1][0]),
+            call('output', [('text', processed_k_shots_examples[0][1][1])]),
             call('input', processed_k_shots_examples[1][0][0]),
+            call('output', [('text', processed_k_shots_examples[1][0][1])]),
             call('input', processed_k_shots_examples[1][0][2]),
             call('input', processed_k_shots_examples[1][1][0]),
+            call('output', [('text', processed_k_shots_examples[1][1][1])]),
             call('input', processed_k_shots_examples[1][1][2]),
-            call('input', processed_k_shots_examples[2][0][0])
-        ])
-        module.source_module.add_text_data([
-            call('output', processed_k_shots_examples[0][0][1]),
-            call('output', processed_k_shots_examples[0][1][1]),
-            call('output', processed_k_shots_examples[1][0][1]),
-            call('output', processed_k_shots_examples[1][1][1]),
-            call('output', processed_k_shots_examples[2][0][1])
+            call('input', processed_k_shots_examples[2][0][0]),
+            call('output', [('text', processed_k_shots_examples[2][0][1])])
         ])
 
 
