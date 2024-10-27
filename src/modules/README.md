@@ -43,18 +43,66 @@ GenESIS consists of three components called "modules". The relation between each
 
 These are the main variables and functions that each module should support for GenESIS to work properly end-to-end. Note that these are minimally required functions and you can implement additional helper functions or variables on your own depending on the designs or tasks.
 
+($B$: Batch size, $K$: # of few-shot examples, $N$: # of data that consists of one input)
+
 1. **Dataset Module**
+
    - Required variables
+
      - `self.modality_module (Object)`: The modality module object to be accessed.
      - `self.batch_size (int)`: The batch size to be used for inference.
      - `self.k_shots (int)`: The number of few-shot examples for each inference.
+
    - Required functions
-     - `def run_eval(self) -> None`: The main function to run the total inference step and calculate the scores.
-       - This function is called from `src/eval/eval_main.py` to evaluate the model on one dataset in Multinet.
-       - It should have the logic to load the dataloader, iterate through the loader to get the batch, call the modality module (and source module in it) to run the inference steps, and compare the answers and generated outputs to get the evaluation scores.
+
+     - ```Python
+       def run_eval(self) -> None
+       ```
+
+       - `run_eval` is the main function to run the total inference steps and calculate the scores.
+
+         - This function is called from `src/eval/eval_main.py` to evaluate the model on one dataset in Multinet.
+
+         - It should have the logic to load the dataloader, iterate through the loader to get the batch, call the modality module (and source module in it) to run the inference steps, and compare the answers and generated outputs to get the evaluation scores.
+
+       - Inputs: N/A.
+
+       - Outputs: N/A.
+
+         - Note that this is the main function, you can output whatever you want without returning anything. You can just print out the scores or you can save a file that contains the results.
+
 2. **Modality Module**
+
    - Required variables
-     - 
+
+     - `self.source_module (Object)`: The source module object to be accessed.
+
+   - Required functions
+
+     - ```python
+       def infer_step(self, 
+                      cur_inputs: list[list[tuple[str, Any]]], 
+                      k_shots_examples: list[list[tuple[str, Any]]]=[],
+                      instructions: list[str]=[],
+                      output_types: list[type]=[]
+                   ) -> list[Any]
+       ```
+
+       - `infer_step` is the function that run one inference step using the source module.
+         - This function should be called from `run_eval` function in the dataset module.
+         - It should call `infer_step` function to get the actual model outputs from the source module.
+       - Inputs
+         - `cur_inputs`: The current inputs that the model should inference to get the outputs. $(B, N, 2, *)$
+           - The reason why one input is a sequence of data is that some models require multiple inputs in one step. For example, a VLM often uses images and texts to generate one output.
+           - Each data set is a tuple, with the first element being a string description (e.g., "image_observation", "robot_state") and the second element being the actual data. The description helps the source model understand what each data represents. It is up to the source module to decide whether to include this description in the model.
+         - `k_shots_examples`: The context examples for few-shot learning. $(B, K, N+1, 2, *)$
+           - Since the few-shot examples should have the answer outputs, the length of one sequence becomes $N+1$.
+         - `instructions`: The system prompt instructions for inference. $(B)$
+         - `output_types`: The output types that the modality module should give to the dataset module.
+       - Outputs
+         1. The generated outputs from the model. $(B, *)$
+            - Note that the data type in this list should align with `output_types` given as an input.
+
 3. **Source Module**
 
 <br/>
