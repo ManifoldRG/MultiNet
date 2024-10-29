@@ -1,0 +1,82 @@
+{
+    "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 55533634.66367357,
+        "eval_time": 3285.312957048416,
+        "num_timesteps": 6362,
+        "avg_dataset_amse": 8728.958607933602,
+        "normalized_amse": 0.11643131907448961
+    },
+    "usc_cloth_sim_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 4670.881492577388,
+        "eval_time": 10270.965095996857,
+        "num_timesteps": 20000,
+        "avg_dataset_amse": 0.2335440746288694,
+        "normalized_amse": 0.3048531199703903
+    },
+    "stanford_mask_vit_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 460.5643562903985,
+        "eval_time": 1477.3884551525116,
+        "num_timesteps": 2821,
+        "avg_dataset_amse": 0.16326279911038585,
+        "normalized_amse": 0.18447498684695982
+    },
+    "plex_robosuite": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 2550.598381370764,
+        "eval_time": 4682.234704017639,
+        "num_timesteps": 9096,
+        "avg_dataset_amse": 0.2804087930266891,
+        "normalized_amse": 0.20578022098821563
+    },
+    "utokyo_xarm_pick_and_place_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 1030.984806392087,
+        "eval_time": 365.884526014328,
+        "num_timesteps": 701,
+        "avg_dataset_amse": 1.4707343885764437,
+        "normalized_amse": 0.25197503838741725
+    },
+    "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 163007822.35324013,
+        "eval_time": 1224.7808465957642,
+        "num_timesteps": 2382,
+        "avg_dataset_amse": 68433.17479145262,
+        "normalized_amse": 0.159185368242785
+    },
+    "conq_hose_manipulation": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 163.83406216356744,
+        "eval_time": 1151.92413854599,
+        "num_timesteps": 1944,
+        "avg_dataset_amse": 0.08427678094833715,
+        "normalized_amse": 0.26411902734970866
+    },
+    "jaco_play": {
+        "action_success_rate": 29.357798165137616,
+        "total_dataset_amse": 1870.4991562112114,
+        "eval_time": 4106.068165779114,
+        "num_timesteps": 7838,
+        "avg_dataset_amse": 0.23864495486236428,
+        "normalized_amse": 0.22824167050949942
+    },
+    "nyu_door_opening_surprising_effectiveness": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 267.16954471441414,
+        "eval_time": 1211.6341559886932,
+        "num_timesteps": 2209,
+        "avg_dataset_amse": 0.12094592336551116,
+        "normalized_amse": 0.30438891622746617
+    },
+    "berkeley_autolab_ur5": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 1446.4865990191174,
+        "eval_time": 6030.493904352188,
+        "num_timesteps": 10156,
+        "avg_dataset_amse": 0.1424268017939265,
+        "normalized_amse": 0.24892421470298676
+    }
+}
