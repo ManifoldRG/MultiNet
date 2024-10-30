@@ -110,5 +110,53 @@
         "num_timesteps": 2884,
         "avg_dataset_amse": 0.11761494947436585,
         "normalized_amse": 0.8202680074530795
+    },
+    "eth_agent_affordances": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 3501.818829069523,
+        "eval_time": 15731.235656499863,
+        "num_timesteps": 30720,
+        "avg_dataset_amse": 0.11399149834210687,
+        "normalized_amse": 0.1392883139132919
+    },
+    "imperialcollege_sawyer_wrist_cam": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 115.25112082032439,
+        "eval_time": 790.7219314575195,
+        "num_timesteps": 1536,
+        "avg_dataset_amse": 0.07503328178406536,
+        "normalized_amse": 0.5174139252097752
+    },
+    "ucsd_pick_and_place_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 7390.718448995545,
+        "eval_time": 7121.338164329529,
+        "num_timesteps": 13824,
+        "avg_dataset_amse": 0.5346295174331268,
+        "normalized_amse": 0.17462156597741127
+    },
+    "ucsd_kitchen_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 1937309.4267910258,
+        "eval_time": 203.39052939414978,
+        "num_timesteps": 386,
+        "avg_dataset_amse": 5018.936338836855,
+        "normalized_amse": 0.11613127563923133
+    },
+    "stanford_hydra_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 647.8804097446493,
+        "eval_time": 37551.5881152153,
+        "num_timesteps": 72192,
+        "avg_dataset_amse": 0.008974407271507221,
+        "normalized_amse": 0.05403879333339076
+    },
+    "nyu_rot_dataset_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 100.26213472497695,
+        "eval_time": 227.9932358264923,
+        "num_timesteps": 440,
+        "avg_dataset_amse": 0.22786848801131124,
+        "normalized_amse": 0.30811543673818154
     }
 }
