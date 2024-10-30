@@ -78,5 +78,37 @@
         "num_timesteps": 10156,
         "avg_dataset_amse": 0.1424268017939265,
         "normalized_amse": 0.24892421470298676
+    },
+    "toto": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 187.0544739729996,
+        "eval_time": 16868.463865041733,
+        "num_timesteps": 31560,
+        "avg_dataset_amse": 0.005926947844518365,
+        "normalized_amse": 0.003627465923565
+    },
+    "viola": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 451.4321953359466,
+        "eval_time": 3845.8751232624054,
+        "num_timesteps": 7411,
+        "avg_dataset_amse": 0.06091380317581252,
+        "normalized_amse": 0.07209496207683035
+    },
+    "berkeley_cable_routing": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 238.26707567095238,
+        "eval_time": 2133.225840330124,
+        "num_timesteps": 4088,
+        "avg_dataset_amse": 0.05828450970424471,
+        "normalized_amse": 0.09104327672858355
+    },
+    "columbia_cairlab_pusht_real": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 339.2015142840711,
+        "eval_time": 1517.3895542621613,
+        "num_timesteps": 2884,
+        "avg_dataset_amse": 0.11761494947436585,
+        "normalized_amse": 0.8202680074530795
     }
 }
