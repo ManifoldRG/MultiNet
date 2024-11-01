@@ -183,6 +183,8 @@ These are the main variables and functions that each module should support for G
        - `clear_history` is the function that clears all context history in the source module.
        - Inputs: N/A.
        - Outputs: N/A.
+   
+   *Note that in MultiNet V0, we only have `OpenAIModule` as a source module. For the simplicity of implementation, `OpenAIModule` assumes that the data it gets is not a batch, not a single data. So the current implementation might have different data shapes. However, other source modules that use other models should be able to process the batch. Refer to the [issue](https://github.com/ManifoldRG/MultiNet/issues/215).*
 
 <br/>
 
