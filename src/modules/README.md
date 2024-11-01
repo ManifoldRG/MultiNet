@@ -1,8 +1,12 @@
 # GenESIS: Generalizable Extendable Stratified Inference System
 
-MultiNet project uses the framework called **GenESIS**: **Gen**eralizable and **E**xtendable **S**tratified **I**nference **S**ystem to adapt a wide range of models into multiple types of tasks or datasets for scaling effectively while reducing the engineering efforts as much as possible. The core insights of GenESIS are 1) <u>Interchangeability</u>: Any models or datasets should interchangeably support each other, 2) <u>Abstraction</u>: Each module should share the same architecture and logic, and 3) <u>Encapsulation</u>: The programmer does not have to know the details on other modules and is allowed to concentrate on the models or datasets that are targeted. In this way, any models or datasets can easily be added to the MultiNet benchmark without affecting the existing implementations.
+MultiNet project uses the framework called **GenESIS**: **Gen**eralizable and **E**xtendable **S**tratified **I**nference **S**ystem to adapt a wide range of models into multiple types of tasks or datasets for scaling effectively while reducing the engineering efforts as much as possible. The core insights of GenESIS are 1) <u>Interchangeability</u>: Any models or datasets should interchangeably support each other, 2) <u>Abstraction</u>: Each module should share the same architecture and logic to enable the user to understand and test each module easily, and 3) <u>Encapsulation</u>: The programmer does not have to know the details on other modules and is allowed to concentrate on the models or datasets that are targeted. In this way, any models or datasets can easily be added to the MultiNet benchmark without affecting the existing implementations.
 
 <img src="../../assets/framework-figure.png" alt="The figure of the inference framework."/>
+
+<br/>
+
+For example, in MultiNet v0, GenESIS is used to evaluate GPT-4-o on the OpenX datasets. Since the GPT-4 is a vision-language model for general-purpose tasks, it is necessary to set up a proper instruction prompt, pre-processing of the input data in each dataset into a form that GPT-4 can consume, the management of chat history list for correct API calls, and conversion of generated text outputs from the model to compare them with the action labels. This results in a high implementation effort and even if it is successfully implemented, most of the codes should inevitably be hard-coded, which degrades the readability of codes and increases the complexity of future implementations whenever any models or datasets are added. GenESIS modularizes and abstracts the processes to separate each dataset/model-specific part and maximize the code reusability as much as possible, eventually aiming to help the scaling of this huge MultiNet system. For V0, most models supported by OpenAI API are ready to run on all OpenX datasets based on GenESIS.
 
 <br/>
 
@@ -55,21 +59,36 @@ These are the main variables and functions that each module should support for G
 
    - Required functions
 
+     - ```python
+       def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int, k_shots: int) -> None
+       ```
+
+       - `__init__` is the constructor.
+       - Inputs
+         - `disk_root_dir`: The root directory that contains the translated TFDS files. The dataset module assumes that these files are already set up as the shards to be loaded via `tensorflow.data.Dataset`. Depending on your need, you can implement the dataloader to load the batches more effectively.
+         - `modality`: The name of the modality module. This is used for initializing the modality module.
+         - `source`: The name of the source module. This is used for initializing the modality module.
+         - `model`: The name of the AI model. This is used for initializing the modality module.
+         - `batch_size`: The batch size used for inference.
+         - `k_shots`: The number of few-shot examples to be included during the evaluation.
+       - Outputs: N/A.
+
      - ```Python
        def run_eval(self) -> None
        ```
-
+     
        - `run_eval` is the main function to run the total inference steps and calculate the scores.
-
+     
          - This function is called from `src/eval/eval_main.py` to evaluate the model on one dataset in Multinet.
-
-         - It should have the logic to load the dataloader, iterate through the loader to get the batch, call the modality module (and source module in it) to run the inference steps, and compare the answers and generated outputs to get the evaluation scores.
-
+     
+         - It should have the logic to load the dataloader (or translated data files), iterate the batches, call the modality module (and source module in it) to run the inference steps, and compare the answers and generated outputs to get the evaluation scores.
+     
        - Inputs: N/A.
-
+     
        - Outputs: N/A.
-
+     
          - Note that this is the main function, you can output whatever you want without returning anything. You can just print out the scores or you can save a file that contains the results.
+     
 
 2. **Modality Module**
 
@@ -80,6 +99,16 @@ These are the main variables and functions that each module should support for G
    - Required functions
 
      - ```python
+       def __init__(self, source: str, model: str) -> None
+       ```
+     
+       - `__init__` is the constructor.
+       - Inputs
+         - `source`: The name of the source module. This is used for initializing the source module.
+         - `model`: The name of the AI model. This is used for initializing the source module.
+       - Outputs: N/A.
+     
+     - ```python
        def infer_step(self, 
                       cur_inputs: list[list[tuple[str, Any]]], 
                       k_shots_examples: list[list[tuple[str, list[tuple[str, Any]]]]]=[],
@@ -87,12 +116,12 @@ These are the main variables and functions that each module should support for G
                       output_types: list[type]=[]
                    ) -> list[Any]
        ```
-
-       - `infer_step` is the function that run one inference step using the source module.
+     
+       - `infer_step` is the function that runs one inference step using the source module.
          - This function should be called from `run_eval` function in the dataset module.
          - It should call `infer_step` function to get the actual model outputs from the source module.
        - Inputs
-         - `cur_inputs`: The current inputs that the model should inference to get the outputs. $(B, N, 2, *)$
+         - `cur_inputs`: The current inputs that the model should infer to get the outputs. $(B, N, 2, *)$
            - The reason why one input is a sequence of data is that some models require multiple inputs in one step. For example, a VLM often uses images and texts to generate one output.
            - Each data set is a tuple, with the first element being a string description (e.g., "image_observation", "robot_state") and the second element being the actual data. The description helps the source model understand what each data represents. It is up to the source module to decide whether to include this description in the model.
          - `k_shots_examples`: The context examples for few-shot learning. $(B, K, *, 2, *, 2, *)$
@@ -103,8 +132,57 @@ These are the main variables and functions that each module should support for G
        - Outputs
          1. The generated outputs from the model. $(B, *)$
             - Note that the data type in this list should align with `output_types` given as an input.
+     
 
 3. **Source Module**
+
+   - Required variables
+
+     - `self.model (str or Object)`: The AI model to use.
+       - Note that some source modules use the API calls. In this case, this variable is just a string without initializing the model object specifically. (Refer to `OpenAIModule`)
+
+   - Required functions
+
+     - ```python
+       def __init__(self, model: str) -> None
+       ```
+
+       - `__init__` is the constructor.
+       - Inputs
+         - `model`: The name of the AI model. This is used for initializing the actual model object or definition.
+       - Outputs: N/A.
+   
+     - ```python
+       def infer_step(self, inputs: list[list[tuple[str, Any]]], system_prompts: list=[]) -> list[Any]
+       ```
+   
+       - `infer_step` is the function that runs one inference step using the model.
+       - Inputs
+         - `inputs`: The current inputs that the model should infer to get the outputs. $(B, N, 2, *)$
+           - Like `cur_inputs` in the modality module, each data is tagged with the description. This description can be freely used for implementing the pre-processing logic before the inputs are put into the model.
+         - `system_prompts`: The list of system instruction prompts if any model requires it. $(B)$
+       - Outputs
+         1. The generated outputs from the model. $(B, *)$
+   
+     - ```python
+       def add_data(self, type: str, data: list[list[tuple[str, Any]]]) -> None
+       ```
+   
+       - `add_data` is the function that adds the new batch into the context history inside of the source module.
+         - We recommend you to assume that `add_data` should be called only when the additional data is put into the context before performing the actual inference. For example, an inference with the few-shot demonstrations could use this function. (Refer to `VLMModule`)
+         - `infer_step` should call this function to update the current input and generated output into the context history by default.
+       - Inputs
+         - `type`: This indicates whether the data to put are `input` or `output`. This can help the source module to tag each data correctly.
+         - `inputs`: The inputs to be put into the context history. $(B, N, 2, *)$
+       - Outputs: N/A.
+   
+     - ```python
+       def clear_history(self) -> None
+       ```
+   
+       - `clear_history` is the function that clears all context history in the source module.
+       - Inputs: N/A.
+       - Outputs: N/A.
 
 <br/>
 

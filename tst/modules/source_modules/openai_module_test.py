@@ -49,8 +49,8 @@ class OpenAIModuleTest(unittest.TestCase):
             self.assertEqual(response, f"This is a response {q} for single query testing.")
             self.assertEqual(module.history[q*2], {'role': 'user', 'content': [{'type': 'text', 'text': queries[q]}]})
             self.assertEqual(module.history[q*2+1], {'role': 'assistant', 'content': [{'type': 'text', 'text': response}]})
-            self.assertEqual(module.cur_num_tokens_cache[q*2], module.get_num_tokens('user', [{'type': 'text', 'text': query}]))
-            self.assertEqual(module.cur_num_tokens_cache[q*2+1], module.get_num_tokens('assistant', [{'type': 'text', 'text': response}]))
+            self.assertEqual(module.cur_num_tokens_cache[q*2], module._get_num_tokens('user', [{'type': 'text', 'text': query}]))
+            self.assertEqual(module.cur_num_tokens_cache[q*2+1], module._get_num_tokens('assistant', [{'type': 'text', 'text': response}]))
             self.assertEqual(len(module.history), q*2+2)
             self.assertEqual(len(module.cur_num_tokens_cache), q*2+2)
 
@@ -66,8 +66,8 @@ class OpenAIModuleTest(unittest.TestCase):
             expected_content = [{'type': 'text', 'text': query} for query in multi_query]
             self.assertEqual(module.history[m*2], {'role': 'user', 'content': expected_content})
             self.assertEqual(module.history[m*2+1], {'role': 'assistant', 'content': [{'type': 'text', 'text': response}]})
-            self.assertEqual(module.cur_num_tokens_cache[m*2], module.get_num_tokens('user', expected_content))
-            self.assertEqual(module.cur_num_tokens_cache[m*2+1], module.get_num_tokens('assistant', [{'type': 'text', 'text': response}]))
+            self.assertEqual(module.cur_num_tokens_cache[m*2], module._get_num_tokens('user', expected_content))
+            self.assertEqual(module.cur_num_tokens_cache[m*2+1], module._get_num_tokens('assistant', [{'type': 'text', 'text': response}]))
             self.assertEqual(len(module.history), m*2+2)
             self.assertEqual(len(module.cur_num_tokens_cache), m*2+2)
 
@@ -122,12 +122,12 @@ class OpenAIModuleTest(unittest.TestCase):
                     self.assertTrue(isinstance(module.history[q*2]['content'][o]['image_url']['url'], str))
                     self.assertTrue(module.history[q*2]['content'][o]['image_url']['url'].startswith('data:image/png;base64,'))
 
-            self.assertEqual(module.cur_num_tokens_cache[q*2], module.get_num_tokens(
+            self.assertEqual(module.cur_num_tokens_cache[q*2], module._get_num_tokens(
                 'user',
                  module.history[q*2]['content'], 
                 [(obj[1].shape[0], obj[1].shape[1]) for obj in query if obj[0] == 'image']
             ))
-            self.assertEqual(module.cur_num_tokens_cache[q*2+1], module.get_num_tokens('assistant', [{'type': 'text', 'text': response}]))
+            self.assertEqual(module.cur_num_tokens_cache[q*2+1], module._get_num_tokens('assistant', [{'type': 'text', 'text': response}]))
 
             self.assertEqual(len(module.history), q*2+2)
             self.assertEqual(len(module.cur_num_tokens_cache), q*2+2)
@@ -201,13 +201,13 @@ class OpenAIModuleTest(unittest.TestCase):
         module.encoding.encode = MagicMock(side_effect=side_effect_encode)
         module._get_num_image_tokens = MagicMock(side_effect=side_effect_image)
 
-        self.assertEqual(module.get_num_tokens('system', [{'type': 'text', 'text': system_prompt}]), 20)
-        self.assertEqual(module.get_num_tokens('user', [{'type': 'text', 'text': "What's your name?"}]), 14)
-        self.assertEqual(module.get_num_tokens('assistant', [{'type': 'text', 'text': "Live as if you were to die tomorrow."}]), 28)
+        self.assertEqual(module._get_num_tokens('system', [{'type': 'text', 'text': system_prompt}]), 20)
+        self.assertEqual(module._get_num_tokens('user', [{'type': 'text', 'text': "What's your name?"}]), 14)
+        self.assertEqual(module._get_num_tokens('assistant', [{'type': 'text', 'text': "Live as if you were to die tomorrow."}]), 28)
 
-        self.assertEqual(module.get_num_tokens(
+        self.assertEqual(module._get_num_tokens(
             'user', content=[{'type': 'image_url', 'image_url': {'url': 'random-url'}} for i in range(3)], image_sizes=[(128, 128)] * 3), 76)
-        self.assertEqual(module.get_num_tokens(
+        self.assertEqual(module._get_num_tokens(
             'user', 
             content=[
                 {'type': 'image_url', 'image_url': {'url': 'random-url'}},
@@ -215,7 +215,7 @@ class OpenAIModuleTest(unittest.TestCase):
             ],
             image_sizes=[(1024, 1024)]
         ), 137)
-        self.assertEqual(module.get_num_tokens(
+        self.assertEqual(module._get_num_tokens(
             'user',
             content=[
                 {'type': 'image_url', 'image_url': {'url': "random-url-1"}},
@@ -234,7 +234,7 @@ class OpenAIModuleTest(unittest.TestCase):
         module = OpenAIModule(model)
         module.max_num_tokens = 1152
 
-        module.get_num_tokens = MagicMock(return_value=10)
+        module._get_num_tokens = MagicMock(return_value=10)
         module.cur_num_tokens_cache = [100, 100, 100, 100, 100]
         self.assertEqual(module._find_starting_point(system_prompt), 0)
         module.cur_num_tokens_cache = [500, 200, 300, 400]

@@ -68,12 +68,12 @@ class OpenAIModule:
             else:
                 raise NotImplementedError("OpenAIModule only supports the data type 'text' or 'image'.")
         self.history.append(message)
-        self.cur_num_tokens_cache.append(self.get_num_tokens(message['role'], message['content'], image_sizes))
+        self.cur_num_tokens_cache.append(self._get_num_tokens(message['role'], message['content'], image_sizes))
                 
         assert len(self.history) == len(self.cur_num_tokens_cache), "The chat history and num tokens cache should be synced."
 
     # Clearing the history.
-    def clear_history(self):
+    def clear_history(self) -> None:
         self.history = []
         self.cur_num_tokens_cache = []
 
@@ -94,7 +94,7 @@ class OpenAIModule:
         return response.choices[0].message.content
     
     # Calculating the number of tokens in one message.
-    def get_num_tokens(self, role: str, content: list[dict], image_sizes: list[tuple[int, int]]=[]) -> int:
+    def _get_num_tokens(self, role: str, content: list[dict], image_sizes: list[tuple[int, int]]=[]) -> int:
         num_tokens = 3  # <|start|>, \n, <|end|>
         num_tokens += len(self.encoding.encode(role))
         for obj in content:
@@ -154,7 +154,7 @@ class OpenAIModule:
     def _find_starting_point(self, system_prompt: str=None, max_response_tokens: int=128) -> int:
         num_tokens = 0
         if system_prompt is not None: 
-            num_tokens = self.get_num_tokens(role='system', content=[{'type': 'text', 'text': system_prompt}])
+            num_tokens = self._get_num_tokens(role='system', content=[{'type': 'text', 'text': system_prompt}])
             assert num_tokens < self.max_num_tokens, "The number of tokens in the system message must be smaller than the context size."
         
         start_idx = len(self.cur_num_tokens_cache)
