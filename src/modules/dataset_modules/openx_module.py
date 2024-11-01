@@ -168,7 +168,7 @@ class OpenXModule:
     # Finding the translated TFDS shards.
     def _find_shards(self, dataset: str) -> list[str]:
         try:
-            dataset_dir = glob(f"{self.disk_root_dir}/mount_dir*/openx_*_translated/{dataset}")[0]
+            dataset_dir = glob(f"{self.disk_root_dir}/mount_dir*/openx_*/{dataset}")[0]
             shard_files = glob(f"{dataset_dir}/translated_shard_*")
             tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
             return tfds_shards
@@ -267,7 +267,8 @@ class OpenXModule:
     
     # Getting the output type for VLMModule.
     def _get_output_type(self, dataset: str, env_name: str):
-        if ACTION_EXCLUSIVENESS[dataset][env_name]:
+        only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name] if env_name in ACTION_EXCLUSIVENESS[dataset] else ACTION_EXCLUSIVENESS[dataset]['default']
+        if only_one_action:
             return tuple
         else:
             return list
