@@ -6,7 +6,7 @@ MultiNet project uses the framework called **GenESIS**: **Gen**eralizable and **
 
 <br/>
 
-## Example Usecase: Mapping LLMs to Robot Actions in MultiNet
+## Mapping LLMs to Robot Actions in MultiNet
 
 For example, in MultiNet v0, GenESIS is used to evaluate GPT-4-o on the OpenX datasets. Since the GPT-4 is a vision-language model for general-purpose tasks, it is necessary to set up a proper instruction prompt, pre-processing of the input data in each dataset into a form that GPT-4 can consume, the management of chat history list for correct API calls, and conversion of generated text outputs from the model to compare them with the action labels. This results in a high implementation effort and even if it is successfully implemented, most of the codes should inevitably be hard-coded, which degrades the readability of codes and increases the complexity of future implementations whenever any models or datasets are added. GenESIS modularizes and abstracts the processes to separate each dataset/model-specific part and maximize the code reusability as much as possible, eventually aiming to help the scaling of this huge MultiNet system. For V0, most models supported by OpenAI API are ready to run on all OpenX datasets based on GenESIS.
 
