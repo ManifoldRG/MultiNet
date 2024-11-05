@@ -15,9 +15,12 @@ class OpenXModule:
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int, k_shots: int) -> None:
         self.disk_root_dir = disk_root_dir
         self.datasets = list(DESCRIPTIONS.keys())
-        self.modality = modality
-        self.source = source
-        self.model = model
+
+        self.modality_module = None
+        if modality == 'vlm':
+            self.modality_module = VLMModule(source, model)
+        assert self.modality_module is not None, "The modality module has not been set correcly. Check required."
+
         self.batch_size = batch_size
         self.k_shots = k_shots
         self.action_stats_opxmodule = None
@@ -37,11 +40,8 @@ class OpenXModule:
                     print(f'\nSkipping dataset: {dataset} (already evaluated)\n')
                     continue
         
-            if self.modality == 'vlm':
-                modality_module = VLMModule(self.source, self.model)
-                result = self._run_eval_dataset(dataset, modality_module)
-
-                total_results[dataset] = result
+            result = self._run_eval_dataset(dataset)
+            total_results[dataset] = result
             
             if os.path.exists('<path to results>'):
                 # If it exists, load the existing data
@@ -59,7 +59,7 @@ class OpenXModule:
             self.action_stats_opxmodule = None
 
     # Evaluation of one dataset.
-    def _run_eval_dataset(self, dataset: str, modality_module: Any) -> dict[str, Union[list, float]]:
+    def _run_eval_dataset(self, dataset: str) -> dict[str, Union[list, float]]:
         result = {}
 
         try:
@@ -88,7 +88,7 @@ class OpenXModule:
 
                 # Consuming the batch until all timesteps in the batch.
                 for cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts in self._process_batch(batch, dataset):
-                    outputs = modality_module.infer_step(cur_inputs, k_shots_examples, instructions, output_types)  # (B)
+                    outputs = self.modality_module.infer_step(cur_inputs, k_shots_examples, instructions, output_types)  # (B)
 
                     # Any invalid output 'None' should be initialized into a random action.
                     outputs = [self._validate_text_output(output, shape=labels[o].shape) for o, output in enumerate(outputs)]
@@ -168,7 +168,7 @@ class OpenXModule:
     # Finding the translated TFDS shards.
     def _find_shards(self, dataset: str) -> list[str]:
         try:
-            dataset_dir = glob(f"{self.disk_root_dir}/mount_dir*/openx_*_translated/{dataset}")[0]
+            dataset_dir = glob(f"{self.disk_root_dir}/mount_dir*/openx_*/{dataset}")[0]
             shard_files = glob(f"{dataset_dir}/translated_shard_*")
             tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
             return tfds_shards
@@ -267,7 +267,8 @@ class OpenXModule:
     
     # Getting the output type for VLMModule.
     def _get_output_type(self, dataset: str, env_name: str):
-        if ACTION_EXCLUSIVENESS[dataset][env_name]:
+        only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name] if env_name in ACTION_EXCLUSIVENESS[dataset] else ACTION_EXCLUSIVENESS[dataset]['default']
+        if only_one_action:
             return tuple
         else:
             return list

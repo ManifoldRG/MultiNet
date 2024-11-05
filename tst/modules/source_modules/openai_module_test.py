@@ -45,12 +45,12 @@ class OpenAIModuleTest(unittest.TestCase):
         ]
         for q, query in enumerate(queries):
             module._get_response_from_api = MagicMock(return_value=f"This is a response {q} for single query testing.")
-            response = module.infer_step_with_texts([query], system_prompt)
+            response = module.infer_step([('text', query)], system_prompt)
             self.assertEqual(response, f"This is a response {q} for single query testing.")
-            self.assertEqual(module.history[q*2], {'role': 'user', 'content': query})
-            self.assertEqual(module.history[q*2+1], {'role': 'assistant', 'content': response})
-            self.assertEqual(module.cur_num_tokens_cache[q*2], module.get_text_message_num_tokens('user', query))
-            self.assertEqual(module.cur_num_tokens_cache[q*2+1], module.get_text_message_num_tokens('assistant', response))
+            self.assertEqual(module.history[q*2], {'role': 'user', 'content': [{'type': 'text', 'text': queries[q]}]})
+            self.assertEqual(module.history[q*2+1], {'role': 'assistant', 'content': [{'type': 'text', 'text': response}]})
+            self.assertEqual(module.cur_num_tokens_cache[q*2], module._get_num_tokens('user', [{'type': 'text', 'text': query}]))
+            self.assertEqual(module.cur_num_tokens_cache[q*2+1], module._get_num_tokens('assistant', [{'type': 'text', 'text': response}]))
             self.assertEqual(len(module.history), q*2+2)
             self.assertEqual(len(module.cur_num_tokens_cache), q*2+2)
 
@@ -59,21 +59,17 @@ class OpenAIModuleTest(unittest.TestCase):
             ["This is a user message 1", "Additional user message."],
             ["What's your name?", "My name is Python.", "Nice to meet you."]
         ]
-        cur_idx = 0
         for m, multi_query in enumerate(multi_queries):
             module._get_response_from_api = MagicMock(return_value=f"This is a response {m} for multi query testing.")
-            response = module.infer_step_with_texts(multi_query, system_prompt)
+            response = module.infer_step([('text', query) for query in multi_query], system_prompt)
             self.assertEqual(response, f"This is a response {m} for multi query testing.")
-            for q, query in enumerate(multi_query):
-                self.assertEqual(module.history[cur_idx+q], {'role': 'user', 'content': query})
-                self.assertEqual(module.cur_num_tokens_cache[cur_idx+q], module.get_text_message_num_tokens('user', query))
-            cur_idx += len(multi_query)
-            self.assertEqual(module.history[cur_idx], {'role': 'assistant', 'content': response})
-            self.assertEqual(module.cur_num_tokens_cache[cur_idx], module.get_text_message_num_tokens('assistant', response))
-            self.assertEqual(len(module.history), cur_idx+1)
-            self.assertEqual(len(module.cur_num_tokens_cache), cur_idx+1)
-            cur_idx += 1
-
+            expected_content = [{'type': 'text', 'text': query} for query in multi_query]
+            self.assertEqual(module.history[m*2], {'role': 'user', 'content': expected_content})
+            self.assertEqual(module.history[m*2+1], {'role': 'assistant', 'content': [{'type': 'text', 'text': response}]})
+            self.assertEqual(module.cur_num_tokens_cache[m*2], module._get_num_tokens('user', expected_content))
+            self.assertEqual(module.cur_num_tokens_cache[m*2+1], module._get_num_tokens('assistant', [{'type': 'text', 'text': response}]))
+            self.assertEqual(len(module.history), m*2+2)
+            self.assertEqual(len(module.cur_num_tokens_cache), m*2+2)
 
     def test_infer_step_with_images(self):
         system_prompt = "This is a test system prompt."
@@ -82,56 +78,56 @@ class OpenAIModuleTest(unittest.TestCase):
 
         queries = [
             [
-                {'image': np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)},
-                {'image': np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)},
-                {'image': np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)},
-                {'text': "What are these pictures showing?"}
+                ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
+                ('text', "What are these pictures showing?")
             ],
             [
-                {'image': np.random.randint(256, size=(512, 512, 2)).astype(np.uint8)},
-                {'image': np.random.randint(256, size=(100, 200, 4)).astype(np.uint8)},
-                {'image': np.random.randint(256, size=(256, 128, 3)).astype(np.uint8)},
-                {'image': np.random.randint(256, size=(1024, 120, 3)).astype(np.uint8)},
-                {'image': np.random.randint(256, size=(180, 260, 3)).astype(np.uint8)},
-                {'text': "Find a picture of a dog from these pictures."}
+                ('image', np.random.randint(256, size=(512, 512, 2)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(100, 200, 4)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(256, 128, 3)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(1024, 120, 3)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(180, 260, 3)).astype(np.uint8)),
+                ('text', "Find a picture of a dog from these pictures.")
             ],
             [
-                {'image': np.random.randint(256, size=(1920, 1080, 3)).astype(np.uint8)},
-                {'text': "This is an example figure."},
-                {'image': np.random.randint(256, size=(300, 500, 3)).astype(np.uint8)},
-                {'image': np.random.randint(256, size=(256, 256, 2)).astype(np.uint8)},
-                {'text': "What do you think about other two pictures?"}
+                ('image', np.random.randint(256, size=(1920, 1080, 3)).astype(np.uint8)),
+                ('text', "This is an example figure."),
+                ('image', np.random.randint(256, size=(300, 500, 3)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(256, 256, 2)).astype(np.uint8)),
+                ('text', "What do you think about other two pictures?")
             ],
             [
-                {'image': np.random.randint(256, size=(1000, 1000, 4)).astype(np.uint8)}
+                ('image', np.random.randint(256, size=(1000, 1000, 4)).astype(np.uint8))
             ],
             [
-                {'image': np.random.randint(256, size=(512, 512, 4)).astype(np.uint8)},
-                {'image': np.random.randint(256, size=(128, 64, 3)).astype(np.uint8)}
+                ('image', np.random.randint(256, size=(512, 512, 4)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(128, 64, 3)).astype(np.uint8))
             ]
         ]
         for q, query in enumerate(queries):
             module._get_response_from_api = MagicMock(return_value=f"This is a response {q}.")
-            response = module.infer_step_with_images(query, system_prompt)
+            response = module.infer_step(query, system_prompt)
             self.assertEqual(response, f"This is a response {q}.")
-            self.assertEqual(module.history[q*2+1], {'role': 'assistant', 'content': response})
+            self.assertEqual(module.history[q*2+1], {'role': 'assistant', 'content': [{'type': 'text', 'text': response}]})
             self.assertEqual(module.history[q*2]['role'], 'user')
             self.assertTrue(isinstance(module.history[q*2]['content'], list))
 
             for o, obj in enumerate(query):
-                if 'text' in obj:
-                    self.assertEqual(module.history[q*2]['content'][o], {'type': 'text', 'text': obj['text']})
-                elif 'image' in obj:
+                if obj[0] == 'text':
+                    self.assertEqual(module.history[q*2]['content'][o], {'type': 'text', 'text': obj[1]})
+                elif obj[0] == 'image':
                     self.assertEqual(module.history[q*2]['content'][o]['type'], 'image_url')
                     self.assertTrue(isinstance(module.history[q*2]['content'][o]['image_url']['url'], str))
                     self.assertTrue(module.history[q*2]['content'][o]['image_url']['url'].startswith('data:image/png;base64,'))
 
-            self.assertEqual(module.cur_num_tokens_cache[q*2], module.get_multi_modal_message_num_tokens(
+            self.assertEqual(module.cur_num_tokens_cache[q*2], module._get_num_tokens(
                 'user',
                  module.history[q*2]['content'], 
-                [(obj['image'].shape[0], obj['image'].shape[1]) for obj in query if 'image' in obj]
+                [(obj[1].shape[0], obj[1].shape[1]) for obj in query if obj[0] == 'image']
             ))
-            self.assertEqual(module.cur_num_tokens_cache[q*2+1], module.get_text_message_num_tokens('assistant', response))
+            self.assertEqual(module.cur_num_tokens_cache[q*2+1], module._get_num_tokens('assistant', [{'type': 'text', 'text': response}]))
 
             self.assertEqual(len(module.history), q*2+2)
             self.assertEqual(len(module.cur_num_tokens_cache), q*2+2)
@@ -141,32 +137,29 @@ class OpenAIModuleTest(unittest.TestCase):
         module = OpenAIModule(model)
 
         with self.assertRaises(AssertionError):
-            response = module.infer_step_with_texts([], None)
+            response = module.infer_step([], None)
 
         with self.assertRaises(AssertionError):
-            response = module.infer_step_with_images([], None)
+            module.add_data('dummy', data=[])
 
-        with self.assertRaises(AssertionError):
-            module.add_text_data('dummy', text="This is a correct text.")
-        
-        with self.assertRaises(AssertionError):
-            module.add_multi_modal_data('dummy', data=[{'image': np.random.randint(256, size=(100, 100, 3)).astype(np.uint8)}, {'text': "Test text."}])
-
-        with self.assertRaises(AssertionError):
-            module.add_multi_modal_data('input', data=[])
+        with self.assertRaises(NotImplementedError):
+            module.add_data('input', data=[
+                ('text', "This is a text input"),
+                ('dummy', "???")
+            ])
 
     def test_clear_history(self):
         model = "gpt-4o-2024-05-13"
         module = OpenAIModule(model)
 
-        module.add_text_data('input', "This is a test message 1.")
+        module.add_data('input', [('text', "This is a test message 1.")])
         module.clear_history()
         self.assertEqual(module.history, [])
         self.assertEqual(module.cur_num_tokens_cache, [])
 
-        module.add_text_data('input', "This is a test message 2.")
-        module.add_text_data('output', "This is a test response.")
-        module.add_multi_modal_data('input', data=[{'image': np.random.randint(256, size=(100, 200, 4)).astype(np.uint8)}])
+        module.add_data('input', [('text', "This is a test message 2.")])
+        module.add_data('output', [('text', "This is a test response.")])
+        module.add_data('input', data=[('image', np.random.randint(256, size=(100, 200, 4)).astype(np.uint8))])
         module.clear_history()
         self.assertEqual(module.history, [])
         self.assertEqual(module.cur_num_tokens_cache, [])
@@ -208,13 +201,13 @@ class OpenAIModuleTest(unittest.TestCase):
         module.encoding.encode = MagicMock(side_effect=side_effect_encode)
         module._get_num_image_tokens = MagicMock(side_effect=side_effect_image)
 
-        self.assertEqual(module.get_text_message_num_tokens('system', system_prompt), 20)
-        self.assertEqual(module.get_text_message_num_tokens('user', "What's your name?"), 14)
-        self.assertEqual(module.get_text_message_num_tokens('assistant', "Live as if you were to die tomorrow."), 28)
+        self.assertEqual(module._get_num_tokens('system', [{'type': 'text', 'text': system_prompt}]), 20)
+        self.assertEqual(module._get_num_tokens('user', [{'type': 'text', 'text': "What's your name?"}]), 14)
+        self.assertEqual(module._get_num_tokens('assistant', [{'type': 'text', 'text': "Live as if you were to die tomorrow."}]), 28)
 
-        self.assertEqual(module.get_multi_modal_message_num_tokens(
+        self.assertEqual(module._get_num_tokens(
             'user', content=[{'type': 'image_url', 'image_url': {'url': 'random-url'}} for i in range(3)], image_sizes=[(128, 128)] * 3), 76)
-        self.assertEqual(module.get_multi_modal_message_num_tokens(
+        self.assertEqual(module._get_num_tokens(
             'user', 
             content=[
                 {'type': 'image_url', 'image_url': {'url': 'random-url'}},
@@ -222,7 +215,7 @@ class OpenAIModuleTest(unittest.TestCase):
             ],
             image_sizes=[(1024, 1024)]
         ), 137)
-        self.assertEqual(module.get_multi_modal_message_num_tokens(
+        self.assertEqual(module._get_num_tokens(
             'user',
             content=[
                 {'type': 'image_url', 'image_url': {'url': "random-url-1"}},
@@ -241,7 +234,7 @@ class OpenAIModuleTest(unittest.TestCase):
         module = OpenAIModule(model)
         module.max_num_tokens = 1152
 
-        module.get_text_message_num_tokens = MagicMock(return_value=10)
+        module._get_num_tokens = MagicMock(return_value=10)
         module.cur_num_tokens_cache = [100, 100, 100, 100, 100]
         self.assertEqual(module._find_starting_point(system_prompt), 0)
         module.cur_num_tokens_cache = [500, 200, 300, 400]
