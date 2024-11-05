@@ -1,56 +1,35 @@
-# MultiNet
+<p align="center">
+  <img src="@Multinetlogo.png" alt="Multinet Logo" height="100" style="vertical-align: middle;">
+  <h1 align="center" style="display: inline-block; vertical-align: middle; margin-left: 20px;">MultiNet: A Generalist Benchmark for Vision-Language & Action models</h1>
+</p>
 
-* ### This work is being done in close collaboration with [Metarch](https://metarch.ai/), who is also sponsoring the project.
-
-* ### We’re always looking forward to quick and longer term collaborators getting involved! So, if you are interested in contributing please take a look at our [open issues](https://github.com/ManifoldRG/MultiNet/issues) or reach out to us via [Discord](https://discord.gg/Tad7wAX8)
-
-## Overview
-
-This repo contains simple code that can be used to **download** what aims to be the largest open-source vision-language + control (RL, Robotics) datasets, and **translate** control data of various tasks and sources to a unified [Tensorflow Dataset format](https://www.tensorflow.org/datasets/api_docs/python/tfds). 
-
-We are currently working towards a **new Multimodal Generalist Benchmark to evaluate the generalist capabilities of Vision-Language-Action (VLAs) style models**. 
-
-The first version of this project will result in the creation of the **pretraining corpus for the [NEKO](https://github.com/ManifoldRG/Neko) project, as well as the evaluation set for the new benchmark**.
-
-## Why A New MultiModal Generalist Benchmark?
-
-Inspired by the emerging class of VLAs, we believe that training a large model on web-scale multimodal data, and reward-based action trajectories in the form of Reinforcement Learning and Robotics data, will result in a new class of foundation models that are truly generalist and can autonomously plan, interact with their environments, and complete actions in an agentic manner.
-
-The pretraining corpus of one such model - Deepmind's GATO:
-
-![The original gato corpus](./assets/gato_corpus.png)
-
-However, many datasets in the above list are closed-source. With MultiNet, **we provide several trillion tokens worth of open-source VLA data. Below is the final list of datasets included in MultiNet v0**. Links to the datasets can be found in [Issue #19](https://github.com/ManifoldRG/MultiNet/issues/19):
-
-| Vision/language datasets|            
-| ----------------------- | 
-| OBELICS                 | 
-| COYO-700M               | 
-| MS COCO                 | 
-| Conceptual Captions     | 
-| A-OKVQA                 | 
-| VQA-v2                  | 
-| Datacomp 1B             | 
-| FineWeb Edu             |           
-
-| RL + Robotics datasets    | 
-| ------------------------- | 
-| DM Lab                    |
-| ALE Atari                 |
-| BabyAI                    |
-| MuJoCo                    |
-| DM Control Suite          |
-| V-D4RL                    |
-| Meta-World                |
-| Procgen                   |
-| Language Table            |
-| Open-X Embodiment dataset |
-| LocoMuJoCo                | 
+<p align="center">
+  <a href="https://multinet.ai">Website</a> •
+  <a href="https://arxiv.org/abs/">Paper</a> •
+  <a href="https://arxiv.org/abs/">Dataset Spec</a> •
+  <a href="https://github.com/ManifoldRG/MultiNet/tree/main/src/modules">GenESIS framework</a> •
+  <a href="https://discord.gg/D5YnaQm7">Discord</a>
+</p>
 
 
-## Getting Started
+### This work is sponsored by, and is being done in close collaboration with [Metarch](https://metarch.ai/).
 
-To set up the environment
+## 📢 Updates
+2024-11-05: We release the first version of MultiNet where we profiled a SoTA VLM, SoTA VLA, and SoTA Generalist model on OpenX Embodiment datasets - Multinet v0.1! Check our [website](https://multinet.ai) for more details.
+
+## 🔍 Overview
+
+This repo provides the following capabilities:
+1. Download any or all datasets of what aims to be the largest consolidation of open-source vision-language + control/action (RL, Robotics) data
+2. Translate control data of various formats and from varioussources to a unified [Tensorflow Dataset format](https://www.tensorflow.org/datasets/api_docs/python/tfds). 
+3. Evaluate the performance of GPT-4o, OpenVLA, and HuggingFace's JAT in a zero-shot setting on 20 OpenX Embodiment datasets using the benchmark released in [Multinet v0.1](https://github.com/ManifoldRG/MultiNet/releases/tag/v0.1).
+4. A [general framework](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules) for mapping VLMs to other modality classes, with particular emphasis on action spaces. This framework allows one to adapt a wide range of models to multiple types of tasks or datasets for scaling effectively while reducing the amount of engineering effort required.  In MultiNet v0.1, GenESIS is used to evaluate GPT-4-o on the OpenX datasets.
+
+We also provide [μGATO](https://github.com/eihli/mugato) - a small, simple, open-source implementation of what is described in DeepMind's GATO paper. This is our first step towards building a multimodal generalist action model.
+
+## 🚀 Getting Started
+
+To set up the environment for download, translation, and evaluation of GPT-4o and HuggingFace's JAT
 
 ```bash
 conda create -n multinet python=3.10
@@ -67,18 +46,18 @@ cd Multinet/src
 python centralized_downloader --dataset_name <name of dataset you would like to download> --output_dir <directory where you would like to download the dataset>
 ```
 
-To translate one file of your desired control dataset (downloaded using the downloader script in this repo) to the TFDS format 
+To translate one file/shard of your desired control dataset (downloaded using the downloader script in this repo) to the TFDS format 
 
 ```bash
 cd Multinet/src/control_translation
-python centralized_translation --dataset_name <name of dataset whose file you would like to translate> --dataset_path <path to the dataset> --output_dir <directory where you would like to store the translated file>
+python centralized_translation --dataset_name <name of dataset whose file you would like to translate> --dataset_path <path to the downloaded dataset> --output_dir <directory where you would like to store the translated file>
 ```
 
-To limit schema of control data to (observations, actions, rewards) while translating
+To translate multiple files/shards of your desired control dataset (downloaded using the downloader script in this repo) to the TFDS format 
 
 ```bash
 cd Multinet/src/control_translation
-python centralized_translation --dataset_name <name of dataset whose file you would like to translate> --dataset_path <path to the dataset> --output_dir <directory where you would like to store the translated file> --limit_schema True
+python wrapper_translate_multiple.py --dataset_name <name of dataset whose file you would like to translate> --dataset_path <path to the downloaded dataset> --output_dir <directory where you would like to store the translated file>
 ```
 
 
