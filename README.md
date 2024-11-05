@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="@Multinetlogo.png" alt="Multinet Logo" height="100" style="vertical-align: middle;">
+  <img src="assets/Multinetlogo.png" alt="Multinet Logo" height="100" style="vertical-align: middle;">
   <h1 align="center" style="display: inline-block; vertical-align: middle; margin-left: 20px;">MultiNet: A Generalist Benchmark for Vision-Language & Action models</h1>
 </p>
 
