@@ -5,8 +5,8 @@
 
 <p align="center">
   <a href="https://multinet.ai">Website</a> •
-  <a href="https://arxiv.org/abs/">Paper</a> •
-  <a href="https://arxiv.org/abs/">Dataset Spec</a> •
+  <a href="https://multinet.ai/static/pdfs/Benchmarking%20Vision%20Language%20Action%20Models.pdf">Paper</a> •
+  <a href="https://multinet.ai/static/pdfs/MultiNet%20Dataset%20Spec%20Paper.pdf">Dataset Spec</a> •
   <a href="https://github.com/ManifoldRG/MultiNet/tree/main/src/modules">GenESIS framework</a> •
   <a href="https://discord.gg/Rk4gAq5aYr">Discord</a>
 </p>
@@ -83,7 +83,7 @@ Enter the OpenAI API key when prompted.
 
 #### To evaluate OpenVLA (in a zero-shot setting) on the 20 OpenX Embodiment datasets it was profiled on as a part of Multinet v0.1 
 
-We set up our conda environment and ran evaluations for OpenVLA on a GCP Instance with 1 L4 GPU, driver version 550.90.07, and CUDA version 12.4. For more details about the infrastructure used, refer to our [paper](https://arxiv.org/abs/). If you are using our code out-of-the-box, we recommend using the same infrastructure.
+We set up our conda environment and ran evaluations for OpenVLA on a GCP Instance with 1 L4 GPU, driver version 550.90.07, and CUDA version 12.4. For more details about the infrastructure used, refer to our [paper](https://multinet.ai/static/pdfs/Benchmarking%20Vision%20Language%20Action%20Models.pdf). If you are using our code out-of-the-box, we recommend using the same infrastructure.
 
 For setup, create a new conda environment and run the OpenVLA environment setup bash script (this will download both the OpenVLA requirements as well as the broader MultiNet requirements):
 
