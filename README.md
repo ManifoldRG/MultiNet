@@ -29,7 +29,7 @@ As a part of Multinet v0.1, we also release[μGATO](https://github.com/eihli/mug
 
 ## 🚀 Getting Started
 
-####To set up the environment for download, translation, and evaluation of GPT-4o and HuggingFace's JAT:
+#### To set up the environment for download, translation, and evaluation of GPT-4o and HuggingFace's JAT:
 
 ```bash
 conda create -n multinet python=3.10
@@ -39,28 +39,28 @@ cd MultiNet/src
 pip install -r requirements.txt
 ```
 
-####To download the datasets in v0:
+#### To download the datasets in v0:
 
 ```bash
 cd Multinet/src
 python centralized_downloader --dataset_name <name of dataset you would like to download> --output_dir <directory where you would like to download the dataset>
 ```
 
-####To translate one file/shard of your desired control dataset (downloaded using the downloader script in this repo) to the TFDS format 
+#### To translate one file/shard of your desired control dataset (downloaded using the downloader script in this repo) to the TFDS format 
 
 ```bash
 cd Multinet/src/control_translation
 python centralized_translation --dataset_name <name of dataset whose file you would like to translate> --dataset_path <path to the downloaded dataset> --output_dir <directory where you would like to store the translated file>
 ```
 
-####To translate multiple files/shards of your desired control dataset (downloaded using the downloader script in this repo) to the TFDS format 
+#### To translate multiple files/shards of your desired control dataset (downloaded using the downloader script in this repo) to the TFDS format 
 
 ```bash
 cd Multinet/src/control_translation
 python wrapper_translate_multiple.py --dataset_name <name of dataset whose file you would like to translate> --dataset_path <path to the downloaded dataset> --output_dir <directory where you would like to store the translated file>
 ```
 
-####To evaluate JAT (in a zero-shot setting) on the 53 OpenX Embodiment datasets it was profiled on as a part of Multinet v0.1 
+#### To evaluate JAT (in a zero-shot setting) on the 53 OpenX Embodiment datasets it was profiled on as a part of Multinet v0.1 
 
 Make sure to set the path to the translated openx datasets you want to evaluate on and the path where you want to dump your results in Multinet/src/eval/profiling/jat/scripts/profile_openx.py
 
@@ -69,7 +69,7 @@ cd Multinet/src/eval/profiling/jat/scripts
 python profile_openx.py
 ```
 
-####To evaluate GPT-4o (in a zero-shot setting) using the [GenESIS framework](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules) on the 22 OpenX Embodiment datasets it was profiled on as a part of Multinet v0.1 
+#### To evaluate GPT-4o (in a zero-shot setting) using the [GenESIS framework](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules) on the 22 OpenX Embodiment datasets it was profiled on as a part of Multinet v0.1 
 
 Make sure to adjust the path creation to the translated openx datasets you want to evaluate on, and the path where you want to dump your results in src/modules/dataset_modules/openx_module.py based on your local file structure 
 
@@ -79,7 +79,7 @@ python eval_main.py --disk_root_dir <path to the translated openx datasets> --da
 ```
 Enter the OpenAI API key when prompted.
 
-####To evaluate OpenVLA (in a zero-shot setting) on the 20 OpenX Embodiment datasets it was profiled on as a part of Multinet v0.1 
+#### To evaluate OpenVLA (in a zero-shot setting) on the 20 OpenX Embodiment datasets it was profiled on as a part of Multinet v0.1 
 
 We set up our conda environment and ran evaluations for OpenVLA on a GCP Instance with 1 L4 GPU, driver version 550.90.07, and CUDA version 12.4. For more details about the infrastructure used, refer to our [paper](https://arxiv.org/abs/). If you are using our code out-of-the-box, we recommend using the same infrastructure.
 
