@@ -1,8 +1,0 @@
-[project]
-name = "MultiNet"
-version = "2024.06.02"
-dependencies = [
-  "datasets",
-  "Pillow",
-  "tqdm",
-]
