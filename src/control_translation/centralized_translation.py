@@ -236,8 +236,8 @@ def procgen(dataset_path: str, limit_schema: bool):
         save_counter+=1
 
         #Testing on 500 files
-        if save_counter==500:
-            break
+        #if save_counter==500:
+            #break
 
     return mega_dataset
 
