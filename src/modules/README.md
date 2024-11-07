@@ -2,8 +2,8 @@
 
 <p align="center">
   <a href="https://multinet.ai">Website</a> •
-  <a href="https://arxiv.org/abs/">Paper</a> •
-  <a href="https://arxiv.org/abs/">Dataset Spec</a> •
+  <a href="https://multinet.ai/static/pdfs/Benchmarking%20Vision%20Language%20Action%20Models.pdf">Paper</a> •
+  <a href="https://multinet.ai/static/pdfs/MultiNet%20Dataset%20Spec%20Paper.pdf">Dataset Spec</a> •
   <a href="https://github.com/ManifoldRG/MultiNet/">Multinet</a> •
   <a href="https://discord.gg/Rk4gAq5aYr">Discord</a>
 </p>
