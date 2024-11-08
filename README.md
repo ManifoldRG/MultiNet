@@ -11,12 +11,15 @@
   <a href="https://discord.gg/Rk4gAq5aYr">Contribute</a>
 </p>
 
-
-
 ### This work is sponsored by, and is being done in close collaboration with [Metarch](https://metarch.ai/).
 
 ## 📢 Updates
 2024-11-06: We release the first version of MultiNet where we profiled a SoTA VLM, SoTA VLA, and a novel Generalist model on OpenX Embodiment datasets - Multinet v0.1! Check our [website](https://multinet.ai) for more details.
+
+<p align="center">
+  <img src="assets/Multinet v0.1 release visual 3.0.png" alt="Multinet Figure" style="vertical-align: middle;">
+</p>
+
 
 ## 🔍 Overview
 
