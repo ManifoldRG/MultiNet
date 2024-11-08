@@ -11,6 +11,7 @@
   <a href="https://discord.gg/Rk4gAq5aYr">Discord</a>
 </p>
 
+### Interested in contributing/collaborating on this effort? Join the conversation on [Discord]((https://discord.gg/a8uDbxzEbM))
 
 ### This work is sponsored by, and is being done in close collaboration with [Metarch](https://metarch.ai/).
 
