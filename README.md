@@ -8,10 +8,10 @@
   <a href="https://multinet.ai/static/pdfs/Benchmarking%20Vision%20Language%20Action%20Models.pdf">Paper</a> •
   <a href="https://multinet.ai/static/pdfs/MultiNet%20Dataset%20Spec%20Paper.pdf">Dataset Spec</a> •
   <a href="https://github.com/ManifoldRG/MultiNet/tree/main/src/modules">GenESIS framework</a> •
-  <a href="https://discord.gg/Rk4gAq5aYr">Discord</a>
+  <a href="https://discord.gg/Rk4gAq5aYr">Contribute</a>
 </p>
 
-### Interested in contributing/collaborating on this effort? Join the conversation on [Discord](https://discord.gg/a8uDbxzEbM)
+
 
 ### This work is sponsored by, and is being done in close collaboration with [Metarch](https://metarch.ai/).
 
