@@ -6,7 +6,7 @@
 <p align="center">
   <a href="https://multinet.ai">Website</a> •
   <a href="https://multinet.ai/static/pdfs/Benchmarking%20Vision%20Language%20Action%20Models.pdf">Paper</a> •
-  <a href="https://multinet.ai/static/pdfs/MultiNet%20Dataset%20Spec%20Paper.pdf">Dataset Spec</a> •
+  <a href="https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf">Dataset Spec</a> •
   <a href="https://github.com/ManifoldRG/MultiNet/tree/main/src/modules">GenESIS framework</a> •
   <a href="https://discord.gg/Rk4gAq5aYr">Contribute</a>
 </p>
