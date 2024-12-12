@@ -19,6 +19,7 @@ from urllib.parse import urlparse, unquote
 from google.cloud import storage
 import gc
 import psutil
+import numpy as np
 
 
 os.environ['CURL_CA_BUNDLE'] = ''
@@ -157,25 +158,27 @@ def vd4rl(dataset_name: str, output_dir: str):
 def locomujoco(dataset_name: str, output_dir: str):
 
     #Download all locomujoco perfect datasets through the library
-    os.system("loco-mujoco-download-perfect")
+    #Gets downloaded here - /Users/guruprasad/miniforge3/envs/metarch/lib/python3.10/site-packages/loco_mujoco
+    #os.system("loco-mujoco-download-perfect")
     #Locomujoco task names
-    locomujoco_tasks = loco_mujoco.get_all_task_names()
+    #locomujoco_tasks = loco_mujoco.get_all_task_names()
+    locomujoco_tasks = ['Atlas.walk.perfect']
     for task in locomujoco_tasks:
         if task.split('.')[-1] == 'perfect':
-            try:
-                print(f'Downloading {task}...')
-                try:
-                    env = gym.make('LocoMujoco', env_name=task)
-                except:
-                    print(f'Dataset {task} is not available through locomujoco')
-                    continue
-                dict_env = env.create_dataset()
-                os.makedirs(os.path.join(output_dir, dataset_name), exist_ok=True)
-                torch.save(dict_env, os.path.join(os.path.join(output_dir, dataset_name),task+'.pt'))
+            #try:
+            print(f'Downloading {task}...')
+            #try:
+            env = gym.make('LocoMujoco', env_name=task)
+            #except:
+            #    print(f'Dataset {task} is not available through locomujoco')
+            #    continue
+            dict_env = env.create_dataset()
+            os.makedirs(os.path.join(output_dir, dataset_name), exist_ok=True)
+            torch.save(dict_env, os.path.join(os.path.join(output_dir, dataset_name),task+'.pt'))
 
-            except:
-                print(f"Error downloading {task}")
-                return
+            #except:
+                #print(f"Error downloading {task}")
+                #return
     
     print('Successfully downloaded all LocoMuJoCo expert datasets')
     return
@@ -225,6 +228,10 @@ def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int
 
     for i, shard in enumerate(ds.batch(shard_size), start=start_from_shard):
             
+
+            #print(i)
+            #print(shard)
+            
             # Check RAM usage
             ram_usage = psutil.virtual_memory().percent
             #If RAM usage is more than 90% free up memory and restart the sharding+saving procedure from the same shard
@@ -237,10 +244,18 @@ def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int
                 return i
         
             #Saving with torch instead of tf as tf has a memory leakage issue that leads to the program crashing before completion
-            torch.save(shard, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
-            del shard
-            gc.collect()
-        
+            
+            #torch.save(shard, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
+                        
+            #del shard
+            #gc.collect()
+
+            shard = tf.data.Dataset.from_tensor_slices(shard)
+            flattened_dataset = shard.flat_map(lambda x: x['steps'])
+            dataset_dict = {i: item for i, item in enumerate(flattened_dataset.as_numpy_iterator())}
+            print(dataset_dict)
+            torch.save(dataset_dict, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
+
             # Print current RAM usage
             print(f"Processed shard {i}. Current RAM usage: {ram_usage}%")
     
@@ -250,7 +265,7 @@ def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int
 def language_table(dataset_name: str, output_dir: str):
 
     #Shard size to save the dataset to disk
-    shard_size = 512
+    shard_size = 1
 
     #Language table dataset names
     dataset_directories = {
@@ -273,7 +288,7 @@ def language_table(dataset_name: str, output_dir: str):
         print('Downloading...')
         builder = tfds.builder_from_directory(builder_dir=dataset_path)
         ds = builder.as_dataset(split='train')
-        ds = ds.flat_map(lambda x: x['steps'])
+        #ds = ds.flat_map(lambda x: x['steps'])
         os.makedirs(os.path.join(output_dir, dataset_name), exist_ok=True)
         
         shard_func_catch=0
@@ -294,7 +309,7 @@ def language_table(dataset_name: str, output_dir: str):
 def openx(dataset_name: str, output_dir: str):
 
     #OpenX datasets
-    DATASETS = [
+    '''DATASETS = [
     'fractal20220817_data',
     'kuka',
     'bridge',
@@ -347,10 +362,12 @@ def openx(dataset_name: str, output_dir: str):
     'berkeley_gnm_recon',
     'berkeley_gnm_cory_hall',
     'berkeley_gnm_sac_son'
-    ]
+    ]'''
+
+    DATASETS = ['usc_cloth_sim_converted_externally_to_rlds']
 
     #Shard size to save the dataset to disk
-    shard_size = 512
+    shard_size = 1
 
     for ds in DATASETS:
         if ds == 'robo_net':
@@ -363,8 +380,8 @@ def openx(dataset_name: str, output_dir: str):
             if os.path.isdir(ds) == False:
                 print(f'Downloading {ds}...')
                 builder = tfds.builder_from_directory(builder_dir=file_path)
-                b = builder.as_dataset(split='train')
-                b = b.flat_map(lambda x: x['steps'])
+                b = builder.as_dataset(split='val')
+                #b = b.flat_map(lambda x: x['steps'])
                 os.makedirs(os.path.join(output_dir, ds), exist_ok=True)
                 
                 shard_func_catch=0
