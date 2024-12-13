@@ -7,7 +7,6 @@ import os
 import torchrl
 from torchrl.data.datasets import VD4RLExperienceReplay
 from absl import app
-import loco_mujoco
 import gymnasium as gym
 import shutil
 import typing as tp
@@ -157,30 +156,20 @@ def vd4rl(dataset_name: str, output_dir: str):
 #LocoMuJoCo
 def locomujoco(dataset_name: str, output_dir: str):
 
-    #Download all locomujoco perfect datasets through the library
-    #Gets downloaded here - /Users/guruprasad/miniforge3/envs/metarch/lib/python3.10/site-packages/loco_mujoco
-    #os.system("loco-mujoco-download-perfect")
-    #Locomujoco task names
-    #locomujoco_tasks = loco_mujoco.get_all_task_names()
-    locomujoco_tasks = ['Atlas.walk.perfect']
-    for task in locomujoco_tasks:
-        if task.split('.')[-1] == 'perfect':
-            #try:
-            print(f'Downloading {task}...')
-            #try:
-            env = gym.make('LocoMujoco', env_name=task)
-            #except:
-            #    print(f'Dataset {task} is not available through locomujoco')
-            #    continue
-            dict_env = env.create_dataset()
-            os.makedirs(os.path.join(output_dir, dataset_name), exist_ok=True)
-            torch.save(dict_env, os.path.join(os.path.join(output_dir, dataset_name),task+'.pt'))
-
-            #except:
-                #print(f"Error downloading {task}")
-                #return
-    
-    print('Successfully downloaded all LocoMuJoCo expert datasets')
+    #Download all locomujoco perfect datasets
+    # Check if loco-mujoco repo exists, if not clone it
+    if not os.path.exists('loco-mujoco') and not os.path.exists('loco-mujoco/.git'):
+        print("Cloning loco-mujoco repository...")
+        os.system("git clone https://github.com/robfiras/loco-mujoco.git")
+        print("Successfully cloned loco-mujoco")
+    else:
+        print("loco-mujoco repository already exists")
+    try:
+        os.system(f"loco-mujoco-download-perfect")
+    except:
+        print("Error downloading LocoMuJoCo datasets")
+        return
+    print('Successfully downloaded all LocoMuJoCo expert datasets to loco-mujoco/loco_mujoco/datasets/')
     return
     
 #Procgen
