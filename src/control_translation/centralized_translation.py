@@ -207,15 +207,15 @@ def torchrlds(dataset_path: str, dataset_name, limit_schema: bool):
     
     # Trim the data if limit_schema flag is set during code execution
     if limit_schema:
-        if dataset_name == 'locomujoco':
+        '''if dataset_name == 'locomujoco':
             trl_torch_trimmed = {}
             trl_torch_trimmed['observations'] = trl_torch['states']
             trl_torch_trimmed['actions'] = trl_torch['actions']
             trl_torch_trimmed['rewards'] = trl_torch['rewards']
             print('Translating...')
             trl_torch_trimmed_tfds = tf.data.Dataset.from_tensor_slices(trl_torch_trimmed)
-            return trl_torch_trimmed_tfds
-        elif dataset_name == 'vd4rl':
+            return trl_torch_trimmed_tfds'''
+        if dataset_name == 'vd4rl':
             trl_torch_trimmed = {}
             trl_torch_trimmed['observations'] = trl_torch['pixels']
             trl_torch_trimmed['actions'] = trl_torch['action']
@@ -254,12 +254,31 @@ def torchrlds(dataset_path: str, dataset_name, limit_schema: bool):
 
     return trl_tfds
 
+def locomujoco(dataset_path: str, limit_schema: bool):
+
+    try:
+        locomujoco_np = np.load(dataset_path, allow_pickle=True).items()
+    except:
+        print('Enter the correct path to a LocoMuJoCo file')
+        return None
+
+    locomujoco_np_dict = {}
+    for key, value in locomujoco_np:
+        locomujoco_np_dict[key] = value
+    
+    if limit_schema:
+        del locomujoco_np_dict['last']
+        del locomujoco_np_dict['absorbing']
+
+    locomujoco_tfds_dict = tf.data.Dataset.from_tensor_slices(locomujoco_np_dict)
+    return locomujoco_tfds_dict
+
+
+
 def procgen(dataset_path: str, limit_schema: bool):
 
     #Taken from https://github.com/ManifoldRG/MultiNet/blob/main/src/control_translation/procgen/convert2tfds.py
 
-    mega_dataset = None
-    save_counter=0
 
     print('Translating...')
     #Iterate through Procgen dataset folder and translate file by file. Returns a consolidated mega TFDS containing translated versions of all the files.
@@ -274,8 +293,6 @@ def procgen(dataset_path: str, limit_schema: bool):
     #Translate TorchRL dataset to TFDS
     if limit_schema:
         del procgen_np['dones']
-
-    ## CHANGE THIS TO MAINTAIN EPISODE STRUCTURE
     
     # Add zero padding at start for non-observation fields as there is one extra observation field in the dataset
     for key, value in procgen_np.items():
@@ -338,13 +355,15 @@ def categorize_datasets(dataset_name: str, dataset_path: str, hf_test_data: bool
         elif dataset_name=='baby_ai' or dataset_name=='ale_atari' or dataset_name=='mujoco' or dataset_name=='meta_world':
             translated_ds = jat(dataset_name, dataset_path, hf_test_data, limit_schema)
             return translated_ds
-        elif dataset_name=='vd4rl' or dataset_name=='locomujoco' or dataset_name=='language_table' or dataset_name=='openx':
+        elif dataset_name=='vd4rl' or dataset_name=='language_table' or dataset_name=='openx':
             translated_ds = torchrlds(dataset_path, dataset_name, limit_schema)
             return translated_ds
         elif dataset_name=='procgen':
             translated_ds = procgen(dataset_path, limit_schema)
             return translated_ds
-        
+        elif dataset_name=='locomujoco':
+            translated_ds = locomujoco(dataset_path, limit_schema)
+            return translated_ds
         else:
             raise ValueError('Enter a dataset in the current version of MultiNet')
     except ValueError as e:
