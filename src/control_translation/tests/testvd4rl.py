@@ -39,6 +39,8 @@ class TestTorchToTFDS(unittest.TestCase):
             count+=1
         tf_lens = count
 
+        self.assertGreater(torch_lens, 0)
+        self.assertGreater(tf_lens, 0)
         self.assertEqual(torch_lens, tf_lens)
         print(f'Time taken for dataset size test: {time.time() - start_time} seconds')
 
@@ -122,13 +124,15 @@ class TestTorchToTFDS(unittest.TestCase):
                         torch_dtype = tf.bool
                         
                     self.assertEqual(torch_dtype, tfds_dtype)
-                    break
-                elif isinstance(torch_value, dict):
+                    
+                elif isinstance(torch_value, dict) or ((hasattr(torch_value, '__class__') and torch_value.__class__.__name__ == 'TensorDict')):
+                    if hasattr(torch_value, '__class__') and torch_value.__class__.__name__ == 'TensorDict':
+                        torch_value = torch_value.to_dict()
                     for k, v in torch_value.items():
                         for i in v:
                             if isinstance(i, torch.Tensor):
                                 torch_dtype = i.dtype
-                                tfds_dtype = tf_element[f"{key}/{k}"].dtype
+                                tfds_dtype = tf_element[key][k].dtype
                                 
                                 if torch_dtype == torch.float32:
                                     torch_dtype = tf.float32
@@ -140,9 +144,31 @@ class TestTorchToTFDS(unittest.TestCase):
                                     torch_dtype = tf.int64
                                 elif torch_dtype == torch.bool:
                                     torch_dtype = tf.bool
+
+
                                 
-                                self.assertEqual(torch_dtype, tfds_dtype)
-                            break
+                            self.assertEqual(torch_dtype, tfds_dtype)
+                else:
+                    torch_dtype = type(torch_value)
+                    tfds_dtype = tf.convert_to_tensor(tf_element[key]).dtype
+
+                    if torch_dtype == torch.float32:
+                        torch_dtype = tf.float32
+                    elif torch_dtype == torch.float64:
+                        torch_dtype = tf.float64
+                    elif torch_dtype == torch.int32:
+                        torch_dtype = tf.int32
+                    elif torch_dtype == torch.int64:
+                        torch_dtype = tf.int64
+                    elif torch_dtype == torch.bool:
+                        torch_dtype = tf.bool
+                    elif tfds_dtype == tf.string:
+                        torch_dtype = type(torch_value.decode('utf-8'))
+                        tfds_dtype = type(tf_element[key].numpy().decode('utf-8'))
+                        
+                    self.assertEqual(torch_dtype, tfds_dtype)
+                
+                break
                         
         print(f'Time taken for data types test: {time.time() - start_time} seconds')
 

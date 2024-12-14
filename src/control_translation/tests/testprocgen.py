@@ -19,8 +19,8 @@ class TestProcgenToTFDS(unittest.TestCase):
 
     def test_dataset_sizes_match(self):
         """Test that datasets have same number of examples"""
-        npz_lens = []
-        tf_lens = []
+        npz_lens = 0
+        tf_lens = 0
         
         # Get lengths from npz data
         for key, value in self.npz_data.items():
@@ -35,6 +35,8 @@ class TestProcgenToTFDS(unittest.TestCase):
         
         tf_lens = size_count
 
+        self.assertGreater(npz_lens, 0)
+        self.assertGreater(tf_lens, 0)
         self.assertEqual(npz_lens, tf_lens)
 
     def test_feature_names_match(self):

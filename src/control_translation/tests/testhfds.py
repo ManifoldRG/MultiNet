@@ -60,6 +60,8 @@ class TestHFToTFDS(unittest.TestCase):
 
         #print(hf_lens)
         #print(tf_lens)
+        self.assertGreater(len(hf_lens), 0)
+        self.assertGreater(len(tf_lens), 0)
         self.assertTrue(all(h == t for h, t in zip(hf_lens, tf_lens)))
         print(f'Time taken for dataset size test: {time.time() - start_time} seconds')
 

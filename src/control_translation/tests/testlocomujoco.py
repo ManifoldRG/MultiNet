@@ -31,6 +31,8 @@ class TestLocoMujocoToTFDS(unittest.TestCase):
             size_count+=1
         
 
+        self.assertGreater(npz_lens, 0)
+        self.assertGreater(tf_lens, 0) 
         self.assertEqual(npz_lens, tf_lens)
 
     def test_feature_names_match(self):
