@@ -15,7 +15,7 @@ class TestOpenXToTFDS(unittest.TestCase):
         #print(f'Time taken for torch dataset load: {time.time() - start_time} seconds')
         
         # Load corresponding TFDS dataset
-        self.tfds_dataset = tf.data.Dataset.load('../openx_translated/')
+        self.tfds_dataset = tf.data.Dataset.load('../usc_cloth_sim_converted_externally_to_rlds/shard_0')
         #print(f'Time taken for torch and tfds dataset load: {time.time() - start_time} seconds')
 
     def test_dataset_sizes_match(self):
@@ -35,6 +35,8 @@ class TestOpenXToTFDS(unittest.TestCase):
     
         self.assertGreater(torch_lens, 0)
         self.assertGreater(tf_lens, 0)
+        print(torch_lens)
+        print(tf_lens)
         self.assertEqual(torch_lens, tf_lens)
         #print(f'Time taken for dataset size test: {time.time() - start_time} seconds')
 
@@ -45,6 +47,8 @@ class TestOpenXToTFDS(unittest.TestCase):
         # Get torch feature names, handling nested dicts
         torch_features = set(self.torch_dataset[0].keys())        
         tfds_features = set(next(iter(self.tfds_dataset)).keys())
+        print(torch_features)
+        print(tfds_features)
         self.assertEqual(torch_features, tfds_features)
         #print(f'Time taken for feature names test: {time.time() - start_time} seconds')
 
@@ -64,8 +68,8 @@ class TestOpenXToTFDS(unittest.TestCase):
                         if isinstance(tfds_example, tf.Tensor):
                             tfds_example = tfds_example.numpy()
 
-                        #print(pt_example)
-                        #print(tfds_example)
+                        print(pt_example)
+                        print(tfds_example)
 
                         if isinstance(pt_example, (np.ndarray, list)):
                             np.testing.assert_array_equal(pt_example, tfds_example)
@@ -80,8 +84,8 @@ class TestOpenXToTFDS(unittest.TestCase):
                     if isinstance(tfds_example, tf.Tensor):
                         tfds_example = tfds_example.numpy()
 
-                    #print(pt_example)
-                    #print(tfds_example)
+                    print(pt_example)
+                    print(tfds_example)
 
                     if isinstance(pt_example, (np.ndarray, list)):
                         np.testing.assert_array_equal(pt_example, tfds_example)
@@ -109,9 +113,9 @@ class TestOpenXToTFDS(unittest.TestCase):
                     
                     tfds_dtype = type(tf_element[key].numpy())
                     
-                    #print(key)
-                    #print(torch_dtype)
-                    #print(tfds_dtype)
+                    print(key)
+                    print(torch_dtype)
+                    print(tfds_dtype)
                     self.assertEqual(torch_dtype, tfds_dtype)
                     
                 elif isinstance(torch_value, dict):
@@ -144,10 +148,10 @@ class TestOpenXToTFDS(unittest.TestCase):
                                 torch_dtype = type(v.decode('utf-8'))
                                 tfds_dtype = type(tf_element[key][k].numpy().decode('utf-8'))
                         
-                        #print(key)
-                        #print(k)
-                        #print(torch_dtype)
-                        #print(tfds_dtype)
+                        print(key)
+                        print(k)
+                        print(torch_dtype)
+                        print(tfds_dtype)
                         self.assertEqual(torch_dtype, tfds_dtype)
                 
                 else:
@@ -169,9 +173,9 @@ class TestOpenXToTFDS(unittest.TestCase):
                         tfds_dtype = type(tf_element[key].numpy().decode('utf-8'))
                         
 
-                    #print(key)
-                    #print(torch_dtype)
-                    #print(tfds_dtype)
+                    print(key)
+                    print(torch_dtype)
+                    print(tfds_dtype)
                     self.assertEqual(torch_dtype, tfds_dtype)
 
             break

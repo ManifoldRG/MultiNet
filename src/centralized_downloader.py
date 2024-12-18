@@ -45,7 +45,7 @@ def rlu(dataset_name: str, output_dir: str):
         source_folders = ['dmlab/explore_object_rewards_few', 'dmlab/explore_object_rewards_many', 'dmlab/rooms_select_nonmatching_object', 'dmlab/rooms_watermaze', 'dmlab/seekavoid_arena_01']
         
         for source_folder in source_folders:
-            destination_folder = os.path.join(output_dir, dataset_name)
+            destination_folder = os.path.join(output_dir, source_folder)
             print('Downloading')
             # Initialize the Google Cloud Storage client
             storage_client = storage.Client.create_anonymous_client()
@@ -242,7 +242,7 @@ def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int
             shard = tf.data.Dataset.from_tensor_slices(shard)
             flattened_dataset = shard.flat_map(lambda x: x['steps'])
             dataset_dict = {i: item for i, item in enumerate(flattened_dataset.as_numpy_iterator())}
-            print(dataset_dict)
+            #print(dataset_dict)
             torch.save(dataset_dict, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
 
             # Print current RAM usage

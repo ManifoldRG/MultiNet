@@ -10,7 +10,7 @@ class TestLocoMujocoToTFDS(unittest.TestCase):
     def setUp(self):
         # Load a sample .npz file and its corresponding translated TFDS dataset
         self.npz_path = "../../loco-mujoco/loco_mujoco/datasets/humanoids/perfect/atlas_walk/perfect_expert_dataset_det.npz" # Adjust path as needed
-        self.tfds_dataset = tf.data.Dataset.load('../locomujoco_translated/')
+        self.tfds_dataset = tf.data.Dataset.load('../locomujoco_translated/loco-mujoco/loco_mujoco/datasets/humanoids/perfect/atlas_walk/perfect_expert_dataset_det')
         
         # Load the .npz file
         self.npz_data = np.load(self.npz_path, allow_pickle=True)
@@ -30,6 +30,7 @@ class TestLocoMujocoToTFDS(unittest.TestCase):
         for episode in self.tfds_dataset:
             size_count+=1
         
+        tf_lens = size_count
 
         self.assertGreater(npz_lens, 0)
         self.assertGreater(tf_lens, 0) 

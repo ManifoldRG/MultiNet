@@ -15,7 +15,7 @@ class TestTorchToTFDS(unittest.TestCase):
         print(f'Time taken for torch dataset load: {time.time() - start_time} seconds')
         
         # Load corresponding TFDS dataset
-        self.tfds_dataset = tf.data.Dataset.load('../vd4rl_translated/')
+        self.tfds_dataset = tf.data.Dataset.load('../vd4rl_translated/vd4rl/main_cheetah_run_expert_64px0')
         print(f'Time taken for torch and tfds dataset load: {time.time() - start_time} seconds')
     
     def test_dataset_sizes_match(self):
