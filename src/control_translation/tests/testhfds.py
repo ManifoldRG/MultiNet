@@ -35,11 +35,11 @@ class TestHFToTFDS(unittest.TestCase):
     def setUp(self):
         start_time = time.time()
         # Load a sample HuggingFace dataset from arrow file
-        self.hf_dataset = datasets.load_from_disk("../../metaworld-assembly/")
+        self.hf_dataset = datasets.load_from_disk("../../metaworld/metaworld-assembly/")
         print(f'Time taken for hf dataset load: {time.time() - start_time} seconds')
         
         # Load corresponding TFDS dataset
-        self.tfds_dataset = tf.data.Dataset.load('../meta_world_translated/')
+        self.tfds_dataset = tf.data.Dataset.load('../meta_world_translated/metaworld/metaworld-assembly/')
         print(f'Time taken for hf and tfds dataset load: {time.time() - start_time} seconds')
     
     def test_dataset_sizes_match(self):
@@ -209,14 +209,21 @@ class TestHFToTFDS(unittest.TestCase):
                 tfds_type = type(ele[feature][0])
                 break
             
+            print(hf_type)
+            print(tfds_type)
+            
             # Convert HF types to TF types for comparison
             if hf_type == 'int64':
+                print('check1')
                 hf_type = tf.int64
             elif hf_type == 'float32':
+                print('check2')
                 hf_type = tf.float32
             elif hf_type == list:
+                print('check3')
                 hf_type = type(tf.convert_to_tensor(self.hf_dataset['train'][feature][0]))
             elif isinstance(self.hf_dataset['train'][feature][0], tf.Tensor):
+                print('check4')
                 hf_type = type(tf.RaggedTensor.from_tensor(self.hf_dataset['train'][feature][0]))
             
             

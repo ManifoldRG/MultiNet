@@ -48,7 +48,7 @@ class TestProcgenToTFDS(unittest.TestCase):
     def test_data_values_match(self):
         """Test that actual data values are preserved"""
         
-        #There is one extra observation per episode when compared to actions, rewards, etc. This is handled during translation by padding, but it is still uneve (num_obs = num_actions+1) in the original dataset
+        #There is one extra observation per episode when compared to actions, rewards, etc. This is handled during translation by padding, but it is still uneven (num_obs = num_actions+1) in the original dataset
         for idx, tf_element in enumerate(self.tfds_dataset):
             for key in self.npz_data.keys(): 
 

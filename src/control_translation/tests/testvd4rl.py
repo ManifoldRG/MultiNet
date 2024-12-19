@@ -125,13 +125,13 @@ class TestTorchToTFDS(unittest.TestCase):
                         
                     self.assertEqual(torch_dtype, tfds_dtype)
                     
-                elif isinstance(torch_value, dict) or ((hasattr(torch_value, '__class__') and torch_value.__class__.__name__ == 'TensorDict')):
-                    if hasattr(torch_value, '__class__') and torch_value.__class__.__name__ == 'TensorDict':
+                elif isinstance(i, dict) or ((hasattr(i, '__class__') and i.__class__.__name__ == 'TensorDict')):
+                    if hasattr(i, '__class__') and i.__class__.__name__ == 'TensorDict':
                         torch_value = torch_value.to_dict()
-                    for k, v in torch_value.items():
-                        for i in v:
-                            if isinstance(i, torch.Tensor):
-                                torch_dtype = i.dtype
+                    for k, v in i.items():
+                        for j in v:
+                            if isinstance(j, torch.Tensor):
+                                torch_dtype = j.dtype
                                 tfds_dtype = tf_element[key][k].dtype
                                 
                                 if torch_dtype == torch.float32:
@@ -149,7 +149,7 @@ class TestTorchToTFDS(unittest.TestCase):
                                 
                             self.assertEqual(torch_dtype, tfds_dtype)
                 else:
-                    torch_dtype = type(torch_value)
+                    torch_dtype = type(i)
                     tfds_dtype = tf.convert_to_tensor(tf_element[key]).dtype
 
                     if torch_dtype == torch.float32:

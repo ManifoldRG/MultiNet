@@ -15,7 +15,7 @@ class TestOpenXToTFDS(unittest.TestCase):
         #print(f'Time taken for torch dataset load: {time.time() - start_time} seconds')
         
         # Load corresponding TFDS dataset
-        self.tfds_dataset = tf.data.Dataset.load('../usc_cloth_sim_converted_externally_to_rlds/shard_0')
+        self.tfds_dataset = tf.data.Dataset.load('../openx_translated/usc_cloth_sim_converted_externally_to_rlds/shard_0')
         #print(f'Time taken for torch and tfds dataset load: {time.time() - start_time} seconds')
 
     def test_dataset_sizes_match(self):
@@ -121,17 +121,17 @@ class TestOpenXToTFDS(unittest.TestCase):
                 elif isinstance(torch_value, dict):
                     for k, v in torch_value.items():
                         if isinstance(v, torch.Tensor) or isinstance(v, np.ndarray) or isinstance(v, list):
-                            torch_dtype = type(v)
+                            torch_dtype = v.dtype
                             tfds_dtype = tf_element[key][k].dtype
                             
                             if torch_dtype == torch.Tensor or torch_dtype==np.ndarray:
-                                tfds_dtype = type(tf_element[key][k].numpy())
+                                tfds_dtype = tf_element[key][k].numpy().dtype
                                 if torch_dtype == torch.Tensor:
-                                    torch_dtype = type(v.numpy())
+                                    torch_dtype = v.numpy().dtype
 
                             
                         else:
-                            torch_dtype = type(v)
+                            torch_dtype = v.dtype
                             tfds_dtype = tf.convert_to_tensor(tf_element[key][k]).dtype
 
                             if torch_dtype == torch.float32:
