@@ -109,8 +109,7 @@ def jat(dataset_name: str, output_dir: str):
         specific_configs = [config for config in config_names if config.startswith(dataset_name)]#"metaworld, mujoco", "atari", "babyai"
         print(f"Found {len(specific_configs)} {dataset_name} configurations in {dataset_name}.")
     except:
-        print('Choose one of - atari, mujoco, metaworld, or babyai for one of the JAT datasets')
-        return
+        raise ValueError('Choose one of - atari, mujoco, metaworld, or babyai for one of the JAT datasets')
 
 
     for config in specific_configs:
@@ -121,7 +120,7 @@ def jat(dataset_name: str, output_dir: str):
             dataset.save_to_disk(os.path.join(output_dir,config))
             print(f"Successfully downloaded {config}")
         except Exception as e:
-            print(f"Error downloading {config}: {str(e)}")
+            raise ValueError(f"Error downloading {config}: {str(e)}")
 
     print(f"Finished downloading all available {dataset_name} configurations from jat-project/jat-dataset.")
     return
@@ -146,8 +145,7 @@ def vd4rl(dataset_name: str, output_dir: str):
                     torch.save(batch, file_path)
                     print(f"Downloaded and saved batch {i//batch_size} to {file_path}")
             except:
-                print(f'Error downloading {dataset_id}')
-                return
+                raise ValueError(f'Error downloading {dataset_id}')
 
     print('Successfully downloaded all V-D4RL expert datasets')
     return
@@ -167,8 +165,7 @@ def locomujoco(dataset_name: str, output_dir: str):
     try:
         os.system(f"loco-mujoco-download-perfect")
     except:
-        print("Error downloading LocoMuJoCo datasets")
-        return
+        raise ValueError("Error downloading LocoMuJoCo datasets")
     print('Successfully downloaded all LocoMuJoCo expert datasets to loco-mujoco/loco_mujoco/datasets/')
     return
     
@@ -288,8 +285,7 @@ def language_table(dataset_name: str, output_dir: str):
                 break
 
     except:
-        print(f'Error while downloading {dataset_name}...')
-        return
+        raise ValueError(f'Error while downloading {dataset_name}...')
 
     print('Successfully downloaded Language Table dataset in shards')
     return
@@ -381,7 +377,7 @@ def openx(dataset_name: str, output_dir: str):
                         break
 
         except:
-            print(f'Error while downloading {ds}')
+            raise ValueError(f'Error while downloading {ds}')
             
     
     print('OpenX downloads complete')

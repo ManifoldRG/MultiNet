@@ -180,6 +180,8 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
                 print(f'Translated and stored file {npy_file}')
 
             print('Successfully translated all .npy files')
+    else:
+        raise ValueError(f"Unsupported dataset: {dataset_name}")
 
     
 
