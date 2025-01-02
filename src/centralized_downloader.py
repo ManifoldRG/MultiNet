@@ -20,9 +20,6 @@ import gc
 import psutil
 import numpy as np
 
-
-os.environ['CURL_CA_BUNDLE'] = ''
-
 #List of datasets in v0 MultiNet
 multinetv0list = ['obelics', 'coyo_700m', 'ms_coco_captions', 'conceptual_captions', 'a_okvqa', 'vqa_v2', 'datacomp', 'finewebedu', 'dm_lab_rlu', 'dm_control_suite_rlu', 'atari', 'baby_ai', 'mujoco', 'vd4rl', 'metaworld', 'procgen', 'language_table', 'openx', 'locomuojoco']
 
@@ -194,9 +191,9 @@ def procgen(dataset_name: str, output_dir: str):
             total=total_size,
             unit='iB',
             unit_scale=True,
-            unit_divisor=1024,
+            unit_divisor=512,
         ) as progress_bar:
-            for data in response.iter_content(chunk_size=1024):
+            for data in response.iter_content(chunk_size=512):
                 size = file.write(data)
                 progress_bar.update(size)
 
@@ -207,7 +204,7 @@ def procgen(dataset_name: str, output_dir: str):
     print("Successfully downloaded and extracted Procgen expert data")
     return
 
-#Language Table and OpenX
+# OpenX
     
 #Saving datasets as big as these to disk is a very RAM-intensive process. This function optimizes for this purpose by sharding and freeing up memory after saving to disk    
 def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int, shard_size: int):
@@ -247,54 +244,11 @@ def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int
     
     return None
 
-#Language Table
-def language_table(dataset_name: str, output_dir: str):
-
-    #Shard size to save the dataset to disk
-    shard_size = 1
-
-    #Language table dataset names
-    dataset_directories = {
-
-    'language_table': 'gs://gresearch/robotics/language_table',
-    'language_table_sim': 'gs://gresearch/robotics/language_table_sim',
-    'language_table_blocktoblock_sim': 'gs://gresearch/robotics/language_table_blocktoblock_sim',
-    'language_table_blocktoblock_4block_sim': 'gs://gresearch/robotics/language_table_blocktoblock_4block_sim',
-    'language_table_blocktoblock_oracle_sim': 'gs://gresearch/robotics/language_table_blocktoblock_oracle_sim',
-    'language_table_blocktoblockrelative_oracle_sim': 'gs://gresearch/robotics/language_table_blocktoblockrelative_oracle_sim',
-    'language_table_blocktoabsolute_oracle_sim': 'gs://gresearch/robotics/language_table_blocktoabsolute_oracle_sim',
-    'language_table_blocktorelative_oracle_sim': 'gs://gresearch/robotics/language_table_blocktorelative_oracle_sim',
-    'language_table_separate_oracle_sim': 'gs://gresearch/robotics/language_table_separate_oracle_sim',
-
-    }
-
-    #Change the dataset name and version to load another dataset
-    dataset_path = os.path.join(dataset_directories['language_table'], '0.0.1')
-    try:
-        print('Downloading...')
-        builder = tfds.builder_from_directory(builder_dir=dataset_path)
-        ds = builder.as_dataset(split='train')
-        #ds = ds.flat_map(lambda x: x['steps'])
-        os.makedirs(os.path.join(output_dir, dataset_name), exist_ok=True)
-        
-        shard_func_catch=0
-        while(1):
-            if shard_func_catch is not None:
-                shard_func_catch = shard_and_save(ds,dataset_name, output_dir, shard_func_catch, shard_size)
-            else:
-                break
-
-    except:
-        raise ValueError(f'Error while downloading {dataset_name}...')
-
-    print('Successfully downloaded Language Table dataset in shards')
-    return
-
 #OpenX-Embodiment
 def openx(dataset_name: str, output_dir: str):
 
     #OpenX datasets
-    '''DATASETS = [
+    DATASETS = [
     'fractal20220817_data',
     'kuka',
     'bridge',
@@ -306,6 +260,7 @@ def openx(dataset_name: str, output_dir: str):
     'viola',
     'berkeley_autolab_ur5',
     'toto',
+    'language_table',
     'columbia_cairlab_pusht_real',
     'stanford_kuka_multimodal_dataset_converted_externally_to_rlds',
     'nyu_rot_dataset_converted_externally_to_rlds',
@@ -347,25 +302,35 @@ def openx(dataset_name: str, output_dir: str):
     'berkeley_gnm_recon',
     'berkeley_gnm_cory_hall',
     'berkeley_gnm_sac_son'
-    ]'''
-
-    DATASETS = ['usc_cloth_sim_converted_externally_to_rlds']
+    ]
 
     #Shard size to save the dataset to disk
     shard_size = 1
 
     for ds in DATASETS:
-        if ds == 'robo_net':
-            version = '1.0.0'
+        
+        # Try all version combinations
+        versions = ['0.0.0', '0.0.1', '0.1.0', '0.1.1', '1.0.0', '1.0.1', '1.1.0', '1.1.1']
+        for v in versions:
+            try:
+                version = v
+                # If this version works, break out of loop
+                temp_file_path = f'gs://gresearch/robotics/{ds}/{version}'
+                builder = tfds.builder_from_directory(builder_dir=temp_file_path)
+                break
+            except:
+                continue
         else:
-            version = '0.1.0'
+            # If no version worked, raise an error
+            raise ValueError(f'No version found for {ds}')
+        
         file_path = f'gs://gresearch/robotics/{ds}/{version}'
     
         try:
             if os.path.isdir(ds) == False:
                 print(f'Downloading {ds}...')
                 builder = tfds.builder_from_directory(builder_dir=file_path)
-                b = builder.as_dataset(split='val')
+                b = builder.as_dataset(split='train')
                 #b = b.flat_map(lambda x: x['steps'])
                 os.makedirs(os.path.join(output_dir, ds), exist_ok=True)
                 
@@ -426,8 +391,6 @@ def download_datasets(dataset_name: str, output_dir: str):
         procgen(dataset_name, output_dir)
     elif dataset_name == 'locomujoco':
         locomujoco(dataset_name, output_dir)
-    elif dataset_name == 'language_table':
-        language_table(dataset_name, output_dir)
     elif dataset_name == 'openx':
         openx(dataset_name, output_dir)
     else:
