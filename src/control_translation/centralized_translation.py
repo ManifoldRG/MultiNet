@@ -1,19 +1,9 @@
-import gc
 import os
-from typing import Dict
 import tensorflow as tf
-import tensorflow_datasets as tfds
-from tensorflow_datasets import dataset_builders
 import torch
 import numpy as np
-import torchrl
-from torchrl.data.datasets import VD4RLExperienceReplay
 from argparse import ArgumentParser
-import sys
-from pathlib import Path
 from collections import defaultdict
-from tqdm import tqdm
-import pandas as pd
 import datasets
 
 #List of control datasets in v0 MultiNet
@@ -65,6 +55,8 @@ def rlu(dataset_path: str, limit_schema: bool):
                 
                 values = tf.convert_to_tensor(values)
                 dm_lab_dict[key].append(values)
+            else:
+                print(f"Unsupported feature type: {key}")
         
     #Convert data dict to TFDS
     dm_lab_dict = {k: tf.convert_to_tensor(v) for k, v in dm_lab_dict.items()}
@@ -207,14 +199,6 @@ def torchrlds(dataset_path: str, dataset_name, limit_schema: bool):
     
     # Trim the data if limit_schema flag is set during code execution
     if limit_schema:
-        '''if dataset_name == 'locomujoco':
-            trl_torch_trimmed = {}
-            trl_torch_trimmed['observations'] = trl_torch['states']
-            trl_torch_trimmed['actions'] = trl_torch['actions']
-            trl_torch_trimmed['rewards'] = trl_torch['rewards']
-            print('Translating...')
-            trl_torch_trimmed_tfds = tf.data.Dataset.from_tensor_slices(trl_torch_trimmed)
-            return trl_torch_trimmed_tfds'''
         if dataset_name == 'vd4rl':
             trl_torch_trimmed = {}
             trl_torch_trimmed['observations'] = trl_torch['pixels']
@@ -223,7 +207,7 @@ def torchrlds(dataset_path: str, dataset_name, limit_schema: bool):
             print('Translating...')
             trl_torch_trimmed_tfds = tf.data.Dataset.from_tensor_slices(trl_torch_trimmed)
             return trl_torch_trimmed_tfds
-        elif dataset_name == 'language_table' or dataset_name == 'openx':
+        elif dataset_name == 'openx':
             trl_torch_trimmed = {}
             trl_torch_trimmed['observations'] = trl_torch['observation']
             trl_torch_trimmed['actions'] = trl_torch['action']
@@ -355,7 +339,7 @@ def categorize_datasets(dataset_name: str, dataset_path: str, hf_test_data: bool
         elif dataset_name=='baby_ai' or dataset_name=='ale_atari' or dataset_name=='mujoco' or dataset_name=='meta_world':
             translated_ds = jat(dataset_name, dataset_path, hf_test_data, limit_schema)
             return translated_ds
-        elif dataset_name=='vd4rl' or dataset_name=='language_table' or dataset_name=='openx':
+        elif dataset_name=='vd4rl' or dataset_name=='openx':
             translated_ds = torchrlds(dataset_path, dataset_name, limit_schema)
             return translated_ds
         elif dataset_name=='procgen':

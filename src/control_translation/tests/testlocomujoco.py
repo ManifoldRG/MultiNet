@@ -69,8 +69,6 @@ class TestLocoMujocoToTFDS(unittest.TestCase):
                 tfds_type = np.int64
             elif tfds_type == tf.float32:
                 tfds_type = np.float32
-            elif tfds_type == tf.Tensor:
-                tfds_type = np.ndarray
             elif tfds_type == tf.bool:
                 tfds_type = np.bool
             elif tfds_type == tf.float64:

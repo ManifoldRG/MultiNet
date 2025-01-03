@@ -35,8 +35,8 @@ class TestOpenXToTFDS(unittest.TestCase):
     
         self.assertGreater(torch_lens, 0)
         self.assertGreater(tf_lens, 0)
-        print(torch_lens)
-        print(tf_lens)
+        #print(torch_lens)
+        #print(tf_lens)
         self.assertEqual(torch_lens, tf_lens)
         #print(f'Time taken for dataset size test: {time.time() - start_time} seconds')
 
@@ -45,10 +45,27 @@ class TestOpenXToTFDS(unittest.TestCase):
         start_time = time.time()
         
         # Get torch feature names, handling nested dicts
-        torch_features = set(self.torch_dataset[0].keys())        
-        tfds_features = set(next(iter(self.tfds_dataset)).keys())
-        print(torch_features)
-        print(tfds_features)
+        torch_features = set()
+        tfds_features = set()
+        #Keys are the timestep number, so step into the next level of the nested dict
+        for key, value in self.torch_dataset.items():
+            for k,v in value.items():
+                torch_features.add(f"{k}")
+                if hasattr(v, 'items'):
+                    for k2,v2 in v.items():
+                        torch_features.add(f"{k}/{k2}")
+                else:
+                    torch_features.add(f"{k}")
+            break
+        for ele in self.tfds_dataset:
+            for key, value in ele.items():
+                tfds_features.add(key)
+                if isinstance(value, dict):
+                    for k in value.keys():
+                        tfds_features.add(f"{key}/{k}")
+            break
+        #print(torch_features)
+        #print(tfds_features)
         self.assertEqual(torch_features, tfds_features)
         #print(f'Time taken for feature names test: {time.time() - start_time} seconds')
 
@@ -68,8 +85,8 @@ class TestOpenXToTFDS(unittest.TestCase):
                         if isinstance(tfds_example, tf.Tensor):
                             tfds_example = tfds_example.numpy()
 
-                        print(pt_example)
-                        print(tfds_example)
+                        #print(pt_example)
+                        #print(tfds_example)
 
                         if isinstance(pt_example, (np.ndarray, list)):
                             np.testing.assert_array_equal(pt_example, tfds_example)
@@ -84,8 +101,8 @@ class TestOpenXToTFDS(unittest.TestCase):
                     if isinstance(tfds_example, tf.Tensor):
                         tfds_example = tfds_example.numpy()
 
-                    print(pt_example)
-                    print(tfds_example)
+                    #print(pt_example)
+                    #print(tfds_example)
 
                     if isinstance(pt_example, (np.ndarray, list)):
                         np.testing.assert_array_equal(pt_example, tfds_example)
@@ -104,34 +121,30 @@ class TestOpenXToTFDS(unittest.TestCase):
         for timestep in self.torch_dataset:
             for key, torch_value in self.torch_dataset[timestep].items():              
                 
-                if isinstance(torch_value, torch.Tensor) or isinstance(torch_value, np.ndarray):
-                    torch_dtype = type(torch_value)
+                if isinstance(tf_element[key], tf.Tensor):
                     tfds_dtype = tf_element[key].dtype
-                    
-                    if torch_dtype == torch.Tensor:
-                        torch_dtype = type(torch_value.numpy())
-                    
-                    tfds_dtype = type(tf_element[key].numpy())
-                    
-                    print(key)
-                    print(torch_dtype)
-                    print(tfds_dtype)
-                    self.assertEqual(torch_dtype, tfds_dtype)
-                    
+
+                if isinstance(torch_value, torch.Tensor) or isinstance(torch_value, np.ndarray):
+                    # Handle nested ndarrays by recursively getting to innermost element
+                    while isinstance(torch_value[0], (np.ndarray, torch.Tensor)):
+                        torch_value = torch_value[0]
+                    torch_dtype = type(torch_value[0])
+                
+
+
                 elif isinstance(torch_value, dict):
                     for k, v in torch_value.items():
                         if isinstance(v, torch.Tensor) or isinstance(v, np.ndarray) or isinstance(v, list):
-                            torch_dtype = v.dtype
+                            # Handle nested ndarrays by recursively getting to innermost element
+                            while isinstance(v[0], (np.ndarray, torch.Tensor)):
+                                v = v[0]
+                            torch_dtype = type(v[0])
                             tfds_dtype = tf_element[key][k].dtype
                             
-                            if torch_dtype == torch.Tensor or torch_dtype==np.ndarray:
-                                tfds_dtype = tf_element[key][k].numpy().dtype
-                                if torch_dtype == torch.Tensor:
-                                    torch_dtype = v.numpy().dtype
 
                             
                         else:
-                            torch_dtype = v.dtype
+                            torch_dtype = type(v)
                             tfds_dtype = tf.convert_to_tensor(tf_element[key][k]).dtype
 
                             if torch_dtype == torch.float32:
@@ -148,11 +161,6 @@ class TestOpenXToTFDS(unittest.TestCase):
                                 torch_dtype = type(v.decode('utf-8'))
                                 tfds_dtype = type(tf_element[key][k].numpy().decode('utf-8'))
                         
-                        print(key)
-                        print(k)
-                        print(torch_dtype)
-                        print(tfds_dtype)
-                        self.assertEqual(torch_dtype, tfds_dtype)
                 
                 else:
                     torch_dtype = type(torch_value)
@@ -172,11 +180,11 @@ class TestOpenXToTFDS(unittest.TestCase):
                         torch_dtype = type(torch_value.decode('utf-8'))
                         tfds_dtype = type(tf_element[key].numpy().decode('utf-8'))
                         
-
-                    print(key)
-                    print(torch_dtype)
-                    print(tfds_dtype)
-                    self.assertEqual(torch_dtype, tfds_dtype)
+                #print(torch_value)
+                #print(torch_dtype)
+                #print(tf_element[key])
+                #print(tfds_dtype)
+                self.assertEqual(torch_dtype, tfds_dtype)
 
             break
 

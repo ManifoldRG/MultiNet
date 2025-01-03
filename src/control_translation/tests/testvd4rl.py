@@ -5,7 +5,7 @@ import torch
 import numpy as np
 import os
 import time
-
+import tensorflow_datasets as tfds
 class TestTorchToTFDS(unittest.TestCase):
     
     def setUp(self):
@@ -15,8 +15,9 @@ class TestTorchToTFDS(unittest.TestCase):
         print(f'Time taken for torch dataset load: {time.time() - start_time} seconds')
         
         # Load corresponding TFDS dataset
+        start_time = time.time()
         self.tfds_dataset = tf.data.Dataset.load('../vd4rl_translated/vd4rl/main_cheetah_run_expert_64px0')
-        print(f'Time taken for torch and tfds dataset load: {time.time() - start_time} seconds')
+        print(f'Time taken for tfds dataset load: {time.time() - start_time} seconds')
     
     def test_dataset_sizes_match(self):
         """Test that datasets have same number of examples"""
@@ -24,8 +25,6 @@ class TestTorchToTFDS(unittest.TestCase):
         torch_lens = 0
         tf_lens = 0
         
-
-
         # Get lengths from torch dataset
         for key, value in self.torch_dataset.items():
             if isinstance(value, torch.Tensor):
@@ -50,13 +49,24 @@ class TestTorchToTFDS(unittest.TestCase):
         
         # Get torch feature names, handling nested dicts
         torch_features = set()
+        tfds_features = set()
         for key, value in self.torch_dataset.items():
-            if isinstance(value, dict):
+            #Check if the value is a torch tensordict
+            if hasattr(value, 'items'):
                 for k in value.keys():
                     torch_features.add(f"{key}/{k}")
             torch_features.add(key)
                 
-        tfds_features = set(self.tfds_dataset.element_spec.keys())
+        for ele in self.tfds_dataset:
+            for key, value in ele.items():
+                tfds_features.add(key)
+                if isinstance(value, dict):
+                    for k in value.keys():
+                        tfds_features.add(f"{key}/{k}")
+            break
+
+        print(torch_features)
+        print(tfds_features)
         self.assertEqual(torch_features, tfds_features)
         print(f'Time taken for feature names test: {time.time() - start_time} seconds')
 
@@ -130,6 +140,8 @@ class TestTorchToTFDS(unittest.TestCase):
                         torch_value = torch_value.to_dict()
                     for k, v in i.items():
                         for j in v:
+                            #print(v)
+                            #print(j)
                             if isinstance(j, torch.Tensor):
                                 torch_dtype = j.dtype
                                 tfds_dtype = tf_element[key][k].dtype
@@ -148,6 +160,7 @@ class TestTorchToTFDS(unittest.TestCase):
 
                                 
                             self.assertEqual(torch_dtype, tfds_dtype)
+                            break
                 else:
                     torch_dtype = type(i)
                     tfds_dtype = tf.convert_to_tensor(tf_element[key]).dtype

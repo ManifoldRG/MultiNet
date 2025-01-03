@@ -59,8 +59,8 @@ class TestProcgenToTFDS(unittest.TestCase):
                     if isinstance(tfds_example, tf.Tensor):
                         tfds_example = tfds_example.numpy()
                     
-                    print(npz_example)
-                    print(tfds_example)
+                    #print(npz_example)
+                    #print(tfds_example)
                     
                     if isinstance(npz_example, (np.ndarray, list)):
                         np.testing.assert_array_equal(npz_example, tfds_example)
@@ -74,8 +74,8 @@ class TestProcgenToTFDS(unittest.TestCase):
                     if isinstance(tfds_example, tf.Tensor):
                         tfds_example = tfds_example.numpy()
                     
-                    print(npz_example)
-                    print(tfds_example)
+                    #print(npz_example)
+                    #print(tfds_example)
                     
                     if isinstance(npz_example, (np.ndarray, list)):
                         np.testing.assert_array_equal(npz_example, tfds_example)
@@ -99,8 +99,6 @@ class TestProcgenToTFDS(unittest.TestCase):
                 tfds_type = np.int64
             elif tfds_type == tf.float32:
                 tfds_type = np.float32
-            elif tfds_type == tf.Tensor:
-                tfds_type = np.ndarray
             elif tfds_type == tf.bool:
                 tfds_type = np.bool
             elif tfds_type == tf.float64:
@@ -112,8 +110,8 @@ class TestProcgenToTFDS(unittest.TestCase):
             elif str(tfds_type) == "<class 'tensorflow.python.framework.ops.EagerTensor'>":
                 tfds_type = type(tf_element.numpy())
                     
-            print(npz_type)
-            print(tfds_type)
+            #print(npz_type)
+            #print(tfds_type)
             self.assertEqual(npz_type, tfds_type)
 
 if __name__ == '__main__':

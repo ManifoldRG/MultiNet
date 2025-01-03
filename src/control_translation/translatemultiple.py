@@ -34,7 +34,7 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
             translated_ds = rlu(file_path, limit_schema)
             mod_file_path = file_path.replace('../', '')
             path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
-            print(path_to_translated)
+            #print(path_to_translated)
             tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated),shard_func=custom_shard_func)
             print(f'Translated and stored file {file_path}')
 
@@ -49,14 +49,14 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
                     all_files.append(os.path.join(dirpath, dirname))
                 break
         
-        print(all_files)
+        #print(all_files)
         
         # Process each file
         for idx, file_path in enumerate(all_files):
             translated_ds = jat(dataset_name,file_path, hf_test_data, limit_schema)
             mod_file_path = file_path.replace('../', '')
             path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
-            print(path_to_translated)
+            #print(path_to_translated)
             tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated),shard_func=custom_shard_func)
             print(f'Translated and stored file {file_path}')
     
@@ -69,7 +69,7 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
                 if f.endswith('.pt'):
                     all_files.append(os.path.join(dirpath, f))
         
-        print(all_files)
+        #print(all_files)
         
         # Process each .pt file
         for idx, file_path in enumerate(all_files):
@@ -80,7 +80,7 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
             if ext:
                 mod_file_path = base
             path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
-            print(path_to_translated)
+            #print(path_to_translated)
             tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated), shard_func=custom_shard_func)
             print(f'Translated and stored file {file_path}')
 
@@ -93,7 +93,7 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
                 if f.endswith('.npz'):
                     all_files.append(os.path.join(dirpath, f))
         
-        print(all_files)
+        #print(all_files)
         
         # Process each .npz file
         for idx, file_path in enumerate(all_files):
@@ -104,12 +104,13 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
             if ext:
                 mod_file_path = base
             path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
-            print(path_to_translated)
+            #print(path_to_translated)
             tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated), shard_func=custom_shard_func)
             print(f'Translated and stored file {file_path}')
     
     elif dataset_name == 'openx':
 
+        #Element spec contains the original schema of the dataset
         pickle_path = os.path.join(output_dir, 'element_specs.pkl')
         shard_files = []
         for root, dirs, files in os.walk(dataset_path):
@@ -117,7 +118,7 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
 
         sorted_shard_files = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
 
-        print(sorted_shard_files)
+        #print(sorted_shard_files)
 
         if sorted_shard_files:
             print(f"Translating shards in {root}")
@@ -147,7 +148,7 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
                     print(f"Element spec for {root.split('/')[-1]} already exists in {pickle_path}")
                 modified_shard_path = shard_path.replace('../', '')
                 path_to_translated = os.path.join(dataset_name+'_translated/', modified_shard_path) 
-                print(path_to_translated)
+                #print(path_to_translated)
                 tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated), shard_func=custom_shard_func)
                 print(f'Translated and stored file {shard_path}')
             
@@ -174,7 +175,7 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
                 mod_file_path = os.path.join(output_dir, mod_file_path)
 
                 path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
-                print(path_to_translated)
+                #print(path_to_translated)
                 # Save translated dataset
                 tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated), shard_func=custom_shard_func)
                 print(f'Translated and stored file {npy_file}')
