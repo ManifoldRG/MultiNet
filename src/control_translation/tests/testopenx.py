@@ -161,6 +161,10 @@ class TestOpenXToTFDS(unittest.TestCase):
                                 torch_dtype = type(v.decode('utf-8'))
                                 tfds_dtype = type(tf_element[key][k].numpy().decode('utf-8'))
                         
+                        self.assertEqual(torch_dtype, tfds_dtype)
+                        
+
+                        
                 
                 else:
                     torch_dtype = type(torch_value)
@@ -179,11 +183,7 @@ class TestOpenXToTFDS(unittest.TestCase):
                     elif tfds_dtype == tf.string:
                         torch_dtype = type(torch_value.decode('utf-8'))
                         tfds_dtype = type(tf_element[key].numpy().decode('utf-8'))
-                        
-                #print(torch_value)
-                #print(torch_dtype)
-                #print(tf_element[key])
-                #print(tfds_dtype)
+                    
                 self.assertEqual(torch_dtype, tfds_dtype)
 
             break
