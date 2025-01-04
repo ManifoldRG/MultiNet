@@ -1,27 +1,17 @@
 from argparse import ArgumentParser
 import tensorflow_datasets as tfds
 import torch
-import datasets
 from datasets import load_dataset, get_dataset_config_names
 import os
-import torchrl
 from torchrl.data.datasets import VD4RLExperienceReplay
-from absl import app
-import loco_mujoco
-import gymnasium as gym
 import shutil
-import typing as tp
 import tensorflow as tf
 import requests
 from tqdm import tqdm
 import requests
-from urllib.parse import urlparse, unquote
 from google.cloud import storage
 import gc
 import psutil
-
-
-os.environ['CURL_CA_BUNDLE'] = ''
 
 #List of datasets in v0 MultiNet
 multinetv0list = ['obelics', 'coyo_700m', 'ms_coco_captions', 'conceptual_captions', 'a_okvqa', 'vqa_v2', 'datacomp', 'finewebedu', 'dm_lab_rlu', 'dm_control_suite_rlu', 'atari', 'baby_ai', 'mujoco', 'vd4rl', 'metaworld', 'procgen', 'language_table', 'openx', 'locomuojoco']
@@ -45,7 +35,7 @@ def rlu(dataset_name: str, output_dir: str):
         source_folders = ['dmlab/explore_object_rewards_few', 'dmlab/explore_object_rewards_many', 'dmlab/rooms_select_nonmatching_object', 'dmlab/rooms_watermaze', 'dmlab/seekavoid_arena_01']
         
         for source_folder in source_folders:
-            destination_folder = os.path.join(output_dir, dataset_name)
+            destination_folder = os.path.join(output_dir, source_folder)
             print('Downloading')
             # Initialize the Google Cloud Storage client
             storage_client = storage.Client.create_anonymous_client()
@@ -109,8 +99,7 @@ def jat(dataset_name: str, output_dir: str):
         specific_configs = [config for config in config_names if config.startswith(dataset_name)]#"metaworld, mujoco", "atari", "babyai"
         print(f"Found {len(specific_configs)} {dataset_name} configurations in {dataset_name}.")
     except:
-        print('Choose one of - atari, mujoco, metaworld, or babyai for one of the JAT datasets')
-        return
+        raise ValueError('Choose one of - atari, mujoco, metaworld, or babyai for one of the JAT datasets')
 
 
     for config in specific_configs:
@@ -121,7 +110,7 @@ def jat(dataset_name: str, output_dir: str):
             dataset.save_to_disk(os.path.join(output_dir,config))
             print(f"Successfully downloaded {config}")
         except Exception as e:
-            print(f"Error downloading {config}: {str(e)}")
+            raise ValueError(f"Error downloading {config}: {str(e)}")
 
     print(f"Finished downloading all available {dataset_name} configurations from jat-project/jat-dataset.")
     return
@@ -146,8 +135,7 @@ def vd4rl(dataset_name: str, output_dir: str):
                     torch.save(batch, file_path)
                     print(f"Downloaded and saved batch {i//batch_size} to {file_path}")
             except:
-                print(f'Error downloading {dataset_id}')
-                return
+                raise ValueError(f'Error downloading {dataset_id}')
 
     print('Successfully downloaded all V-D4RL expert datasets')
     return
@@ -156,28 +144,19 @@ def vd4rl(dataset_name: str, output_dir: str):
 #LocoMuJoCo
 def locomujoco(dataset_name: str, output_dir: str):
 
-    #Download all locomujoco perfect datasets through the library
-    os.system("loco-mujoco-download-perfect")
-    #Locomujoco task names
-    locomujoco_tasks = loco_mujoco.get_all_task_names()
-    for task in locomujoco_tasks:
-        if task.split('.')[-1] == 'perfect':
-            try:
-                print(f'Downloading {task}...')
-                try:
-                    env = gym.make('LocoMujoco', env_name=task)
-                except:
-                    print(f'Dataset {task} is not available through locomujoco')
-                    continue
-                dict_env = env.create_dataset()
-                os.makedirs(os.path.join(output_dir, dataset_name), exist_ok=True)
-                torch.save(dict_env, os.path.join(os.path.join(output_dir, dataset_name),task+'.pt'))
-
-            except:
-                print(f"Error downloading {task}")
-                return
-    
-    print('Successfully downloaded all LocoMuJoCo expert datasets')
+    #Download all locomujoco perfect datasets
+    # Check if loco-mujoco repo exists, if not clone it
+    if not os.path.exists('loco-mujoco') and not os.path.exists('loco-mujoco/.git'):
+        print("Cloning loco-mujoco repository...")
+        os.system("git clone https://github.com/robfiras/loco-mujoco.git")
+        print("Successfully cloned loco-mujoco")
+    else:
+        print("loco-mujoco repository already exists")
+    try:
+        os.system(f"loco-mujoco-download-perfect")
+    except:
+        raise ValueError("Error downloading LocoMuJoCo datasets")
+    print('Successfully downloaded all LocoMuJoCo expert datasets to loco-mujoco/loco_mujoco/datasets/')
     return
     
 #Procgen
@@ -205,9 +184,9 @@ def procgen(dataset_name: str, output_dir: str):
             total=total_size,
             unit='iB',
             unit_scale=True,
-            unit_divisor=1024,
+            unit_divisor=512,
         ) as progress_bar:
-            for data in response.iter_content(chunk_size=1024):
+            for data in response.iter_content(chunk_size=512):
                 size = file.write(data)
                 progress_bar.update(size)
 
@@ -218,12 +197,16 @@ def procgen(dataset_name: str, output_dir: str):
     print("Successfully downloaded and extracted Procgen expert data")
     return
 
-#Language Table and OpenX
+# OpenX
     
 #Saving datasets as big as these to disk is a very RAM-intensive process. This function optimizes for this purpose by sharding and freeing up memory after saving to disk    
 def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int, shard_size: int):
 
     for i, shard in enumerate(ds.batch(shard_size), start=start_from_shard):
+            
+
+            #print(i)
+            #print(shard)
             
             # Check RAM usage
             ram_usage = psutil.virtual_memory().percent
@@ -237,58 +220,22 @@ def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int
                 return i
         
             #Saving with torch instead of tf as tf has a memory leakage issue that leads to the program crashing before completion
-            torch.save(shard, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
-            del shard
-            gc.collect()
-        
+            
+            #torch.save(shard, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
+                        
+            #del shard
+            #gc.collect()
+
+            shard = tf.data.Dataset.from_tensor_slices(shard)
+            flattened_dataset = shard.flat_map(lambda x: x['steps'])
+            dataset_dict = {i: item for i, item in enumerate(flattened_dataset.as_numpy_iterator())}
+            #print(dataset_dict)
+            torch.save(dataset_dict, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
+
             # Print current RAM usage
             print(f"Processed shard {i}. Current RAM usage: {ram_usage}%")
     
     return None
-
-#Language Table
-def language_table(dataset_name: str, output_dir: str):
-
-    #Shard size to save the dataset to disk
-    shard_size = 512
-
-    #Language table dataset names
-    dataset_directories = {
-
-    'language_table': 'gs://gresearch/robotics/language_table',
-    'language_table_sim': 'gs://gresearch/robotics/language_table_sim',
-    'language_table_blocktoblock_sim': 'gs://gresearch/robotics/language_table_blocktoblock_sim',
-    'language_table_blocktoblock_4block_sim': 'gs://gresearch/robotics/language_table_blocktoblock_4block_sim',
-    'language_table_blocktoblock_oracle_sim': 'gs://gresearch/robotics/language_table_blocktoblock_oracle_sim',
-    'language_table_blocktoblockrelative_oracle_sim': 'gs://gresearch/robotics/language_table_blocktoblockrelative_oracle_sim',
-    'language_table_blocktoabsolute_oracle_sim': 'gs://gresearch/robotics/language_table_blocktoabsolute_oracle_sim',
-    'language_table_blocktorelative_oracle_sim': 'gs://gresearch/robotics/language_table_blocktorelative_oracle_sim',
-    'language_table_separate_oracle_sim': 'gs://gresearch/robotics/language_table_separate_oracle_sim',
-
-    }
-
-    #Change the dataset name and version to load another dataset
-    dataset_path = os.path.join(dataset_directories['language_table'], '0.0.1')
-    try:
-        print('Downloading...')
-        builder = tfds.builder_from_directory(builder_dir=dataset_path)
-        ds = builder.as_dataset(split='train')
-        ds = ds.flat_map(lambda x: x['steps'])
-        os.makedirs(os.path.join(output_dir, dataset_name), exist_ok=True)
-        
-        shard_func_catch=0
-        while(1):
-            if shard_func_catch is not None:
-                shard_func_catch = shard_and_save(ds,dataset_name, output_dir, shard_func_catch, shard_size)
-            else:
-                break
-
-    except:
-        print(f'Error while downloading {dataset_name}...')
-        return
-
-    print('Successfully downloaded Language Table dataset in shards')
-    return
 
 #OpenX-Embodiment
 def openx(dataset_name: str, output_dir: str):
@@ -306,6 +253,7 @@ def openx(dataset_name: str, output_dir: str):
     'viola',
     'berkeley_autolab_ur5',
     'toto',
+    'language_table',
     'columbia_cairlab_pusht_real',
     'stanford_kuka_multimodal_dataset_converted_externally_to_rlds',
     'nyu_rot_dataset_converted_externally_to_rlds',
@@ -350,13 +298,25 @@ def openx(dataset_name: str, output_dir: str):
     ]
 
     #Shard size to save the dataset to disk
-    shard_size = 512
+    shard_size = 1
 
     for ds in DATASETS:
-        if ds == 'robo_net':
-            version = '1.0.0'
+        
+        # Try all version combinations
+        versions = ['0.0.0', '0.0.1', '0.1.0', '0.1.1', '1.0.0', '1.0.1', '1.1.0', '1.1.1']
+        for v in versions:
+            try:
+                version = v
+                # If this version works, break out of loop
+                temp_file_path = f'gs://gresearch/robotics/{ds}/{version}'
+                builder = tfds.builder_from_directory(builder_dir=temp_file_path)
+                break
+            except:
+                continue
         else:
-            version = '0.1.0'
+            # If no version worked, raise an error
+            raise ValueError(f'No version found for {ds}')
+        
         file_path = f'gs://gresearch/robotics/{ds}/{version}'
     
         try:
@@ -364,7 +324,7 @@ def openx(dataset_name: str, output_dir: str):
                 print(f'Downloading {ds}...')
                 builder = tfds.builder_from_directory(builder_dir=file_path)
                 b = builder.as_dataset(split='train')
-                b = b.flat_map(lambda x: x['steps'])
+                #b = b.flat_map(lambda x: x['steps'])
                 os.makedirs(os.path.join(output_dir, ds), exist_ok=True)
                 
                 shard_func_catch=0
@@ -375,7 +335,7 @@ def openx(dataset_name: str, output_dir: str):
                         break
 
         except:
-            print(f'Error while downloading {ds}')
+            raise ValueError(f'Error while downloading {ds}')
             
     
     print('OpenX downloads complete')
@@ -424,8 +384,6 @@ def download_datasets(dataset_name: str, output_dir: str):
         procgen(dataset_name, output_dir)
     elif dataset_name == 'locomujoco':
         locomujoco(dataset_name, output_dir)
-    elif dataset_name == 'language_table':
-        language_table(dataset_name, output_dir)
     elif dataset_name == 'openx':
         openx(dataset_name, output_dir)
     else:

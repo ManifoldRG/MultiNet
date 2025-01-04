@@ -1,18 +1,9 @@
-import gc
 import os
 import tensorflow as tf
-import tensorflow_datasets as tfds
-from tensorflow_datasets import dataset_builders
 import torch
 import numpy as np
-import torchrl
-from torchrl.data.datasets import VD4RLExperienceReplay
 from argparse import ArgumentParser
-import sys
-from pathlib import Path
 from collections import defaultdict
-from tqdm import tqdm
-import pandas as pd
 import datasets
 
 #List of control datasets in v0 MultiNet
@@ -64,6 +55,8 @@ def rlu(dataset_path: str, limit_schema: bool):
                 
                 values = tf.convert_to_tensor(values)
                 dm_lab_dict[key].append(values)
+            else:
+                print(f"Unsupported feature type: {key}")
         
     #Convert data dict to TFDS
     dm_lab_dict = {k: tf.convert_to_tensor(v) for k, v in dm_lab_dict.items()}
@@ -155,6 +148,43 @@ def jat(dataset_name: str, dataset_path: str, hf_test_data: bool, limit_schema: 
     else:
         return jat_tfds_train
 
+def process_dict(d, key_path, result_dict):
+ # Parameters:
+    # d: input dictionary to process
+    # key_path: list tracking the current path in the nested structure
+    # result_dict: dictionary where results are accumulated
+    for key, value in d.items():
+        # Iterate through each key-value pair in the input dictionary 'd'
+        current_path = key_path + [key]
+        # Create new path by adding current key to existing path
+        # Example: if key_path is ['level1'] and key is 'level2'
+        # current_path becomes ['level1', 'level2']
+        
+        if isinstance(value, dict):
+            # Create nested dict structure if it doesn't exist
+            temp_dict = result_dict
+            for k in current_path[:-1]:
+                # Iterate through all keys except the last one
+                if k not in temp_dict:
+                    temp_dict[k] = {}
+                temp_dict = temp_dict[k]
+            if current_path[-1] not in temp_dict:
+                temp_dict[current_path[-1]] = {}
+                
+            process_dict(value, current_path, result_dict)
+        else:
+            # Navigate to correct nested level
+            temp_dict = result_dict
+            for k in current_path[:-1]:
+                if k not in temp_dict:
+                    temp_dict[k] = {}
+                temp_dict = temp_dict[k]
+            
+            # Initialize list if needed and append value
+            if current_path[-1] not in temp_dict:
+                temp_dict[current_path[-1]] = []
+            temp_dict[current_path[-1]].append(value)
+
 
 #TorchRL datasets translation
 def torchrlds(dataset_path: str, dataset_name, limit_schema: bool):
@@ -169,15 +199,7 @@ def torchrlds(dataset_path: str, dataset_name, limit_schema: bool):
     
     # Trim the data if limit_schema flag is set during code execution
     if limit_schema:
-        if dataset_name == 'locomujoco':
-            trl_torch_trimmed = {}
-            trl_torch_trimmed['observations'] = trl_torch['states']
-            trl_torch_trimmed['actions'] = trl_torch['actions']
-            trl_torch_trimmed['rewards'] = trl_torch['rewards']
-            print('Translating...')
-            trl_torch_trimmed_tfds = tf.data.Dataset.from_tensor_slices(trl_torch_trimmed)
-            return trl_torch_trimmed_tfds
-        elif dataset_name == 'vd4rl':
+        if dataset_name == 'vd4rl':
             trl_torch_trimmed = {}
             trl_torch_trimmed['observations'] = trl_torch['pixels']
             trl_torch_trimmed['actions'] = trl_torch['action']
@@ -185,7 +207,7 @@ def torchrlds(dataset_path: str, dataset_name, limit_schema: bool):
             print('Translating...')
             trl_torch_trimmed_tfds = tf.data.Dataset.from_tensor_slices(trl_torch_trimmed)
             return trl_torch_trimmed_tfds
-        elif dataset_name == 'language_table' or dataset_name == 'openx':
+        elif dataset_name == 'openx':
             trl_torch_trimmed = {}
             trl_torch_trimmed['observations'] = trl_torch['observation']
             trl_torch_trimmed['actions'] = trl_torch['action']
@@ -200,46 +222,111 @@ def torchrlds(dataset_path: str, dataset_name, limit_schema: bool):
     if type(trl_torch) is not dict:
         trl_tfds = tf.data.Dataset.from_tensor_slices(trl_torch.to_dict())  
     else:
-        trl_tfds = tf.data.Dataset.from_tensor_slices(trl_torch)  
+        
+        #Convert it to a dict of lists where each key has a list of values for all the timesteps in a given episode
+        trl_torch_list = []
+        for key, value in trl_torch.items():
+            trl_torch_list.append(value)
+            #print(trl_torch_list)
+
+        trl_torch_list_dict = {}
+
+        for ele in trl_torch_list:
+            process_dict(ele, [], trl_torch_list_dict)
+            
+        trl_tfds = tf.data.Dataset.from_tensor_slices(trl_torch_list_dict)
 
     return trl_tfds
+
+def locomujoco(dataset_path: str, limit_schema: bool):
+
+    try:
+        locomujoco_np = np.load(dataset_path, allow_pickle=True).items()
+    except:
+        print('Enter the correct path to a LocoMuJoCo file')
+        return None
+
+    locomujoco_np_dict = {}
+    for key, value in locomujoco_np:
+        locomujoco_np_dict[key] = value
+    
+    if limit_schema:
+        del locomujoco_np_dict['last']
+        del locomujoco_np_dict['absorbing']
+
+    locomujoco_tfds_dict = tf.data.Dataset.from_tensor_slices(locomujoco_np_dict)
+    return locomujoco_tfds_dict
+
+
 
 def procgen(dataset_path: str, limit_schema: bool):
 
     #Taken from https://github.com/ManifoldRG/MultiNet/blob/main/src/control_translation/procgen/convert2tfds.py
 
-    mega_dataset = None
-    save_counter=0
 
     print('Translating...')
     #Iterate through Procgen dataset folder and translate file by file. Returns a consolidated mega TFDS containing translated versions of all the files.
-    for path in tqdm(os.listdir(dataset_path), total=len(os.listdir(dataset_path)), unit='file'):
+    #for path in tqdm(os.listdir(dataset_path), total=len(os.listdir(dataset_path)), unit='file'):
         
-        try:
-            procgen_np = np.load(os.path.join(dataset_path, path), allow_pickle=True).item()
-        except:
-            print('Enter the correct path to a Procgen file in Numpy format')
-            return None
-        
-        #Translate TorchRL dataset to TFDS
-        if limit_schema:
-            del procgen_np['dones']
-
-        procgen_dict = {key: tf.data.Dataset.from_tensor_slices(procgen_np[key]) for key in procgen_np.keys()}
-        procgen_tfds = tf.data.Dataset.zip(procgen_dict)
-
-        if mega_dataset is None:
-            mega_dataset = procgen_tfds
+    try:
+        procgen_np = np.load(dataset_path, allow_pickle=True).item()
+    except:
+        print('Enter the correct path to a Procgen file in Numpy format')
+        return None
+    
+    #Translate TorchRL dataset to TFDS
+    if limit_schema:
+        del procgen_np['dones']
+    
+    # Add zero padding at start for non-observation fields as there is one extra observation field in the dataset
+    for key, value in procgen_np.items():
+        # Get length of first value to determine padding size
+        first_val = value[0]
+        # Handle both array and scalar values
+        '''if isinstance(first_val, np.ndarray):
+            pad_size = len(first_val)
         else:
-            mega_dataset = mega_dataset.concatenate(procgen_tfds)
+            pad_size = 1'''
         
-        save_counter+=1
+        
+        # Add zero padding at start for non-observation fields
+        if key != 'observations':
+            #print(key)
+            #print(value)
+            if isinstance(first_val, np.ndarray):
+                # Create zero array with same shape as first value
+                zero_pad = np.zeros_like(first_val)
+            else:
+                # Create zero with same type as first value 
+                zero_pad = type(first_val)(0)
+            
+            if isinstance(first_val, np.ndarray):
+                value = np.insert(value, 0, zero_pad, axis=0)
+            else:
+                value = np.insert(value, 0, zero_pad)
+            print(value)
+        
+        procgen_np[key] = value
 
-        #Testing on 500 files
-        #if save_counter==500:
-            #break
+        #print(key)
+        #print(len(procgen_np[key]))
 
-    return mega_dataset
+    procgen_tfds_dict = tf.data.Dataset.from_tensor_slices(procgen_np)
+    #procgen_tfds = tf.data.Dataset.zip(procgen_dict)
+
+    '''if mega_dataset is None:
+        mega_dataset = procgen_tfds_dict    
+    else:
+        mega_dataset = mega_dataset.concatenate(procgen_tfds_dict)
+    
+    save_counter+=1
+
+    #Testing on 500 files
+    if save_counter==50:
+        break
+
+    return mega_dataset'''
+    return procgen_tfds_dict
 
 
 #Decides the translation module to be called based on the dataset
@@ -252,13 +339,15 @@ def categorize_datasets(dataset_name: str, dataset_path: str, hf_test_data: bool
         elif dataset_name=='baby_ai' or dataset_name=='ale_atari' or dataset_name=='mujoco' or dataset_name=='meta_world':
             translated_ds = jat(dataset_name, dataset_path, hf_test_data, limit_schema)
             return translated_ds
-        elif dataset_name=='vd4rl' or dataset_name=='locomujoco' or dataset_name=='language_table' or dataset_name=='openx':
+        elif dataset_name=='vd4rl' or dataset_name=='openx':
             translated_ds = torchrlds(dataset_path, dataset_name, limit_schema)
             return translated_ds
         elif dataset_name=='procgen':
             translated_ds = procgen(dataset_path, limit_schema)
             return translated_ds
-        
+        elif dataset_name=='locomujoco':
+            translated_ds = locomujoco(dataset_path, limit_schema)
+            return translated_ds
         else:
             raise ValueError('Enter a dataset in the current version of MultiNet')
     except ValueError as e:
