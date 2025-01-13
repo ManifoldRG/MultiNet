@@ -154,17 +154,14 @@ def rlu(dataset_path: str, limit_schema: bool):
         for key, feature in example.features.feature.items():
 
             if feature.HasField('int64_list'):
-                print(key)
                 values = tf.convert_to_tensor(feature.int64_list.value)
                 dm_lab_dict[key].append(values)
 
             elif feature.HasField('float_list'):
-                print(key)
                 values = tf.convert_to_tensor(feature.float_list.value)
                 dm_lab_dict[key].append(values)
             
             elif feature.HasField('bytes_list'):
-                print(key)
                 values = []
                 for step in feature.bytes_list.value:
                     try:
@@ -174,7 +171,6 @@ def rlu(dataset_path: str, limit_schema: bool):
                         # If not an image, just decode the bytes
                         values.append(tf.io.decode_raw(step, tf.uint8))
                 
-                print(values)
                 values = tf.convert_to_tensor(values)
                 dm_lab_dict[key].append(values)
             else:
