@@ -74,11 +74,11 @@ def rlu_tfds(dataset_path: str, limit_schema: bool, output_dir, dataset_name):
     except:
         raise ValueError('Enter the correct path to a DM Lab or DM Control Suite file downloaded from RL unplugged using TFDS. It should be in the format rlu_control_suite/cartpole_swingup')
 
-    print(tfds_name)
+    #print(tfds_name)
 
     #Data dir needs to be the parent directory of the dataset path
     data_dir = dataset_path.split('/')[0] if '/' in dataset_path else '.'
-    print(data_dir)
+    #print(data_dir)
     #Load the TFDS dataset
     loaded_dataset = tfds.load(
     tfds_name,

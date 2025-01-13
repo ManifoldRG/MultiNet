@@ -109,7 +109,7 @@ class TestRLUToTFDS(unittest.TestCase):
                     else:
                         self.assertEqual(rlu_val, tfds_val,
                                     f"Value mismatch for {key}[{i}]: RLU={rlu_val}, TFDS={tfds_val}")
-        """Test that actual data values are preserved"""
+        
         start_time = time.time()
         
         # Compare first episode
@@ -180,10 +180,6 @@ class TestRLUToTFDS(unittest.TestCase):
                 else:
                     rlu_values[key].append(rlu_ele[key])
             break
-            
-
-            
-        #print(rlu_values)
         
         tfds_values = defaultdict(list)
 
@@ -226,11 +222,7 @@ class TestRLUToTFDS(unittest.TestCase):
                 else:
                     rlu_values[key].append(rlu_ele[key])
             break
-            
 
-            
-        #print(rlu_values)
-        
         tfds_values = defaultdict(list)
 
         for key in tfds_ele.keys():
@@ -246,10 +238,6 @@ class TestRLUToTFDS(unittest.TestCase):
                 tfds_values[key].append(tfds_ele[key])
 
         test_values_match(rlu_values, tfds_values)
-
-
-
-
 
         print(f'Time taken for data values test: {time.time() - start_time} seconds')
 

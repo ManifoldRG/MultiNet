@@ -31,8 +31,7 @@ def build_arg_parser() -> ArgumentParser:
 def rlu_tfds(dataset_name: str, output_dir: str):
 
     #rlu_dmlab_dataset_list = ['rlu_dmlab_explore_object_rewards_few', 'rlu_dmlab_explore_object_rewards_many', 'rlu_dmlab_rooms_select_nonmatching_object', 'rlu_dmlab_rooms_watermaze', 'rlu_dmlab_seekavoid_arena01']
-    #rlu_dmcs_dataset_list = ['rlu_control_suite/cartpole_swingup', 'rlu_control_suite/cheetah_run', 'rlu_control_suite/finger_turn_hard', 'rlu_control_suite/fish_swim', 'rlu_control_suite/humanoid_run', 'rlu_control_suite/manipulator_insert_ball', 'rlu_control_suite/manipulator_insert_peg', 'rlu_control_suite/walker_stand', 'rlu_control_suite/walker_walk']
-    rlu_dmcs_dataset_list = ['rlu_control_suite/cartpole_swingup']
+    rlu_dmcs_dataset_list = ['rlu_control_suite/cartpole_swingup', 'rlu_control_suite/cheetah_run', 'rlu_control_suite/finger_turn_hard', 'rlu_control_suite/fish_swim', 'rlu_control_suite/humanoid_run', 'rlu_control_suite/manipulator_insert_ball', 'rlu_control_suite/manipulator_insert_peg', 'rlu_control_suite/walker_stand', 'rlu_control_suite/walker_walk']
 
     for dataset in rlu_dmcs_dataset_list:
 
