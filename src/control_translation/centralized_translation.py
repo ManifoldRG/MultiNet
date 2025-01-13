@@ -140,7 +140,7 @@ def rlu(dataset_path: str, limit_schema: bool):
 
     #Load the RL unplugged dataset as a TFRecord Dataset
     try:
-        raw_dataset = tf.data.TFRecordDataset(dataset_path)#, compression_type = 'GZIP')
+        raw_dataset = tf.data.TFRecordDataset(dataset_path, compression_type = 'GZIP')
     except:
         print('Enter the correct path to a DM Lab or DM Control Suite file downloaded from RL unplugged')
         return None
