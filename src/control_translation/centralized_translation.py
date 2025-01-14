@@ -5,6 +5,7 @@ import numpy as np
 from argparse import ArgumentParser
 from collections import defaultdict
 import datasets
+import tensorflow_datasets as tfds
 
 #List of control datasets in v0 MultiNet
 multinetv0list = ['dm_lab_rlu', 'dm_control_suite_rlu', 'ale_atari', 'baby_ai', 'mujoco', 'vd4rl', 'meta_world', 'procgen', 'language_table', 'openx', 'locomuojoco']
@@ -20,7 +21,119 @@ def build_arg_parser() -> ArgumentParser:
     parser.add_argument("--hf_test_data", type=bool, default=False, help="Set to True if test split from Huggingface JAT datasets needs to be returned along with train data")
     return parser
 
+#Process the nested dictionary to create a nested dictionary where the values of each key and subkey are lists of lists containing the timestep values for each episode.
+# This is required to convert it to TFDS
+def process_dict(d, key_path, result_dict):
+ # Parameters:
+    # d: input dictionary to process
+    # key_path: list tracking the current path in the nested structure
+    # result_dict: dictionary where results are accumulated
+    for key, value in d.items():
+        # Iterate through each key-value pair in the input dictionary 'd'
+        str_key = str(key)
+        current_path = key_path + [str_key]
+        # Create new path by adding current key to existing path
+        # Example: if key_path is ['level1'] and key is 'level2'
+        # current_path becomes ['level1', 'level2']
+        
+        if isinstance(value, dict):
+            # Create nested dict structure if it doesn't exist
+            temp_dict = result_dict
+            for k in current_path[:-1]:
+                # Iterate through all keys except the last one
+                if k not in temp_dict:
+                    temp_dict[k] = {}
+                temp_dict = temp_dict[k]
+            if current_path[-1] not in temp_dict:
+                temp_dict[current_path[-1]] = {}
+                
+            process_dict(value, current_path, result_dict)
+        else:
+            # Navigate to correct nested level
+            temp_dict = result_dict
+            for k in current_path[:-1]:
+                if k not in temp_dict:
+                    temp_dict[k] = {}
+                temp_dict = temp_dict[k]
+            
+            # Initialize list if needed and append value
+            if current_path[-1] not in temp_dict:
+                temp_dict[current_path[-1]] = []
+            temp_dict[current_path[-1]].append(value)
+
+
+
+
 # RL unplugged datasets translation
+def rlu_tfds(dataset_path: str, limit_schema: bool, output_dir, dataset_name):
+
+    try:
+        tfds_name = str(dataset_path.replace('../', ''))
+        if tfds_name.endswith('/'):
+            tfds_name = tfds_name[:-1]
+    except:
+        raise ValueError('Enter the correct path to a DM Lab or DM Control Suite file downloaded from RL unplugged using TFDS. It should be in the format rlu_control_suite/cartpole_swingup')
+
+    #print(tfds_name)
+
+    #Data dir needs to be the parent directory of the dataset path
+    data_dir = dataset_path.split('/')[0] if '/' in dataset_path else '.'
+    #print(data_dir)
+    #Load the TFDS dataset
+    loaded_dataset = tfds.load(
+    tfds_name,
+    split='train',
+    data_dir=data_dir,
+    download=False
+    )
+
+    count=0
+    
+    # Process dataset episode by episode, and save each episode as a separate file. This is done to avoid memory issues as some of these datasets are large
+    for ele in loaded_dataset:
+        #Creating a dictionary where the values of each key are a list of lists each containing the timestep values for each episode
+        rlu_dict= defaultdict(list)  
+        episode_dict = {}
+        for key, value in ele.items():
+            if key == 'steps':
+                
+                # Handle steps variant dataset while maintaining hierarchy
+                step_dict = {}
+                for step_idx, step in enumerate(value):
+                    step_dict[step_idx] = {}
+                    for step_key, step_value in step.items():
+                        # Handle pixel observations if present
+                        if step_key == 'observations' and 'pixels' in step_value:
+                            # Convert Image object to tensor with correct shape and dtype
+                            pixels = tf.convert_to_tensor(step_value['pixels'])
+                            pixels = tf.ensure_shape(pixels, [72, 96, 3])
+                            pixels = tf.cast(pixels, tf.uint8)
+                            step_value['pixels'] = pixels
+                        step_dict[step_idx][step_key] = step_value
+                episode_dict['steps'] = step_dict
+            else:
+                episode_dict[key] = value
+        
+        #Count denotes the episode number
+        rlu_dict[count] = episode_dict
+        count+=1
+    
+        rlu_torch_list = []
+        for key, value in rlu_dict.items():
+            rlu_torch_list.append(value)
+
+        rlu_torch_list_dict = {}
+        for ele in rlu_torch_list:
+            process_dict(ele, [], rlu_torch_list_dict)
+
+        rlu_tfds = tf.data.Dataset.from_tensor_slices(rlu_torch_list_dict)
+
+        mod_file_path = dataset_path.replace('../', '')
+        path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
+        tf.data.Dataset.save(rlu_tfds, os.path.join(output_dir, path_to_translated)+'translated_episode_'+str(count),shard_func=custom_shard_func)
+    #return rlu_tfds
+
+
 def rlu(dataset_path: str, limit_schema: bool):
 
     dm_lab_dict = defaultdict(list)
@@ -51,7 +164,12 @@ def rlu(dataset_path: str, limit_schema: bool):
             elif feature.HasField('bytes_list'):
                 values = []
                 for step in feature.bytes_list.value:
-                    values.append(tf.image.decode_jpeg(step, channels=3))
+                    try:
+                        # Try decoding as image first
+                        values.append(tf.image.decode_jpeg(step, channels=3))
+                    except:
+                        # If not an image, just decode the bytes
+                        values.append(tf.io.decode_raw(step, tf.uint8))
                 
                 values = tf.convert_to_tensor(values)
                 dm_lab_dict[key].append(values)
@@ -147,44 +265,6 @@ def jat(dataset_name: str, dataset_path: str, hf_test_data: bool, limit_schema: 
 
     else:
         return jat_tfds_train
-
-def process_dict(d, key_path, result_dict):
- # Parameters:
-    # d: input dictionary to process
-    # key_path: list tracking the current path in the nested structure
-    # result_dict: dictionary where results are accumulated
-    for key, value in d.items():
-        # Iterate through each key-value pair in the input dictionary 'd'
-        current_path = key_path + [key]
-        # Create new path by adding current key to existing path
-        # Example: if key_path is ['level1'] and key is 'level2'
-        # current_path becomes ['level1', 'level2']
-        
-        if isinstance(value, dict):
-            # Create nested dict structure if it doesn't exist
-            temp_dict = result_dict
-            for k in current_path[:-1]:
-                # Iterate through all keys except the last one
-                if k not in temp_dict:
-                    temp_dict[k] = {}
-                temp_dict = temp_dict[k]
-            if current_path[-1] not in temp_dict:
-                temp_dict[current_path[-1]] = {}
-                
-            process_dict(value, current_path, result_dict)
-        else:
-            # Navigate to correct nested level
-            temp_dict = result_dict
-            for k in current_path[:-1]:
-                if k not in temp_dict:
-                    temp_dict[k] = {}
-                temp_dict = temp_dict[k]
-            
-            # Initialize list if needed and append value
-            if current_path[-1] not in temp_dict:
-                temp_dict[current_path[-1]] = []
-            temp_dict[current_path[-1]].append(value)
-
 
 #TorchRL datasets translation
 def torchrlds(dataset_path: str, dataset_name, limit_schema: bool):

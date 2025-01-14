@@ -26,6 +26,31 @@ def build_arg_parser() -> ArgumentParser:
 
 ## Control dataset download modules
 
+#RL unplugged through TFDS -- dataset is formatted more intuitively and easier to understand and work with. Documentation is available at https://www.tensorflow.org/datasets/catalog/rlu_control_suite
+#Make sure you have sufficient memory to download the dataset. During the TFDS load function, the entire dataset is loaded into memory. Check the sizes at https://www.tensorflow.org/datasets/catalog/rlu_control_suite
+def rlu_tfds(dataset_name: str, output_dir: str):
+
+    #rlu_dmlab_dataset_list = ['rlu_dmlab_explore_object_rewards_few', 'rlu_dmlab_explore_object_rewards_many', 'rlu_dmlab_rooms_select_nonmatching_object', 'rlu_dmlab_rooms_watermaze', 'rlu_dmlab_seekavoid_arena01']
+    rlu_dmcs_dataset_list = ['rlu_control_suite/cartpole_swingup', 'rlu_control_suite/cheetah_run', 'rlu_control_suite/finger_turn_hard', 'rlu_control_suite/fish_swim', 'rlu_control_suite/humanoid_run', 'rlu_control_suite/manipulator_insert_ball', 'rlu_control_suite/manipulator_insert_peg', 'rlu_control_suite/walker_stand', 'rlu_control_suite/walker_walk']
+
+    for dataset in rlu_dmcs_dataset_list:
+
+        # Download the dataset and retrieve dataset information
+        dataset_name, info = tfds.load(
+            dataset,
+            split='train',
+            data_dir=output_dir,
+            download=True,
+            with_info=True
+        )
+
+        print("Dataset downloaded and stored at:", output_dir)
+        print("Dataset information:", info)
+
+
+
+
+
 # RL unplugged
 def rlu(dataset_name: str, output_dir: str):
 
@@ -375,7 +400,7 @@ def download_datasets(dataset_name: str, output_dir: str):
     if dataset_name in ['obelics','coyo_700m', 'ms_coco_captions', 'conceptual_captions', 'a_okvqa', 'vqa_v2', 'datacomp', 'finewebedu']:
         vislang(dataset_name, output_dir)
     elif dataset_name == 'dm_lab_rlu' or dataset_name == 'dm_control_suite_rlu':
-        rlu(dataset_name, output_dir)
+        rlu_tfds(dataset_name, output_dir)
     elif dataset_name == 'atari' or dataset_name == 'mujoco' or dataset_name == 'babyai' or dataset_name == 'metaworld':
         jat(dataset_name, output_dir)
     elif dataset_name == 'vd4rl':

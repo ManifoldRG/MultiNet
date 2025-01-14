@@ -1,5 +1,5 @@
 import os
-from centralized_translation import rlu, jat, torchrlds, procgen, custom_shard_func, locomujoco
+from centralized_translation import rlu, rlu_tfds, jat, torchrlds, procgen, custom_shard_func, locomujoco
 from argparse import ArgumentParser
 import tensorflow as tf
 import gc
@@ -19,24 +19,14 @@ def build_arg_parser() -> ArgumentParser:
 def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, output_dir):
     
     if dataset_name=='dm_lab_rlu' or dataset_name=='dm_control_suite_rlu':
-        # Get all files recursively under root directory
-        all_files = []
-        for dirpath, dirnames, filenames in os.walk(dataset_path):
-            # Skip if no files in this directory
-            if not filenames:
-                continue
-            # Add full path of each file
-            for f in filenames:
-                all_files.append(os.path.join(dirpath, f))
         
-        # Process each file
-        for idx, file_path in enumerate(all_files):
-            translated_ds = rlu(file_path, limit_schema)
-            mod_file_path = file_path.replace('../', '')
-            path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
-            #print(path_to_translated)
-            tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated),shard_func=custom_shard_func)
-            print(f'Translated and stored file {file_path}')
+        dir_path = dataset_path
+        translated_ds = rlu_tfds(dir_path, limit_schema, output_dir, dataset_name)
+        #mod_file_path = dir_path.replace('../', '')
+        #path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
+        #print(path_to_translated)
+        #tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated),shard_func=custom_shard_func)
+        print(f'Translated and stored file {output_dir}')
 
     elif dataset_name=='baby_ai' or dataset_name=='ale_atari' or dataset_name=='mujoco' or dataset_name=='meta_world':
 
