@@ -16,7 +16,7 @@ class TestRLUToTFDS(unittest.TestCase):
             'rlu_control_suite/cartpole_swingup',
             split='train',
             data_dir='../../rlu_control_suite/cartpole_swingup',
-            download=True
+            download=False
         )
         print(f'Time taken for RLU dataset load: {time.time() - start_time} seconds')
         
