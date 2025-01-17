@@ -32,7 +32,7 @@ class OpenAIModuleTest(unittest.TestCase):
         self.assertEqual(module.history, [])
         self.assertEqual(module.cur_num_tokens_cache, [])
         self.assertEqual(module.encoding.name, 'cl100k_base')
-
+        
     def test_infer_step_with_texts(self):
         system_prompt = "This is a test system prompt."
         model = "gpt-4o-2024-05-13"
@@ -71,6 +71,44 @@ class OpenAIModuleTest(unittest.TestCase):
             self.assertEqual(len(module.history), m*2+2)
             self.assertEqual(len(module.cur_num_tokens_cache), m*2+2)
 
+    def test_batch_infer_with_texts(self):
+        system_prompt = "This is a test system prompt."
+        model = "gpt-4o-2024-05-13"
+        
+        module = OpenAIModule(model)
+        queries = [
+            "What's your name?",
+            "What is the advantages of Python language?",
+            "What is the definition of a generalist foundation model?"
+        ]
+        query_batches = [queries, queries[:2], queries[1:2]]
+        prev_history_count = 0
+        for qb, queries in enumerate(query_batches):
+            mock_responses, model_inputs = [], []
+            for q, query in enumerate(queries):
+                mock_response = f"This is a response {q} for batch {qb} for single query testing."
+                mock_responses.append(mock_response)
+                model_inputs.append([('text', query)])
+            
+            module._get_batch_response_from_api = MagicMock(return_value=mock_responses[:])
+            responses = module.batch_infer_step(model_inputs, system_prompt)
+            
+            self.assertEqual(responses, mock_responses)
+            
+            for q, query in enumerate(queries):
+                query_content = [{'type': 'text', 'text': query}]
+                self.assertEqual(module.history[prev_history_count+q], {'role': 'user', 'content': query_content})
+                self.assertEqual(module.cur_num_tokens_cache[prev_history_count+q], module._get_num_tokens('user', query_content))
+            
+                resp_content = [{'type': 'text', 'text': responses[q]}]
+                self.assertEqual(module.history[prev_history_count+q+len(queries)], {'role': 'assistant', 'content': resp_content})
+                self.assertEqual(module.cur_num_tokens_cache[prev_history_count+q+len(queries)], module._get_num_tokens('assistant', resp_content))
+            
+            self.assertEqual(len(module.history), prev_history_count + len(queries) * 2)
+            self.assertEqual(len(module.cur_num_tokens_cache), prev_history_count + len(queries) * 2)
+            
+            prev_history_count += len(queries) * 2
+            
     def test_infer_step_with_images(self):
         system_prompt = "This is a test system prompt."
         model = "gpt-4o-2024-05-13"
