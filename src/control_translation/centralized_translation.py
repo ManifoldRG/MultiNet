@@ -74,10 +74,12 @@ def rlu_tfds(dataset_path: str, limit_schema: bool, output_dir, dataset_name):
     except:
         raise ValueError('Enter the correct path to a DM Lab or DM Control Suite file downloaded from RL unplugged using TFDS. It should be in the format rlu_control_suite/cartpole_swingup')
 
-    #print(tfds_name)
+    print(tfds_name)
 
     #Data dir needs to be the parent directory of the dataset path
     data_dir = dataset_path.split('/')[0] if '/' in dataset_path else '.'
+    print('\nData dir:')
+    print(data_dir)
     #print(data_dir)
     #Load the TFDS dataset
     loaded_dataset = tfds.load(
@@ -86,6 +88,8 @@ def rlu_tfds(dataset_path: str, limit_schema: bool, output_dir, dataset_name):
     data_dir=data_dir,
     download=False
     )
+
+    print('\nLoaded dataset')
 
     count=0
     
@@ -145,8 +149,7 @@ def rlu(dataset_path: str, limit_schema: bool):
         print('Enter the correct path to a DM Lab or DM Control Suite file downloaded from RL unplugged')
         return None
 
-    #Access the values in the dataset based on the feature type --only accessing 5 episodes with this code (remove .take() if entire ds needs to be downloaded)
-    for raw_record in raw_dataset.take(5):
+    for raw_record in raw_dataset:
 
         example = tf.train.Example()
         example.ParseFromString(raw_record.numpy())
@@ -199,7 +202,6 @@ def rlu(dataset_path: str, limit_schema: bool):
     print('Translating...')
     dm_lab_tfds = tf.data.Dataset.from_tensor_slices(dm_lab_dict)
     return dm_lab_tfds
-    
 
 # JAT datasets translation
 def jat(dataset_name: str, dataset_path: str, hf_test_data: bool, limit_schema: bool):
@@ -416,6 +418,8 @@ def categorize_datasets(dataset_name: str, dataset_path: str, hf_test_data: bool
         if dataset_name=='dm_lab_rlu' or dataset_name=='dm_control_suite_rlu':
             translated_ds = rlu(dataset_path, limit_schema)
             return translated_ds
+        elif dataset_name=='dm_lab_rlu_tfds' or dataset_name=='dm_control_suite_rlu_tfds':
+            rlu_tfds(dataset_path, limit_schema, args.output_dir, dataset_name)
         elif dataset_name=='baby_ai' or dataset_name=='ale_atari' or dataset_name=='mujoco' or dataset_name=='meta_world':
             translated_ds = jat(dataset_name, dataset_path, hf_test_data, limit_schema)
             return translated_ds
