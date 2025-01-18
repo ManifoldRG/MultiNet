@@ -73,8 +73,6 @@ class TestRLUToTFDS(unittest.TestCase):
             for key in episode.keys():
                 if key == 'steps':
                     for step_number in episode[key]:
-                        #print('\nCHECK')
-                        #print(episode[key][step_number].keys())
                         for step_key in episode[key][step_number].keys():
                             tfds_features.add(f'steps/{step_key}')
                         break
@@ -179,21 +177,21 @@ class TestRLUToTFDS(unittest.TestCase):
                                     rlu_values[f'steps/{step_key}/{k}'].append(v)
                             else:
                                 rlu_values[f'steps/{step_key}'].append(step[step_key])
-                else:
-                    rlu_values[key].append(rlu_ele[key])
-            break
+            else:
+                rlu_values[key].append(rlu_ele[key])
         
         tfds_values = defaultdict(list)
 
         for key in tfds_ele.keys():
             if key == 'steps':
-                for step_number in tfds_ele[key]:
+                step_numbers = sorted(tfds_ele[key].keys(), key=lambda x: int(x))
+                for step_number in step_numbers:
                     for step_key in tfds_ele[key][step_number].keys():
                         if isinstance(tfds_ele[key][step_number][step_key], dict):
                             for k, v in tfds_ele[key][step_number][step_key].items():
                                     tfds_values[f'steps/{step_key}/{k}'].append(v)
-                            else:
-                                tfds_values[f'steps/{step_key}'].append(tfds_ele[key][step_number][step_key])
+                        else:
+                            tfds_values[f'steps/{step_key}'].append(tfds_ele[key][step_number][step_key])
             else:
                 tfds_values[key].append(tfds_ele[key])
 
@@ -221,21 +219,21 @@ class TestRLUToTFDS(unittest.TestCase):
                                     rlu_values[f'steps/{step_key}/{k}'].append(v)
                             else:
                                 rlu_values[f'steps/{step_key}'].append(step[step_key])
-                else:
-                    rlu_values[key].append(rlu_ele[key])
-            break
+            else:
+                rlu_values[key].append(rlu_ele[key])
 
         tfds_values = defaultdict(list)
 
         for key in tfds_ele.keys():
             if key == 'steps':
-                for step_number in tfds_ele[key]:
+                step_numbers = sorted(tfds_ele[key].keys(), key=lambda x: int(x))
+                for step_number in step_numbers:
                     for step_key in tfds_ele[key][step_number].keys():
                         if isinstance(tfds_ele[key][step_number][step_key], dict):
                             for k, v in tfds_ele[key][step_number][step_key].items():
                                     tfds_values[f'steps/{step_key}/{k}'].append(v)
-                            else:
-                                tfds_values[f'steps/{step_key}'].append(tfds_ele[key][step_number][step_key])
+                        else:
+                            tfds_values[f'steps/{step_key}'].append(tfds_ele[key][step_number][step_key])
             else:
                 tfds_values[key].append(tfds_ele[key])
 

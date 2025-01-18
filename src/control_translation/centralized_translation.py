@@ -74,12 +74,8 @@ def rlu_tfds(dataset_path: str, limit_schema: bool, output_dir, dataset_name):
     except:
         raise ValueError('Enter the correct path to a DM Lab or DM Control Suite file downloaded from RL unplugged using TFDS. It should be in the format rlu_control_suite/cartpole_swingup')
 
-    print(tfds_name)
-
     #Data dir needs to be the parent directory of the dataset path
     data_dir = dataset_path.split('/')[0] if '/' in dataset_path else '.'
-    print('\nData dir:')
-    print(data_dir)
     #print(data_dir)
     #Load the TFDS dataset
     loaded_dataset = tfds.load(
@@ -178,9 +174,15 @@ def rlu(dataset_path: str, limit_schema: bool):
                 dm_lab_dict[key].append(values)
             else:
                 print(f"Unsupported feature type: {key}")
-        
+
     #Convert data dict to TFDS
-    dm_lab_dict = {k: tf.convert_to_tensor(v) for k, v in dm_lab_dict.items()}
+    dm_lab_dict_new = {}
+    for k, v in dm_lab_dict.items():
+        if k != 'observations_pixels':
+            dm_lab_dict_new[k] = tf.convert_to_tensor(v)
+        else:
+            dm_lab_dict_new[k] = tf.ragged.stack(v)
+
 
     # Trim the data if limit_schema flag is set during code execution
     if limit_schema:
@@ -200,7 +202,7 @@ def rlu(dataset_path: str, limit_schema: bool):
         return dm_lab_dict_trimmed_tfds
 
     print('Translating...')
-    dm_lab_tfds = tf.data.Dataset.from_tensor_slices(dm_lab_dict)
+    dm_lab_tfds = tf.data.Dataset.from_tensor_slices(dm_lab_dict_new)
     return dm_lab_tfds
 
 # JAT datasets translation

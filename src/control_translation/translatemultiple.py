@@ -36,13 +36,13 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
                 for f in filenames:
                     if not f.endswith('.json'):
                         all_files.append(os.path.join(dirpath, f))
-        print(all_files)
+        #print(all_files)
         for file in all_files:
             translated_ds = rlu(file, limit_schema)
             mod_file_path = file.replace('../', '')
             path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
             tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated),shard_func=custom_shard_func)
-            print(f'Translated and stored file in {output_dir}')
+        print(f'Translated and stored file in {output_dir}')
 
     elif dataset_name=='baby_ai' or dataset_name=='ale_atari' or dataset_name=='mujoco' or dataset_name=='meta_world':
 

@@ -32,7 +32,6 @@ def rlu_tfds(dataset_name: str, output_dir: str):
 
     rlu_dmcs_dataset_list = ['rlu_control_suite/cartpole_swingup', 'rlu_control_suite/cheetah_run', 'rlu_control_suite/finger_turn_hard', 'rlu_control_suite/fish_swim', 'rlu_control_suite/humanoid_run', 'rlu_control_suite/manipulator_insert_ball', 'rlu_control_suite/manipulator_insert_peg', 'rlu_control_suite/walker_stand', 'rlu_control_suite/walker_walk']
 
-    tfds.display_progress_bar(enable=True)
     for dataset in rlu_dmcs_dataset_list:
 
         # Download the dataset and retrieve dataset information
