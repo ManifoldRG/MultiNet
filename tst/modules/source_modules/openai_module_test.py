@@ -79,16 +79,23 @@ class OpenAIModuleTest(unittest.TestCase):
         queries = [
             "What's your name?",
             "What is the advantages of Python language?",
-            "What is the definition of a generalist foundation model?"
+            ["What is the definition of a generalist foundation model?"],
+            ["This is a user message 1", "Additional user message."],
+            ["What's your name?", "My name is Python.", "Nice to meet you."]
+
         ]
-        query_batches = [queries, queries[:2], queries[1:2]]
+        query_batches = [queries, queries[:1], queries[-2:]]
         prev_history_count = 0
         for qb, queries in enumerate(query_batches):
             mock_responses, model_inputs = [], []
             for q, query in enumerate(queries):
-                mock_response = f"This is a response {q} for batch {qb} for single query testing."
+                mock_response = f"This is a response {q} for batch {qb}."
                 mock_responses.append(mock_response)
-                model_inputs.append([('text', query)])
+                
+                if not isinstance(query, list):
+                    query = [query]
+                full_input = [('text', obj) for obj in query]
+                model_inputs.append(full_input)
             
             module._get_batch_response_from_api = MagicMock(return_value=mock_responses[:])
             responses = module.batch_infer_step(model_inputs, system_prompt)
@@ -96,7 +103,7 @@ class OpenAIModuleTest(unittest.TestCase):
             self.assertEqual(responses, mock_responses)
             
             for q, query in enumerate(queries):
-                query_content = [{'type': 'text', 'text': query}]
+                query_content = [{'type': 'text', 'text': obj} for obj in query]
                 self.assertEqual(module.history[prev_history_count+q], {'role': 'user', 'content': query_content})
                 self.assertEqual(module.cur_num_tokens_cache[prev_history_count+q], module._get_num_tokens('user', query_content))
             
@@ -169,6 +176,101 @@ class OpenAIModuleTest(unittest.TestCase):
 
             self.assertEqual(len(module.history), q*2+2)
             self.assertEqual(len(module.cur_num_tokens_cache), q*2+2)
+
+    def test_batch_infer_with_images(self):
+        system_prompt = "This is a test system prompt."
+        model = "gpt-4o-2024-05-13"
+        module = OpenAIModule(model)
+
+        queries = [
+            ('text', "What are these dogs doing?"),
+            [
+                ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
+                ('text', "What are these pictures showing?")
+            ],
+            [
+                ('text', "What are these pictures showing?"),
+                ('text', "What are these dogs doing?")
+            ],
+            [
+                ('image', np.random.randint(256, size=(512, 512, 2)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(100, 200, 4)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(256, 128, 3)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(1024, 120, 3)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(180, 260, 3)).astype(np.uint8)),
+                ('text', "Find a picture of a dog from these pictures.")
+            ],
+            [
+                ('image', np.random.randint(256, size=(1920, 1080, 3)).astype(np.uint8)),
+                ('text', "This is an example figure."),
+                ('image', np.random.randint(256, size=(300, 500, 3)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(256, 256, 2)).astype(np.uint8)),
+                ('text', "What do you think about other two pictures?")
+            ],
+            [
+                ('image', np.random.randint(256, size=(1000, 1000, 4)).astype(np.uint8))
+            ],
+            [
+                ('image', np.random.randint(256, size=(512, 512, 4)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(128, 64, 3)).astype(np.uint8))
+            ]
+        ]
+
+        query_batches = [queries, queries[:2], queries[:1]]
+        prev_history_count = 0
+        for qb, queries in enumerate(query_batches):
+            mock_responses, model_inputs = [], []
+            for q, query in enumerate(queries):
+                mock_response = f"This is a response {q} for batch {qb}."
+                mock_responses.append(mock_response)
+                
+                if not isinstance(query, list):
+                    query = [query]
+                model_inputs.append(query)
+            module._get_batch_response_from_api = MagicMock(return_value=mock_responses[:])
+            responses = module.batch_infer_step(model_inputs, system_prompt)
+            
+            self.assertEqual(responses, mock_responses)
+
+            for q, query in enumerate(queries):
+                self.assertEqual(module.history[prev_history_count+q]['role'], 'user')
+                self.assertTrue(isinstance(module.history[prev_history_count+q]['content'], list))
+                
+                shapes = []
+                for o, obj in enumerate(query):
+
+                    if obj[0] == 'text':
+                        self.assertEqual(module.history[prev_history_count+q]['content'][o], 
+                                         {'type': 'text', 'text': obj[1]})
+                    elif obj[0] == 'image':
+                        obj_history_content = module.history[prev_history_count+q]['content'][o]
+                        self.assertEqual(obj_history_content['type'], 'image_url')
+
+                        img_url = obj_history_content['image_url']['url']
+                        self.assertTrue(isinstance(img_url, str))
+                        self.assertTrue(img_url.startswith('data:image/png;base64,'))
+                    
+                        shapes.append((obj[1].shape[0], obj[1].shape[1]))
+
+                self.assertEqual(module.cur_num_tokens_cache[prev_history_count+q], 
+                                 module._get_num_tokens(
+                                    'user', 
+                                    module.history[prev_history_count+q]['content'], 
+                                    shapes)
+                )                                
+
+                resp_content = [{'type': 'text', 'text': responses[q]}]
+                self.assertEqual(module.history[prev_history_count+q+len(queries)], 
+                                 {'role': 'assistant', 'content': resp_content})
+                self.assertEqual(module.cur_num_tokens_cache[prev_history_count+q+len(queries)], 
+                                 module._get_num_tokens('assistant', resp_content))
+            
+            self.assertEqual(len(module.history), prev_history_count + len(queries) * 2)
+            self.assertEqual(len(module.cur_num_tokens_cache), prev_history_count + len(queries) * 2)
+            
+            prev_history_count += len(queries) * 2
 
     def test_invalid_inputs(self):
         model = "gpt-4o-2024-05-13"
