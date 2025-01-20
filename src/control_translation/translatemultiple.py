@@ -18,15 +18,31 @@ def build_arg_parser() -> ArgumentParser:
 
 def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, output_dir):
     
-    if dataset_name=='dm_lab_rlu' or dataset_name=='dm_control_suite_rlu':
+    if dataset_name=='dm_lab_rlu_tfds' or dataset_name=='dm_control_suite_rlu_tfds':
         
         dir_path = dataset_path
         translated_ds = rlu_tfds(dir_path, limit_schema, output_dir, dataset_name)
-        #mod_file_path = dir_path.replace('../', '')
-        #path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
-        #print(path_to_translated)
-        #tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated),shard_func=custom_shard_func)
-        print(f'Translated and stored file {output_dir}')
+        print(f'Translated and stored file in {output_dir}')
+    
+    elif dataset_name=='dm_lab_rlu' or dataset_name=='dm_control_suite_rlu':
+        
+        dir_path = dataset_path
+        # Get all files in the leaf level of dataset_path
+        all_files = []
+        for dirpath, dirnames, filenames in os.walk(dataset_path):
+            # If this is a leaf directory (no subdirectories)
+            if not dirnames:
+                # Add all non-JSON files
+                for f in filenames:
+                    if not f.endswith('.json'):
+                        all_files.append(os.path.join(dirpath, f))
+        #print(all_files)
+        for file in all_files:
+            translated_ds = rlu(file, limit_schema)
+            mod_file_path = file.replace('../', '')
+            path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
+            tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated),shard_func=custom_shard_func)
+        print(f'Translated and stored file in {output_dir}')
 
     elif dataset_name=='baby_ai' or dataset_name=='ale_atari' or dataset_name=='mujoco' or dataset_name=='meta_world':
 
