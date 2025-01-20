@@ -79,12 +79,45 @@ class OpenAIModuleTest(unittest.TestCase):
         queries = [
             "What's your name?",
             "What is the advantages of Python language?",
+            "What is the definition of a generalist foundation model?"
+        ]
+        
+        query_batches = [queries, queries[:1], queries[-2:]]
+        prev_history_count = 0
+        for qb, queries in enumerate(query_batches):
+            mock_responses, model_inputs = [], []
+            for q, query in enumerate(queries):
+                mock_responses.append(f"This is a response {q} for batch {qb}.")
+                
+                model_inputs.append([('text', query)])
+            
+            module._get_batch_response_from_api = MagicMock(return_value=mock_responses[:])
+            responses = module.batch_infer_step(model_inputs, system_prompt)
+            
+            self.assertEqual(responses, mock_responses)
+            
+            for q, query in enumerate(queries):
+                query_content = [{'type': 'text', 'text': query}]
+                self.assertEqual(module.history[prev_history_count+q], {'role': 'user', 'content': query_content})
+                self.assertEqual(module.cur_num_tokens_cache[prev_history_count+q], module._get_num_tokens('user', query_content))
+            
+                resp_content = [{'type': 'text', 'text': responses[q]}]
+                self.assertEqual(module.history[prev_history_count+q+len(queries)], {'role': 'assistant', 'content': resp_content})
+                self.assertEqual(module.cur_num_tokens_cache[prev_history_count+q+len(queries)], module._get_num_tokens('assistant', resp_content))
+            
+            self.assertEqual(len(module.history), prev_history_count + len(queries) * 2)
+            self.assertEqual(len(module.cur_num_tokens_cache), prev_history_count + len(queries) * 2)
+            
+            prev_history_count += len(queries) * 2
+            
+        module = OpenAIModule(model)
+        multi_queries = [
             ["What is the definition of a generalist foundation model?"],
             ["This is a user message 1", "Additional user message."],
             ["What's your name?", "My name is Python.", "Nice to meet you."]
-
         ]
-        query_batches = [queries, queries[:1], queries[-2:]]
+        
+        query_batches = [multi_queries, multi_queries[:1], multi_queries[-2:]]
         prev_history_count = 0
         for qb, queries in enumerate(query_batches):
             mock_responses, model_inputs = [], []
@@ -92,10 +125,7 @@ class OpenAIModuleTest(unittest.TestCase):
                 mock_response = f"This is a response {q} for batch {qb}."
                 mock_responses.append(mock_response)
                 
-                if not isinstance(query, list):
-                    query = [query]
-                full_input = [('text', obj) for obj in query]
-                model_inputs.append(full_input)
+                model_inputs.append([('text', obj) for obj in query])
             
             module._get_batch_response_from_api = MagicMock(return_value=mock_responses[:])
             responses = module.batch_infer_step(model_inputs, system_prompt)
@@ -183,16 +213,11 @@ class OpenAIModuleTest(unittest.TestCase):
         module = OpenAIModule(model)
 
         queries = [
-            ('text', "What are these dogs doing?"),
             [
                 ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
                 ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
                 ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
                 ('text', "What are these pictures showing?")
-            ],
-            [
-                ('text', "What are these pictures showing?"),
-                ('text', "What are these dogs doing?")
             ],
             [
                 ('image', np.random.randint(256, size=(512, 512, 2)).astype(np.uint8)),
@@ -226,8 +251,6 @@ class OpenAIModuleTest(unittest.TestCase):
                 mock_response = f"This is a response {q} for batch {qb}."
                 mock_responses.append(mock_response)
                 
-                if not isinstance(query, list):
-                    query = [query]
                 model_inputs.append(query)
             module._get_batch_response_from_api = MagicMock(return_value=mock_responses[:])
             responses = module.batch_infer_step(model_inputs, system_prompt)
@@ -240,7 +263,6 @@ class OpenAIModuleTest(unittest.TestCase):
                 
                 shapes = []
                 for o, obj in enumerate(query):
-
                     if obj[0] == 'text':
                         self.assertEqual(module.history[prev_history_count+q]['content'][o], 
                                          {'type': 'text', 'text': obj[1]})
@@ -255,17 +277,13 @@ class OpenAIModuleTest(unittest.TestCase):
                         shapes.append((obj[1].shape[0], obj[1].shape[1]))
 
                 self.assertEqual(module.cur_num_tokens_cache[prev_history_count+q], 
-                                 module._get_num_tokens(
-                                    'user', 
-                                    module.history[prev_history_count+q]['content'], 
-                                    shapes)
-                )                                
+                                 module._get_num_tokens('user', 
+                                                        module.history[prev_history_count+q]['content'], 
+                                                        shapes))                                
 
                 resp_content = [{'type': 'text', 'text': responses[q]}]
-                self.assertEqual(module.history[prev_history_count+q+len(queries)], 
-                                 {'role': 'assistant', 'content': resp_content})
-                self.assertEqual(module.cur_num_tokens_cache[prev_history_count+q+len(queries)], 
-                                 module._get_num_tokens('assistant', resp_content))
+                self.assertEqual(module.history[prev_history_count+q+len(queries)], {'role': 'assistant', 'content': resp_content})
+                self.assertEqual(module.cur_num_tokens_cache[prev_history_count+q+len(queries)], module._get_num_tokens('assistant', resp_content))
             
             self.assertEqual(len(module.history), prev_history_count + len(queries) * 2)
             self.assertEqual(len(module.cur_num_tokens_cache), prev_history_count + len(queries) * 2)
