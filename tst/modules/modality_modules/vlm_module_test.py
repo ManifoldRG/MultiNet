@@ -321,13 +321,13 @@ class VLMModuleTest(unittest.TestCase):
                                 expected_data.append(('text', f"{type}: {value}"))
                         self.assertEqual(processed_k_shots_examples[b][k][i], expected_data)
 
-    def test_infer_step_with_openai(self):
+    def test_infer_step_with_openai_zero_shot(self):
         source = 'openai'
         model = 'gpt-4o-2024-05-13'
         module = VLMModule(source, model)
         system_prompt = "This is a test prompt."
 
-        # Zero-shot test.
+        # Zero-shot test with single query
         processed_cur_inputs = [
             [
                 ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
@@ -353,6 +353,39 @@ class VLMModuleTest(unittest.TestCase):
         self.assertEqual(outputs[0], "Correctly got the first data for zero-shot.")
         self.assertEqual(outputs[1], "Correctly got the second data for zero-shot.")
 
+    def test_batch_infer_with_openai_zero_shot(self):
+        # Zero shot test with batch query
+        source = 'openai'
+        model = 'gpt-4o-2024-05-13'
+        module = VLMModule(source, model)
+        system_prompt = "This is a test prompt."
+
+        processed_cur_inputs = [
+            [
+                ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
+                ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
+                ('text', "text_observation: This is a text description."),
+                ('text', f"continuous_observation: {np.random.random_sample(size=(12))}")
+            ],
+            [
+                ('image', np.random.randint(256, size=(50, 100, 3)).astype(np.uint8)),
+                ('text', f"discrete_observation: {np.random.randint(8, size=(10))}")
+            ]
+        ]
+        module._process_inputs = MagicMock(return_value=(processed_cur_inputs, []))
+        
+        return_values = ["Correctly got the first data for zero-shot batch.", 
+                         "Correctly got the second data for zero-shot batch."]
+        module.source_module.batch_infer_step = MagicMock(return_value=return_values)
+        outputs = module.batch_infer_step([], instructions=system_prompt)
+        self.assertEqual(outputs, return_values)
+
+    def test_infer_step_with_openai_few_shot(self):
+        source = 'openai'
+        model = 'gpt-4o-2024-05-13'
+        module = VLMModule(source, model)
+        system_prompt = "This is a test prompt."
+        
         # Few-shot test.
         processed_cur_inputs = [
             [
