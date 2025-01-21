@@ -75,6 +75,7 @@ class OpenAIModuleTest(unittest.TestCase):
         system_prompt = "This is a test system prompt."
         model = "gpt-4o-2024-05-13"
         
+        # Single object queries
         module = OpenAIModule(model)
         queries = [
             "What's your name?",
@@ -110,6 +111,10 @@ class OpenAIModuleTest(unittest.TestCase):
             
             prev_history_count += len(queries) * 2
             
+        # Multi-object queries
+        system_prompt = "This is a test system prompt."
+        model = "gpt-4o-2024-05-13"
+        
         module = OpenAIModule(model)
         multi_queries = [
             ["What is the definition of a generalist foundation model?"],
@@ -134,6 +139,53 @@ class OpenAIModuleTest(unittest.TestCase):
             
             for q, query in enumerate(queries):
                 query_content = [{'type': 'text', 'text': obj} for obj in query]
+                self.assertEqual(module.history[prev_history_count+q], {'role': 'user', 'content': query_content})
+                self.assertEqual(module.cur_num_tokens_cache[prev_history_count+q], module._get_num_tokens('user', query_content))
+            
+                resp_content = [{'type': 'text', 'text': responses[q]}]
+                self.assertEqual(module.history[prev_history_count+q+len(queries)], {'role': 'assistant', 'content': resp_content})
+                self.assertEqual(module.cur_num_tokens_cache[prev_history_count+q+len(queries)], module._get_num_tokens('assistant', resp_content))
+            
+            self.assertEqual(len(module.history), prev_history_count + len(queries) * 2)
+            self.assertEqual(len(module.cur_num_tokens_cache), prev_history_count + len(queries) * 2)
+            
+            prev_history_count += len(queries) * 2
+    
+    def test_batch_infer_with_multiple_system_prompts(self):
+        model = "gpt-4o-2024-05-13"
+        module = OpenAIModule(model)
+        
+        # Single object queries with multiple system prompts
+        queries = [
+            "What's your name?",
+            "What is the advantages of Python language?",
+            "What is the definition of a generalist foundation model?"
+        ]
+        
+        system_prompts = [
+            'This is a test system prompt 1.', 
+            'This is a test system prompt 2.', 
+            'This is a test system prompt 3.'
+        ]
+        
+        query_batches = [queries, queries[:1], queries[-2:]]
+        system_prompts_batches = [system_prompts, system_prompts[:1], system_prompts[-2:]]
+        
+        prev_history_count = 0
+        for qb, queries in enumerate(query_batches):
+            mock_responses, model_inputs = [], []
+            for q, query in enumerate(queries):
+                mock_responses.append(f"This is a response {q} for batch {qb}.")
+                
+                model_inputs.append([('text', query)])
+            
+            module._get_batch_response_from_api = MagicMock(return_value=mock_responses[:])
+            responses = module.batch_infer_step(model_inputs, system_prompts_batches[qb])
+            
+            self.assertEqual(responses, mock_responses)
+            
+            for q, query in enumerate(queries):
+                query_content = [{'type': 'text', 'text': query}]
                 self.assertEqual(module.history[prev_history_count+q], {'role': 'user', 'content': query_content})
                 self.assertEqual(module.cur_num_tokens_cache[prev_history_count+q], module._get_num_tokens('user', query_content))
             

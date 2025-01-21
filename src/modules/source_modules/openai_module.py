@@ -2,6 +2,7 @@ from openai import OpenAI
 from typing import Any
 from PIL import Image
 from io import BytesIO
+from typing import Union
 
 import tiktoken
 import math
@@ -55,14 +56,17 @@ class OpenAIModule:
         self.add_data('output', [('text', response)])
         return response
     
-    def batch_infer_step(self, inputs_batch: list[list[tuple[str, Any]]], system_prompt: str=None) -> str:
+    def batch_infer_step(self, inputs_batch: list[list[tuple[str, Any]]], 
+                         system_prompt: Union[str, list]=None) -> str:
         assert len(inputs_batch) > 0, "There must be at least one input in the batch."
         for inputs in inputs_batch:
             assert len(inputs) > 0, "The inputs cannot be empty. The inputs should be included."
-            
+        if isinstance(system_prompt, list):
+            assert len(inputs_batch) == len(system_prompt), "The number of system prompts should equal batch size."
+        
         for inputs in inputs_batch:
             self.add_data('input', inputs)
-            
+        
         responses = self._get_batch_response_from_api(system_prompt)
         for response in responses:
             self.add_data('output', [('text', response)])
@@ -112,16 +116,27 @@ class OpenAIModule:
 
         return response.choices[0].message.content
     
-    def _get_batch_response_from_api(self, system_prompt=None):
+    def _get_batch_response_from_api(self, system_prompt: Union[str, list[str]]=None):
         start_idx = self._find_starting_point(system_prompt)
-        system_message = []
+        system_messages = []
         if system_prompt is not None:
-            system_message = [{'role': 'system', 'content': system_prompt}]
+            if isinstance(system_prompt, str):
+                system_prompt = [system_prompt]
+            for prompt in system_prompt:
+                system_messages.append([{'role': 'system', 'content': prompt}])
 
         messages_batch = self.history[start_idx:]
         file_name = "batch_queries.jsonl"
         with open(file_name, 'w') as file:
             for i, messages in enumerate(messages_batch):
+                if len(system_messages) == 0:
+                    system_message = []
+                else:
+                    # If there is one system message, repeat it for all the messages. 0 % 1 = 0, 1 % 1 = 0 ...
+                    # If the numbers are equal, use them as is. 0 % 3 = 0, 1 % 3 = 1, 2 % 3 = 2
+                    # Otherwise, they will be round robined (probably not useful).
+                    system_message = system_messages[i % len(system_messages)]
+                    
                 task = {
                     "custom_id": f"task-{i}",
                     "method": "POST",
