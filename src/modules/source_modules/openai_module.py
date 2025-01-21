@@ -7,6 +7,8 @@ import tiktoken
 import math
 import numpy as np
 import base64
+import json
+import time
 
 CONTEXT_SIZE_MAP = {
     'gpt-4o': 128000,
@@ -34,13 +36,17 @@ class OpenAIModule:
         self.model = model
         self.max_num_tokens = CONTEXT_SIZE_MAP[model]
         self.cur_num_tokens_cache = []
-
+        self._batch_job_ids = []
         self.client = OpenAI()
         try:
             self.encoding = tiktoken.encoding_for_model(self.model)
         except KeyError:
             self.encoding = tiktoken.get_encoding('cl100k_base')
 
+    @property
+    def batch_job_ids(self):
+        return self._batch_job_ids
+    
     # One inference step.
     def infer_step(self, inputs: list[tuple[str, Any]], system_prompt: str=None) -> str:
         assert len(inputs) > 0, "The inputs cannot be empty. The inputs should be included."
@@ -48,6 +54,19 @@ class OpenAIModule:
         response = self._get_response_from_api(system_prompt)
         self.add_data('output', [('text', response)])
         return response
+    
+    def batch_infer_step(self, inputs_batch: list[list[tuple[str, Any]]], system_prompt: str=None) -> str:
+        assert len(inputs_batch) > 0, "There must be at least one input in the batch."
+        for inputs in inputs_batch:
+            assert len(inputs) > 0, "The inputs cannot be empty. The inputs should be included."
+            
+        for inputs in inputs_batch:
+            self.add_data('input', inputs)
+            
+        responses = self._get_batch_response_from_api(system_prompt)
+        for response in responses:
+            self.add_data('output', [('text', response)])
+        return responses
         
     # Adding new data in the context history.
     def add_data(self, type: str, data: list[tuple[str, Any]]) -> None:
@@ -93,6 +112,62 @@ class OpenAIModule:
 
         return response.choices[0].message.content
     
+    def _get_batch_response_from_api(self, system_prompt=None):
+        start_idx = self._find_starting_point(system_prompt)
+        system_message = []
+        if system_prompt is not None:
+            system_message = [{'role': 'system', 'content': system_prompt}]
+
+        messages_batch = self.history[start_idx:]
+        file_name = "batch_queries.jsonl"
+        with open(file_name, 'w') as file:
+            for i, messages in enumerate(messages_batch):
+                task = {
+                    "custom_id": f"task-{i}",
+                    "method": "POST",
+                    "url": "/v1/chat/completions",
+                    "body": {
+                        "model": self.model,
+                        "max_tokens": 128,
+                        "response_format": { 
+                            "type": "text"
+                        },
+                        "messages": system_message + [messages]
+                    }
+                }
+        
+                file.write(json.dumps(task) + '\n')
+                
+        batch_file = self.client.files.create(
+            file=open(file_name, "rb"),
+            purpose="batch"
+        )
+        batch_job = self.client.batches.create(
+            input_file_id=batch_file.id,
+            endpoint="/v1/chat/completions",
+            completion_window="24h"
+        )
+        self._batch_job_ids.append(batch_job.id)
+        batch_job = self.client.batches.retrieve(batch_job.id)
+        # batch_job = self.client.batches.retrieve("batch_678dffece0348190821239e587d42582")
+        
+        sleep_time = 1
+        while batch_job.status != 'completed':
+            # Exponential backoff for polling the batch job status.
+            time.sleep(sleep_time)
+            sleep_time *= 1.5
+            batch_job = self.client.batches.retrieve(batch_job.id)
+
+        result = self.client.files.content(batch_job.output_file_id)
+        # result = self.client.files.content('file-3NncBe1grAkYVoCd1JMur9')
+        
+        responses = []
+        for response in result.iter_lines():
+            response = json.loads(response)
+            response = response['response']['body']['choices'][0]['message']['content']
+            responses.append(response)
+        return responses
+        
     # Calculating the number of tokens in one message.
     def _get_num_tokens(self, role: str, content: list[dict], image_sizes: list[tuple[int, int]]=[]) -> int:
         num_tokens = 3  # <|start|>, \n, <|end|>
