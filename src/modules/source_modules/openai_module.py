@@ -149,7 +149,6 @@ class OpenAIModule:
         )
         self._batch_job_ids.append(batch_job.id)
         batch_job = self.client.batches.retrieve(batch_job.id)
-        # batch_job = self.client.batches.retrieve("batch_678dffece0348190821239e587d42582")
         
         sleep_time = 1
         while batch_job.status != 'completed':
@@ -159,7 +158,6 @@ class OpenAIModule:
             batch_job = self.client.batches.retrieve(batch_job.id)
 
         result = self.client.files.content(batch_job.output_file_id)
-        # result = self.client.files.content('file-3NncBe1grAkYVoCd1JMur9')
         
         responses = []
         for response in result.iter_lines():
