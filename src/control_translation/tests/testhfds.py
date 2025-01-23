@@ -8,7 +8,6 @@ import os
 from PIL import Image, ImageChops
 from io import BytesIO
 import time
-import PIL
 
 class TestHFToTFDS(unittest.TestCase):
     
