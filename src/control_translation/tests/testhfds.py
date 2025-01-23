@@ -8,6 +8,7 @@ import os
 from PIL import Image, ImageChops
 from io import BytesIO
 import time
+import PIL
 
 class TestHFToTFDS(unittest.TestCase):
     
@@ -35,12 +36,12 @@ class TestHFToTFDS(unittest.TestCase):
     def setUp(self):
         start_time = time.time()
         # Load a sample HuggingFace dataset from arrow file
-        self.hf_dataset = datasets.load_from_disk("../../metaworld/metaworld-assembly/")
+        self.hf_dataset = datasets.load_from_disk("../../atari/atari-alien")
         print(f'Time taken for hf dataset load: {time.time() - start_time} seconds')
         
         # Load corresponding TFDS dataset
         start_time = time.time()
-        self.tfds_dataset = tf.data.Dataset.load('../meta_world_translated/metaworld/metaworld-assembly/')
+        self.tfds_dataset = tf.data.Dataset.load('../ale_atari_translated/atari/atari-alien/')
         print(f'Time taken for tfds dataset load: {time.time() - start_time} seconds')
     
     def test_dataset_sizes_match(self):
@@ -219,10 +220,13 @@ class TestHFToTFDS(unittest.TestCase):
             elif hf_type == 'float32':
                 hf_type = tf.float32
             elif hf_type == list:
-                hf_type = type(tf.convert_to_tensor(self.hf_dataset['train'][feature][0]))
+                
+                try:
+                    hf_type = type(tf.convert_to_tensor(self.hf_dataset['train'][feature][0]))
+                except:
+                    hf_type = type(tf.convert_to_tensor(np.stack([np.array(img) for img in self.hf_dataset['train'][feature][0]])))
             elif isinstance(self.hf_dataset['train'][feature][0], tf.Tensor):
                 hf_type = type(tf.RaggedTensor.from_tensor(self.hf_dataset['train'][feature][0]))
-            
             
             self.assertEqual(hf_type, tfds_type)
         print(f'Time taken for data types test: {time.time() - start_time} seconds')
