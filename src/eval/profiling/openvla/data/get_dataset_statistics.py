@@ -14,6 +14,7 @@ class OpenXDataset():
         self.action_tensors = []
         self.is_last_count = 0
         self.timestep_count = 0
+        self.action_dim = 7 # default at 7
         
     def _process_shards(self, dataset_name: str):
 
@@ -68,12 +69,27 @@ class OpenXDataset():
                     float_action_tensors.append(np.array(elem['action'][4])) # y rotation
                     float_action_tensors.append(np.array(elem['action'][3])) # x rotation
                     float_action_tensors.append(np.array(elem['action'][6])) #gripper
-                
+
+                elif dataset_name == 'utokyo_xarm_bimanual_converted_externally_to_rlds':
+                    print(f"utokyo_xarm_bimanual_converted_externally_to_rlds: {elem['action']}")
+                    float_action_tensors.append(np.array(elem['action'][:3])) #xyz
+                    float_action_tensors.append(np.array(elem['action'][5])) #roll
+                    float_action_tensors.append(np.array(elem['action'][4])) #pitch
+                    float_action_tensors.append(np.array(elem['action'][3])) #yaw
+                    float_action_tensors.append(np.array(elem['action'][6])) #gripper
+                    float_action_tensors.append(np.array(elem['action'][7:10])) #xyz
+                    float_action_tensors.append(np.array(elem['action'][12])) #roll
+                    float_action_tensors.append(np.array(elem['action'][11])) #pitch
+                    float_action_tensors.append(np.array(elem['action'][10])) #yaw
+                    float_action_tensors.append(np.array(elem['action'][13])) #gripper
+                    if len(float_action_tensors) == 14:
+                        print(float_action_tensors)
+
                 if float_action_tensors:
                     float_action_tensors = [np.atleast_1d(tensor) for tensor in float_action_tensors]
                     concatenated_action_float = np.concatenate(float_action_tensors, axis=0)
-                    if concatenated_action_float.shape!=(7,):
-                        raise ValueError(f"Action tensor shape is {concatenated_action_float.shape}, expected 7")
+                    # if concatenated_action_float.shape != (7,):
+                    #     raise ValueError(f"Action tensor shape is {concatenated_action_float.shape}, expected 7")
                 
                 else:
                     raise ValueError(f"No float action tensors found for dataset {dataset_name}")
@@ -85,8 +101,6 @@ class OpenXDataset():
                 
 
                 self.action_tensors.append(concatenated_action_float)
-                
-            
                 
 
     def _get_action_stats(self):
@@ -105,23 +119,30 @@ class OpenXDataset():
         }
     
     def _get_proprio_stats(self):
+        dim = self.action_dim
+
         return{
-            "mean": np.zeros(7).tolist(),
-            "std": np.zeros(7).tolist(),
-            "max": np.zeros(7).tolist(),
-            "min": np.zeros(7).tolist(),
-            "q01": np.zeros(7).tolist(),
-            "q99": np.zeros(7).tolist(),
+            "mean": np.zeros(dim).tolist(),
+            "std": np.zeros(dim).tolist(),
+            "max": np.zeros(dim).tolist(),
+            "min": np.zeros(dim).tolist(),
+            "q01": np.zeros(dim).tolist(),
+            "q99": np.zeros(dim).tolist(),
         }
 
 if __name__ == "__main__":
     
     dataset_statistics = {}
     openx_test_datasets_path = '/mnt/disks/mount_dir/openx_test_translated/'
-    openx_train_datasets_path = '/mnt/disks/mount_dir/multinettranslated/openx_translated/'
-    openx_val_datasets_path = '/mnt/disks/mount_dir/openx_val_translated/'
-    openx_datasets = ['nyu_door_opening_surprising_effectiveness', 'columbia_cairlab_pusht_real', 'conq_hose_manipulation', 'plex_robosuite', 'stanford_mask_vit_converted_externally_to_rlds', 'usc_cloth_sim_converted_externally_to_rlds', 'utokyo_pr2_opening_fridge_converted_externally_to_rlds', 'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds', 'utokyo_xarm_pick_and_place_converted_externally_to_rlds', 'nyu_rot_dataset_converted_externally_to_rlds', 'ucsd_pick_and_place_dataset_converted_externally_to_rlds', 'eth_agent_affordances', 'imperialcollege_sawyer_wrist_cam']
     
+    # openx_train_datasets_path = '/mnt/disks/mount_dir/multinettranslated/openx_translated/'
+    openx_train_datasets_path = '/home/locke/ManifoldRG/MultiNet/data/translated'
+    
+    openx_val_datasets_path = '/mnt/disks/mount_dir/openx_val_translated/'
+    # openx_datasets = ['nyu_door_opening_surprising_effectiveness', 'columbia_cairlab_pusht_real', 'conq_hose_manipulation', 'plex_robosuite', 'stanford_mask_vit_converted_externally_to_rlds', 'usc_cloth_sim_converted_externally_to_rlds', 'utokyo_pr2_opening_fridge_converted_externally_to_rlds', 'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds', 'utokyo_xarm_pick_and_place_converted_externally_to_rlds', 'nyu_rot_dataset_converted_externally_to_rlds', 'ucsd_pick_and_place_dataset_converted_externally_to_rlds', 'eth_agent_affordances', 'imperialcollege_sawyer_wrist_cam']
+    openx_datasets = ['utokyo_xarm_bimanual_converted_externally_to_rlds']
+
+
     for openx_dataset in openx_datasets:
         
         # Check if the dataset is already in the JSON file
