@@ -352,14 +352,14 @@ class VLMModuleTest(unittest.TestCase):
         self.assertEqual(len(outputs), 2)
         self.assertEqual(outputs[0], "Correctly got the first data for zero-shot.")
         self.assertEqual(outputs[1], "Correctly got the second data for zero-shot.")
-
-    def test_batch_infer_with_openai_zero_shot(self):
-        # Zero shot test with batch query
+        
+    def test_send_batch_job_with_openai_zero_shot(self):
         source = 'openai'
         model = 'gpt-4o-2024-05-13'
         module = VLMModule(source, model)
         system_prompt = "This is a test prompt."
 
+        # Zero-shot test with single query
         processed_cur_inputs = [
             [
                 ('image', np.random.randint(256, size=(128, 128, 3)).astype(np.uint8)),
@@ -373,11 +373,24 @@ class VLMModuleTest(unittest.TestCase):
             ]
         ]
         module._process_inputs = MagicMock(return_value=(processed_cur_inputs, []))
+        module.source_module.batch_infer_step = MagicMock(return_value=([], "batch_123", 33))
+        batch_id, num_tokens = module.send_batch_job(processed_cur_inputs, [], [system_prompt for _ in range(2)])
+        self.assertEqual(batch_id, "batch_123")
+        self.assertEqual(num_tokens, 33)
+                                            
+    def test_retrieve_batch_results_with_openai_zero_shot(self):
+        # Zero shot test with batch query
+        source = 'openai'
+        model = 'gpt-4o-2024-05-13'
+        module = VLMModule(source, model)
         
         return_values = ["Correctly got the first data for zero-shot batch.", 
                          "Correctly got the second data for zero-shot batch."]
-        module.source_module.batch_infer_step = MagicMock(return_value=return_values)
-        outputs = module.batch_infer_step([], instructions=system_prompt)
+        module.source_module.get_batch_job_status = MagicMock(return_value="completed")
+        self.assertEqual(module.get_batch_job_status("batch_123"), "completed")
+                   
+        module.source_module.retrieve_batch_results = MagicMock(return_value=return_values)
+        outputs = module.retrieve_batch_results("batch_123")
         self.assertEqual(outputs, return_values)
 
     def test_infer_step_with_openai_few_shot(self):

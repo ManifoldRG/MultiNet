@@ -5,10 +5,10 @@ import ast
 
 
 class VLMModule:
-    def __init__(self, source: str, model: str) -> None:
+    def __init__(self, source: str, model: str, max_concurrent_prompts: int = 1) -> None:
         self.source_module = None
         if source == 'openai': 
-            self.source_module = OpenAIModule(model)
+            self.source_module = OpenAIModule(model, max_concurrent_prompts)
 
         assert self.source_module is not None, "The source module has not been set correcly. Check required."
     
@@ -40,47 +40,54 @@ class VLMModule:
 
                 output = self.source_module.infer_step(processed_cur_inputs[b], instructions[b])
                 output_type = str if len(output_types) == 0 else output_types[b]
-                outputs.append(self._convert_into_data(output, output_type))
+                outputs.append(self.convert_into_data(output, output_type))
 
                 # Clearing the record.
                 self.source_module.clear_history()
 
         return outputs
     
-    def batch_infer_step(self, 
-                         cur_inputs: list[list[tuple[str, Any]]],
-                         k_shots_examples: list[list[tuple[str, list[tuple[str, Any]]]]]=None,
-                         instructions: Union[str, list[str]]=None,
-                         output_types: Union[type, list[type]]=None
-                         ) -> list[str]:
+    def send_batch_job(self, 
+                        cur_inputs: list[list[tuple[str, Any]]],
+                        k_shots_examples: list[list[tuple[str, list[tuple[str, Any]]]]]=None,
+                        instructions: Union[str, list[str]]=None
+                        ) -> str:
         if k_shots_examples is None:
             k_shots_examples = []
         if instructions is None:
             instructions = []
-        
-        output_type = str
-        if output_types is None:
-            output_types = []
-        if isinstance(output_types, type):
-            output_type = output_types
-            output_types = []
-            
+        # TODO: Add support for k-shot
         processed_cur_inputs, processed_k_shots_examples = self._process_inputs(cur_inputs, [])
 
         if isinstance(self.source_module, OpenAIModule):
-            outputs = self.source_module.batch_infer_step(processed_cur_inputs, instructions)
-            
-            output_types = [output_type]*len(processed_cur_inputs) if len(output_types) == 0 else output_types
+            _, batch_job_id, num_tokens = self.source_module.batch_infer_step(processed_cur_inputs, instructions, 
+                                                                              retrieve_and_return_results=False)
+            self.source_module.clear_history()
+        return batch_job_id, num_tokens
+    
+    
+    def get_batch_job_status(self, batch_job_id: str) -> str:
+        return self.source_module.get_batch_job_status(batch_job_id)
+      
+    def retrieve_batch_results(self, 
+                               batch_job_id: str, 
+                               output_types: Union[type, list[type]]=None
+                               ) -> list[str]:
+        if isinstance(self.source_module, OpenAIModule):
+            outputs = self.source_module.retrieve_batch_results(batch_job_id)
+            output_type = str
+            if output_types is None:
+                output_types = []
+            if isinstance(output_types, type):
+                output_type = output_types
+                output_types = []
+                
+            output_types = [output_type]*len(outputs) if len(output_types) == 0 else output_types
             assert len(outputs) == len(output_types), "The number of outputs should be the same as the number of output types."
             
-            outputs = [self._convert_into_data(output, output_type) for output, output_type in zip(outputs, output_types)]
+            outputs = [self.convert_into_data(output, output_type) for output, output_type in zip(outputs, output_types)]          
 
-            # TODO: Add support for k-shot
-            
-            # Clearing the record.
-            self.source_module.clear_history()
-
-        return outputs
+            return outputs
     
     # Translating the input data into image/text format.
     # Any image inputs should be tagged with the type starting with 'image...' to be correctly converted into image input.
@@ -132,7 +139,7 @@ class VLMModule:
         return f"{key}: {value_str}"
 
     # Converting the text output into the requested form of data type.
-    def _convert_into_data(self, text: str, data_type: type) -> Any:
+    def convert_into_data(self, text: str, data_type: type) -> Any:
         try:
             if data_type == str:
                 return text
