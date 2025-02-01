@@ -18,7 +18,7 @@ import warnings
 
 
 class OpenXModule:
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int, k_shots: int) -> None:
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = None, k_shots: int = 0) -> None:
         self.disk_root_dir = disk_root_dir
         self.datasets = []
         for dataset in list(DESCRIPTIONS.keys()):
@@ -359,7 +359,7 @@ class BatchInfo:
         return Path(f'{save_dir}/run_{run}/{file_name}').absolute()
  
 class OpenXBatchModule(OpenXModule):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int, k_shots: int):
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = None, k_shots: int = 0):
         super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
         self.batch_list = {ds : [] for ds in self.datasets}
         
@@ -501,12 +501,14 @@ class OpenXBatchModule(OpenXModule):
         # Getting the maxmimum length of episodes.
         text_obs = batch['text_observation']
         
-        batch_size = len(text_obs)
+        num_collections = len(text_obs)
         max_timesteps = 0
-        for b in range(batch_size):
+        for b in range(num_collections):
             max_timesteps = max(max_timesteps, len(text_obs[b]))
         
-        for b in range(batch_size):
+        batch_size = max_timesteps if not self.batch_size else self.batch_size
+            
+        for b in range(num_collections):
             samples = 0
             cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts = [], [], [], [], [], [], []
             for t in range(max_timesteps):
@@ -543,7 +545,7 @@ class OpenXBatchModule(OpenXModule):
                     
                     samples += 1
                     
-                if samples == self.batch_size:
+                if samples == batch_size:
                     yield cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts
                     samples = 0
                     cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts = [], [], [], [], [], [], []
