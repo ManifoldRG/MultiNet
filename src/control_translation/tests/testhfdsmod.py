@@ -1,3 +1,4 @@
+from collections import defaultdict
 import random
 import unittest
 import tensorflow as tf
@@ -5,94 +6,69 @@ import tensorflow_datasets as tfds
 import datasets
 import numpy as np
 import os
-from PIL import Image, ImageChops
-from io import BytesIO
+from PIL import Image
 import time
 
-class TestHFToTFDS(unittest.TestCase):
-    
-    def to_numpy(self, im):
-        #Fast method to convert PIL image to numpy array
-        im.load()
-        # unpack data
-        e = Image._getencoder(im.mode, 'raw', im.mode)
-        e.setimage(im.im)
-
-        # NumPy buffer for the result
-        shape, typestr = Image._conv_type_shape(im)
-        data = np.empty(shape, dtype=np.dtype(typestr))
-        mem = data.data.cast('B', (data.data.nbytes,))
-
-        bufsize, s, offset = 65536, 0, 0
-        while not s:
-            l, s, d = e.encode(bufsize)
-            mem[offset:offset + len(d)] = d
-            offset += len(d)
-        if s < 0:
-            raise RuntimeError("encoder error %d in tobytes" % s)
-        return data
+class TestHFToTFDSMod(unittest.TestCase):
     
     def setUp(self):
         start_time = time.time()
-        # Load a sample HuggingFace dataset from arrow file
-        self.hf_dataset = datasets.load_from_disk("../../atari/atari-alien")
-        print(f'Time taken for hf dataset load: {time.time() - start_time} seconds')
+        # Load a sample HuggingFace dataset
+        self.hf_dataset = datasets.load_from_disk("../../atari/atari-amidar/")
+        print(f'Time taken for HF dataset load: {time.time() - start_time} seconds')
         
-        # Load corresponding TFDS dataset
+        # Load sample episodes of translated TFDS dataset
         start_time = time.time()
-        self.tfds_dataset = tf.data.Dataset.load('../ale_atari_translated/atari/atari-alien/')
-        print(f'Time taken for tfds dataset load: {time.time() - start_time} seconds')
-    
+        self.tfds_dataset_ep_1 = tf.data.Dataset.load('../ale_atari_translated/atari/atari-amidar/test/test_episode_1')
+        self.tfds_dataset_ep_last = tf.data.Dataset.load('../ale_atari_translated/atari/atari-amidar/test/test_episode_17') 
+        self.tfds_dataset_ep_13 = tf.data.Dataset.load('../ale_atari_translated/atari/atari-amidar/test/test_episode_13')
+        print(f'Time taken for translated dataset load: {time.time() - start_time} seconds')
+
     def test_dataset_sizes_match(self):
         """Test that datasets have same number of examples"""
         start_time = time.time()
-        hf_lens = []
-        tf_lens = []
-        for episode in self.hf_dataset['train']:
-            for key, value in episode.items():
-                hf_lens.append(len(value))
+        hf_lens = len(self.hf_dataset['test'])
         
-        for episode in self.tfds_dataset:
-            for key, value in episode.items():
-                if isinstance(value, tf.RaggedTensor):
-                    tf_lens.append(value.shape[0])
-                else:
-                    tf_lens.append(len(value))
+        # Count the number of translated episode files
+        translated_dir = '../ale_atari_translated/atari/atari-amidar/test/'
+        tfds_lens = len([f for f in os.listdir(translated_dir) if 'test' in f])
 
-        #print(hf_lens)
-        #print(tf_lens)
-        self.assertGreater(len(hf_lens), 0)
-        self.assertGreater(len(tf_lens), 0)
-        self.assertTrue(all(h == t for h, t in zip(hf_lens, tf_lens)))
+        self.assertGreater(hf_lens, 0)
+        self.assertGreater(tfds_lens, 0)
+        self.assertEqual(hf_lens, tfds_lens)
         print(f'Time taken for dataset size test: {time.time() - start_time} seconds')
 
     def test_feature_names_match(self):
         """Test that feature names are preserved"""
         start_time = time.time()
-        hf_features = set(self.hf_dataset['train'].column_names)
-        tfds_features = set(self.tfds_dataset.element_spec.keys())
+        hf_features = set(self.hf_dataset['test'].column_names)
+        
+        # Get translated feature names from first episode
+        tfds_features = set()
+        for episode in self.tfds_dataset_ep_1:
+            tfds_features = set(episode.keys())
+            break
+
         self.assertEqual(hf_features, tfds_features)
         print(f'Time taken for feature names test: {time.time() - start_time} seconds')
 
     def test_data_values_match(self):
+        
         """Test that actual data values are preserved"""
-        # Compare first and last episodes
+        keys_list = set(self.hf_dataset['test'].column_names)
+        
         #First episode
-        #print('\nFirst episode test')
+        tf_ep = self.tfds_dataset_ep_1
+
         start_time = time.time()
-        keys_list = set(self.hf_dataset['train'].column_names)
-        #print(keys_list)
-        tf_element = next(iter(self.tfds_dataset))
-        for i in range(min(10, len(self.hf_dataset['train']['rewards'][0]))):
+        for i, ele in enumerate(tf_ep):
             #print(i)
             for key in keys_list:
 
                 #if key != 'image_observations':
                 
-                #print(key)
-                
-                hf_example = self.hf_dataset['train'][key][0][i]
-                tfds_example = tf_element[key][i]
+                hf_example = self.hf_dataset['test'][key][0][i]
+                tfds_example = ele[key]
 
                 if isinstance(hf_example, str):
                     tfds_example = tfds_example.numpy().decode('utf-8')
@@ -112,68 +88,29 @@ class TestHFToTFDS(unittest.TestCase):
                     np.testing.assert_array_equal(hf_example, tfds_example)
                 else:
                     self.assertEqual(hf_example, tfds_example)
+            
+            #Check first 15 timesteps of the episode
+            if i == 15:
+                break
+
         print(f'Time taken for first episode test: {time.time() - start_time} seconds')
 
         start_time = time.time()
         #Last episode
         print('\nLast episode test')
-        last_idx = len(self.hf_dataset['train']['rewards']) - 1
-        tf_element = None
-        for element in self.tfds_dataset:
-            tf_element = element
-        
-        for i in range(min(10, len(tf_element['rewards']))):
-            
-            #print(i)
-            for key in keys_list:
-                print(key)
-                
-                hf_example = self.hf_dataset['train'][key][last_idx][i]
-                tfds_example = tf_element[key][i]
+        last_idx = len(self.hf_dataset['test']['rewards']) - 1
+        tf_ep = self.tfds_dataset_ep_last
 
-                if isinstance(hf_example, str):
-                    tfds_example = tfds_example.numpy().decode('utf-8')
-                
-                if hasattr(hf_example, 'mode'):  # Check if it's a PIL Image
-                    start_time = time.time()
-                    #hf_example = self.to_numpy(hf_example)
-                    hf_example = np.asarray(hf_example)
-                    print(f'Time taken for numpy conversion: {time.time() - start_time} seconds')
-            
-                elif isinstance(hf_example, tf.Tensor):
-                    hf_example = hf_example.numpy()
 
-                if isinstance(tfds_example, tf.Tensor):
-                    tfds_example = tfds_example.numpy()
-                
-                #print(hf_example)
-                #print(tfds_example)
-                    
-                if isinstance(hf_example, (np.ndarray, list)):
-                    np.testing.assert_array_equal(hf_example, tfds_example)
-                else:
-                    self.assertEqual(hf_example, tfds_example)
-        print(f'Time taken for last episode test: {time.time() - start_time} seconds')
-
-        #Random episode
-        start_time = time.time()
-        rand_idx = random.randint(0, len(self.hf_dataset['train']['rewards']) - 1)
-        print(f'\n Random episode {rand_idx} test')
-
-        tf_element = None
-        for idx, element in enumerate(self.tfds_dataset):
-            if idx == rand_idx:
-                tf_element = element
-                break
-
-        for i in range(min(10, len(tf_element['rewards']))):
+        for i, ele in enumerate(tf_ep):
             
             #print(i)
             for key in keys_list:
                 #print(key)
                 
-                hf_example = self.hf_dataset['train'][key][rand_idx][i]
-                tfds_example = tf_element[key][i]
+                hf_example = self.hf_dataset['test'][key][last_idx][i]
+
+                tfds_example = ele[key]
 
                 if isinstance(hf_example, str):
                     tfds_example = tfds_example.numpy().decode('utf-8')
@@ -190,44 +127,97 @@ class TestHFToTFDS(unittest.TestCase):
                 if isinstance(tfds_example, tf.Tensor):
                     tfds_example = tfds_example.numpy()
                 
-                #print(hf_example)
-                #print(tfds_example)
+                print(hf_example)
+                print(tfds_example)
                     
                 if isinstance(hf_example, (np.ndarray, list)):
                     np.testing.assert_array_equal(hf_example, tfds_example)
                 else:
                     self.assertEqual(hf_example, tfds_example)
-        print(f'Time taken for random episode test: {time.time() - start_time} seconds')
+            
+            if i == 15:
+                break
 
+        print(f'Time taken for last episode test: {time.time() - start_time} seconds')
+
+        #Random episode
+        start_time = time.time()
+        tf_ep = self.tfds_dataset_ep_13
+
+        for i, ele in enumerate(tf_ep):
+            
+            #print(i)
+            for key in keys_list:
+                #print(key)
+                
+                hf_example = self.hf_dataset['test'][key][12][i]
+                tfds_example = ele[key]
+
+                if isinstance(hf_example, str):
+                    tfds_example = tfds_example.numpy().decode('utf-8')
+                
+                if hasattr(hf_example, 'mode'):  # Check if it's a PIL Image
+                    start_time = time.time()
+                    #hf_example = self.to_numpy(hf_example)
+                    hf_example = np.asarray(hf_example)
+                    print(f'Time taken for numpy conversion: {time.time() - start_time} seconds')
+            
+                elif isinstance(hf_example, tf.Tensor):
+                    hf_example = hf_example.numpy()
+
+                if isinstance(tfds_example, tf.Tensor):
+                    tfds_example = tfds_example.numpy()
+                
+                print(hf_example)
+                print(tfds_example)
+                    
+                if isinstance(hf_example, (np.ndarray, list)):
+                    np.testing.assert_array_equal(hf_example, tfds_example)
+                else:
+                    self.assertEqual(hf_example, tfds_example)
+            
+            if i == 15:
+                break
+
+        print(f'Time taken for random episode test: {time.time() - start_time} seconds')
 
     def test_data_types_match(self):
         """Test that data types are preserved"""
         start_time = time.time()
-        for feature in set(self.hf_dataset['train'].column_names):
-            
-            hf_type = type(self.hf_dataset['train'][feature][0])
-            for ele in self.tfds_dataset:
-                tfds_type = ele[feature][0].dtype
-                break
-            
-            #print(hf_type)
-            #print(tfds_type)
+        
+        # Get datatypes of all features of origin dataset
+        hf_datatypes = {}
+        for feature in self.hf_dataset['test'].column_names:
+            try:
+                hf_type = self.hf_dataset['test'][feature][0].dtype
+            except:
+                hf_type = type(self.hf_dataset['test'][feature][0])
             
             # Convert HF types to TF types for comparison
             if hf_type == 'int64':
-                hf_type = tf.int32
+                hf_type = tf.int64
             elif hf_type == 'float32':
                 hf_type = tf.float32
             elif hf_type == list:
-                
                 try:
-                    hf_type = tf.convert_to_tensor(self.hf_dataset['train'][feature][0]).dtype
+                    hf_type = tf.convert_to_tensor(self.hf_dataset['test'][feature][0]).dtype
                 except:
-                    hf_type = tf.convert_to_tensor(np.stack([np.array(img) for img in self.hf_dataset['train'][feature][0]])).dtype
-            elif isinstance(self.hf_dataset['train'][feature][0], tf.Tensor):
-                hf_type = tf.RaggedTensor.from_tensor(self.hf_dataset['train'][feature][0]).dtype
+                    hf_type = tf.convert_to_tensor(np.stack([np.array(img) for img in self.hf_dataset['test'][feature][0]])).dtype
+            elif isinstance(self.hf_dataset['test'][feature][0], tf.Tensor):
+                hf_type = tf.RaggedTensor.from_tensor(self.hf_dataset['test'][feature][0]).dtype
             
-            self.assertEqual(hf_type, tfds_type)
+            hf_datatypes[feature] = hf_type
+
+        # Get datatypes of all features of translated dataset
+        tfds_datatypes = {}
+        for episode in self.tfds_dataset_ep_1:
+            for key in episode.keys():
+                tfds_datatypes[key] = episode[key].dtype
+            break
+
+        #print(hf_datatypes)
+        #print(tfds_datatypes)
+        self.assertEqual(hf_datatypes, tfds_datatypes)
         print(f'Time taken for data types test: {time.time() - start_time} seconds')
 
 if __name__ == '__main__':

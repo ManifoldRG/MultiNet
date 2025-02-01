@@ -5,6 +5,7 @@ import tensorflow as tf
 import gc
 import psutil
 import pickle
+import sys
 
 def build_arg_parser() -> ArgumentParser:
 
@@ -20,9 +21,13 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
     
     if dataset_name=='dm_lab_rlu_tfds' or dataset_name=='dm_control_suite_rlu_tfds':
         
-        dir_path = dataset_path
-        translated_ds = rlu_tfds(dir_path, limit_schema, output_dir, dataset_name)
-        print(f'Translated and stored file in {output_dir}')
+        dirs = os.listdir(dataset_path)
+        for dir in dirs:
+            if dir!='.config':    
+                dir_path = os.path.join(dataset_path, dir)
+                #print(dir_path)
+                translated_ds = rlu_tfds(dir_path, limit_schema, output_dir, dataset_name)
+                print(f'Translated and stored file in {output_dir}')
     
     elif dataset_name=='dm_lab_rlu' or dataset_name=='dm_control_suite_rlu':
         
@@ -38,9 +43,12 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
                         all_files.append(os.path.join(dirpath, f))
         #print(all_files)
         for file in all_files:
-            translated_ds = rlu(file, limit_schema)
             mod_file_path = file.replace('../', '')
             path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
+            if os.path.exists(os.path.join(output_dir, path_to_translated)):
+                print(f'File {file} already exists in {output_dir}')
+                continue
+            translated_ds = rlu(file, limit_schema)
             tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated),shard_func=custom_shard_func)
         print(f'Translated and stored file in {output_dir}')
 
@@ -59,12 +67,11 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
         
         # Process each file
         for idx, file_path in enumerate(all_files):
-            translated_ds = jat(dataset_name,file_path, hf_test_data, limit_schema)
             mod_file_path = file_path.replace('../', '')
             path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
-            #print(path_to_translated)
-            tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated),shard_func=custom_shard_func)
-            print(f'Translated and stored file {file_path}')
+            jat(dataset_name,file_path, hf_test_data, limit_schema, output_dir, path_to_translated)
+
+        print(f'Translated and stored all configs of {dataset_name}')
     
     elif dataset_name=='vd4rl':
         # Get all .pt files under dataset_path
@@ -79,13 +86,19 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
         
         # Process each .pt file
         for idx, file_path in enumerate(all_files):
-            translated_ds = torchrlds(file_path, dataset_name, limit_schema)
             mod_file_path = file_path.replace('../', '')
             # Remove extension if present in final component
             base, ext = os.path.splitext(mod_file_path)
             if ext:
                 mod_file_path = base
             path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
+
+            if os.path.exists(os.path.join(output_dir, path_to_translated)):
+                print(f'File {file_path} already exists in {output_dir}')
+                continue
+
+            translated_ds = torchrlds(file_path, dataset_name, limit_schema)
+            
             #print(path_to_translated)
             tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated), shard_func=custom_shard_func)
             print(f'Translated and stored file {file_path}')
@@ -172,16 +185,18 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
         if npy_files:
             print(f"Translating .npy files in {dataset_path}")
             for npy_file in npy_files:
-                translated_ds = procgen(npy_file, limit_schema)
                 # Get filename without extension for saving
                 base, ext = os.path.splitext(npy_file)
                 if ext:
                     mod_file_path = base
-                mod_file_path = mod_file_path.replace('../', '')
                 mod_file_path = os.path.join(output_dir, mod_file_path)
-
                 path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
-                #print(path_to_translated)
+                path_to_translated = path_to_translated.replace("../", "")
+                if os.path.exists(os.path.join(output_dir, path_to_translated)):
+                    print(f'File {npy_file} already exists in {output_dir}')
+                    continue
+                translated_ds = procgen(npy_file, limit_schema)
+                print(path_to_translated)
                 # Save translated dataset
                 tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated), shard_func=custom_shard_func)
                 print(f'Translated and stored file {npy_file}')
@@ -196,7 +211,7 @@ if __name__ == "__main__":
     
     parser = build_arg_parser()
     args = parser.parse_args()
-    translated_ds = translate_shards(args.dataset_name, args.dataset_path, args.hf_test_data, args.limit_schema, args.output_dir)
+    translate_shards(args.dataset_name, args.dataset_path, args.hf_test_data, args.limit_schema, args.output_dir)
     #Test the translated 
     '''finalds = tf.data.Dataset.load('<path to shard you want to test>')
     print(len(finalds))
