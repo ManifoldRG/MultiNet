@@ -142,7 +142,7 @@ def rlu_tfds(dataset_path: str, limit_schema: bool, output_dir, dataset_name):
         tf.data.Dataset.save(rlu_tfds, os.path.join(output_dir, path_to_translated)+'translated_episode_'+str(count),shard_func=custom_shard_func)
 
 
-def rlu(dataset_path: str, limit_schema: bool):
+def rlu(dataset_path: str, limit_schema: bool, output_dir, path_to_translated):
 
     dm_lab_dict = defaultdict(list)
 
@@ -153,13 +153,21 @@ def rlu(dataset_path: str, limit_schema: bool):
         print('Enter the correct path to a DM Lab or DM Control Suite file downloaded from RL unplugged')
         return None
 
+    episode_count = 0
     for raw_record in raw_dataset:
+
+        episode_count+=1
+        if os.path.exists(os.path.join(output_dir, path_to_translated,'translated_episode_'+str(episode_count))):
+            print(f'File {os.path.join(output_dir, path_to_translated,"translated_episode_"+str(episode_count))} already exists in {output_dir}')
+            continue
+
+        dm_lab_dict = defaultdict(list)
 
         example = tf.train.Example()
         example.ParseFromString(raw_record.numpy())
 
         for key, feature in example.features.feature.items():
-
+            
             if feature.HasField('int64_list'):
                 values = tf.convert_to_tensor(feature.int64_list.value)
                 dm_lab_dict[key].append(values)
@@ -183,8 +191,40 @@ def rlu(dataset_path: str, limit_schema: bool):
             else:
                 print(f"Unsupported feature type: {key}")
         
-        del example
+        #Save each episode as a separate file
+        dm_lab_dict_new = {}
+        for k, v in dm_lab_dict.items():
+            if k != 'observations_pixels':
+                dm_lab_dict_new[k] = tf.convert_to_tensor(v)
+            else:
+                dm_lab_dict_new[k] = tf.ragged.stack(v)
+        
+        if limit_schema:
+            dm_lab_dict_trimmed = {}
+            if 'actions' in dm_lab_dict.keys():
+                dm_lab_dict_trimmed['actions'] = dm_lab_dict_new['actions']
+            else:
+                dm_lab_dict_trimmed['actions'] = dm_lab_dict_new['action']
+            dm_lab_dict_trimmed['observations'] = {k:v for k,v in dm_lab_dict_new.items() if 'observation' in k}
+            if 'rewards' in dm_lab_dict.keys():
+                dm_lab_dict_trimmed['rewards'] = dm_lab_dict_new['rewards']
+            else:
+                dm_lab_dict_trimmed['rewards'] = dm_lab_dict_new['reward']
+            
+            dm_lab_dict_new = dm_lab_dict_trimmed
+            del dm_lab_dict_trimmed
+            gc.collect()
+
+
+        print(f'Translating episode {episode_count} of {dataset_path}')
+        tf.data.Dataset.save(tf.data.Dataset.from_tensor_slices(dm_lab_dict_new), os.path.join(output_dir, path_to_translated,'translated_episode_'+str(episode_count)), shard_func=custom_shard_func)
+        print(f'Translated episode {episode_count} of {dataset_path}')
+
+        del dm_lab_dict
+        del dm_lab_dict_new
         gc.collect()
+    
+    '''print('Done with dictionary 1')
 
     #Convert data dict to TFDS
     dm_lab_dict_new = {}
@@ -193,6 +233,8 @@ def rlu(dataset_path: str, limit_schema: bool):
             dm_lab_dict_new[k] = tf.convert_to_tensor(v)
         else:
             dm_lab_dict_new[k] = tf.ragged.stack(v)
+    
+    print('Done with dictionary 2')
 
     # Trim the data if limit_schema flag is set during code execution
     if limit_schema:
@@ -220,7 +262,7 @@ def rlu(dataset_path: str, limit_schema: bool):
     # Free up memory by deleting dm_lab_dict_new
     del dm_lab_dict_new
     gc.collect()
-    return dm_lab_tfds
+    return dm_lab_tfds'''
 
 # JAT datasets translation
 def jat(dataset_name: str, dataset_path: str, hf_test_data: bool, limit_schema: bool, output_dir: str, path_to_translated: str):

@@ -43,13 +43,18 @@ def translate_shards(dataset_name, dataset_path, hf_test_data, limit_schema, out
                         all_files.append(os.path.join(dirpath, f))
         #print(all_files)
         for file in all_files:
-            mod_file_path = file.replace('../', '')
-            path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
-            if os.path.exists(os.path.join(output_dir, path_to_translated)):
-                print(f'File {file} already exists in {output_dir}')
+            if 'explore_object_rewards_many' in file:
+                mod_file_path = file.replace('../', '')
+                path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
+                #if os.path.exists(os.path.join(output_dir, path_to_translated)):
+                #    print(f'File {file} already exists in {output_dir}')
+                #    continue
+                translated_ds = rlu(file, limit_schema, output_dir, path_to_translated)
+                #tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated),shard_func=custom_shard_func)
+                print(f'Translated and stored file {file}')
+            else:
+                print(f'Skipping {file} for now')
                 continue
-            translated_ds = rlu(file, limit_schema)
-            tf.data.Dataset.save(translated_ds, os.path.join(output_dir, path_to_translated),shard_func=custom_shard_func)
         print(f'Translated and stored file in {output_dir}')
 
     elif dataset_name=='baby_ai' or dataset_name=='ale_atari' or dataset_name=='mujoco' or dataset_name=='meta_world':
