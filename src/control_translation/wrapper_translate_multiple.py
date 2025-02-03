@@ -5,20 +5,21 @@ import time
 import argparse
 import sys
 
-MAX_RAM_USAGE = 80  # Maximum RAM usage percentage
+MAX_RAM_USAGE = 85  # Maximum RAM usage percentage
 PYTHON_EXECUTABLE = "python"  # or "python3" depending on your system
 MAIN_SCRIPT = "translatemultiple.py"
 
 def get_ram_usage():
     return psutil.virtual_memory().percent
 
-def run_main_program(dataset_name, dataset_path, output_dir):
+def run_main_program(dataset_name, dataset_path, output_dir, hf_test_data):
     cmd = [
         PYTHON_EXECUTABLE, 
         MAIN_SCRIPT, 
         '--dataset_name', dataset_name,
         '--dataset_path', dataset_path,
-        '--output_dir', output_dir
+        '--output_dir', output_dir,
+        '--hf_test_data', str(hf_test_data)
     ]
     process = subprocess.Popen(cmd)
     while True:
@@ -30,7 +31,7 @@ def run_main_program(dataset_name, dataset_path, output_dir):
             return -1
         
         if process.poll() is not None:
-            print("Process completed successfully.")
+            print("Process completed.")
             return None  # Indicate that processing is complete
         
         time.sleep(10)  # Check RAM usage every 10 seconds
@@ -46,9 +47,9 @@ def main():
     args = parser.parse_args()
 
     while True:
-        start_index = run_main_program( args.dataset_name, args.dataset_path, args.output_dir)
-        if start_index is None:
-            break  # All shards processed
+        return_code = run_main_program( args.dataset_name, args.dataset_path, args.output_dir, args.hf_test_data)
+        if return_code is None:
+            break  # Translation process is completed
         time.sleep(60)  # Wait for 60 seconds before restarting to allow system cleanup
 
 if __name__ == "__main__":

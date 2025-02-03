@@ -6,7 +6,8 @@ from argparse import ArgumentParser
 from collections import defaultdict
 import datasets
 import tensorflow_datasets as tfds
-
+import gc
+from PIL import Image
 #List of control datasets in v0 MultiNet
 multinetv0list = ['dm_lab_rlu', 'dm_control_suite_rlu', 'ale_atari', 'baby_ai', 'mujoco', 'vd4rl', 'meta_world', 'procgen', 'language_table', 'openx', 'locomuojoco']
 
@@ -71,12 +72,15 @@ def rlu_tfds(dataset_path: str, limit_schema: bool, output_dir, dataset_name):
         tfds_name = str(dataset_path.replace('../', ''))
         if tfds_name.endswith('/'):
             tfds_name = tfds_name[:-1]
+        else:
+            tfds_name = '/'.join(tfds_name.split('/')[-2:])
     except:
         raise ValueError('Enter the correct path to a DM Lab or DM Control Suite file downloaded from RL unplugged using TFDS. It should be in the format rlu_control_suite/cartpole_swingup')
 
     #Data dir needs to be the parent directory of the dataset path
-    data_dir = dataset_path.split('/')[0] if '/' in dataset_path else '.'
+    data_dir = '../' * dataset_path.count('../')+'multinetdownloads/'
     #print(data_dir)
+    #print(tfds_name)
     #Load the TFDS dataset
     loaded_dataset = tfds.load(
     tfds_name,
@@ -92,6 +96,15 @@ def rlu_tfds(dataset_path: str, limit_schema: bool, output_dir, dataset_name):
     # Process dataset episode by episode, and save each episode as a separate file. This is done to avoid memory issues as some of these datasets are large
     for ele in loaded_dataset:
         #Creating a dictionary where the values of each key are a list of lists each containing the timestep values for each episode
+        mod_file_path = dataset_path.replace('../', '')
+        path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
+
+        count=count+1
+
+        if os.path.exists(os.path.join(output_dir, path_to_translated)+'translated_episode_'+str(count)):
+            print(f'File {os.path.join(output_dir, path_to_translated)+"translated_episode_"+str(count)} already exists in {output_dir}')
+            continue
+        
         rlu_dict= defaultdict(list)  
         episode_dict = {}
         for key, value in ele.items():
@@ -116,7 +129,6 @@ def rlu_tfds(dataset_path: str, limit_schema: bool, output_dir, dataset_name):
         
         #Count denotes the episode number
         rlu_dict[count] = episode_dict
-        count+=1
     
         rlu_torch_list = []
         for key, value in rlu_dict.items():
@@ -127,11 +139,7 @@ def rlu_tfds(dataset_path: str, limit_schema: bool, output_dir, dataset_name):
             process_dict(ele, [], rlu_torch_list_dict)
 
         rlu_tfds = tf.data.Dataset.from_tensor_slices(rlu_torch_list_dict)
-
-        mod_file_path = dataset_path.replace('../', '')
-        path_to_translated = os.path.join(dataset_name+'_translated/', mod_file_path)
         tf.data.Dataset.save(rlu_tfds, os.path.join(output_dir, path_to_translated)+'translated_episode_'+str(count),shard_func=custom_shard_func)
-    #return rlu_tfds
 
 
 def rlu(dataset_path: str, limit_schema: bool):
@@ -174,6 +182,9 @@ def rlu(dataset_path: str, limit_schema: bool):
                 dm_lab_dict[key].append(values)
             else:
                 print(f"Unsupported feature type: {key}")
+        
+        del example
+        gc.collect()
 
     #Convert data dict to TFDS
     dm_lab_dict_new = {}
@@ -182,7 +193,6 @@ def rlu(dataset_path: str, limit_schema: bool):
             dm_lab_dict_new[k] = tf.convert_to_tensor(v)
         else:
             dm_lab_dict_new[k] = tf.ragged.stack(v)
-
 
     # Trim the data if limit_schema flag is set during code execution
     if limit_schema:
@@ -200,75 +210,145 @@ def rlu(dataset_path: str, limit_schema: bool):
         print('Translating...')
         dm_lab_dict_trimmed_tfds = tf.data.Dataset.from_tensor_slices(dm_lab_dict_trimmed)
         return dm_lab_dict_trimmed_tfds
+    
+    # Free up memory by deleting dm_lab_dict
+    del dm_lab_dict
+    gc.collect()
 
     print('Translating...')
     dm_lab_tfds = tf.data.Dataset.from_tensor_slices(dm_lab_dict_new)
+    # Free up memory by deleting dm_lab_dict_new
+    del dm_lab_dict_new
+    gc.collect()
     return dm_lab_tfds
 
 # JAT datasets translation
-def jat(dataset_name: str, dataset_path: str, hf_test_data: bool, limit_schema: bool):
+def jat(dataset_name: str, dataset_path: str, hf_test_data: bool, limit_schema: bool, output_dir: str, path_to_translated: str):
 
     jat_tfds = None
     try: 
         #Load HF dataset from local path
         jat_hf = datasets.load_from_disk(dataset_path)
-    
     except:
         print('Enter the correct path to a JAT HF dataset')
         return jat_tfds
 
-    print('Translating...')
+
+    print(f'Translating {dataset_path}')
 
     #Translate HF DatasetDict to TFDS
+    if dataset_name == 'ale_atari':
+
+        train_count=0
+        for example in jat_hf['train']:
+            episode_dict = {}
+            train_count+=1
+            if os.path.exists(os.path.join(output_dir, path_to_translated, 'train', f"train_episode_{train_count}")):
+                print(f'File {os.path.join(output_dir, path_to_translated, "train", f"train_episode_{train_count}")} already exists in {output_dir}')
+                continue
+            episode_images = []
+            for img in example['image_observations']:
+                img_array = np.asarray(img)
+                episode_images.append(img_array)
+            episode_images = np.array(episode_images)
+            episode_dict['image_observations'] = episode_images
+            episode_dict['rewards'] = example['rewards']
+            episode_dict['discrete_actions'] = example['discrete_actions']
+            tf_episode = tf.data.Dataset.from_tensor_slices(episode_dict)
+            tf.data.Dataset.save(tf_episode, os.path.join(output_dir, path_to_translated, 'train', f"train_episode_{train_count}"), shard_func=custom_shard_func)
+            print(f'Translated episode {train_count} of {dataset_name}/train split')
+            
+        
+        print(f'Translated episodes of train split at {os.path.join(output_dir, path_to_translated)}')
+
     #Baby AI has a slightly different data structure compared to other JAT datasets, which requires pre-processing before conversion to TFDS
-    if dataset_name == 'baby_ai':
-
-        text_observations = [example['text_observations'] for example in jat_hf['train']]
-        discrete_observations = [example['discrete_observations'] for example in jat_hf['train']]
-        discrete_actions = [example['discrete_actions'] for example in jat_hf['train']]
-        rewards = [example['rewards'] for example in jat_hf['train']]
-
-        # Create the dataset
-        jat_tfds_train = tf.data.Dataset.from_tensor_slices({
-            'text_observations': tf.ragged.constant(text_observations, dtype=tf.string),
-            'discrete_observations': tf.ragged.constant(discrete_observations, dtype=tf.int64),
-            'discrete_actions': tf.ragged.constant(discrete_actions, dtype=tf.int64),
-            'rewards': tf.ragged.constant(rewards, dtype=tf.float32)
-        })
+    
+    elif dataset_name == 'baby_ai':
+        
+        train_count=0
+        for example in jat_hf['train']:
+            train_count+=1
+            if os.path.exists(os.path.join(output_dir, path_to_translated, 'train', f"train_episode_{train_count}")):
+                print(f'File {os.path.join(output_dir, path_to_translated, "train", f"train_episode_{train_count}")} already exists in {output_dir}')
+                continue
+            episode_dict = {}
+            episode_dict['text_observations'] = example['text_observations']
+            episode_dict['discrete_observations'] = example['discrete_observations']
+            episode_dict['discrete_actions'] = example['discrete_actions']
+            episode_dict['rewards'] = example['rewards']
+            tf_episode = tf.data.Dataset.from_tensor_slices(episode_dict)
+            tf.data.Dataset.save(tf_episode, os.path.join(output_dir, path_to_translated, 'train', f"train_episode_{train_count}"), shard_func=custom_shard_func)
+            print(f'Translated episode {train_count} of {dataset_name}/train split')
+        
+        print(f'Translated episodes of train split at {os.path.join(output_dir, path_to_translated)}')
 
     else:
-
         jat_tfds_train = jat_hf['train'].to_tf_dataset(columns=list(jat_hf['train'][0].keys()))
+    
+    
+    if dataset_name != 'baby_ai' and dataset_name != 'ale_atari':
+        print('Translating...')
+        tf.data.Dataset.save(jat_tfds_train, os.path.join(output_dir, path_to_translated, 'train'), shard_func=custom_shard_func)
+        print(f'Translated episodes of train split at {os.path.join(output_dir, path_to_translated)}')
+
 
     if limit_schema:
         print('The JAT datasets only contain observations, actions, and rewards. No further trimming will be done. Observations and Actions are stored as Continuous/Discrete Observations and Actions depending on the task')
 
     if hf_test_data:
 
-        if dataset_name == 'baby_ai':
+        if dataset_name == 'ale_atari':
 
-            text_observations = [example['text_observations'] for example in jat_hf['test']]
-            discrete_observations = [example['discrete_observations'] for example in jat_hf['test']]
-            discrete_actions = [example['discrete_actions'] for example in jat_hf['test']]
-            rewards = [example['rewards'] for example in jat_hf['test']]
+            test_count = 0
+            for example in jat_hf['test']:
+                test_count += 1
+                if os.path.exists(os.path.join(output_dir, path_to_translated, 'test', f"test_episode_{test_count}")):
+                    print(f'File {os.path.join(output_dir, path_to_translated, "test", f"test_episode_{test_count}")} already exists in {output_dir}')
+                    continue
+                episode_dict = {}
+                episode_images = []
+                for img in example['image_observations']:
+                    img_array = np.asarray(img)
+                    episode_images.append(img_array)
+                episode_images = np.array(episode_images)
+                episode_dict['image_observations'] = episode_images
+                episode_dict['rewards'] = example['rewards']
+                episode_dict['discrete_actions'] = example['discrete_actions']
+                tf_episode = tf.data.Dataset.from_tensor_slices(episode_dict)
+                tf.data.Dataset.save(tf_episode, os.path.join(output_dir, path_to_translated, 'test', f"test_episode_{test_count}"), shard_func=custom_shard_func)
+                print(f'Translated episode {test_count} of {dataset_name}/test split')
+            
+            print(f'Translated episodes of test split at {os.path.join(output_dir, path_to_translated)}')
 
-            # Create the dataset
-            jat_tfds_test = tf.data.Dataset.from_tensor_slices({
-                'text_observations': tf.ragged.constant(text_observations, dtype=tf.string),
-                'discrete_observations': tf.ragged.constant(discrete_observations, dtype=tf.int64),
-                'discrete_actions': tf.ragged.constant(discrete_actions, dtype=tf.int64),
-                'rewards': tf.ragged.constant(rewards, dtype=tf.float32)
-            })
-        
+        elif dataset_name == 'baby_ai':
+
+            test_count=0
+            for example in jat_hf['test']:
+                test_count+=1
+                if os.path.exists(os.path.join(output_dir, path_to_translated, 'test', f"test_episode_{test_count}")):
+                    print(f'File {os.path.join(output_dir, path_to_translated, "test", f"test_episode_{test_count}")} already exists in {output_dir}')
+                    continue
+                episode_dict = {}
+                episode_dict['text_observations'] = example['text_observations']
+                episode_dict['discrete_observations'] = example['discrete_observations']
+                episode_dict['discrete_actions'] = example['discrete_actions']
+                episode_dict['rewards'] = example['rewards']
+                tf_episode = tf.data.Dataset.from_tensor_slices(episode_dict)
+                tf.data.Dataset.save(tf_episode, os.path.join(output_dir, path_to_translated, 'test', f"test_episode_{test_count}"), shard_func=custom_shard_func)
+                print(f'Translated episode {test_count} of {dataset_name}/test split')
+            
+            print(f'Translated episodes of test split at {os.path.join(output_dir, path_to_translated)}')
         else:
             jat_tfds_test = jat_hf['test'].to_tf_dataset(columns=list(jat_hf['test'][0].keys()))
-    
-        #Return tuple of translated train and test splits
-        jat_tfds = (jat_tfds_train, jat_tfds_test)
-        return (jat_tfds_train,jat_tfds)
+        
+        if dataset_name != 'baby_ai' and dataset_name != 'ale_atari':
+            print('Translating...')
+            tf.data.Dataset.save(jat_tfds_test, os.path.join(output_dir, path_to_translated, 'test'), shard_func=custom_shard_func)
+            print(f'Translated episodes of test split at {os.path.join(output_dir, path_to_translated)}')
 
-    else:
-        return jat_tfds_train
+    # Free up memory by deleting jat_hf
+    del jat_hf
+    gc.collect()
 
 #TorchRL datasets translation
 def torchrlds(dataset_path: str, dataset_name, limit_schema: bool):
@@ -388,7 +468,6 @@ def procgen(dataset_path: str, limit_schema: bool):
                 value = np.insert(value, 0, zero_pad, axis=0)
             else:
                 value = np.insert(value, 0, zero_pad)
-            print(value)
         
         procgen_np[key] = value
 
@@ -423,8 +502,7 @@ def categorize_datasets(dataset_name: str, dataset_path: str, hf_test_data: bool
         elif dataset_name=='dm_lab_rlu_tfds' or dataset_name=='dm_control_suite_rlu_tfds':
             rlu_tfds(dataset_path, limit_schema, args.output_dir, dataset_name)
         elif dataset_name=='baby_ai' or dataset_name=='ale_atari' or dataset_name=='mujoco' or dataset_name=='meta_world':
-            translated_ds = jat(dataset_name, dataset_path, hf_test_data, limit_schema)
-            return translated_ds
+            translated_ds = jat(dataset_name, dataset_path, hf_test_data, limit_schema, args.output_dir, '')
         elif dataset_name=='vd4rl' or dataset_name=='openx':
             translated_ds = torchrlds(dataset_path, dataset_name, limit_schema)
             return translated_ds

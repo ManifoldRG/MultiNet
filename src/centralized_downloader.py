@@ -225,37 +225,37 @@ def procgen(dataset_name: str, output_dir: str):
 def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int, shard_size: int):
 
     for i, shard in enumerate(ds.batch(shard_size), start=start_from_shard):
-            
 
-            #print(i)
-            #print(shard)
+        if os.path.exists(os.path.join(output_dir, dataset_name,'shard_'+str(i))) == True:
+            print(f'Shard {i} of {dataset_name} already downloaded')
+            continue
             
-            # Check RAM usage
-            ram_usage = psutil.virtual_memory().percent
-            #If RAM usage is more than 90% free up memory and restart the sharding+saving procedure from the same shard
-            if ram_usage > 90:
-                print(f"\nRAM usage is {ram_usage}%. Restarting from shard {i}...\n")
-                # Clean up resources after pausing the sharding+saving procedure
-                del shard
-                del ds
-                gc.collect()
-                return i
+        # Check RAM usage
+        ram_usage = psutil.virtual_memory().percent
+        #If RAM usage is more than 90% free up memory and restart the sharding+saving procedure from the same shard
+        if ram_usage > 90:
+            print(f"\nRAM usage is {ram_usage}%. Restarting from shard {i}...\n")
+            # Clean up resources after pausing the sharding+saving procedure
+            del shard
+            del ds
+            gc.collect()
+            return i
+    
+        #Saving with torch instead of tf as tf has a memory leakage issue that leads to the program crashing before completion
         
-            #Saving with torch instead of tf as tf has a memory leakage issue that leads to the program crashing before completion
-            
-            #torch.save(shard, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
-                        
-            #del shard
-            #gc.collect()
+        #torch.save(shard, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
+                    
+        #del shard
+        #gc.collect()
 
-            shard = tf.data.Dataset.from_tensor_slices(shard)
-            flattened_dataset = shard.flat_map(lambda x: x['steps'])
-            dataset_dict = {i: item for i, item in enumerate(flattened_dataset.as_numpy_iterator())}
-            #print(dataset_dict)
-            torch.save(dataset_dict, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
+        shard = tf.data.Dataset.from_tensor_slices(shard)
+        flattened_dataset = shard.flat_map(lambda x: x['steps'])
+        dataset_dict = {i: item for i, item in enumerate(flattened_dataset.as_numpy_iterator())}
+        #print(dataset_dict)
+        torch.save(dataset_dict, f"{os.path.join(output_dir, dataset_name)}/shard_{i}")
 
-            # Print current RAM usage
-            print(f"Processed shard {i}. Current RAM usage: {ram_usage}%")
+        # Print current RAM usage
+        print(f"Processed shard {i}. Current RAM usage: {ram_usage}%")
     
     return None
 
@@ -342,19 +342,30 @@ def openx(dataset_name: str, output_dir: str):
         file_path = f'gs://gresearch/robotics/{ds}/{version}'
     
         try:
-            if os.path.isdir(ds) == False:
-                print(f'Downloading {ds}...')
-                builder = tfds.builder_from_directory(builder_dir=file_path)
-                b = builder.as_dataset(split='train')
-                #b = b.flat_map(lambda x: x['steps'])
-                os.makedirs(os.path.join(output_dir, ds), exist_ok=True)
-                
-                shard_func_catch=0
-                while(1):
-                    if shard_func_catch is not None:
-                        shard_func_catch = shard_and_save(b,ds, output_dir, shard_func_catch, shard_size)
-                    else:
-                        break
+            print(f'Downloading {ds}...')
+            builder = tfds.builder_from_directory(builder_dir=file_path)
+            try:
+                b = builder.as_dataset(split='test')
+                split_name = 'test'
+                print('Downloading test split')
+            except:
+                try:
+                    b = builder.as_dataset(split='val')
+                    split_name = 'val'
+                    print('Downloading val split')
+                except:
+                    b = builder.as_dataset(split='train')
+                    split_name = 'train'
+                    print('Downloading train split')
+            #b = b.flat_map(lambda x: x['steps'])
+            os.makedirs(os.path.join(output_dir, ds+'_'+split_name), exist_ok=True)
+            
+            shard_func_catch=0
+            while(1):
+                if shard_func_catch is not None:
+                    shard_func_catch = shard_and_save(b,ds+'_'+split_name, output_dir, shard_func_catch, shard_size)
+                else:
+                    break
 
         except:
             raise ValueError(f'Error while downloading {ds}')
