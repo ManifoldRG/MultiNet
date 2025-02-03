@@ -147,7 +147,7 @@ class TestRLUTranslation(unittest.TestCase):
 
         print(f'Time taken for last episode test: {time.time() - start_time} seconds')
 
-        # Random episode (13th) test
+        # Random episode (53rd) test
         start_time = time.time()
         rlu_count = 0
         for raw_record in self.rlu_dataset:

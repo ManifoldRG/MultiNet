@@ -224,8 +224,7 @@ def rlu(dataset_path: str, limit_schema: bool, output_dir, path_to_translated):
         del dm_lab_dict_new
         gc.collect()
     
-    '''print('Done with dictionary 1')
-
+    '''
     #Convert data dict to TFDS
     dm_lab_dict_new = {}
     for k, v in dm_lab_dict.items():
@@ -233,8 +232,6 @@ def rlu(dataset_path: str, limit_schema: bool, output_dir, path_to_translated):
             dm_lab_dict_new[k] = tf.convert_to_tensor(v)
         else:
             dm_lab_dict_new[k] = tf.ragged.stack(v)
-    
-    print('Done with dictionary 2')
 
     # Trim the data if limit_schema flag is set during code execution
     if limit_schema:
