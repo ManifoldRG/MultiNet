@@ -316,7 +316,23 @@ def openx(dataset_name: str, output_dir: str):
     'cmu_stretch',
     'berkeley_gnm_recon',
     'berkeley_gnm_cory_hall',
-    'berkeley_gnm_sac_son'
+    'berkeley_gnm_sac_son',
+    'robot_vqa',
+    'droid',
+    'conq_hose_manipulation',
+    'dobbe',
+    'fmb',
+    'io_ai_tech',
+    'mimic_play',
+    'aloha_mobile',
+    'robo_set',
+    'tidybot',
+    'vima_converted_externally_to_rlds',
+    'spoc',
+    'plex_robosuite',
+    'furniture_bench_dataset_converted_externally_to_rlds',
+    'qut_dexterous_manipulation',
+    'cmu_playing_with_food'
     ]
 
     #Shard size to save the dataset to disk
