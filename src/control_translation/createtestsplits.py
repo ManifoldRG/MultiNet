@@ -66,16 +66,17 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
         
         # Iterate through subdirectories
         for dirs in os.listdir(dataset_path):
-            test_dir = os.path.join(dataset_path, dirs)
+
+            if 'test' in dirs:
+                test_dir = os.path.join(dataset_path, dirs)
+                    
+                # Keep the test directory name in the output path
+                output_dir = os.path.join(output_base, dirs)
+                os.makedirs(output_dir, exist_ok=True)
                 
-            # Create relative path structure from base_dir
-            # Keep the test directory name in the output path
-            output_dir = os.path.join(output_base, dirs)
-            os.makedirs(output_dir, exist_ok=True)
-            
-            # Copy test directory contents
-            os.system(f'cp -r {test_dir}/* {output_dir}/')
-            print(f'Copied test data from {test_dir} to {output_dir}')
+                # Copy test directory contents
+                os.system(f'cp -r {test_dir}/* {output_dir}/')
+                print(f'Copied test data from {test_dir} to {output_dir}')
     
     elif dataset_name in ['ale_atari_translated', 'baby_ai_translated']:
         # Get base directory for this dataset
@@ -88,9 +89,9 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
         # Iterate through subdirectories
         for dirs in os.listdir(dataset_path):
             for subdir in dirs:
-                print(subdir)
+                #print(subdir)
                 subdir_path = os.path.join(dataset_path, subdir)
-                print(subdir_path)
+                #print(subdir_path)
                 # Skip if not a directory
                 if not os.path.isdir(subdir_path):
                     print(f'{subdir_path} is not a directory')
@@ -157,7 +158,7 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
         os.makedirs(output_base, exist_ok=True)
 
         for category_dir in categories:
-            print(category_dir)
+            #print(category_dir)
             category_path = os.path.join(base_dir, category_dir)
                 
             # Get the perfect directory
@@ -197,9 +198,6 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
                     # Split the episodes into test and train  - the first 20% of the episodes are test episodes
                     num_test_episodes = int(len(episodes_dict) * 0.2)
                     test_episodes = episodes_dict[:num_test_episodes]
-                    train_episodes = episodes_dict[num_test_episodes:]
-
-                    test_episodes_list = []
                     
                     test_episodes_list_dict = {}    
                     for episode in test_episodes:
@@ -211,6 +209,7 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
                     tf.data.Dataset.save(test_episodes_tf, test_dir)
 
                     print(f'Created and saved test splits for {leaf_dataset}')
+
 
     elif dataset_name == 'dm_control_suite_rlu_tfds_translated':
 
@@ -246,7 +245,6 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
             output_base = f'{output_dir}/{dataset_name}'
             os.makedirs(os.path.join(output_base, dirs, 'test'), exist_ok=True)
 
-            #Get all directory names and sort them by naming convention
             # Get all directory names and sort them by tfrecord number
             episode_dirs = os.listdir(os.path.join(dataset_path, dirs))
             episode_dirs.sort(key=lambda x: int(x.split('-')[1]))  # Sort by the number after first hyphen
@@ -277,7 +275,7 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
                 train_dir = os.path.join(dataset_path, dirs)
                 
                 # Get all shard files and sort them by shard number
-                shard_files = os.listdir(train_dir)
+                shard_files = [f for f in os.listdir(train_dir) if not f.endswith('.pkl')]
                 shard_files.sort(key=lambda x: int(x.split('_')[1]))  # Sort by number after shard_
                 
                 # Calculate number of test shards (20%)
@@ -330,74 +328,142 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
         os.makedirs(output_base, exist_ok=True)
 
         # Get all files and sort them by the numeric value after 'px'
-        all_files = []
-        for f in os.listdir(dataset_path):
-            if os.path.isfile(os.path.join(dataset_path, f)):
-                all_files.append(f)
-        
-        # Sort files based on the numeric value after 'px'
-        sorted_files = sorted(all_files, key=lambda x: int(x.split('px')[1]))
-
-        # Calculate number of test files (20%)
-        num_test_files = int(len(sorted_files) * 0.2)
-        test_files = sorted_files[:num_test_files]
-
-        # Load and process files
-        current_episode = []
-        episode_complete = True
-        file_idx = num_test_files - 1
-
-        for i, test_file in enumerate(test_files):
-            # Load the tf dataset
-            ds = tf.data.Dataset.load(os.path.join(dataset_path, test_file))
+        categories = os.listdir(dataset_path)
+        for category in categories:
+            px_category = os.listdir(os.path.join(dataset_path, category))
+            #print(px_category)
+            for px in px_category:
+                all_files = []
+                output_base_px = None
+                if os.path.isdir(os.path.join(output_base, category, px)) == False:
+                    output_base_px = os.path.join(output_base, category, px)
+                    os.makedirs(output_base_px, exist_ok=True)
+                for f in os.listdir(os.path.join(dataset_path, category, px)):
+                        all_files.append(os.path.join(dataset_path, category, px, f))
             
-            # Process each timestep
-            for timestep in ds:
-                if timestep['is_init']:
-                    # Start new episode
-                    if not episode_complete:
-                        # Previous episode wasn't complete, need to continue
-                        raise ValueError('Previous episode wasn\'t complete')
-                    else:
-                        current_episode = [timestep]
-                else:
-                    current_episode.append(timestep)
-                
-                if timestep['done']:
-                    episode_complete = True
-                    # Save completed episode
-                    episode_ds = tf.data.Dataset.from_tensor_slices(current_episode)
-                    output_path = os.path.join(output_base, f'test_{i}')
-                    tf.data.Dataset.save(episode_ds, output_path)
-                    current_episode = []
+                #print(all_files)
+            
+            
+                # Sort files based on the numeric value after 'px'
+                sorted_files = sorted(all_files, key=lambda x: int(x.split('px')[-1]))
 
-            # If we're at the last file and episode isn't complete
-            if i == len(test_files)-1 and not episode_complete:
-                # Keep loading next files until episode completes
-                while not episode_complete and file_idx < len(sorted_files):
-                    file_idx += 1
-                    next_file = sorted_files[file_idx]
-                    next_ds = tf.data.Dataset.load(os.path.join(dataset_path, next_file))
-                    
-                    for timestep in next_ds:
-                        current_episode.append(timestep)
-                        if timestep['done']:
-                            episode_complete = True
-                            # Save the completed episode
-                            episode_ds = tf.data.Dataset.from_tensor_slices(current_episode)
-                            output_path = os.path.join(output_base, f'test_partial_{i}')
-                            tf.data.Dataset.save(episode_ds, output_path)
-                            break
-                    
-                    if episode_complete:
+                #print(sorted_files)
+
+                # Calculate number of test files (20%)
+                num_test_files = int(len(sorted_files) * 0.2)
+                test_files = sorted_files[:num_test_files]
+                #print(test_files)
+
+                # Load and process files
+                current_episode = []
+                episode_complete = True
+                file_idx = num_test_files - 1
+                done_next_flag = False
+                
+
+                print(f'Translating files in {dataset_path}')
+
+                episode_counter = 0
+
+                for i, test_file in enumerate(test_files):
+                    # Load the tf dataset
+                    ds = tf.data.Dataset.load(test_file)
+
+                    for ts in ds:
+                        first_timestep = ts
                         break
 
-        print(f'Created test split with {num_test_files} files in {output_base}')
 
+                    if 'is_init' in first_timestep.keys():
+                        for timestep in ds:
+                            if done_next_flag == True:
+                                current_episode.append(timestep)
+                                episode_complete = True
+                                # Save completed episode
+                                episode_counter += 1
+                                output_path = os.path.join(output_base_px, f'test_episode_{episode_counter}')
+                                test_episodes_list_dict = {}
+                                for t in current_episode:
+                                    process_dict(t, [], test_episodes_list_dict)
+                                episode_ds = tf.data.Dataset.from_tensor_slices(test_episodes_list_dict)
+                                tf.data.Dataset.save(episode_ds, output_path)
+                                current_episode = []
 
+                            if timestep['is_init']==True:
+                                # Start new episode
+                                current_episode = [timestep]
+                                done_next_flag = False
+                            
+                            else:
+                                current_episode.append(timestep)
+                            
+                            if timestep['next']['done']==True:
+                                done_next_flag = True
+                    
+                    else:
+                        for timestep in ds:
+                            if timestep['state']['step_type'] == 0:
+                                # Start new episode
+                                current_episode = [timestep]
+                                episode_complete = False
+                            else:
+                                current_episode.append(timestep)
+                            
+                            if timestep['state']['step_type'] == 2:
+                                episode_complete = True
+                                # Save completed episode
+                                episode_counter += 1
+                                output_path = os.path.join(output_base_px, f'test_episode_{episode_counter}')
+                                test_episodes_list_dict = {}
+                                for t in current_episode:
+                                    process_dict(t, [], test_episodes_list_dict)
+                                episode_ds = tf.data.Dataset.from_tensor_slices(test_episodes_list_dict)
+                                tf.data.Dataset.save(episode_ds, output_path)
+                                current_episode = []
 
-    
+                    # If we're at the last file and episode isn't complete
+                    if i == len(test_files)-1 and not episode_complete:
+                        # Keep loading next files until episode completes
+                        while not episode_complete and file_idx < len(sorted_files):
+                            file_idx += 1
+                            next_file = sorted_files[file_idx]
+                            next_ds = tf.data.Dataset.load(next_file)
+                            
+                            for timestep in next_ds:
+                                current_episode.append(timestep)
+                                if 'is_init' in timestep.keys():
+                                    if done_next_flag == True:
+                                        episode_complete = True
+                                        episode_counter += 1
+                                        # Save the completed episode
+                                        test_episodes_list_dict = {}
+                                        for t in current_episode:
+                                            process_dict(t, [], test_episodes_list_dict)
+                                        episode_ds = tf.data.Dataset.from_tensor_slices(test_episodes_list_dict)
+                                        output_path = os.path.join(output_base_px, f'test_episode_{episode_counter}')
+                                        tf.data.Dataset.save(episode_ds, output_path)
+                                        current_episode = []
+                                        break
+                                    if timestep['next']['done']==True:
+                                        done_next_flag = True
+                                else:
+                                    if timestep['state']['step_type'] == 2:
+                                        episode_complete = True
+                                        episode_counter += 1
+                                        # Save completed episode
+                                        output_path = os.path.join(output_base_px, f'test_episode_{episode_counter}')
+                                        test_episodes_list_dict = {}
+                                        for t in current_episode:
+                                            process_dict(t, [], test_episodes_list_dict)
+                                        episode_ds = tf.data.Dataset.from_tensor_slices(test_episodes_list_dict)
+                                        tf.data.Dataset.save(episode_ds, output_path)
+                                        current_episode = []
+                                        break
+                            
+                            if episode_complete:
+                                break
 
+                print(f'Created test split with {num_test_files} files in {output_base}')
 
     
 if __name__ == "__main__":
