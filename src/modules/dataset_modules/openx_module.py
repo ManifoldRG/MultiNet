@@ -116,7 +116,7 @@ class OpenXModule:
             start_time = time.time()
 
             # Creating the dataloader.
-            dataloader_obj, dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size)
+            dataloader_obj, dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size, by_episode=True)
 
             #avg_mse_list = []
             total_dataset_mse = 0.0
@@ -264,7 +264,7 @@ class OpenXModule:
 
                     # Processing additional observations.
                     for key, value in batch.items():
-                        if key != 'action' and key != 'reward' and key != 'is_last' and key != 'image_observation' and key != 'text_observation' and value[b][t] is not None:
+                        if key not in ['action', 'reward', 'is_last', 'image_observation', 'text_observation'] and value[b][t] is not None:
                             cur_inputs[-1].append((key, value[b][t]))
 
                     cur_inputs[-1].append(('text_observation', text_obs[b][t]))
@@ -381,7 +381,7 @@ class OpenXBatchModule(OpenXModule):
             return {}
 
         # Creating the dataloader.
-        dataloader_obj, dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size)
+        dataloader_obj, dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size, by_episode=False)
 
         for i, batch in enumerate(dataloader):
             # Action stats need to be retrieved only once for each dataset, after they have been populated.
@@ -408,15 +408,16 @@ class OpenXBatchModule(OpenXModule):
         
         paths = Path(dataset_batch_info_folder).iterdir()
         for fp in paths:
-            try:
-                if Path(fp).exists():
-                    batch_info = np.load(fp, allow_pickle=True)  
-                else:
-                    warnings.warn(f'Could not find file at path {fp}. Skipping...')
-                    continue    
-            except:
-                warnings.warn(f'Could not open file at path {fp}. Skipping...')
-                continue
+            if Path(fp).exists():
+                try:
+                    batch_info = np.load(fp, allow_pickle=True)
+                except Exception:
+                    warnings.warn(f'Could not load file at path {fp}. Skipping...')
+                    continue
+            else:
+                warnings.warn(f'Could not find file at path {fp}. Skipping...')
+                continue    
+
                     
             output_types = list(batch_info['output_types'])
             ds = batch_info['dataset_name'].item()
@@ -500,59 +501,39 @@ class OpenXBatchModule(OpenXModule):
     def _process_batch(self, batch: dict[str, list[Any]], dataset: str):
         # Getting the maxmimum length of episodes.
         text_obs = batch['text_observation']
-        
-        num_collections = len(text_obs)
-        max_timesteps = 0
-        for b in range(num_collections):
-            max_timesteps = max(max_timesteps, len(text_obs[b]))
-        
-        batch_size = max_timesteps if not self.batch_size else self.batch_size
+        num_timesteps = len(text_obs)
+        cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts = [], [], [], [], [], [], []
+        for t in range(num_timesteps):
+            # This batch is consumed.
+            idxs.append(t)
+            cur_inputs.append([])
+
+            # First, setting the instructions and output types.
+            env_name = text_obs[t].strip().strip(string.punctuation).lower()
+            instruction = self._get_vlm_instruction(dataset, env_name)
+            instructions.append(instruction)
+
+            output_type = self._get_output_type(dataset, env_name)
+            output_types.append(output_type)
+
+            labels.append(batch['action'][t])
+            is_lasts.append(batch['is_last'][t])
+
+            if 'image_observation' in batch and batch['image_observation'][t] is not None:
+                image_obs = batch['image_observation'][t]
+                if len(image_obs.shape) == 4:
+                    image_obs = [('image_observation', image) for image in image_obs]
+                    cur_inputs[-1] += image_obs
+                else:
+                    cur_inputs[-1].append(('image_observation', image_obs))
+
+            # Processing additional observations.
+            for key, value in batch.items():
+                if key not in ['action', 'reward', 'is_last', 'image_observation', 'text_observation'] and value[t] is not None:
+                    cur_inputs[-1].append((key, value[t]))
+
+            cur_inputs[-1].append(('text_observation', text_obs[t]))
             
-        for b in range(num_collections):
-            samples = 0
-            cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts = [], [], [], [], [], [], []
-            for t in range(max_timesteps):
-                if t < len(text_obs[b]):
-                    # This batch is consumed.
-                    idxs.append(samples)
-                    cur_inputs.append([])
-
-                    # First, setting the instructions and output types.
-                    env_name = text_obs[b][t].strip().strip(string.punctuation).lower()
-                    instruction = self._get_vlm_instruction(dataset, env_name)
-                    instructions.append(instruction)
-
-                    output_type = self._get_output_type(dataset, env_name)
-                    output_types.append(output_type)
-
-                    labels.append(batch['action'][b][t])
-                    is_lasts.append(batch['is_last'][b][t])
-
-                    if 'image_observation' in batch and batch['image_observation'][b][t] is not None:
-                        image_obs = batch['image_observation'][b][t]
-                        if len(image_obs.shape) == 4:
-                            image_obs = [('image_observation', image) for image in image_obs]
-                            cur_inputs[-1] += image_obs
-                        else:
-                            cur_inputs[-1].append(('image_observation', image_obs))
-
-                    # Processing additional observations.
-                    for key, value in batch.items():
-                        if key != 'action' and key != 'reward' and key != 'is_last' and key != 'image_observation' and key != 'text_observation' and value[b][t] is not None:
-                            cur_inputs[-1].append((key, value[b][t]))
-
-                    cur_inputs[-1].append(('text_observation', text_obs[b][t]))
-                    
-                    samples += 1
-                    
-                if samples == batch_size:
-                    yield cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts
-                    samples = 0
-                    cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts = [], [], [], [], [], [], []
-            
-            # If there are any remaining samples, yield them
-            if samples > 0:
-                yield cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts        
-                samples = 0
-                cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts = [], [], [], [], [], [], []
+        
+        return cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts
     
