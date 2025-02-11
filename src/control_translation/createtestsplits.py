@@ -358,10 +358,9 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
                 current_episode = []
                 episode_complete = True
                 file_idx = num_test_files - 1
-                done_next_flag = False
                 
 
-                print(f'Translating files in {dataset_path}')
+                print(f'Creating splits in {dataset_path}')
 
                 episode_counter = 0
 
@@ -376,7 +375,7 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
 
                     if 'is_init' in first_timestep.keys():
                         for timestep in ds:
-                            if done_next_flag == True:
+                            if timestep['next']['done'] == True:
                                 current_episode.append(timestep)
                                 episode_complete = True
                                 # Save completed episode
@@ -389,23 +388,26 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
                                 tf.data.Dataset.save(episode_ds, output_path)
                                 current_episode = []
 
-                            if timestep['is_init']==True:
+                            elif timestep['is_init']==True:
                                 # Start new episode
-                                current_episode = [timestep]
-                                done_next_flag = False
+                                if episode_complete == False:
+                                    raise ValueError('Previous episode wasn\'t complete')
+                                else:
+                                    current_episode = [timestep]
+                                    episode_complete = False
                             
                             else:
                                 current_episode.append(timestep)
-                            
-                            if timestep['next']['done']==True:
-                                done_next_flag = True
                     
                     else:
                         for timestep in ds:
                             if timestep['state']['step_type'] == 0:
                                 # Start new episode
-                                current_episode = [timestep]
-                                episode_complete = False
+                                if episode_complete == False:
+                                    raise ValueError('Previous episode wasn\'t complete')
+                                else:
+                                    current_episode = [timestep]
+                                    episode_complete = False
                             else:
                                 current_episode.append(timestep)
                             
@@ -432,7 +434,7 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
                             for timestep in next_ds:
                                 current_episode.append(timestep)
                                 if 'is_init' in timestep.keys():
-                                    if done_next_flag == True:
+                                    if timestep['next']['done'] == True:
                                         episode_complete = True
                                         episode_counter += 1
                                         # Save the completed episode
@@ -444,8 +446,6 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
                                         tf.data.Dataset.save(episode_ds, output_path)
                                         current_episode = []
                                         break
-                                    if timestep['next']['done']==True:
-                                        done_next_flag = True
                                 else:
                                     if timestep['state']['step_type'] == 2:
                                         episode_complete = True
