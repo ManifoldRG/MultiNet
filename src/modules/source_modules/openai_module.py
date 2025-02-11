@@ -15,7 +15,7 @@ CONTEXT_SIZE_MAP = {
     'gpt-4o': 128000,
     'gpt-4o-2024-05-13': 128000,
     'gpt-4o-2024-08-06': 128000,
-    'chatgpt-4o-latest	': 128000,
+    'chatgpt-4o-latest': 128000,
     'gpt-4o-mini': 128000,
     'gpt-4o-mini-2024-07-18	': 128000,
     'gpt-4-turbo': 128000,
@@ -31,7 +31,7 @@ BATCH_QUEUE_TOKEN_DAY_LIMIT = {
     'gpt-4o': 10000000000,
     'gpt-4o-2024-05-13': 10000000000,
     'gpt-4o-2024-08-06': 10000000000,
-    'chatgpt-4o-latest	': 10000000000,
+    'chatgpt-4o-latest': 10000000000,
     'gpt-4o-mini': 15000000000,
     'gpt-4o-mini-2024-07-18	': 15000000000,
     'gpt-4-turbo': 300000000,
@@ -48,7 +48,7 @@ class OpenAIModule:
         if model not in CONTEXT_SIZE_MAP:
             raise KeyError(f"The model {model} is not currenly supported.")
         
-        self._max_concurrent_prompts = max_concurrent_prompts
+        self._max_concurrent_prompts = max_concurrent_prompts if max_concurrent_prompts else 1
         self.history = [[] for _ in range(max_concurrent_prompts)]
         self.model = model
         self.max_num_tokens = CONTEXT_SIZE_MAP[model]
@@ -219,7 +219,7 @@ class OpenAIModule:
                 }
         
                 file.write(json.dumps(task) + '\n')
-                
+
         batch_file = self.client.files.create(
             file=open(file_name, "rb"),
             purpose="batch"
