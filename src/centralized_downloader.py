@@ -13,6 +13,62 @@ from google.cloud import storage
 import gc
 import psutil
 
+OPENX_DATASETS = [
+    'fractal20220817_data',
+    'kuka',
+    'bridge',
+    'taco_play',
+    'jaco_play',
+    'berkeley_cable_routing',
+    'roboturk',
+    'nyu_door_opening_surprising_effectiveness',
+    'viola',
+    'berkeley_autolab_ur5',
+    'toto',
+    'language_table',
+    'columbia_cairlab_pusht_real',
+    'stanford_kuka_multimodal_dataset_converted_externally_to_rlds',
+    'nyu_rot_dataset_converted_externally_to_rlds',
+    'stanford_hydra_dataset_converted_externally_to_rlds',
+    'austin_buds_dataset_converted_externally_to_rlds',
+    'nyu_franka_play_dataset_converted_externally_to_rlds',
+    'maniskill_dataset_converted_externally_to_rlds',
+    'cmu_franka_exploration_dataset_converted_externally_to_rlds',
+    'ucsd_kitchen_dataset_converted_externally_to_rlds',
+    'ucsd_pick_and_place_dataset_converted_externally_to_rlds',
+    'austin_sailor_dataset_converted_externally_to_rlds',
+    'austin_sirius_dataset_converted_externally_to_rlds',
+    'bc_z',
+    'usc_cloth_sim_converted_externally_to_rlds',
+    'utokyo_pr2_opening_fridge_converted_externally_to_rlds',
+    'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds',
+    'utokyo_saytap_converted_externally_to_rlds',
+    'utokyo_xarm_pick_and_place_converted_externally_to_rlds',
+    'utokyo_xarm_bimanual_converted_externally_to_rlds',
+    'robo_net',
+    'berkeley_mvp_converted_externally_to_rlds',
+    'berkeley_rpt_converted_externally_to_rlds',
+    'kaist_nonprehensile_converted_externally_to_rlds',
+    'stanford_mask_vit_converted_externally_to_rlds',
+    'tokyo_u_lsmo_converted_externally_to_rlds',
+    'dlr_sara_pour_converted_externally_to_rlds',
+    'dlr_sara_grid_clamp_converted_externally_to_rlds',
+    'dlr_edan_shared_control_converted_externally_to_rlds',
+    'asu_table_top_converted_externally_to_rlds',
+    'stanford_robocook_converted_externally_to_rlds',
+    'eth_agent_affordances',
+    'imperialcollege_sawyer_wrist_cam',
+    'iamlab_cmu_pickup_insert_converted_externally_to_rlds',
+    'uiuc_d3field',
+    'utaustin_mutex',
+    'berkeley_fanuc_manipulation',
+    'cmu_play_fusion',
+    'cmu_stretch',
+    'berkeley_gnm_recon',
+    'berkeley_gnm_cory_hall',
+    'berkeley_gnm_sac_son'
+]
+
 #List of datasets in v0 MultiNet
 multinetv0list = ['obelics', 'coyo_700m', 'ms_coco_captions', 'conceptual_captions', 'a_okvqa', 'vqa_v2', 'datacomp', 'finewebedu', 'dm_lab_rlu', 'dm_control_suite_rlu', 'atari', 'baby_ai', 'mujoco', 'vd4rl', 'metaworld', 'procgen', 'language_table', 'openx', 'locomuojoco']
 
@@ -261,68 +317,17 @@ def shard_and_save(ds, dataset_name: str, output_dir: str, start_from_shard: int
 
 #OpenX-Embodiment
 def openx(dataset_name: str, output_dir: str):
-
+    
     #OpenX datasets
-    DATASETS = [
-    'fractal20220817_data',
-    'kuka',
-    'bridge',
-    'taco_play',
-    'jaco_play',
-    'berkeley_cable_routing',
-    'roboturk',
-    'nyu_door_opening_surprising_effectiveness',
-    'viola',
-    'berkeley_autolab_ur5',
-    'toto',
-    'language_table',
-    'columbia_cairlab_pusht_real',
-    'stanford_kuka_multimodal_dataset_converted_externally_to_rlds',
-    'nyu_rot_dataset_converted_externally_to_rlds',
-    'stanford_hydra_dataset_converted_externally_to_rlds',
-    'austin_buds_dataset_converted_externally_to_rlds',
-    'nyu_franka_play_dataset_converted_externally_to_rlds',
-    'maniskill_dataset_converted_externally_to_rlds',
-    'cmu_franka_exploration_dataset_converted_externally_to_rlds',
-    'ucsd_kitchen_dataset_converted_externally_to_rlds',
-    'ucsd_pick_and_place_dataset_converted_externally_to_rlds',
-    'austin_sailor_dataset_converted_externally_to_rlds',
-    'austin_sirius_dataset_converted_externally_to_rlds',
-    'bc_z',
-    'usc_cloth_sim_converted_externally_to_rlds',
-    'utokyo_pr2_opening_fridge_converted_externally_to_rlds',
-    'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds',
-    'utokyo_saytap_converted_externally_to_rlds',
-    'utokyo_xarm_pick_and_place_converted_externally_to_rlds',
-    'utokyo_xarm_bimanual_converted_externally_to_rlds',
-    'robo_net',
-    'berkeley_mvp_converted_externally_to_rlds',
-    'berkeley_rpt_converted_externally_to_rlds',
-    'kaist_nonprehensile_converted_externally_to_rlds',
-    'stanford_mask_vit_converted_externally_to_rlds',
-    'tokyo_u_lsmo_converted_externally_to_rlds',
-    'dlr_sara_pour_converted_externally_to_rlds',
-    'dlr_sara_grid_clamp_converted_externally_to_rlds',
-    'dlr_edan_shared_control_converted_externally_to_rlds',
-    'asu_table_top_converted_externally_to_rlds',
-    'stanford_robocook_converted_externally_to_rlds',
-    'eth_agent_affordances',
-    'imperialcollege_sawyer_wrist_cam',
-    'iamlab_cmu_pickup_insert_converted_externally_to_rlds',
-    'uiuc_d3field',
-    'utaustin_mutex',
-    'berkeley_fanuc_manipulation',
-    'cmu_play_fusion',
-    'cmu_stretch',
-    'berkeley_gnm_recon',
-    'berkeley_gnm_cory_hall',
-    'berkeley_gnm_sac_son'
-    ]
-
+    datasets = OPENX_DATASETS
+    
+    if dataset_name != 'openx' and dataset_name in datasets:
+        datasets = [dataset_name]
+        
     #Shard size to save the dataset to disk
     shard_size = 1
 
-    for ds in DATASETS:
+    for ds in datasets:
         
         # Try all version combinations
         versions = ['0.0.0', '0.0.1', '0.1.0', '0.1.1', '1.0.0', '1.0.1', '1.1.0', '1.1.1']
@@ -419,7 +424,7 @@ def download_datasets(dataset_name: str, output_dir: str):
         procgen(dataset_name, output_dir)
     elif dataset_name == 'locomujoco':
         locomujoco(dataset_name, output_dir)
-    elif dataset_name == 'openx':
+    elif dataset_name == 'openx' or dataset_name in OPENX_DATASETS:
         openx(dataset_name, output_dir)
     else:
         print('Enter the name of a dataset in Multinet v0')
