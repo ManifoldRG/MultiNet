@@ -60,6 +60,8 @@ class VLMModule:
         processed_cur_inputs, processed_k_shots_examples = self._process_inputs(cur_inputs, [])
 
         if isinstance(self.source_module, OpenAIModule):
+            if self.source_module.max_concurrent_prompts < len(cur_inputs):
+                self.source_module.max_concurrent_prompts = len(cur_inputs)
             _, batch_job_id, num_tokens = self.source_module.batch_infer_step(processed_cur_inputs, instructions, 
                                                                               retrieve_and_return_results=False)
             self.source_module.clear_history()
