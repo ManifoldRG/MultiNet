@@ -21,7 +21,10 @@ import numpy as np
 import timm
 import tokenizers
 import torch
-import torch.nn as nn
+
+from torch import nn, pi
+import torch.nn.functional as F
+from einops import rearrange, repeat
 import transformers
 from timm.models.vision_transformer import LayerScale
 from transformers import AutoModelForCausalLM, PretrainedConfig, PreTrainedModel
@@ -526,10 +529,28 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
         # Unnormalize actions
         action_norm_stats = self.get_action_stats(unnorm_key)
         mask = action_norm_stats.get("mask", np.ones_like(action_norm_stats["q01"], dtype=bool))
+        # high, low for continuous action bounds
         action_high, action_low = np.array(action_norm_stats["q99"]), np.array(action_norm_stats["q01"])
+        # min, max for discrete action bounds
+        action_min, action_max = np.array(action_norm_stats["min"]), np.array(action_norm_stats["max"])
+        # Discrete dimension mask
+        discrete = action_norm_stats.get("discrete", np.zeros_like(mask, dtype=bool))
+
+        # Compute continuous actions
+        continuous_actions = np.where(
+            discrete,
+            0.5 * (normalized_actions + 1) * (action_max - action_min) + action_min,
+            0.5 * (normalized_actions + 1) * (action_high - action_low) + action_low,
+        )
+
+        # Apply mask and discrete/continuous logic
         actions = np.where(
             mask,
-            0.5 * (normalized_actions + 1) * (action_high - action_low) + action_low,
+            np.where(
+                discrete,
+                np.clip(np.floor(continuous_actions).astype(int), action_min, action_max),
+                continuous_actions
+            ),
             normalized_actions,
         )
 
