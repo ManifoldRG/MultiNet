@@ -7,6 +7,7 @@ import sys
 import gc
 import torch
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Union
 
 from pathlib import Path
@@ -29,12 +30,29 @@ class EvalConfig:
     model_family: str = "openvla"
     pretrained_checkpoint: Union[str, Path] = "openvla/openvla-7b"
     load_in_8bit: bool = False
-    load_in_4bit: bool = False
+    load_in_4bit: bool = True
     center_crop: bool = True
     seed: int = 7
     unnorm_key = "bridge_orig"  # default unnorm_key bridge_orig
     dataset_statistics_path: str = ""
     openx_datasets_path: str = ""
+
+
+def sort_files_in_folder_by_name(dataset_path: str) -> list[str]:
+    # Get all shards for the current dataset
+    shard_files = os.listdir(dataset_path)
+
+    if not shard_files:
+        raise FileNotFoundError(f"No files found in dataset directory: {dataset_path}")
+
+    if os.path.basename(dataset_path) == "bigfish":
+    # Sort the procgen files by the timestamp in the filename before the first underscore _ in ascending order
+        return sorted(
+            shard_files, 
+            key=lambda x: datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S")
+        )
+    else:
+        return sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
 
 
 def profile_openvla_on_openx(cfg: EvalConfig, result_save_path: str):
@@ -74,21 +92,18 @@ def profile_openvla_on_openx(cfg: EvalConfig, result_save_path: str):
             print(f"Warning: Dataset directory does not exist: {dataset_path}")
             continue
 
-        # Get all shards for the current dataset
         try:
-            shard_files = os.listdir(dataset_path)
+            sorted_shard_files = sort_files_in_folder_by_name(dataset_path)
         except FileNotFoundError:
             print(f"Error: Unable to access dataset directory: {dataset_path}")
             continue
-
-        if not shard_files:
-            print(f"Warning: No files found in dataset directory: {dataset_path}")
+        except Exception as e:
+            print(f"Error: {e}")
             continue
-
-        sorted_shard_files = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
+        
         tfds_shards = [os.path.join(cfg.openx_datasets_path, openx_dataset, f) 
                        for f in sorted_shard_files]
-        
+
         # Reset GPU memory
         torch.cuda.empty_cache()
         gc.collect()
