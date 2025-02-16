@@ -537,22 +537,16 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
         discrete = action_norm_stats.get("discrete", np.zeros_like(mask, dtype=bool))
 
         # Compute continuous actions
-        continuous_actions = np.where(
-            discrete,
-            0.5 * (normalized_actions + 1) * (action_max - action_min) + action_min,
-            0.5 * (normalized_actions + 1) * (action_high - action_low) + action_low,
+        actions = np.zeros_like(normalized_actions)
+        actions[discrete] = np.clip(
+            np.floor(0.5 * (normalized_actions[discrete] + 1) * (action_max[discrete] - action_min[discrete]) + action_min[discrete]).astype(int),
+            action_min[discrete],
+            action_max[discrete],
         )
+        actions[~discrete] = 0.5 * (normalized_actions[~discrete] + 1) * (action_high[~discrete] - action_low[~discrete]) + action_low[~discrete]
 
         # Apply mask and discrete/continuous logic
-        actions = np.where(
-            mask,
-            np.where(
-                discrete,
-                np.clip(np.floor(continuous_actions).astype(int), action_min, action_max),
-                continuous_actions
-            ),
-            normalized_actions,
-        )
+        actions = np.where(mask, actions, normalized_actions)
 
         return actions
 
