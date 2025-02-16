@@ -1,7 +1,7 @@
 import json
 
 from typing import List, Dict, Any
-
+from datetime import datetime
 import tensorflow as tf
 import numpy as np
 import os
@@ -14,7 +14,6 @@ class OpenXDataset():
         self.action_tensors = []
         self.is_last_count = 0
         self.timestep_count = 0
-        self.action_dim = 7 # default at 7
         
     def _process_shards(self, dataset_name: str):
 
@@ -71,7 +70,6 @@ class OpenXDataset():
                     float_action_tensors.append(np.array(elem['action'][6])) #gripper
 
                 elif dataset_name == 'utokyo_xarm_bimanual_converted_externally_to_rlds':
-                    print(f"utokyo_xarm_bimanual_converted_externally_to_rlds: {elem['action']}")
                     float_action_tensors.append(np.array(elem['action'][:3])) #xyz
                     float_action_tensors.append(np.array(elem['action'][5])) #roll
                     float_action_tensors.append(np.array(elem['action'][4])) #pitch
@@ -85,6 +83,15 @@ class OpenXDataset():
                     if len(float_action_tensors) == 14:
                         print(float_action_tensors)
 
+                elif dataset_name == 'bigfish':
+                    # print(f"action shape: {elem['actions'].shape}")
+                    # print(f"actions: {elem['actions']}")
+
+                    # print(f"dones: {elem['dones']}")
+                    # print(f"observations: {elem['observations'].shape}")
+                    # print(f"rewards: {elem['rewards']}")
+                    float_action_tensors.append(np.array(elem['actions'][0]))
+
                 if float_action_tensors:
                     float_action_tensors = [np.atleast_1d(tensor) for tensor in float_action_tensors]
                     concatenated_action_float = np.concatenate(float_action_tensors, axis=0)
@@ -96,30 +103,43 @@ class OpenXDataset():
 
                 
                 self.timestep_count += 1
-                if elem['is_last']:
+                if elem.get('is_last', False) or elem.get('dones', False):
                     self.is_last_count += 1
                 
 
                 self.action_tensors.append(concatenated_action_float)
                 
 
-    def _get_action_stats(self):
+    def _get_action_stats(self, mask: list, discrete: list):
         if len(self.action_tensors) == 0:
             raise AttributeError("action_stats is None, it has not been populated yet")
         
+        action_dim = self.action_tensors[0].shape[0]
+        
+        if len(mask) != action_dim:
+            raise ValueError(f"Mask length {len(mask)} does not match action dimension {action_dim}")
+        
+        if len(discrete) != action_dim:
+            raise ValueError(f"Discrete length {len(discrete)} does not match action dimension {action_dim}")
 
-        return {
+        action_stats = {
             "mean": np.mean(self.action_tensors, axis=0).tolist(),
             "std": np.std(self.action_tensors, axis=0).tolist(),
             "max": np.max(self.action_tensors, axis=0).tolist(),
             "min": np.min(self.action_tensors, axis=0).tolist(),
             "q01": np.percentile(self.action_tensors, 1, axis=0).tolist(),
             "q99": np.percentile(self.action_tensors, 99, axis=0).tolist(),
-            "mask": [True] * (len(self.action_tensors[0]) - 1) + [False]
+            "mask": mask,
+            "discrete": discrete
         }
+
+        return action_stats
     
     def _get_proprio_stats(self):
-        dim = self.action_dim
+        if len(self.action_tensors) == 0:
+            raise AttributeError("proprio_stats is None, it has not been populated yet")
+        
+        dim = len(self.action_tensors[0])
 
         return{
             "mean": np.zeros(dim).tolist(),
@@ -140,7 +160,7 @@ if __name__ == "__main__":
     
     openx_val_datasets_path = '/mnt/disks/mount_dir/openx_val_translated/'
     # openx_datasets = ['nyu_door_opening_surprising_effectiveness', 'columbia_cairlab_pusht_real', 'conq_hose_manipulation', 'plex_robosuite', 'stanford_mask_vit_converted_externally_to_rlds', 'usc_cloth_sim_converted_externally_to_rlds', 'utokyo_pr2_opening_fridge_converted_externally_to_rlds', 'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds', 'utokyo_xarm_pick_and_place_converted_externally_to_rlds', 'nyu_rot_dataset_converted_externally_to_rlds', 'ucsd_pick_and_place_dataset_converted_externally_to_rlds', 'eth_agent_affordances', 'imperialcollege_sawyer_wrist_cam']
-    openx_datasets = ['utokyo_xarm_bimanual_converted_externally_to_rlds']
+    openx_datasets = ['utokyo_xarm_bimanual_converted_externally_to_rlds', 'bigfish']
 
 
     for openx_dataset in openx_datasets:
@@ -180,6 +200,14 @@ if __name__ == "__main__":
                         for f in sorted_test_shard_files]
             tfds_shards = train_tfds_shards + test_tfds_shards
         
+        elif openx_dataset in ['bigfish']:
+            train_shard_files = os.listdir(os.path.join(openx_train_datasets_path, openx_dataset))
+            sorted_train_shard_files = sorted(train_shard_files, key=lambda x: datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"))
+            tfds_shards = [os.path.join(openx_train_datasets_path, openx_dataset, f) 
+                        for f in sorted_train_shard_files]
+
+            # TODO: add train, test or val shard files depending on the cloud folder structures
+
         else:
             train_shard_files = os.listdir(os.path.join(openx_train_datasets_path, openx_dataset))
             sorted_train_shard_files = sorted(train_shard_files, key=lambda x: int(x.split('_')[-1]))
@@ -187,11 +215,19 @@ if __name__ == "__main__":
                         for f in sorted_train_shard_files]
             tfds_shards = train_tfds_shards
 
-
         openxobj = OpenXDataset(tfds_shards)
         openxobj._process_shards(openx_dataset)
+
+        discrete_datasets = ['bigfish']
+
+        action_dim = len(openxobj.action_tensors[0])
+        mask = [True] * (action_dim - 1) + [False]
+        discrete = [True] * action_dim if openx_dataset in discrete_datasets else [False] * action_dim
+
+        action_stats = openxobj._get_action_stats(discrete=discrete, mask=mask)
+
         dataset_statistics[openx_dataset] = {
-            'action': openxobj._get_action_stats(),
+            'action': action_stats,
             'proprio': openxobj._get_proprio_stats(),
             'num_transitions': openxobj.timestep_count,
             'num_trajectories': openxobj.is_last_count
