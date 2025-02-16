@@ -529,19 +529,16 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
         # Unnormalize actions
         action_norm_stats = self.get_action_stats(unnorm_key)
         mask = action_norm_stats.get("mask", np.ones_like(action_norm_stats["q01"], dtype=bool))
-        # high, low for continuous action bounds
         action_high, action_low = np.array(action_norm_stats["q99"]), np.array(action_norm_stats["q01"])
-        # min, max for discrete action bounds
-        action_min, action_max = np.array(action_norm_stats["min"]), np.array(action_norm_stats["max"])
         # Discrete dimension mask
         discrete = action_norm_stats.get("discrete", np.zeros_like(mask, dtype=bool))
 
         # Compute continuous actions
         actions = np.zeros_like(normalized_actions)
         actions[discrete] = np.clip(
-            np.floor(0.5 * (normalized_actions[discrete] + 1) * (action_max[discrete] - action_min[discrete]) + action_min[discrete]).astype(int),
-            action_min[discrete],
-            action_max[discrete],
+            np.floor(0.5 * (normalized_actions[discrete] + 1) * (action_high[discrete] - action_low[discrete]) + action_low[discrete]).astype(int),
+            action_low[discrete],
+            action_high[discrete],
         )
         actions[~discrete] = 0.5 * (normalized_actions[~discrete] + 1) * (action_high[~discrete] - action_low[~discrete]) + action_low[~discrete]
 
