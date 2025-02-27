@@ -128,6 +128,10 @@ def convert_action(action: np.ndarray, dataset_name: str):
     def utokyo_xarm_bimanual_conversion(action: np.ndarray) -> np.ndarray:
         return action
 
+    # TODO: implement this
+    def bigfish_conversion(action: np.ndarray) -> np.ndarray:
+        return action
+
     conversion_functions: dict[str, Callable[[np.ndarray, bool], np.ndarray]] = {
         'jaco_play': jaco_play_conversion,
         'berkeley_cable_routing': berkeley_cable_routing_conversion,
@@ -149,7 +153,8 @@ def convert_action(action: np.ndarray, dataset_name: str):
         'imperialcollege_sawyer_wrist_cam': imperialcollege_sawyer_wrist_cam_conversion,
         'conq_hose_manipulation': conq_hose_manipulation_conversion,
         'plex_robosuite': plex_robosuite_conversion,
-        'utokyo_xarm_bimanual_converted_externally_to_rlds': utokyo_xarm_bimanual_conversion
+        'utokyo_xarm_bimanual_converted_externally_to_rlds': utokyo_xarm_bimanual_conversion,
+        'bigfish': bigfish_conversion
     }
     
     
