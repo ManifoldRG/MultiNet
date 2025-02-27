@@ -5,6 +5,9 @@ from datetime import datetime
 import tensorflow as tf
 import numpy as np
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 class OpenXDataset():
     def __init__(self, tfds_shards: List[str]):
@@ -141,7 +144,7 @@ class OpenXDataset():
         
         dim = len(self.action_tensors[0])
 
-        return{
+        return {
             "mean": np.zeros(dim).tolist(),
             "std": np.zeros(dim).tolist(),
             "max": np.zeros(dim).tolist(),
@@ -150,6 +153,29 @@ class OpenXDataset():
             "q99": np.zeros(dim).tolist(),
         }
 
+    def _get_action_mad(self):
+        """Calculate Median Absolute Deviation (MAD) of action differences using pre-collected actions.
+        
+        Returns:
+            float: MAD of action differences
+        """
+        if not hasattr(self, 'action_tensors') or len(self.action_tensors) < 2:
+            raise AttributeError("action_tensors is None or length is less than 2, it has not been populated yet")
+        
+        # Calculate differences between consecutive actions
+        action_diffs = np.abs(np.diff(self.action_tensors, axis=0))
+        logger.info(f"Action diffs: {action_diffs}")
+
+        # Calculate MAD
+        median = np.median(action_diffs)
+        mad = np.median(np.abs(action_diffs - median))
+
+        mad = float(mad) if mad > 0 else 1.0  # avoids division by zero
+
+        logger.info(f"Median: {median}, MAD: {mad}")
+
+        return mad
+    
 if __name__ == "__main__":
     
     dataset_statistics = {}
@@ -230,7 +256,8 @@ if __name__ == "__main__":
             'action': action_stats,
             'proprio': openxobj._get_proprio_stats(),
             'num_transitions': openxobj.timestep_count,
-            'num_trajectories': openxobj.is_last_count
+            'num_trajectories': openxobj.is_last_count,
+            'action_mad': openxobj._get_action_mad()
         }
 
         existing_statistics.update(dataset_statistics)
