@@ -121,12 +121,23 @@ def profile_openvla_on_openx(cfg: EvalConfig, result_save_path: str):
 
 
         # Evaluate OpenVLA model on the current dataset
-        action_success_rate, total_dataset_amse, avg_dataset_amse, num_timesteps, normalized_amse = evaluate_openvla_model(cfg, 
-                                                                                                  model, 
-                                                                                                  processor, 
-                                                                                                  tfds_shards, 
-                                                                                                  openx_dataset)
-
+        (
+            action_success_rate,
+            total_dataset_amse,
+            avg_dataset_amse,
+            num_timesteps,
+            normalized_amse,
+            total_huber_loss,
+            avg_huber_loss
+        ) = evaluate_openvla_model(
+            cfg,
+            model,
+            processor,
+            tfds_shards,
+            openx_dataset,
+            use_huber_loss=True
+        )
+        
         del model
         del processor
         torch.cuda.empty_cache()
@@ -145,7 +156,9 @@ def profile_openvla_on_openx(cfg: EvalConfig, result_save_path: str):
             'eval_time': eval_time,
             'num_timesteps': num_timesteps,
             'avg_dataset_amse': avg_dataset_amse,
-            'normalized_amse': normalized_amse
+            'normalized_amse': normalized_amse,
+            'total_huber_loss': total_huber_loss,
+            'avg_huber_loss': avg_huber_loss
         }
 
         print(f'Evaluation time for {openx_dataset}: {eval_time:.2f} seconds')
@@ -179,6 +192,8 @@ def profile_openvla_on_openx(cfg: EvalConfig, result_save_path: str):
         print(f'Average MSE: {result["avg_dataset_amse"]:.4f}')
         print(f'Number of Timesteps: {result["num_timesteps"]}')
         print(f'Normalized AMSE: {result["normalized_amse"]:.4f}')
+        print(f'Total Huber Loss: {result["total_huber_loss"]:.4f}')
+        print(f'Average Huber Loss: {result["avg_huber_loss"]:.4f}')
     print(f"\nEval results have been saved to '{result_file_path}'")
 
 
