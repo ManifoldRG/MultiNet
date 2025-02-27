@@ -75,6 +75,9 @@ def profile_openvla_on_openx(cfg: EvalConfig, result_save_path: str):
     result_file_path = Path(result_save_path) / 'openvla_openx_eval_results.json'
 
     for openx_dataset in openx_dataset_paths:
+        if openx_dataset == "utokyo_xarm_bimanual_converted_externally_to_rlds":
+            print(f'\nSkipping dataset: {openx_dataset}\n')
+            continue
         # Skip if the dataset is already in the eval_results
         if os.path.exists(result_file_path):
             with open(result_file_path, 'r') as f:

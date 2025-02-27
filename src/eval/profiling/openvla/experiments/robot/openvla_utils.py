@@ -162,8 +162,13 @@ def get_vla_action(vla, processor, base_vla_name, obs, task_label, unnorm_key, c
         prompt = (
             f"{OPENVLA_V01_SYSTEM_PROMPT} USER: What action should the robot take to {task_label.lower()}? ASSISTANT:"
         )
-    elif unnorm_key == "utokyo_xarm_bimanual_converted_externally_to_rlds":
-        prompt = f"In: What action should the robot take to {task_label.lower()} using both arms?\nOut:"
+    # elif unnorm_key == "utokyo_xarm_bimanual_converted_externally_to_rlds":
+    #     prompt = (
+    #         f"In: In the action space consists of 14 dimensions: 7 for the left arm and 7 for the right arm."
+    #         f" What action should the robot take to {task_label.lower()} using both arms?\nOut:"
+    #     )
+    elif unnorm_key == "bigfish":
+        prompt = f"In: What action should the fish take to {task_label.lower()}?\nOut:"
     else:  # OpenVLA
         prompt = f"In: What action should the robot take to {task_label.lower()}?\nOut:"
 
