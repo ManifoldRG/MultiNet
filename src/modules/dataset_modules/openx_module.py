@@ -3,8 +3,10 @@ from dataclasses import dataclass
 import tensorflow as tf
 from src.modules.modality_modules.vlm_module import VLMModule
 from src.data_utils.openx_dataloader import get_openx_dataloader
+from src.data_utils.procgen_dataloader import get_procgen_dataloader
 from definitions.prompt import format_instruction_prompt
-from definitions.openx import DESCRIPTIONS, ACTION_SPACES, ACTION_EXCLUSIVENESS, ADDITIONAL_INSTRUCTIONS
+from definitions.openx import OpenXDefinitions
+from definitions.procgen import ProcGenDefinitions
 from typing import Any, Union
 from glob import glob
 from pathlib import Path
@@ -17,11 +19,24 @@ import os
 import warnings
 
 
-class OpenXModule:
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = None, k_shots: int = 0) -> None:
+class DatasetModule:
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, dataset_family: str, batch_size: int = None, k_shots: int = 0) -> None:
         self.disk_root_dir = disk_root_dir
+        self.dataset_family = dataset_family
+        
+        if 'openx' == self.dataset_family:
+            self.datalaoder_fn = get_openx_dataloader
+            defs = OpenXDefinitions
+        elif 'procgen' == self.dataset_family:
+            self.dataloader_fn = get_procgen_dataloader
+            defs = ProcGenDefinitions
+        self.descriptions = defs.DESCRIPTIONS
+        self.action_spaces = defs.ACTION_SPACES
+        self.action_exclusiveness = defs.ACTION_EXCLUSIVENESS
+        self.additional_instructions = defs.ADDITIONAL_INSTRUCTIONS    
+        
         self.datasets = []
-        for dataset in list(DESCRIPTIONS.keys()):
+        for dataset in list(self.descriptions.keys()):
             tfds_shards = self._find_shards(dataset)
             if len(tfds_shards) != 0:
                 self.datasets.append(dataset)
@@ -33,8 +48,12 @@ class OpenXModule:
 
         self.batch_size = batch_size
         self.k_shots = k_shots
-        self.action_stats_opxmodule = None
-        
+        self.action_stats = None
+
+    def _get_one_hot(self, targets, nb_classes):
+        res = np.eye(nb_classes)[np.array(targets).reshape(-1)]
+        return res.reshape(list(targets.shape)+[nb_classes])
+
     # Main evaluation function.
     def run_eval(self) -> None:
         # Since OpenX consists of multiple datasets, a modality module should be initialized per every evaluation step for each dataset.
@@ -66,7 +85,7 @@ class OpenXModule:
             # Write the updated or new results to the file
             with open('<path to results>', 'w') as f:
                 json.dump(existing_results, f, indent=4, default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
-            self.action_stats_opxmodule = None
+            self.action_stats = None
 
     def _process_episode(self, episode):
         text_observation = []
@@ -104,8 +123,13 @@ class OpenXModule:
 
         return result
     
-    # Evaluation of one dataset.
-    def _run_eval_dataset(self, dataset: str) -> dict[str, Union[list, float]]:
+    def _run_eval_dataset(self, dataset) -> dict:
+        if self.dataset_family == 'openx':
+            return self._run_eval_openx(dataset)
+        elif self.dataset_family == 'procgen':
+            return self._run_eval_procgen(dataset)
+    
+    def _run_eval_procgen(self, dataset: str) -> dict:
         result = {}
 
         try:
@@ -116,7 +140,72 @@ class OpenXModule:
             start_time = time.time()
 
             # Creating the dataloader.
-            dataloader_obj, dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size, by_episode=True)
+            dataloader_obj, dataloader = self.datalaoder_fn(tfds_shards, batch_size=self.batch_size, by_episode=True)
+
+            action_success = []
+            incorrect_preds = 0
+            total_preds = 0
+            for batch in dataloader:
+                # Action stats need to be retrieved only once for each dataset, after they have been populated.
+                if self.action_stats is None:
+                    self.action_stats = dataloader_obj._get_action_stats()  
+
+                # Consuming the batch until all timesteps in the batch.
+                for cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts in self._process_batch(batch, dataset):
+                       
+                    outputs = self.modality_module.infer_step(cur_inputs, k_shots_examples, instructions, output_types)  # (B)
+                    if self.dataset_family == 'procgen':
+                        outputs = [[output[1]] for output in outputs]
+                        
+                    if isinstance(outputs[0][0], float)==False:
+                        outputs = [[float(item) for item in sublist] for sublist in outputs]
+                        
+                    # Any invalid output 'None' should be initialized into a random action.
+                    outputs = [self._validate_text_output(output, shape=labels[o].shape) for o, output in enumerate(outputs)]
+                    # This only works for continuous vector actions. (Okay for OpenX)
+                    
+                    incorrect_preds += sum(np.array(labels) != np.array(outputs))
+                    total_preds += len(labels)
+                    for i, idx in enumerate(idxs):
+                        # If any episodes are the last, recording the success rate.
+                        if is_lasts[i]:
+                            #print(outputs[i])
+                            #print(labels[i])
+                            if np.array_equal(np.array(outputs[i]), np.array(labels[i])):
+                                #success_counts[idx] += 1
+                                action_success.append(1)
+                            else:
+                                action_success.append(0)
+
+            action_success_rate = (sum(action_success) / len(action_success)) * 100
+            avg_dataset_01error = incorrect_preds / total_preds
+
+            end_time = time.time()
+            eval_time = end_time - start_time
+
+            result['action_success_rate'] = action_success_rate
+            result['total_dataset_01error'] = avg_dataset_01error
+            result['eval_time'] = eval_time
+
+        except KeyError:
+            print(f"The VLMModule cannot be initialized since there is no dataset called {dataset} in OpenX. Moving on to the next one...")
+            return {}
+
+        return result
+        
+    # Evaluation of one dataset.
+    def _run_eval_openx(self, dataset: str) -> dict[str, Union[list, float]]:
+        result = {}
+
+        try:
+            tfds_shards = self._find_shards(dataset)
+            if len(tfds_shards) == 0:
+                return {}
+
+            start_time = time.time()
+
+            # Creating the dataloader.
+            dataloader_obj, dataloader = self.datalaoder_fn(tfds_shards, batch_size=self.batch_size, by_episode=True)
 
             #avg_mse_list = []
             total_dataset_mse = 0.0
@@ -126,8 +215,8 @@ class OpenXModule:
 
             for batch in dataloader:
                 # Action stats need to be retrieved only once for each dataset, after they have been populated.
-                if self.action_stats_opxmodule is None:
-                    self.action_stats_opxmodule = dataloader_obj._get_action_stats()  
+                if self.action_stats is None:
+                    self.action_stats = dataloader_obj._get_action_stats()  
                 #episode_mses = [[] for b in range(batch_size)]
                 #success_counts = [0 for b in range(batch_size)]
 
@@ -215,7 +304,7 @@ class OpenXModule:
     # Finding the translated TFDS shards.
     def _find_shards(self, dataset: str) -> list[str]:
         try:
-            dataset_dir = glob(f"{self.disk_root_dir}/mount_dir*/openx_*/{dataset}")[0]
+            dataset_dir = glob(f"{self.disk_root_dir}/mount_dir*/{self.dataset_family}_*/{dataset}")[0]
             shard_files = glob(f"{dataset_dir}/translated_shard_*")
             tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
             return tfds_shards
@@ -269,55 +358,70 @@ class OpenXModule:
 
                     cur_inputs[-1].append(('text_observation', text_obs[b][t]))
             yield cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts
-            
+
+    def _get_action_space(self, dataset, env_name):
+        if dataset not in self.action_spaces:
+            dataset = 'default'
+        
+        assert dataset in self.action_spaces, f"The dataset {dataset} is not included in the action spaces."
+        
+        if env_name in self.action_spaces[dataset]:
+            # If env_name exists, the action space of that environment is defined specifically.
+            action_space = self.action_spaces[dataset][env_name]
+        else:
+            # If not, the action space is the one shared by all environments.
+            action_space = self.action_spaces[dataset]['default']
+        return action_space
+    
     # Generating the instruction text for VLMModule.
     def _get_vlm_instruction(self, dataset: str, env_name: str):
-        assert dataset in DESCRIPTIONS, f"The dataset {dataset} is not included in the OpenX group."
+        assert dataset in self.descriptions, f"The dataset {dataset} is not included in the OpenX group."
 
-        if env_name in DESCRIPTIONS[dataset]:
+        if env_name in self.descriptions[dataset]:
             # If env_name exists, the description of that environment is defined specifically.
-            env_desc = ' '.join(DESCRIPTIONS[dataset][env_name])
+            env_desc = ' '.join(self.descriptions[dataset][env_name])
         else:
             # If not, the env_name itself becomes the description.
             env_desc = env_name.capitalize() + "."
 
-        if env_name in ACTION_SPACES[dataset]:
-            # If env_name exists, the action space of that environment is defined specifically.
-            action_space = ACTION_SPACES[dataset][env_name]
-        else:
-            # If not, the action space is the one shared by all environments.
-            action_space = ACTION_SPACES[dataset]['default']
+        action_space = self._get_action_space(dataset, env_name)
         
         # Handle the cases where the action space does not have a verbal description, and stats need to be used instead.
         if len(action_space) == 1:
             # If there is a placeholder 'None' in the action space, it means that the action space is not given a verbal description.
             if action_space[0] == None:
                 action_space = {}
-                for i in range(self.action_stats_opxmodule['size'][0]):
-                    action_space[i] = ("The action space statistics of this dimension of the action space over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
+                for i in range(self.action_stats['size'][0]):
+                    action_space[i] = ("The action space statistics of this dimension of the action space over the entire dataset", self.action_stats['min'][i], self.action_stats['max'][i], self.action_stats['mean'][i])
         
         elif len(action_space) != 1:
             # For cases where the verbal description is present but not the ranges, so we augment the information given with the stats
-            for i in range(self.action_stats_opxmodule['size'][0]):
+            for i in range(self.action_stats['size'][0]):
                 if not isinstance (action_space[i], tuple):
-                    action_space[i] = (action_space[i]+". In addition to this verbal description, here are the action space statistics of this dimension over the entire dataset", self.action_stats_opxmodule['min'][i], self.action_stats_opxmodule['max'][i], self.action_stats_opxmodule['mean'][i])
+                    action_space[i] = (action_space[i]+". In addition to this verbal description, here are the action space statistics of this dimension over the entire dataset", self.action_stats['min'][i], self.action_stats['max'][i], self.action_stats['mean'][i])
         
-        only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name] if env_name in ACTION_EXCLUSIVENESS[dataset] else ACTION_EXCLUSIVENESS[dataset]['default']
+        if dataset not in self.action_exclusiveness:
+            dataset = 'default'
+            
+        only_one_action = self.action_exclusiveness[dataset][env_name] if env_name in self.action_exclusiveness[dataset] else self.action_exclusiveness[dataset]['default']
         additional_inst = None
-        if dataset in ADDITIONAL_INSTRUCTIONS:
-            if env_name in ADDITIONAL_INSTRUCTIONS[dataset]:
-                additional_inst = ' '.join(ADDITIONAL_INSTRUCTIONS[dataset][env_name])
+        if dataset in self.additional_instructions:
+            if env_name in self.additional_instructions[dataset]:
+                additional_inst = ' '.join(self.additional_instructions[dataset][env_name])
             else:
-                additional_inst = ADDITIONAL_INSTRUCTIONS[dataset]['default']
+                additional_inst = self.additional_instructions[dataset]['default']
 
         instruction = format_instruction_prompt(env_name, env_desc, action_space, only_one_action, additional_inst)
         return instruction
     
     # Getting the output type for VLMModule.
     def _get_output_type(self, dataset: str, env_name: str):
-        only_one_action = ACTION_EXCLUSIVENESS[dataset][env_name] if env_name in ACTION_EXCLUSIVENESS[dataset] else ACTION_EXCLUSIVENESS[dataset]['default']
+        if dataset not in self.action_exclusiveness:
+            dataset = 'default'
+            
+        only_one_action = self.action_exclusiveness[dataset][env_name] if env_name in self.action_exclusiveness[dataset] else self.action_exclusiveness[dataset]['default']
         if only_one_action:
-            return tuple
+            return list
         else:
             return list
         
@@ -331,6 +435,7 @@ class OpenXModule:
 @dataclass
 class BatchInfo:
     dataset_name: str
+    dataset_family: str
     batch_num: int
     batch_id: str
     output_types: list[str]
@@ -352,15 +457,15 @@ class BatchInfo:
         Path(f'{save_dir}/run_{run}').mkdir()
                     
         np.savez(f'{save_dir}/run_{run}/{file_name}', 
-                 dataset_name=self.dataset_name, batch_num=self.batch_num, batch_id=self.batch_id, 
+                 dataset_name=self.dataset_name, dataset_family=self.dataset_family, batch_num=self.batch_num, batch_id=self.batch_id, 
                  output_types=self.output_types, token_count=self.token_count, is_lasts=self.is_lasts, 
                  labels=self.labels, num_inputs=self.num_inputs)
                 
         return Path(f'{save_dir}/run_{run}/{file_name}').absolute()
  
-class OpenXBatchModule(OpenXModule):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = None, k_shots: int = 0):
-        super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
+class DatasetBatchModule(DatasetModule):
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, dataset_family: str, batch_size: int = None, k_shots: int = 0):
+        super().__init__(disk_root_dir, modality, source, model, dataset_family, batch_size, k_shots)
         self.batch_list = {ds : [] for ds in self.datasets}
         
     def _send_batch_job(self, batch, dataset_name, batch_num):
@@ -369,9 +474,9 @@ class OpenXBatchModule(OpenXModule):
         batch_id, token_count = self.modality_module.send_batch_job(cur_inputs, [], instructions)
         
         is_lasts = [int(is_last) for is_last in is_lasts]
-        labels = [label.numpy() for label in labels]
+        labels = [label.numpy() for label in labels if not isinstance(label, np.ndarray)]
 
-        batch_job = BatchInfo(dataset_name, batch_num, batch_id, output_types, token_count, is_lasts, labels, num_inputs, self.disk_root_dir)
+        batch_job = BatchInfo(dataset_name, self.dataset_family, batch_num, batch_id, output_types, token_count, is_lasts, labels, num_inputs, self.disk_root_dir)
         fp = batch_job.save_to_file()
         self.batch_list[dataset_name].append(fp)
         
@@ -381,22 +486,129 @@ class OpenXBatchModule(OpenXModule):
             return {}
 
         # Creating the dataloader.
-        dataloader_obj, dataloader = get_openx_dataloader(tfds_shards, batch_size=self.batch_size, by_episode=False)
+        dataloader_obj, dataloader = self.datalaoder_fn(tfds_shards, batch_size=self.batch_size, by_episode=False)
 
         for i, batch in enumerate(dataloader):
             # Action stats need to be retrieved only once for each dataset, after they have been populated.
-            if self.action_stats_opxmodule is None:
-                self.action_stats_opxmodule = dataloader_obj._get_action_stats()  
+            if self.action_stats is None:
+                self.action_stats = dataloader_obj._get_action_stats()  
             self._send_batch_job(batch, dataset, i)
         return self.batch_list[dataset]
         
     def send_batch_jobs_for_all_datasets(self):
         for dataset in self.datasets:
             self._send_batch_jobs_for_dataset(dataset)
-            self.action_stats_opxmodule = None
-        return self.batch_list  
+            self.action_stats = None
+        return self.batch_list
+    
+    def _run_eval_dataset(self, dataset_batch_info_folder) -> dict:
+        if self.dataset_family == 'openx':
+            return self._run_eval_openx(dataset_batch_info_folder)
+        elif self.dataset_family == 'procgen':
+            return self._run_eval_procgen(dataset_batch_info_folder)
         
-    def _run_eval_dataset(self, dataset_batch_info_folder):
+    def _run_eval_procgen(self, dataset_batch_info_folder):
+        result = {}
+        
+        timestep_mse = []
+        total_preds = 0
+        start_time = time.time()
+        
+        paths = Path(dataset_batch_info_folder).iterdir()
+        for fp in paths:
+            if Path(fp).exists():
+                try:
+                    batch_info = np.load(fp, allow_pickle=True)
+                except Exception:
+                    warnings.warn(f'Could not load file at path {fp}. Skipping...')
+                    continue
+            else:
+                warnings.warn(f'Could not find file at path {fp}. Skipping...')
+                continue    
+
+                    
+            output_types = list(batch_info['output_types'])
+            ds = batch_info['dataset_name'].item()
+            batch_num = batch_info['batch_num'].item()
+            batch_id = batch_info['batch_id'].item()
+            labels = batch_info['labels']
+            num_inputs = batch_info['num_inputs'].item()
+            is_lasts = [bool(is_last) for is_last in batch_info['is_lasts']]
+            
+            status = self.modality_module.get_batch_job_status(batch_id)
+            if status == 'completed':
+                outputs = self.modality_module.retrieve_batch_results(batch_id, output_types)
+            else:
+                warnings.warn(f'Batch not completed for batch {ds} batch num {batch_num} '
+                              f'with batch id {batch_id}. Status: {status}. Skipping...')
+                continue
+            
+            action_space = self._get_action_space(ds, 'default')
+            num_actions  = 0
+            for action_idx, (_, action_dict) in action_space.items():
+                num_actions += len(action_dict)
+                
+            # validate outputs
+            if not isinstance(outputs, list):
+                outputs = []
+            
+            valid_idxs = []
+            for i, output in enumerate(outputs):
+                valid = True
+                if isinstance(output, list) and all([isinstance(d, dict) for d in output]):
+                    keys, vals = set(), []
+                    for d in output:
+                        for k, v in d.items():
+                            if not str(k).isdigit() or not 0 <= int(k) < num_actions or k in keys:
+                                valid = False
+                                break
+                            keys.add(int(k))
+                            vals.append(float(v))
+                        
+                    if valid and sum(vals) >= 0.999:
+                        valid_idxs.append(i)
+            
+            valid_probs = []
+            for idx in valid_idxs:
+                output = outputs[idx]
+                output = {int(k): float(v) for d in output for k, v in d.items()}
+                probs = [0.0]*num_actions
+                for i in range(len(probs)):
+                    if i in output:
+                        probs[i] = output[i]
+                valid_probs.append(probs)
+            
+            valid_labels = np.array([labels[i][0] for i in valid_idxs])
+            valid_labels = self._get_one_hot(valid_labels, num_actions)
+            
+            brier_mses = np.mean((valid_probs - valid_labels)**2, axis=-1)
+            timestep_mse.extend(brier_mses)
+            total_preds += len(valid_idxs)
+            
+        total_dataset_mse = sum(timestep_mse)
+        num_timesteps = len(timestep_mse)
+        print(f"\nTotal MSE across {num_timesteps} timesteps: {total_dataset_mse:.4f}")
+        
+        avg_dataset_mse = total_dataset_mse / num_timesteps
+        
+        # Calculate min-max normalized AMSE
+        min_mse = min(timestep_mse)
+        max_mse = max(timestep_mse)
+        normalized_mse = (timestep_mse - min_mse) / (max_mse - min_mse) if max_mse != min_mse else 0
+        normalized_amse = sum(normalized_mse) / len(normalized_mse)
+        
+        end_time = time.time()
+        eval_time = end_time - start_time
+
+        result['total_dataset_amse'] = total_dataset_mse
+        result['num_timesteps'] = num_timesteps
+        result['avg_dataset_amse'] = avg_dataset_mse
+        result['normalized_amse'] = normalized_amse
+        result['eval_time'] = eval_time
+            
+        return result
+        
+    def _run_eval_openx(self, dataset_batch_info_folder):
         result = {}
         
         #avg_mse_list = []
