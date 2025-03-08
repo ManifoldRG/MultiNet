@@ -107,6 +107,8 @@ class ProcGenDataset(Dataset):
         is_last = []
 
         for timestep in episode:
+            text_observation.append(timestep['text_observation'])
+            timestep.pop('text_observation')
             image_observation.append(timestep['image_observation'])
             timestep.pop('image_observation')
             concatenated_action_float.append(timestep['action'])
@@ -122,6 +124,7 @@ class ProcGenDataset(Dataset):
                 etc_observations[key].append(value)
 
         result = {
+            'text_observation': text_observation,
             'image_observation': image_observation,
             'action': concatenated_action_float,
             'reward': reward,
