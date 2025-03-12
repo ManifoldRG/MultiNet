@@ -16,36 +16,32 @@ import warnings
 
 
 class DatasetModule(ABC):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, k_shots: int = 0) -> None:
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0) -> None:
         self._definitions_class = None
         self.get_dataloader_fn = None 
         self.dataset_family = None
         self.format_instruction_prompt_fn = None
 
-        if type(self) != DatasetModule:
-            assert self._definitions_class is not None, "The definitions class has not been set correcly. Check required."
-            assert hasattr(self._definitions_class, 'DESCRIPTIONS'), "The descriptions have not been set correcly. Check required."
-            assert hasattr(self._definitions_class, 'ACTION_SPACES'), "The action spaces have not been set correcly. Check required."
-            assert hasattr(self._definitions_class, 'ACTION_EXCLUSIVENESS'), "The action exclusiveness has not been set correcly. Check required."
-            assert self.get_dataloader_fn is not None, "The dataloader function has not been set correcly. Check required."
-            assert self.dataset_family is not None, "The dataset family has not been set correcly. Check required."
-            assert self.format_instruction_prompt_fn is not None, "The instruction prompt function has not been set correcly. Check required."
-
         self.disk_root_dir = disk_root_dir
-        self._datasets = []
-        for dataset in list(self.descriptions.keys()):
-            tfds_shards = self._find_shards(dataset)
-            if len(tfds_shards) != 0:
-                self.datasets.append(dataset)
-                
+        self.batch_size = batch_size
         self.modality_module = None
         if modality == 'vlm':
-            self.modality_module = VLMModule(source, model, max_concurrent_prompts=None)
+            self.modality_module = VLMModule(source, model, max_concurrent_prompts=self.batch_size)
         assert self.modality_module is not None, "The modality module has not been set correcly. Check required."
 
         self.k_shots = k_shots
         self.action_stats = None
-
+        self._datasets = []
+        
+    @property
+    def datasets(self):
+        if len(self._datasets) == 0:
+            for dataset in list(self.descriptions.keys()):
+                tfds_shards = self._find_shards(dataset)
+                if len(tfds_shards) != 0:
+                    self._datasets.append(dataset)
+        return self._datasets
+        
     @property
     def descriptions(self):
         return self._definitions_class.DESCRIPTIONS
@@ -264,11 +260,6 @@ class DatasetModule(ABC):
             return list
         else:
             return list
-        
-    # Validating the final output from the VLM/LLM model.
-    @abstractmethod
-    def _validate_text_output(self, output: Any, shape: tuple[int]) -> np.array:
-        pass
 
 @dataclass
 class BatchInfo:
@@ -302,10 +293,16 @@ class BatchInfo:
  
 
 class DatasetBatchModule(DatasetModule, ABC):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, k_shots: int = 0, batch_size: int = None):
-        super().__init__(disk_root_dir, modality, source, model, k_shots)
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0):
+        super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
         self.batch_size = batch_size
-        self.batch_list = {ds : [] for ds in self.datasets}
+        self._batch_list = None
+        
+    @property
+    def batch_list(self):
+        if self._batch_list is None:
+            self._batch_list = {ds : [] for ds in self.datasets}
+        return self._batch_list
         
     def _send_batch_job(self, batch, dataset_name, batch_num):
         cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts = self._process_batch(batch, dataset_name)
@@ -330,7 +327,7 @@ class DatasetBatchModule(DatasetModule, ABC):
         for i, batch in enumerate(dataloader):
             # Action stats need to be retrieved only once for each dataset, after they have been populated.
             if self.action_stats is None:
-                self.action_stats = dataloader_obj._get_action_stats()  
+                self.action_stats = dataloader_obj.action_stats  
             self._send_batch_job(batch, dataset, i)
         return self.batch_list[dataset]
         

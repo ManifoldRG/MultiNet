@@ -11,8 +11,7 @@ class OpenXDataset(Dataset):
     def __init__(self, tfds_shards: List[str], by_episode: bool = False):
         self.tfds_shards = tfds_shards
         self.action_tensor_size = None
-        self.action_stats = None
-        self.action_stats_populated = False
+        self._action_stats = None
         self.cur_shard = None
         self.cur_shard_idx = None
         self.by_episode = by_episode
@@ -111,39 +110,58 @@ class OpenXDataset(Dataset):
                 'reward': elem['reward'].numpy(),
                 'is_last': elem['is_last'].numpy()
             }
-            step_data.update(float_obs)
-
-            #Track the min, max, sum, and count of the action space
-            if self.action_tensor_size is None and self.action_stats_populated==False:
-                self.action_tensor_size = concatenated_action_float.shape
-            if self.action_stats is None and self.action_stats_populated==False:
-                self.action_stats = {
-                    'min': np.full(self.action_tensor_size, np.inf),
-                    'max': np.full(self.action_tensor_size, -np.inf),
-                    'sum': np.zeros(self.action_tensor_size),
-                    'count': 0
-                }
-            if self.action_stats_populated==False:
-                self.action_stats['min'] = np.minimum(self.action_stats['min'], concatenated_action_float)
-                self.action_stats['max'] = np.maximum(self.action_stats['max'], concatenated_action_float)
-                self.action_stats['sum'] += concatenated_action_float
-                self.action_stats['count'] += 1
-                self.action_stats_populated = True
-                
+            step_data.update(float_obs)                
             current_shard.append(step_data)
         return current_shard
 
-    def _get_action_stats(self):
-        if self.action_stats is None:
-            raise AttributeError("action_stats is None, it has not been populated yet")
-        if self.action_stats_populated == False:
-            raise ValueError("Action stats population is not finished yet.")
-        return {
-            'min': self.action_stats['min'],
-            'max': self.action_stats['max'],
-            'mean': self.action_stats['sum'] / self.action_stats['count'],
-            'size': self.action_tensor_size
-        }
+    def _populate_action_stats(self):
+        for shard in self.tfds_shards:
+            dataset = tf.data.Dataset.load(shard)
+
+            #Process the input data for each element in the shard
+            for elem_idx, elem in enumerate(dataset):                
+                concatenated_action_float = elem['action']
+                float_action_tensors = []
+                if isinstance(elem['action'], dict):
+                    elem['action'] = dict(sorted(elem['action'].items()))
+                    #Input processing
+                    for key, tensor in elem['action'].items():
+                        if (tensor.dtype == tf.float32 or tensor.dtype==tf.float64):
+                            if tensor.shape.ndims >= 2:
+                            # Flatten the 2D tensor
+                                tensor = tf.reshape(tensor, (-1,))
+                            elif tensor.shape.ndims == 1:
+                                tensor = tf.expand_dims(tensor, axis=0)
+                                tensor = tf.reshape(tensor, (-1,))
+                            elif tensor.shape.ndims == 0:
+                                tensor = tf.reshape(tensor, (1, ))
+                            float_action_tensors.append(tensor)
+                #Concatenate all fields of continuous action space
+                if float_action_tensors:
+                    concatenated_action_float = tf.concat(float_action_tensors, axis=0).numpy()
+                    
+                #Track the min, max, sum, and count of the action space
+                if self.action_tensor_size is None:
+                    self.action_tensor_size = concatenated_action_float.shape
+                if self._action_stats is None:
+                    self._action_stats = {
+                        'min': np.full(self.action_tensor_size, np.inf),
+                        'max': np.full(self.action_tensor_size, -np.inf),
+                        'sum': np.zeros(self.action_tensor_size),
+                        'count': 0
+                    }
+                self._action_stats['min'] = np.minimum(self._action_stats['min'], concatenated_action_float)
+                self._action_stats['max'] = np.maximum(self._action_stats['max'], concatenated_action_float)
+                self._action_stats['sum'] += concatenated_action_float
+                self._action_stats['count'] += 1
+    
+    @property
+    def action_stats(self):
+        if self._action_stats is None:
+            self._populate_action_stats()
+            self._action_stats['mean'] = self._action_stats['sum'] / self._action_stats['count']
+            self._action_stats['size'] = self.action_tensor_size
+        return self._action_stats
         
 
     def _get_feature(self, elem, feature_name: str) -> Any:

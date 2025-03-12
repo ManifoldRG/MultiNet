@@ -12,8 +12,7 @@ class ProcGenDataset(Dataset):
     def __init__(self, tfds_shards: List[str], by_episode: bool = False):
         self.tfds_shards = tfds_shards
         self.action_tensor_size = None
-        self.action_stats = None
-        self.action_stats_populated = False
+        self._action_stats = None
         self.cur_shard = None
         self.cur_shard_idx = None
         self.by_episode = by_episode
@@ -45,21 +44,19 @@ class ProcGenDataset(Dataset):
                 'is_last': elem['dones'].numpy()
             }
 
-            if self.action_stats is None and self.action_stats_populated == False:
-                self.action_stats = {
+            if self._action_stats is None:
+                self._action_stats = {
                     'size': action.shape
                 }
-                self.action_stats_populated = True
             
             current_shard.append(step_data)
         return current_shard
 
-    def _get_action_stats(self):
-        if self.action_stats is None:
-            raise AttributeError("action_stats is None, it has not been populated yet")
-        if self.action_stats_populated == False:
-            raise ValueError("Action stats population is not finished yet.")
-        return self.action_stats
+    @property
+    def action_stats(self):
+        if self._action_stats is None:
+            self._process_shard(0)
+        return self._action_stats
         
     def _get_feature(self, elem, feature_name: str) -> Any:
         # Implement feature extraction based on your TFDS structure
@@ -100,6 +97,7 @@ class ProcGenDataset(Dataset):
         return self.cur_shard[idx - (samples_so_far - self.samples_per_shard[i])]
         
     def _process_episode(self, episode: List[Dict[str, Any]]) -> Dict[str, Any]:
+        text_observation = []
         image_observation = []
         etc_observations = {}
         concatenated_action_float = []

@@ -44,15 +44,15 @@ BATCH_QUEUE_TOKEN_DAY_LIMIT = {
 }
 
 class OpenAIModule:
-    def __init__(self, model: str, max_concurrent_prompts: int = 1, max_output_tokens_per_query=128) -> None:
+    def __init__(self, model: str, max_concurrent_prompts: int = None, max_output_tokens_per_query=128) -> None:
         if model not in CONTEXT_SIZE_MAP:
             raise KeyError(f"The model {model} is not currenly supported.")
         
         self._max_concurrent_prompts = max_concurrent_prompts if max_concurrent_prompts else 1
-        self.history = [[] for _ in range(max_concurrent_prompts)]
+        self.history = [[] for _ in range(self._max_concurrent_prompts)]
         self.model = model
         self.max_num_tokens = CONTEXT_SIZE_MAP[model]
-        self.cur_num_tokens_cache = [[] for _ in range(max_concurrent_prompts)]
+        self.cur_num_tokens_cache = [[] for _ in range(self._max_concurrent_prompts)]
         self._batch_job_ids = []
         self.client = OpenAI()
         try:
@@ -153,8 +153,8 @@ class OpenAIModule:
                 
     # Clearing the history.
     def clear_history(self) -> None:
-        self.history = [[] for _ in range(self._max_concurrent_prompts)]
-        self.cur_num_tokens_cache = [[] for _ in range(self._max_concurrent_prompts)]
+        self.history = [[] for _ in range(self.max_concurrent_prompts)]
+        self.cur_num_tokens_cache = [[] for _ in range(self.max_concurrent_prompts)]
 
     # Calling the chat completion API.
     def _get_response_from_api(self, system_prompt: str=None) -> str:

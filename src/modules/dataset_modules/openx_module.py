@@ -1,12 +1,18 @@
-from base_dataset_module import DatasetModule
+from src.modules.dataset_modules.base_dataset_module import DatasetModule, DatasetBatchModule
 from definitions.openx import OpenXDefinitions
 from src.data_utils.openx_dataloader import get_openx_dataloader
-from definitions.prompt import format_instruction_prompt
+from definitions.openx_prompt import format_instruction_prompt
+from pathlib import Path
+from typing import Any, Union
+import numpy as np
+import time
+import warnings
+import tensorflow as tf
 
 class OpenXModule(DatasetModule):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, k_shots: int = 0) -> None:
-        super().__init__(disk_root_dir, modality, source, model, k_shots)
-        self._defs = definitions.OpenXDefinitions
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0) -> None:
+        super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
+        self._definitions_class = OpenXDefinitions
         self._dataloader_fn = get_openx_dataloader
         self.dataset_family = 'openx'
         self.format_instruction_prompt_fn = format_instruction_prompt
@@ -40,7 +46,7 @@ class OpenXModule(DatasetModule):
             for batch in dataloader:
                 # Action stats need to be retrieved only once for each dataset, after they have been populated.
                 if self.action_stats is None:
-                    self.action_stats = dataloader_obj._get_action_stats()  
+                    self.action_stats = dataloader_obj.action_stats  
                 #episode_mses = [[] for b in range(batch_size)]
                 #success_counts = [0 for b in range(batch_size)]
 
@@ -126,12 +132,19 @@ class OpenXModule(DatasetModule):
         return result
 
 class OpenXBatchModule(DatasetBatchModule):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, k_shots: int = 0, batch_size: int = None) -> None:
-        super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots, batch_size)
-        self._defs = definitions.OpenXDefinitions
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0):
+        super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
+        self._definitions_class = OpenXDefinitions
         self._dataloader_fn = get_openx_dataloader
         self.dataset_family = 'openx'
+        self.format_instruction_prompt_fn = format_instruction_prompt
 
+    def _validate_text_output(self, output: Any, shape: tuple[int]) -> np.array:
+        if output is None or not isinstance(output, list) or len(output) != shape[0] or any(isinstance(x, (str, np.string_, set)) for x in output):
+            output = np.random.random(size=shape)
+        
+        return np.array(output)
+    
     def _run_eval_dataset(self, dataset_batch_info_folder):
         result = {}
         
@@ -192,7 +205,9 @@ class OpenXBatchModule(DatasetBatchModule):
                         action_success.append(1)
                     else:
                         action_success.append(0)
-        action_success_rate = (sum(action_success) / len(action_success)) * 100
+        action_success_rate = None
+        if len(action_success) > 0:
+            action_success_rate = (sum(action_success) / len(action_success)) * 100
         total_dataset_mse = sum(timestep_mse)
         print(f"\nTotal MSE across {len(timestep_mse)} timesteps: {total_dataset_mse:.4f}")
         num_timesteps = len(timestep_mse)
