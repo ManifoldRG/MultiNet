@@ -38,7 +38,7 @@ def discretize_range_0_to_pos_1_gripper_action_to_3_values(gripper_value: float)
 
 def convert_action(action: np.ndarray, dataset_name: str):
     """
-    Convert the predicted action from OR to the OpenVLA standard.
+    Convert the predicted action from OpenVLA to the OpenX standard.
 
     see definitions/openx.py for more details.
     """
@@ -128,9 +128,71 @@ def convert_action(action: np.ndarray, dataset_name: str):
     def utokyo_xarm_bimanual_conversion(action: np.ndarray) -> np.ndarray:
         return action
 
-    # TODO: implement this
     def bigfish_conversion(action: np.ndarray) -> np.ndarray:
-        return action
+        """
+        Convert OpenVLA standard to Bigfish action space:
+            [   
+                ("LEFT", "DOWN"),
+                ("LEFT",),
+                ("LEFT", "UP"),
+                ("DOWN",),
+                ("",),
+                ("UP",),
+                ("RIGHT", "DOWN"),
+                ("RIGHT",),
+                ("RIGHT", "UP")
+            ]
+        
+        In OpenVLA format, typically:
+        - x dimension (index 0) corresponds to horizontal movement (LEFT/RIGHT)
+        - z dimension (index 2) corresponds to vertical movement (UP/DOWN)
+
+        """
+        # Extract x and y dimensions (horizontal and vertical movement)
+        # For Bigfish, we'll use x for LEFT/RIGHT and z for UP/DOWN
+        x_movement = action[0]  # Horizontal movement (LEFT/RIGHT)
+        z_movement = action[2]  # Vertical movement (UP/DOWN)
+        
+        # threshold for movement detection
+        threshold = 0.2
+        
+        # Determine horizontal direction
+        if x_movement < -threshold:
+            horizontal = "LEFT"
+        elif x_movement > threshold:
+            horizontal = "RIGHT"
+        else:
+            horizontal = None
+            
+        # Determine vertical direction
+        if z_movement < -threshold:
+            vertical = "DOWN"
+        elif z_movement > threshold:
+            vertical = "UP"
+        else:
+            vertical = None
+
+        if horizontal == "LEFT" and vertical == "DOWN":
+            return 0
+        elif horizontal == "LEFT" and vertical is None:
+            return 1
+        elif horizontal == "LEFT" and vertical == "UP":
+            return 2
+        elif horizontal is None and vertical == "DOWN":
+            return 3
+        elif horizontal is None and vertical is None:
+            return 4
+        elif horizontal is None and vertical == "UP":
+            return 5
+        elif horizontal == "RIGHT" and vertical == "DOWN":
+            return 6
+        elif horizontal == "RIGHT" and vertical is None:
+            return 7
+        elif horizontal == "RIGHT" and vertical == "UP":
+            return 8
+        else:
+            return 4
+
 
     conversion_functions: dict[str, Callable[[np.ndarray, bool], np.ndarray]] = {
         'jaco_play': jaco_play_conversion,
