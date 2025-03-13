@@ -1,10 +1,7 @@
-import torch
 from torch.utils.data import Dataset, DataLoader
 import tensorflow as tf
 import numpy as np
 from typing import List, Dict, Any
-from PIL import Image
-from torch.nn.utils.rnn import pad_sequence
 
 class ProcgenDataset(Dataset):
     def __init__(self, tfds_shards: List[str]):
