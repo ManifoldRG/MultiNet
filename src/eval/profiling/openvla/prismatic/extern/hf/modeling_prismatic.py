@@ -530,19 +530,21 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
         action_norm_stats = self.get_action_stats(unnorm_key)
         mask = action_norm_stats.get("mask", np.ones_like(action_norm_stats["q01"], dtype=bool))
         action_high, action_low = np.array(action_norm_stats["q99"]), np.array(action_norm_stats["q01"])
+
         # Discrete dimension mask
         discrete = action_norm_stats.get("discrete", np.zeros_like(mask, dtype=bool))
 
-        # Compute continuous actions
+        # Compute discrete actions
         actions = np.zeros_like(normalized_actions)
         actions[discrete] = np.clip(
             np.floor(0.5 * (normalized_actions[discrete] + 1) * (action_high[discrete] - action_low[discrete]) + action_low[discrete]).astype(int),
             action_low[discrete],
             action_high[discrete],
         )
+        # Compute continuous actions
         actions[~discrete] = 0.5 * (normalized_actions[~discrete] + 1) * (action_high[~discrete] - action_low[~discrete]) + action_low[~discrete]
 
-        # Apply mask and discrete/continuous logic
+        # Only add normalized and discretized actions that are unmasked
         actions = np.where(mask, actions, normalized_actions)
 
         return actions
@@ -566,7 +568,12 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
     def get_action_dim(self, unnorm_key: Optional[str] = None) -> int:
         """Get the dimensionality of the policy's action space."""
         unnorm_key = self._check_unnorm_key(self.norm_stats, unnorm_key)
-        return len(self.norm_stats[unnorm_key]["action"]["q01"])
+        if self.norm_stats[unnorm_key].get("action_decoding_strategy", "manual_mapping") == "manual_mapping":  # use OpenVLA standard ACTION_DIM=7
+            return 7 # OpenVLA standard action dimension
+        elif self.norm_stats[unnorm_key].get("action_decoding_strategy") == "naive_dim_extension":  # use dataset-specific action dimension
+            return len(self.norm_stats[unnorm_key]["action"]["q01"])
+        else:
+            raise ValueError(f"Unknown action decoding strategy: {self.norm_stats[unnorm_key]}")
 
     def get_action_stats(self, unnorm_key: Optional[str] = None) -> Dict[str, Any]:
         """Get all the logged statistics for the given dataset."""

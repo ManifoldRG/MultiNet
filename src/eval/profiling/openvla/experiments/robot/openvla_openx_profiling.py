@@ -31,14 +31,14 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 SUPPORTED_DATASETS = [
-            'nyu_door_opening_surprising_effectiveness',            'ucsd_pick_and_place_dataset_converted_externally_to_rlds',
-            'nyu_rot_dataset_converted_externally_to_rlds',         'usc_cloth_sim_converted_externally_to_rlds',
-            'columbia_cairlab_pusht_real',                          'plex_robosuite',
-            'conq_hose_manipulation',                               'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds',
-            'eth_agent_affordances',                                'stanford_mask_vit_converted_externally_to_rlds',       
-            'imperialcollege_sawyer_wrist_cam',                     'utokyo_pr2_opening_fridge_converted_externally_to_rlds'
-        ]
-        # 'bigfish']
+        #     'nyu_door_opening_surprising_effectiveness',            'ucsd_pick_and_place_dataset_converted_externally_to_rlds',
+        #     'nyu_rot_dataset_converted_externally_to_rlds',         'usc_cloth_sim_converted_externally_to_rlds',
+        #     'columbia_cairlab_pusht_real',                          'plex_robosuite',
+        #     'conq_hose_manipulation',                               'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds',
+        #     'eth_agent_affordances',                                'stanford_mask_vit_converted_externally_to_rlds',       
+        #     'imperialcollege_sawyer_wrist_cam',                     'utokyo_pr2_opening_fridge_converted_externally_to_rlds'
+        # ]
+        'bigfish', 'bossfight', 'caveflyer', 'chaser']
 
 
 @dataclass
@@ -74,17 +74,16 @@ def clear_gpu_memory() -> None:
 
 def log_memory_usage():
     if torch.cuda.is_available():
-        # Log only peak memory at INFO level
+        # Log only peak memory at DEBUG level
         peak_mb = torch.cuda.max_memory_allocated() / 1024**2
-        logger.info(f"- Peak GPU: {peak_mb:.1f}MB")
+        logger.debug(f"- Peak GPU usage: {peak_mb / 1024:.1f}GiB")
         
         # Detailed metrics only at DEBUG level
         if logger.isEnabledFor(logging.DEBUG):
             allocated = torch.cuda.memory_allocated() / 1024**2
-            reserved = torch.cuda.memory_reserved() / 1024**2
             device = torch.cuda.current_device()
             total = torch.cuda.get_device_properties(device).total_memory / 1024**2
-            logger.debug(f"- Memory details: {allocated:.1f}/{total:.1f}MB ({allocated/total:.1%})")
+            logger.debug(f"- Memory details: {allocated / 1024:.1f}/{total / 1024:.1f}GiB ({allocated/total:.1%})")
 
 
 @contextlib.contextmanager
@@ -108,7 +107,7 @@ def get_dataset_paths(datasets_dir: str) -> list[str]:
             logger.warning(f"No subdirectories found in {datasets_dir}")
             return []
         
-        logger.info(f"Found {len(dataset_paths)} OpenX datasets in {datasets_dir}")
+        logger.info(f"Found {len(dataset_paths)} datasets in {datasets_dir}")
         return dataset_paths
     except FileNotFoundError:
         logger.error(f"The specified path does not exist: {datasets_dir}")
@@ -156,7 +155,7 @@ def process_single_dataset(
     tfds_shards: list[str]
 ) -> dict[str, any]:
     try:
-        logger.info("\nEvaluating {dataset_name}...")
+        logger.info(f"\nEvaluating {dataset_name}...")
         # Start timing
         start_time = time.time()
         
