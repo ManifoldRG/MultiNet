@@ -33,6 +33,8 @@ class ProcGenDataset(Dataset):
             action = elem['actions'].numpy()
             
             image_observation = elem['observations'].numpy().astype(np.uint8)
+            
+            # PIL expects channel in 3rd axis when converting image to URL for inference
             image_observation = np.moveaxis(image_observation, 0, 2)
             
             # Extract relevant features from the example
@@ -81,15 +83,18 @@ class ProcGenDataset(Dataset):
                 self.cur_shard_idx = idx
             return self._process_episode(self.cur_shard)
         
+        # Handle negative indices
         if idx < 0:
             idx = sum(self.samples_per_shard) + idx
         
+        # Comb through shards to get to the timestep idx
         samples_so_far = 0
         for i in range(len(self.tfds_shards)):
             samples_so_far += self.samples_per_shard[i]
             if idx < samples_so_far:
                 break
             
+        # Only process the shard if the timestep is not in the current shard
         if self.cur_shard_idx != i:
             self.cur_shard = self._process_shard(i)
             self.cur_shard_idx = i
