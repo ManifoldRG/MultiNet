@@ -22,10 +22,17 @@ import numpy as np
 import tensorflow as tf
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
+OPENVLA_STANDARD_ACTION_DIM = 7
 
 def evaluate_openvla_model(cfg, model, processor, tfds_shards, dataset_name):
+    try:
+        action_decoding_strategy = model.norm_stats[dataset_name]['action_decoding_strategy']
+    except KeyError:
+        logger.warning(f"Action decoding strategy not found for dataset {dataset_name}. Defaulting to manual_mapping.")
+        action_decoding_strategy = 'manual_mapping'
+
     if dataset_name in ['bigfish']:
         dataloader = get_procgen_dataloader(tfds_shards, batch_size=1)
     else:
@@ -38,48 +45,29 @@ def evaluate_openvla_model(cfg, model, processor, tfds_shards, dataset_name):
     obs = {}
 
     for batch in dataloader:
-        # TODO: move logic to separate procgen_eval script
-        if dataset_name in ['bigfish']:
-            obs_len = len(batch['observation'][0][0])
-        else:
-            #Because the batch size is 1, 1 batch contains 1 episode, which is why the first element is indexed
-            obs_len = len(batch['continuous_observation'][0])
+        # Get the number of observations in the batch
+        obs_len = len(batch['continuous_observation'][0])
 
         for idx in range(obs_len):
             # Get the actual (expert) action
-            actual_action = drop_is_terminal_dim(batch['action'][0][idx], dataset_name)
+            actual_action = drop_is_terminal_dim(batch['action'][0][idx], dataset_name) # only drops is_last dim if the action space has one
 
-            mse = 0.0
-
-            if dataset_name in ['bigfish']:
-                # TODO: move this into openvla_procgen_dataloader
-                # Transform Bigfish image data to correct format
-                image_data = batch['observation'][0][idx]
-                if image_data.shape == (3, 64, 64):
-                    # Convert from (channels, height, width) to (height, width, channels)
-                    obs['full_image'] = np.transpose(image_data, (1, 2, 0))
-                    logger.debug("Image shape transposed: {}".format(obs['full_image'].shape))
-                    if obs['full_image'].dtype != np.uint8:
-                        obs['full_image'] = (obs['full_image'] * 255).astype(np.uint8)
-                        logger.debug("Image dtype not uint8, converted to uint8")
-
-                # Debug information
-                logger.debug(f"  Timestep {idx}:")
-                logger.debug(f"Procgen batch action: {batch['action'][0][idx]}")
-                logger.debug(f"Procgen batch reward: {batch['reward'][0][idx]}")
-                logger.debug(f"Procgen batch is_last: {batch['is_last'][0][idx]}")
-                logger.debug(f"    Image shape: {obs['full_image'].shape if obs['full_image'] is not None else 'None'}")
-            else:
-                obs['full_image'] = batch['continuous_observation'][0][idx]
+            # Get the preprocessed image from the dataloader
+            obs['full_image'] = batch['continuous_observation'][0][idx]
+            
+            # Debug information
+            logger.debug(f"  Timestep {idx}:")
+            logger.debug(f"Batch action: {batch['action'][0][idx]}")
+            logger.debug(f"Batch reward: {batch['reward'][0][idx]}")
+            logger.debug(f"Batch is_last: {batch['is_last'][0][idx]}")
+            logger.debug(f"Image shape: {obs['full_image'].shape if obs['full_image'] is not None else 'None'}")
 
             # Check if the image is None
             if obs['full_image'] is None:
                 raise Exception(f"Image is None for timestep {idx} for dataset {dataset_name}.")
 
-            if dataset_name in ['bigfish']:
-                text_obs = "eat other fishes"  # bigfish dataset has no text for the task labels
-            else:
-                text_obs = batch['text_observation'][0][idx]
+            # Get the text observation from the dataloader
+            text_obs = batch['text_observation'][0][idx]
 
             # Get the model's predicted action
             predicted_action = get_action(cfg, 
@@ -90,8 +78,11 @@ def evaluate_openvla_model(cfg, model, processor, tfds_shards, dataset_name):
             
 
             # Standardize the predicted action to match the actual action space
-            standardized_predicted_action = convert_action(predicted_action,
-                                                           dataset_name)
+            if action_decoding_strategy == 'manual_mapping':
+                assert predicted_action.shape == (OPENVLA_STANDARD_ACTION_DIM,), f"action shape {predicted_action.shape} != {OPENVLA_STANDARD_ACTION_DIM}"
+                standardized_predicted_action = convert_action(predicted_action, dataset_name)
+            else: # naive dimension extension strategy
+                standardized_predicted_action = predicted_action
 
             # Debug information
             logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
@@ -113,7 +104,7 @@ def evaluate_openvla_model(cfg, model, processor, tfds_shards, dataset_name):
 
     # TODO: delete after testing, should probably catch the error during production runs?
     if len(action_success) == 0:
-        logger.warning("Action success list is empty. Defaulting to 0.0 action success rate.")
+        logger.warning("Action success list is EMPTY. Defaulting to 0.0 action success rate.")
         action_success_rate = 0.0
     else:
         action_success_rate = (sum(action_success) / len(action_success)) * 100

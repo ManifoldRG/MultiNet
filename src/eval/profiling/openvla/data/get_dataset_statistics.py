@@ -7,9 +7,15 @@ import numpy as np
 import os
 import logging
 
-logger = logging.getLogger(__name__)
 
-class OpenXDataset():
+IS_DEV = True
+
+logger = logging.getLogger(__name__)
+if IS_DEV:
+    logger.setLevel(logging.DEBUG)
+
+
+class OpenXDataset:
     def __init__(self, tfds_shards: List[str]):
         self.tfds_shards = tfds_shards
         self.action_tensor_size = None
@@ -153,41 +159,36 @@ class OpenXDataset():
             "q99": np.zeros(dim).tolist(),
         }
 
-    def _get_action_mad(self):
-        """Calculate Median Absolute Deviation (MAD) of action differences using pre-collected actions.
-        
-        Returns:
-            float: MAD of action differences
-        """
-        if not hasattr(self, 'action_tensors') or len(self.action_tensors) < 2:
-            raise AttributeError("action_tensors is None or length is less than 2, it has not been populated yet")
-        
-        # Calculate differences between consecutive actions
-        action_diffs = np.abs(np.diff(self.action_tensors, axis=0))
-        logger.info(f"Action diffs: {action_diffs}")
-
-        # Calculate MAD
-        median = np.median(action_diffs)
-        mad = np.median(np.abs(action_diffs - median))
-
-        mad = float(mad) if mad > 0 else 1.0  # avoids division by zero
-
-        logger.info(f"Median: {median}, MAD: {mad}")
-
-        return mad
     
 if __name__ == "__main__":
     
     dataset_statistics = {}
+    
+    if IS_DEV:
+        # openx_train_datasets_path = '/home/locke/ManifoldRG/MultiNet/data/openx'
+        openx_train_datasets_path = '/home/locke/ManifoldRG/MultiNet/data/translated'
+    else:
+        openx_train_datasets_path = '/mnt/disks/mount_dir/multinettranslated/openx_translated/'
+    
     openx_test_datasets_path = '/mnt/disks/mount_dir/openx_test_translated/'
-    
-    # openx_train_datasets_path = '/mnt/disks/mount_dir/multinettranslated/openx_translated/'
-    openx_train_datasets_path = '/home/locke/ManifoldRG/MultiNet/data/translated'
-    
     openx_val_datasets_path = '/mnt/disks/mount_dir/openx_val_translated/'
-    # openx_datasets = ['nyu_door_opening_surprising_effectiveness', 'columbia_cairlab_pusht_real', 'conq_hose_manipulation', 'plex_robosuite', 'stanford_mask_vit_converted_externally_to_rlds', 'usc_cloth_sim_converted_externally_to_rlds', 'utokyo_pr2_opening_fridge_converted_externally_to_rlds', 'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds', 'utokyo_xarm_pick_and_place_converted_externally_to_rlds', 'nyu_rot_dataset_converted_externally_to_rlds', 'ucsd_pick_and_place_dataset_converted_externally_to_rlds', 'eth_agent_affordances', 'imperialcollege_sawyer_wrist_cam']
+    
+    # multinet_v0_1_openx_datasets = ['nyu_door_opening_surprising_effectiveness', 'columbia_cairlab_pusht_real', 'conq_hose_manipulation', 'plex_robosuite', 'stanford_mask_vit_converted_externally_to_rlds', 'usc_cloth_sim_converted_externally_to_rlds', 'utokyo_pr2_opening_fridge_converted_externally_to_rlds', 'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds', 'utokyo_xarm_pick_and_place_converted_externally_to_rlds', 'nyu_rot_dataset_converted_externally_to_rlds', 'ucsd_pick_and_place_dataset_converted_externally_to_rlds', 'eth_agent_affordances', 'imperialcollege_sawyer_wrist_cam']
+    
+    # openx_datasets = [
+    #     'nyu_door_opening_surprising_effectiveness', 'ucsd_pick_and_place_dataset_converted_externally_to_rlds',
+    #     'nyu_rot_dataset_converted_externally_to_rlds',         'usc_cloth_sim_converted_externally_to_rlds',
+    #     'columbia_cairlab_pusht_real',       'plex_robosuite',                                       'utokyo_pr2_opening_fridge_converted_externally_to_rlds',
+    #     'conq_hose_manipulation',            'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds',
+    #     'eth_agent_affordances',             'stanford_mask_vit_converted_externally_to_rlds',       
+    #     'imperialcollege_sawyer_wrist_cam'
+    # ]
     openx_datasets = ['utokyo_xarm_bimanual_converted_externally_to_rlds', 'bigfish']
 
+    multinet_v0_2_dataset_action_decoding_strategies = {
+        'utokyo_xarm_bimanual_converted_externally_to_rlds': 'manual_mapping',
+        'bigfish': 'naive_dim_extension'
+    }
 
     for openx_dataset in openx_datasets:
         
@@ -202,44 +203,44 @@ if __name__ == "__main__":
             print(f"Skipping {openx_dataset} as it's already in the dataset statistics.")
             continue
         
-        if openx_dataset in ['conq_hose_manipulation', 'plex_robosuite', 'stanford_mask_vit_converted_externally_to_rlds', 'usc_cloth_sim_converted_externally_to_rlds', 'utokyo_pr2_opening_fridge_converted_externally_to_rlds', 'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds', 'utokyo_xarm_pick_and_place_converted_externally_to_rlds']:
-            train_shard_files = os.listdir(os.path.join(openx_train_datasets_path, openx_dataset))
-            sorted_train_shard_files = sorted(train_shard_files, key=lambda x: int(x.split('_')[-1]))
-            train_tfds_shards = [os.path.join(openx_train_datasets_path, openx_dataset, f) 
-                        for f in sorted_train_shard_files]
+        if not IS_DEV:
+            if openx_dataset in ['conq_hose_manipulation', 'plex_robosuite', 'stanford_mask_vit_converted_externally_to_rlds', 'usc_cloth_sim_converted_externally_to_rlds', 'utokyo_pr2_opening_fridge_converted_externally_to_rlds', 'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds', 'utokyo_xarm_pick_and_place_converted_externally_to_rlds']:
+                train_shard_files = os.listdir(os.path.join(openx_train_datasets_path, openx_dataset))
+                sorted_train_shard_files = sorted(train_shard_files, key=lambda x: int(x.split('_')[-1]))
+                train_tfds_shards = [os.path.join(openx_train_datasets_path, openx_dataset, f) 
+                            for f in sorted_train_shard_files]
+                
+                val_shard_files = os.listdir(os.path.join(openx_val_datasets_path, openx_dataset))
+                sorted_val_shard_files = sorted(val_shard_files, key=lambda x: int(x.split('_')[-1]))
+                val_tfds_shards = [os.path.join(openx_val_datasets_path, openx_dataset, f) 
+                            for f in sorted_val_shard_files]
+                tfds_shards = train_tfds_shards + val_tfds_shards
             
-            val_shard_files = os.listdir(os.path.join(openx_val_datasets_path, openx_dataset))
-            sorted_val_shard_files = sorted(val_shard_files, key=lambda x: int(x.split('_')[-1]))
-            val_tfds_shards = [os.path.join(openx_val_datasets_path, openx_dataset, f) 
-                        for f in sorted_val_shard_files]
-            tfds_shards = train_tfds_shards + val_tfds_shards
-        
-        elif openx_dataset in ['nyu_door_opening_surprising_effectiveness', 'columbia_cairlab_pusht_real']:
-            train_shard_files = os.listdir(os.path.join(openx_train_datasets_path, openx_dataset))
-            sorted_train_shard_files = sorted(train_shard_files, key=lambda x: int(x.split('_')[-1]))
-            train_tfds_shards = [os.path.join(openx_train_datasets_path, openx_dataset, f) 
-                        for f in sorted_train_shard_files]
-            
-            test_shard_files = os.listdir(os.path.join(openx_test_datasets_path, openx_dataset))
-            sorted_test_shard_files = sorted(test_shard_files, key=lambda x: int(x.split('_')[-1]))
-            test_tfds_shards = [os.path.join(openx_test_datasets_path, openx_dataset, f) 
-                        for f in sorted_test_shard_files]
-            tfds_shards = train_tfds_shards + test_tfds_shards
-        
-        elif openx_dataset in ['bigfish']:
-            train_shard_files = os.listdir(os.path.join(openx_train_datasets_path, openx_dataset))
-            sorted_train_shard_files = sorted(train_shard_files, key=lambda x: datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"))
-            tfds_shards = [os.path.join(openx_train_datasets_path, openx_dataset, f) 
-                        for f in sorted_train_shard_files]
-
-            # TODO: add train, test or val shard files depending on the cloud folder structures
-
+            elif openx_dataset in ['nyu_door_opening_surprising_effectiveness', 'columbia_cairlab_pusht_real']:
+                train_shard_files = os.listdir(os.path.join(openx_train_datasets_path, openx_dataset))
+                sorted_train_shard_files = sorted(train_shard_files, key=lambda x: int(x.split('_')[-1]))
+                train_tfds_shards = [os.path.join(openx_train_datasets_path, openx_dataset, f) 
+                            for f in sorted_train_shard_files]
+                
+                test_shard_files = os.listdir(os.path.join(openx_test_datasets_path, openx_dataset))
+                sorted_test_shard_files = sorted(test_shard_files, key=lambda x: int(x.split('_')[-1]))
+                test_tfds_shards = [os.path.join(openx_test_datasets_path, openx_dataset, f) 
+                            for f in sorted_test_shard_files]
+                tfds_shards = train_tfds_shards + test_tfds_shards
         else:
-            train_shard_files = os.listdir(os.path.join(openx_train_datasets_path, openx_dataset))
-            sorted_train_shard_files = sorted(train_shard_files, key=lambda x: int(x.split('_')[-1]))
-            train_tfds_shards = [os.path.join(openx_train_datasets_path, openx_dataset, f) 
-                        for f in sorted_train_shard_files]
-            tfds_shards = train_tfds_shards
+            if openx_dataset in ['bigfish']:
+                train_shard_files = os.listdir(os.path.join(openx_train_datasets_path, openx_dataset))
+                sorted_train_shard_files = sorted(train_shard_files, key=lambda x: datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"))
+                tfds_shards = [os.path.join(openx_train_datasets_path, openx_dataset, f) 
+                            for f in sorted_train_shard_files]
+                # TODO: add train, test or val shard files depending on the cloud folder structures
+
+            else:
+                train_shard_files = os.listdir(os.path.join(openx_train_datasets_path, openx_dataset))
+                sorted_train_shard_files = sorted(train_shard_files, key=lambda x: int(x.split('_')[-1]))
+                train_tfds_shards = [os.path.join(openx_train_datasets_path, openx_dataset, f) 
+                            for f in sorted_train_shard_files]
+                tfds_shards = train_tfds_shards
 
         openxobj = OpenXDataset(tfds_shards)
         openxobj._process_shards(openx_dataset)
@@ -257,7 +258,7 @@ if __name__ == "__main__":
             'proprio': openxobj._get_proprio_stats(),
             'num_transitions': openxobj.timestep_count,
             'num_trajectories': openxobj.is_last_count,
-            'action_mad': openxobj._get_action_mad()
+            'action_decoding_strategy': multinet_v0_2_dataset_action_decoding_strategies.get(openx_dataset, 'manual_mapping')
         }
 
         existing_statistics.update(dataset_statistics)
