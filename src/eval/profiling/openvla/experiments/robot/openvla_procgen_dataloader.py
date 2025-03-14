@@ -1,15 +1,38 @@
 from torch.utils.data import Dataset, DataLoader
 import tensorflow as tf
 import numpy as np
-from typing import List, Dict, Any
+import logging
+
+logger = logging.getLogger(__name__)
+# logger.setLevel(logging.DEBUG)
+
+# Constants for dataset-specific settings
+PROCGEN_TASK_LABELS = {
+    'bigfish': "eat other fishes",
+    'bossfight': "unknown task",
+    'caveflyer': "unknown task",
+    'chaser': "unknown task",
+    'climber': "unknown task",
+    'coinrun': "unknown task",
+    'dodgeball': "unknown task",
+    'fruitbot': "unknown task",
+    'heist': "unknown task",
+    'jumper': "unknown task",
+    'leaper': "unknown task",
+    'maze': "unknown task",
+    'miner': "unknown task",
+    'ninja': "unknown task",
+    'plunder': "unknown task",
+    'starpilot': "unknown task"
+}
 
 class ProcgenDataset(Dataset):
-    def __init__(self, tfds_shards: List[str]):
+    def __init__(self, tfds_shards: list[str]):
         """
         Initialize the Procgen dataset.
         
         Args:
-            tfds_shards: List of paths to the translated Procgen dataset shards
+            tfds_shards: list of paths to the translated Procgen dataset shards
         """
         self.tfds_shards = tfds_shards
         self.current_elem_idx = 0
@@ -97,7 +120,7 @@ class ProcgenDataset(Dataset):
         """
         return sum(1 for _ in self._process_shards())
 
-    def __getitem__(self, idx: int) -> Dict[str, Any]:
+    def __getitem__(self, idx: int) -> dict[str, any]:
         """
         Get an episode by index.
         
@@ -114,32 +137,71 @@ class ProcgenDataset(Dataset):
             return self._process_episode(episode)
         raise IndexError("Episode index out of range")
 
-    def _process_episode(self, episode: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _process_episode(self, episode: list[dict[str, any]]) -> dict[str, any]:
         """
         Process an episode into a format suitable for training or evaluation.
         
         Args:
-            episode: List of timesteps in the episode
+            episode: list of timesteps in the episode
             
         Returns:
-            A dictionary containing the processed episode data
+            A dictionary containing the processed episode data with standardized format:
+            - observation: raw observations from the environment
+            - continuous_observation: processed image observations ready for the model
+            - action: actions taken in the environment
+            - reward: rewards received
+            - is_last: whether the timestep is the last in an episode
+            - text_observation: text descriptions of the task
         """
         observations = []
+        continuous_observations = []  # Processed images for the model
         actions = []
         rewards = []
         is_last = []
+        text_observations = []  # Added text observations
 
         for timestep in episode:
+            # Store original observation
             observations.append(timestep['observation'])
+            
+            # Process image data to correct format
+            image_data = timestep['observation']
+            if image_data is not None:
+                if image_data.shape == (3, 64, 64):
+                    # Convert from (channels, height, width) to (height, width, channels)
+                    processed_image = np.transpose(image_data, (1, 2, 0))
+                    logger.debug(f"Image shape transposed: {processed_image.shape}")
+                    
+                    # Ensure uint8 format
+                    if processed_image.dtype != np.uint8:
+                        processed_image = (processed_image * 255).astype(np.uint8)
+                        logger.debug("Image dtype not uint8, converted to uint8")
+                else:
+                    processed_image = image_data
+                
+                continuous_observations.append(processed_image)
+            else:
+                continuous_observations.append(None)
+            
+            # Store other data
             actions.append(timestep['action'])
             rewards.append(timestep['reward'])
             is_last.append(timestep['is_last'])
+            
+            # Add text observation based on environment
+            try:
+                text_obs = PROCGEN_TASK_LABELS.get(dataset_name, "unknown task")
+            except Exception as e:
+                raise Exception(f"Failed to get text observation for dataset {dataset_name}: {e}")
+            text_observations.append(text_obs)
 
         return {
             'observation': observations,
+            'continuous_observation': continuous_observations,
             'action': actions,
             'reward': rewards,
-            'is_last': is_last
+            'is_last': is_last,
+            'text_observation': text_observations
         }
 
 def procgen_custom_collate(batch):
@@ -155,9 +217,11 @@ def procgen_custom_collate(batch):
     # Initialize dictionaries to store the collected data
     collected_data = {
         'observation': [],
+        'continuous_observation': [],
         'action': [],
         'reward': [],
-        'is_last': []
+        'is_last': [],
+        'text_observation': []
     }
 
     # Collect data from the batch
@@ -175,12 +239,12 @@ def procgen_custom_collate(batch):
 
     return result
 
-def get_procgen_dataloader(tfds_shards: List[str], batch_size: int, num_workers: int = 0) -> DataLoader:
+def get_procgen_dataloader(tfds_shards: list[str], batch_size: int, num_workers: int = 0) -> DataLoader:
     """
     Create a DataLoader for the Procgen dataset.
     
     Args:
-        tfds_shards: List of paths to the translated Procgen dataset shards
+        tfds_shards: list of paths to the translated Procgen dataset shards
         batch_size: Batch size for the DataLoader
         num_workers: Number of worker processes for the DataLoader
         

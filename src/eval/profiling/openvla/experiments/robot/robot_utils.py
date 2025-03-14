@@ -66,6 +66,7 @@ def get_action(cfg, model, obs, task_label, processor=None):
         action = get_vla_action(
             model, processor, cfg.pretrained_checkpoint, obs, task_label, cfg.unnorm_key, center_crop=cfg.center_crop
         )
+        # disabled the shape check to allow naive action dimension extension
         # assert action.shape == (ACTION_DIM,), f"action shape {action.shape} != {ACTION_DIM}"
     else:
         raise ValueError("Unexpected `model_family` found in config.")
