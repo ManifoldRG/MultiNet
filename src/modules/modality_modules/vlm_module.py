@@ -5,7 +5,7 @@ import ast
 
 
 class VLMModule:
-    def __init__(self, source: str, model: str, max_concurrent_prompts: int = 1) -> None:
+    def __init__(self, source: str, model: str, max_concurrent_prompts: int = None) -> None:
         self.source_module = None
         if source == 'openai': 
             self.source_module = OpenAIModule(model, max_concurrent_prompts)
