@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Any, Union
 import numpy as np
 import time
-import warnings
 import tensorflow as tf
+from glob import glob
 
 class OpenXModule(DatasetModule):
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0) -> None:
@@ -16,7 +16,18 @@ class OpenXModule(DatasetModule):
         self._dataloader_fn = get_openx_dataloader
         self.dataset_family = 'openx'
         self.format_instruction_prompt_fn = format_instruction_prompt
-    
+        
+    # Finding the translated TFDS shards.
+    def _find_shards(self, dataset: str) -> list[str]:
+        try:
+            dataset_dir = glob(f"{self.disk_root_dir}/mount_dir*/{self.dataset_family}_*/{dataset}")[0]
+            shard_files = glob(f"{dataset_dir}/translated_shard_*")
+            tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
+            return tfds_shards
+        except IndexError:
+            print(f"Cannot identify the directory to the dataset {dataset}. Skipping this dataset.")
+            return []
+        
     def _validate_text_output(self, output: Any, shape: tuple[int]) -> np.array:
         if output is None or not isinstance(output, list) or len(output) != shape[0] or any(isinstance(x, (str, np.string_, set)) for x in output):
             output = np.random.random(size=shape)
@@ -157,15 +168,10 @@ class OpenXBatchModule(DatasetBatchModule):
         
         paths = Path(dataset_batch_info_folder).iterdir()
         for fp in paths:
-            if Path(fp).exists():
-                try:
-                    batch_info = np.load(fp, allow_pickle=True)
-                except Exception:
-                    warnings.warn(f'Could not load file at path {fp}. Skipping...')
-                    continue
-            else:
-                warnings.warn(f'Could not find file at path {fp}. Skipping...')
-                continue    
+            if not Path(fp).exists():
+                raise FileNotFoundError(f'Could not find file at path {fp}') 
+            
+            batch_info = np.load(fp, allow_pickle=True)    
 
                     
             output_types = list(batch_info['output_types'])
@@ -180,9 +186,8 @@ class OpenXBatchModule(DatasetBatchModule):
             if status == 'completed':
                 outputs = self.modality_module.retrieve_batch_results(batch_id, output_types)
             else:
-                warnings.warn(f'Batch not completed for batch {ds} batch num {batch_num} '
-                              f'with batch id {batch_id}. Status: {status}. Skipping...')
-                continue
+                raise Exception(f'Batch not completed for batch {ds} batch num {batch_num} '
+                                f'with batch id {batch_id}. Status: {status}. Skipping...')
             
             outputs = [self._validate_text_output(output, shape=labels[o].shape) for o, output in enumerate(outputs)]
                 

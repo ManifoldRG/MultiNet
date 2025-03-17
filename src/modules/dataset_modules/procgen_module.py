@@ -5,7 +5,7 @@ from definitions.procgen_prompt import format_instruction_prompt
 from pathlib import Path
 import numpy as np
 import time
-import warnings
+from glob import glob
 
 class ProcgenModule(DatasetModule):
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0) -> None:
@@ -14,7 +14,19 @@ class ProcgenModule(DatasetModule):
         self.get_dataloader_fn = get_procgen_dataloader
         self.dataset_family = 'procgen'
         self.format_instruction_prompt_fn = format_instruction_prompt
-    
+        
+    # Finding the translated TFDS shards.
+    def _find_shards(self, dataset: str) -> list[str]:
+        try:
+            #FIXME: this needs to change when doing final evals depending on the files' naming scheme
+            dataset_dir = glob(f"{self.disk_root_dir}/mount_dir*/{self.dataset_family}_*/{dataset}")[0]
+            shard_files = glob(f"{dataset_dir}/translated_shard_*")
+            tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
+            return tfds_shards
+        except IndexError:
+            print(f"Cannot identify the directory to the dataset {dataset}. Skipping this dataset.")
+            return []
+        
     def _run_eval_dataset(self, dataset: str) -> dict:
         result = {}
 
@@ -129,17 +141,11 @@ class ProcgenBatchModule(DatasetBatchModule):
         
         paths = Path(dataset_batch_info_folder).iterdir()
         for fp in paths:
-            if Path(fp).exists():
-                try:
-                    batch_info = np.load(fp, allow_pickle=True)
-                except Exception:
-                    warnings.warn(f'Could not load file at path {fp}. Skipping...')
-                    continue
-            else:
-                warnings.warn(f'Could not find file at path {fp}. Skipping...')
-                continue    
-
-                    
+            if not Path(fp).exists():
+                raise FileNotFoundError(f'Could not find file at path {fp}') 
+            
+            batch_info = np.load(fp, allow_pickle=True)
+                  
             output_types = list(batch_info['output_types'])
             ds = batch_info['dataset_name'].item()
             batch_num = batch_info['batch_num'].item()
@@ -152,9 +158,8 @@ class ProcgenBatchModule(DatasetBatchModule):
             if status == 'completed':
                 outputs = self.modality_module.retrieve_batch_results(batch_id, output_types)
             else:
-                warnings.warn(f'Batch not completed for batch {ds} batch num {batch_num} '
-                              f'with batch id {batch_id}. Status: {status}. Skipping...')
-                continue
+                raise Exception(f'Batch not completed for batch {ds} batch num {batch_num} '
+                                f'with batch id {batch_id}. Status: {status}. Skipping...')
             
             action_space = self._get_action_space(ds, 'default')
             num_actions  = 0

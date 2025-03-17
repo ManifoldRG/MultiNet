@@ -1,18 +1,15 @@
 from dataclasses import dataclass
 from abc import abstractmethod, ABC
-import tensorflow as tf
 from src.modules.modality_modules.vlm_module import VLMModule
 
-from typing import Any, Union
-from glob import glob
+from typing import Any
 from pathlib import Path
 
+import tensorflow as tf
 import numpy as np
 import json
 import string
-import time
 import os
-import warnings
 
 
 class DatasetModule(ABC):
@@ -60,7 +57,8 @@ class DatasetModule(ABC):
             return {}
         return self._definitions_class.ADDITIONAL_INSTRUCTIONS
 
-    def _get_one_hot(self, targets, nb_classes):
+    # Take np array of int labels and output one hot encoding
+    def _get_one_hot(self, targets: np.ndarray, nb_classes: int):
         res = np.eye(nb_classes)[np.array(targets).reshape(-1)]
         return res.reshape(list(targets.shape)+[nb_classes])
 
@@ -134,19 +132,14 @@ class DatasetModule(ABC):
         return result
     
     @abstractmethod
+    # Each dataset needs its own eval scheme
     def _run_eval_dataset(self, dataset) -> dict:
         pass
     
-    # Finding the translated TFDS shards.
+    @abstractmethod
+    # Each dataset needs its own finding and sorting logic for shard files
     def _find_shards(self, dataset: str) -> list[str]:
-        try:
-            dataset_dir = glob(f"{self.disk_root_dir}/mount_dir*/{self.dataset_family}_*/{dataset}")[0]
-            shard_files = glob(f"{dataset_dir}/translated_shard_*")
-            tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
-            return tfds_shards
-        except IndexError:
-            print(f"Cannot identify the directory to the dataset {dataset}. Skipping this dataset.")
-            return []
+        pass
 
     # Forming the batch.
     def _process_batch(self, batch: dict[str, list[Any]], dataset: str):
