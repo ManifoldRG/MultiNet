@@ -32,9 +32,23 @@ from transformers.modeling_outputs import ModelOutput
 
 from .configuration_prismatic import OpenVLAConfig, PrismaticConfig
 
+import sys
+
 # Get Logger
 logger = logging.getLogger(__name__)
+# Create console handler
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.DEBUG)
 
+# Create formatter and add to handler
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+
+# Add handler to logger
+logger.addHandler(console_handler)
+
+# Set log level
+logger.setLevel(logging.DEBUG)
 
 # === PyTorch/HuggingFace Default IGNORE_INDEX (for CrossEntropyLoss labels)
 IGNORE_INDEX = -100
@@ -498,6 +512,7 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
     def __init__(self, config: OpenVLAConfig) -> None:
         super().__init__(config)
         self.norm_stats = config.norm_stats
+        self.default_action_decoding_strategy = config.default_action_decoding_strategy
 
         # Compute action bins
         self.bins = np.linspace(-1, 1, config.n_action_bins)
@@ -517,37 +532,45 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
                 (input_ids, torch.unsqueeze(torch.Tensor([29871]).long(), dim=0).to(input_ids.device)), dim=1
             )
 
+        action_decoding_strategy = self.get_action_decoding_strategy(unnorm_key)
+        action_dim = self.get_action_dim(unnorm_key, action_decoding_strategy)
+
         # Run VLA inference
-        generated_ids = self.generate(input_ids, max_new_tokens=self.get_action_dim(unnorm_key), **kwargs)
+        generated_ids = self.generate(input_ids, max_new_tokens=action_dim, **kwargs)
 
         # Extract predicted action tokens and translate into (normalized) continuous actions
-        predicted_action_token_ids = generated_ids[0, -self.get_action_dim(unnorm_key) :].cpu().numpy()
+        predicted_action_token_ids = generated_ids[0, -action_dim :].cpu().numpy()
         discretized_actions = self.vocab_size - predicted_action_token_ids
         discretized_actions = np.clip(discretized_actions - 1, a_min=0, a_max=self.bin_centers.shape[0] - 1)
         normalized_actions = self.bin_centers[discretized_actions]
 
-        # Unnormalize actions
-        action_norm_stats = self.get_action_stats(unnorm_key)
-        mask = action_norm_stats.get("mask", np.ones_like(action_norm_stats["q01"], dtype=bool))
-        action_high, action_low = np.array(action_norm_stats["q99"]), np.array(action_norm_stats["q01"])
+        # Unnormalize and discretize (if needed) actions
+        if action_decoding_strategy in ["naive_dim_extension", "simple_mapping"]:
+            action_norm_stats = self.get_action_stats(unnorm_key)
+            mask = action_norm_stats.get("mask", np.ones_like(action_norm_stats["q01"], dtype=bool))
+            action_high, action_low = np.array(action_norm_stats["q99"]), np.array(action_norm_stats["q01"])
 
-        # Discrete dimension mask
-        discrete = action_norm_stats.get("discrete", np.zeros_like(mask, dtype=bool))
+            # Discrete dimension mask
+            discrete = action_norm_stats.get("discrete", np.zeros_like(mask, dtype=bool))
 
-        # Compute discrete actions
-        actions = np.zeros_like(normalized_actions)
-        actions[discrete] = np.clip(
-            np.floor(0.5 * (normalized_actions[discrete] + 1) * (action_high[discrete] - action_low[discrete]) + action_low[discrete]).astype(int),
-            action_low[discrete],
-            action_high[discrete],
-        )
-        # Compute continuous actions
-        actions[~discrete] = 0.5 * (normalized_actions[~discrete] + 1) * (action_high[~discrete] - action_low[~discrete]) + action_low[~discrete]
+            # Compute discrete actions
+            actions = np.zeros_like(normalized_actions)
+            actions[discrete] = np.clip(
+                np.floor(0.5 * (normalized_actions[discrete] + 1) * (action_high[discrete] - action_low[discrete]) + action_low[discrete]).astype(int),
+                action_low[discrete],
+                action_high[discrete],
+            )
+            # Compute continuous actions
+            actions[~discrete] = 0.5 * (normalized_actions[~discrete] + 1) * (action_high[~discrete] - action_low[~discrete]) + action_low[~discrete]
 
-        # Only add normalized and discretized actions that are unmasked
-        actions = np.where(mask, actions, normalized_actions)
+            # Only add normalized and discretized actions that are unmasked
+            actions = np.where(mask, actions, normalized_actions)
+        else:
+            # return OpenVLA standard normalized actions for manual rule mapping
+            actions = normalized_actions
 
         return actions
+
 
     @staticmethod
     def _check_unnorm_key(norm_stats: Dict[str, Dict[str, Any]], unnorm_key: Optional[str]) -> str:
@@ -565,17 +588,24 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
         )
         return unnorm_key
 
-    def get_action_dim(self, unnorm_key: Optional[str] = None) -> int:
+    def get_action_dim(self, unnorm_key: Optional[str] = None, decoding_strategy: Optional[str] = None) -> int:
         """Get the dimensionality of the policy's action space."""
         unnorm_key = self._check_unnorm_key(self.norm_stats, unnorm_key)
-        if self.norm_stats[unnorm_key].get("action_decoding_strategy", "manual_mapping") == "manual_mapping":  # use OpenVLA standard ACTION_DIM=7
+        decoding_strategy = decoding_strategy or self.get_action_decoding_strategy(unnorm_key)
+
+        if decoding_strategy == "manual_rule_mapping":  # use OpenVLA standard ACTION_DIM=7
             return 7 # OpenVLA standard action dimension
-        elif self.norm_stats[unnorm_key].get("action_decoding_strategy") == "naive_dim_extension":  # use dataset-specific action dimension
+        elif decoding_strategy == "naive_dim_extension" or decoding_strategy == "simple_mapping":  # use dataset-specific action dimension
             return len(self.norm_stats[unnorm_key]["action"]["q01"])
         else:
-            raise ValueError(f"Unknown action decoding strategy: {self.norm_stats[unnorm_key]}")
+            raise ValueError(f"Unknown action decoding strategy: {decoding_strategy}")
 
     def get_action_stats(self, unnorm_key: Optional[str] = None) -> Dict[str, Any]:
         """Get all the logged statistics for the given dataset."""
         unnorm_key = self._check_unnorm_key(self.norm_stats, unnorm_key)
         return self.norm_stats[unnorm_key]["action"]
+
+    def get_action_decoding_strategy(self, unnorm_key: Optional[str] = None) -> str:
+        """Get the decoding strategy used for actions."""
+        unnorm_key = self._check_unnorm_key(self.norm_stats, unnorm_key)
+        return self.norm_stats[unnorm_key].get("action_decoding_strategy", self.default_action_decoding_strategy)
