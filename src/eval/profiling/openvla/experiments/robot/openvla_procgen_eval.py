@@ -23,7 +23,6 @@ from src.eval.profiling.openvla.experiments.robot.eval_utils import (
 
 logger = logging.getLogger(__name__)
 
-
 def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name):
     """
     Evaluate OpenVLA model on ProcGen dataset.
@@ -39,8 +38,8 @@ def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name
         Tuple of (action_success_rate, total_dataset_amse, avg_dataset_amse, num_timesteps, normalized_amse)
     """
     action_decoding_strategy = get_action_decoding_strategy(model, dataset_name)
-    if action_decoding_strategy == model.default_action_decoding_strategy:
-        logger.warning(f"Action decoding strategy not found for dataset {dataset_name}. Defaulting to {model.default_action_decoding_strategy}")
+    if action_decoding_strategy == cfg.default_action_decoding_strategy:
+        logger.warning(f"Action decoding strategy not found for dataset {dataset_name}. Defaulting to {cfg.default_action_decoding_strategy}")
 
     _, dataloader = get_procgen_dataloader(tfds_shards, batch_size=1)
 
@@ -50,8 +49,6 @@ def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name
     obs = {}
 
     for batch in dataloader:
-        logger.debug(f"Batch keys: {batch.keys()}")
-
         obs_key = 'continuous_observation' if 'continuous_observation' in batch else 'image_observation'
 
         for batch_idx, batch_observations in enumerate(batch[obs_key]):
@@ -62,7 +59,8 @@ def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name
                 obs_len = 1
 
             for idx in range(obs_len):
-                actual_action = process_batch_actions(batch, dataset_name, batch_idx, idx)
+                actual_action = process_batch_actions(batch, dataset_name, batch_idx, idx, action_decoding_strategy)
+                logger.debug(f"Actual action: {actual_action}")
                 if actual_action is None:
                     continue
 
@@ -73,6 +71,7 @@ def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name
 
                 text_obs = batch['text_observation'][batch_idx][idx]
                 predicted_action = get_action(cfg, model, obs, text_obs, processor)
+                logger.debug(f"Predicted action: {predicted_action}")
 
                 # Standardize the predicted action to match the actual action space
                 standardized_predicted_action = standardize_predicted_action(
@@ -81,6 +80,7 @@ def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name
                     dataset_name
                 )
 
+                logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
                 mse = calculate_mse(standardized_predicted_action, actual_action)
                 timestep_mses.append(mse)
 
