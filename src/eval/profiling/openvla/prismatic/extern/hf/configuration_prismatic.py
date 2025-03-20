@@ -128,6 +128,7 @@ class PrismaticConfig(PretrainedConfig):
 
 class OpenVLAConfig(PrismaticConfig):
     model_type: str = "openvla"
+    default_action_decoding_strategy: str = "simple_mapping"
 
     def __init__(
         self,

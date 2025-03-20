@@ -24,22 +24,23 @@ sys.path.append(str(project_root))
 from src.eval.profiling.openvla.experiments.robot.robot_utils import get_model
 from src.eval.profiling.openvla.experiments.robot.openvla_utils import get_processor
 from src.eval.profiling.openvla.experiments.robot.openvla_openx_eval import evaluate_openvla_model
-import tensorflow as tf
+from definitions.procgen import ProcGenDefinitions
+from definitions.openx import OpenXDefinitions
 
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
-SUPPORTED_DATASETS = [
-        #     'nyu_door_opening_surprising_effectiveness',            'ucsd_pick_and_place_dataset_converted_externally_to_rlds',
-        #     'nyu_rot_dataset_converted_externally_to_rlds',         'usc_cloth_sim_converted_externally_to_rlds',
-        #     'columbia_cairlab_pusht_real',                          'plex_robosuite',
-        #     'conq_hose_manipulation',                               'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds',
-        #     'eth_agent_affordances',                                'stanford_mask_vit_converted_externally_to_rlds',       
-        #     'imperialcollege_sawyer_wrist_cam',                     'utokyo_pr2_opening_fridge_converted_externally_to_rlds'
-        # ]
-        'bigfish', 'bossfight', 'caveflyer', 'chaser']
-
+# List of datasets to evaluate
+PROFILING_DATASETS = [
+    'nyu_door_opening_surprising_effectiveness',            'ucsd_pick_and_place_dataset_converted_externally_to_rlds',
+    'nyu_rot_dataset_converted_externally_to_rlds',         'usc_cloth_sim_converted_externally_to_rlds',
+    'columbia_cairlab_pusht_real',                          'plex_robosuite',
+    'conq_hose_manipulation',                               'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds',
+    'eth_agent_affordances',                                'stanford_mask_vit_converted_externally_to_rlds',       
+    'imperialcollege_sawyer_wrist_cam',                     'utokyo_pr2_opening_fridge_converted_externally_to_rlds',
+    'bigfish', 'bossfight', 'caveflyer', 'chaser'
+]
 
 @dataclass
 class EvalConfig:
@@ -49,16 +50,14 @@ class EvalConfig:
     load_in_4bit: bool = True
     center_crop: bool = True
     seed: int = 7
-    unnorm_key = "bridge_orig"  # default unnorm_key bridge_orig
+    unnorm_key: str = "bridge_orig"  # default unnorm_key bridge_orig
     dataset_statistics_path: str = ""
-    openx_datasets_path: str = ""
 
 
 def clear_gpu_memory() -> None:
     for obj in gc.get_objects():
         try:
             if torch.is_tensor(obj) and obj.is_cuda:
-                logger.debug(f"Found CUDA tensor with shape: {obj.shape}")
                 del obj
         except Exception as e:
             logger.error(f"Error deleting PyTorch tensor: {e}")
@@ -72,29 +71,24 @@ def clear_gpu_memory() -> None:
     logger.debug("Garbage collector collected objects")
 
 
-def log_memory_usage():
+def log_memory_usage() -> None:
     if torch.cuda.is_available():
-        # Log only peak memory at DEBUG level
+        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
         peak_mb = torch.cuda.max_memory_allocated() / 1024**2
-        logger.debug(f"- Peak GPU usage: {peak_mb / 1024:.1f}GiB")
-        
-        # Detailed metrics only at DEBUG level
-        if logger.isEnabledFor(logging.DEBUG):
-            allocated = torch.cuda.memory_allocated() / 1024**2
-            device = torch.cuda.current_device()
-            total = torch.cuda.get_device_properties(device).total_memory / 1024**2
-            logger.debug(f"- Memory details: {allocated / 1024:.1f}/{total / 1024:.1f}GiB ({allocated/total:.1%})")
+        logger.debug(f"[{timestamp}] Peak GPU Usage: {peak_mb / 1024:.1f}GiB")
 
 
 @contextlib.contextmanager
 def gpu_memory_context():
     try:
         clear_gpu_memory()
-        log_memory_usage()
+        if logger.isEnabledFor(logging.DEBUG):
+            log_memory_usage()
         yield
     finally:
         clear_gpu_memory()
-        log_memory_usage()
+        if logger.isEnabledFor(logging.DEBUG):
+            log_memory_usage()
 
 
 def get_dataset_paths(datasets_dir: str) -> list[str]:
@@ -120,8 +114,12 @@ def sort_files_in_folder_by_name(dataset_path: str) -> list[str]:
     if not shard_files:
         raise FileNotFoundError(f"No files found in dataset directory: {dataset_path}")
 
-    if os.path.basename(dataset_path) == "bigfish":
-    # Sort the procgen files by the timestamp in the filename before the first underscore _ in ascending order
+    procgen_keys = ProcGenDefinitions.DESCRIPTIONS.keys()
+    if procgen_keys is None:
+        raise ValueError("ProcGen descriptions is empty")
+
+    if os.path.basename(dataset_path) in procgen_keys:
+        # Sort the procgen files by the timestamp in the filename before the first underscore _ in ascending order
         return sorted(
             shard_files, 
             key=lambda x: datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S")
@@ -139,7 +137,6 @@ def is_dataset_completed(dataset_name: str, result_file_path: Path) -> bool:
             completed_datasets = json.load(f)
         
         if dataset_name in completed_datasets:
-            logger.info(f"Skipping dataset: {dataset_name} (already evaluated)")
             return True
     except (json.JSONDecodeError, FileNotFoundError) as e:
         logger.error(f"Error reading results file: {e}")
@@ -151,7 +148,7 @@ def process_single_dataset(
     dataset_name: str, 
     model, 
     processor,
-    dataset_cfg: EvalConfig, 
+    eval_cfg: EvalConfig, 
     tfds_shards: list[str]
 ) -> dict[str, any]:
     try:
@@ -161,7 +158,7 @@ def process_single_dataset(
         
         # Evaluate model
         results = evaluate_openvla_model(
-            dataset_cfg,
+            eval_cfg,
             model,
             processor,
             tfds_shards,
@@ -215,13 +212,14 @@ def save_results(results: dict[str, dict], result_file_path: Path) -> None:
     logger.info(f"Results saved to {result_file_path}")
 
 
-def profile_openvla_on_openx(cfg: EvalConfig, result_save_path: str):
-    openx_dataset_paths = get_dataset_paths(cfg.openx_datasets_path)
-    if not openx_dataset_paths:
+def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_save_path: str):
+    eval_dataset_paths = get_dataset_paths(profiling_dataset_folder_path)
+    if not eval_dataset_paths:
+        logger.error(f"No datasets found in {profiling_dataset_folder_path}")
         return
 
     eval_results = {}
-    result_file_path = Path(result_save_path) / 'openvla_openx_eval_results.json'
+    result_file_path = Path(result_save_path) / 'openvla_eval_results.json'
 
     # Load model and processor
     try:
@@ -232,22 +230,23 @@ def profile_openvla_on_openx(cfg: EvalConfig, result_save_path: str):
         logger.error(f"Error loading model or processor: {e}")
         return
 
-    for openx_dataset in openx_dataset_paths:
+    for dataset in eval_dataset_paths:
         with gpu_memory_context():
             if torch.cuda.is_available():
                 torch.cuda.reset_peak_memory_stats()
 
             # Skip unsupported datasets
-            if openx_dataset not in SUPPORTED_DATASETS:
-                logger.info(f"SKIPPING: {openx_dataset} (not in list)")
+            if dataset not in PROFILING_DATASETS:
+                logger.info(f"SKIPPING: {dataset} (not in list)")
                 continue
 
             # Skip if the dataset is already in the eval_results
-            if is_dataset_completed(openx_dataset, result_file_path):
+            if is_dataset_completed(dataset, result_file_path):
+                logger.info(f"Skipping dataset: {dataset} (already evaluated)")
                 continue
             
             # Prepare dataset path
-            dataset_path = Path(cfg.openx_datasets_path) / openx_dataset
+            dataset_path = Path(profiling_dataset_folder_path) / dataset
             logger.info(f'\nDATASET PATH: {dataset_path}')
 
             if not os.path.exists(dataset_path):
@@ -256,23 +255,23 @@ def profile_openvla_on_openx(cfg: EvalConfig, result_save_path: str):
 
             try:
                 sorted_shard_files = sort_files_in_folder_by_name(dataset_path)
-                tfds_shards = [os.path.join(cfg.openx_datasets_path, openx_dataset, f) 
+                tfds_shards = [os.path.join(profiling_dataset_folder_path, dataset, f) 
                                 for f in sorted_shard_files]
 
                 # Set unnormalization key for the dataset
-                cfg.unnorm_key = openx_dataset
+                cfg.unnorm_key = dataset
             
-                results = process_single_dataset(openx_dataset, model, processor, cfg, tfds_shards)
+                results = process_single_dataset(dataset, model, processor, cfg, tfds_shards)
 
                 # Store results
-                eval_results[openx_dataset] = results
+                eval_results[dataset] = results
                 save_results(eval_results, result_file_path)
 
             except FileNotFoundError:
                 logger.error(f"Error: Unable to access dataset directory: {dataset_path}")
                 continue
             except Exception as e:
-                logger.error(f"Error: {e}")
+                logger.exception(f"Error: {e}")
                 continue
             
 
@@ -291,13 +290,12 @@ def profile_openvla_on_openx(cfg: EvalConfig, result_save_path: str):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Evaluate OpenVLA on OpenX datasets")
-    parser.add_argument("--openx_datasets_path", type=str, required=True, help="Path to the OpenX datasets")
+    parser = argparse.ArgumentParser(description="Evaluate OpenVLA on datasets")
+    parser.add_argument("--profiling_dataset_folder_path", type=str, required=True, help="Path to the parent folder of the profiling datasets")
     parser.add_argument("--dataset_statistics_path", type=str, required=True, help="Path to the dataset statistics")
     parser.add_argument("--result_save_path", type=str, required=True, help="Path to save the evaluation results")
     args = parser.parse_args()
 
     cfg = EvalConfig()
-    cfg.openx_datasets_path = args.openx_datasets_path
     cfg.dataset_statistics_path = args.dataset_statistics_path
-    profile_openvla_on_openx(cfg, args.result_save_path)
+    profile_openvla(cfg, args.profiling_dataset_folder_path, args.result_save_path)

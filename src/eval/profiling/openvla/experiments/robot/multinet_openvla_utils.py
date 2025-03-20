@@ -124,7 +124,6 @@ def convert_action(action: np.ndarray, dataset_name: str):
         action = normalize_gripper_action(action, binarize=True)  # normalize to [-1, 1]
         return invert_gripper_action(action)
 
-    # TODO: implement this
     def utokyo_xarm_bimanual_conversion(action: np.ndarray) -> np.ndarray:
         return action
 
@@ -173,25 +172,25 @@ def convert_action(action: np.ndarray, dataset_name: str):
             vertical = None
 
         if horizontal == "LEFT" and vertical == "DOWN":
-            return 0
+            return [0]
         elif horizontal == "LEFT" and vertical is None:
-            return 1
+            return [1]
         elif horizontal == "LEFT" and vertical == "UP":
-            return 2
+            return [2]
         elif horizontal is None and vertical == "DOWN":
-            return 3
+            return [3]
         elif horizontal is None and vertical is None:
-            return 4
+            return [4]
         elif horizontal is None and vertical == "UP":
-            return 5
+            return [5]
         elif horizontal == "RIGHT" and vertical == "DOWN":
-            return 6
+            return [6]
         elif horizontal == "RIGHT" and vertical is None:
-            return 7
+            return [7]
         elif horizontal == "RIGHT" and vertical == "UP":
-            return 8
+            return [8]
         else:
-            return 4
+            return [4]
 
 
     conversion_functions: dict[str, Callable[[np.ndarray, bool], np.ndarray]] = {
@@ -223,7 +222,7 @@ def convert_action(action: np.ndarray, dataset_name: str):
     try:
         convert_func = conversion_functions.get(dataset_name)
     except KeyError:
-        raise ValueError(f"Unknown dataset: {dataset_name}")
+        raise ValueError(f"Post inference manual conversion undefined for dataset: {dataset_name}")
     
     return convert_func(action)
 
