@@ -21,7 +21,7 @@ project_root = next(
 )
 sys.path.append(str(project_root))
 
-from src.eval.profiling.openvla.experiments.robot.robot_utils import get_model
+from src.eval.profiling.openvla.experiments.robot.robot_utils import get_model, set_seed_everywhere
 from src.eval.profiling.openvla.experiments.robot.openvla_utils import get_processor
 from src.eval.profiling.openvla.experiments.robot.openvla_openx_eval import evaluate_openvla_on_openx
 from src.eval.profiling.openvla.experiments.robot.openvla_procgen_eval import evaluate_openvla_on_procgen
@@ -56,6 +56,7 @@ class EvalConfig:
     seed: int = 7
     unnorm_key: str = "bridge_orig"  # default unnorm_key bridge_orig
     dataset_statistics_path: str = ""
+    default_action_decoding_strategy: str = "simple_mapping"
 
 
 def clear_gpu_memory() -> None:
@@ -234,6 +235,9 @@ def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_
 
     eval_results = {}
     result_file_path = Path(result_save_path) / 'openvla_eval_results.json'
+    
+    # Set seed
+    set_seed_everywhere(cfg.seed)
 
     # Load model and processor
     try:
