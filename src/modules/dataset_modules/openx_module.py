@@ -9,31 +9,33 @@ import time
 import tensorflow as tf
 from glob import glob
 
+def _validate_text_output(output: Any, shape: tuple[int]) -> np.array:
+    if output is None or not isinstance(output, list) or len(output) != shape[0] or any(isinstance(x, (str, np.string_, set)) for x in output):
+        return False
+    return True
+
+# Finding the translated TFDS shards.
+def _find_shards(dataset: str, disk_root_dir: str) -> list[str]:
+    try:
+        dataset_dir = glob(f"{disk_root_dir}/mount_dir*/openx_*/{dataset}")[0]
+        shard_files = glob(f"{dataset_dir}/translated_shard_*")
+        tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
+        return tfds_shards
+    except IndexError:
+        print(f"Cannot identify the directory to the dataset {dataset}. Skipping this dataset.")
+        return []
+    
 class OpenXModule(DatasetModule):
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0) -> None:
         super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
         self._definitions_class = OpenXDefinitions
         self._dataloader_fn = get_openx_dataloader
         self.dataset_family = 'openx'
-        self.format_instruction_prompt_fn = format_instruction_prompt
-        
-    # Finding the translated TFDS shards.
+        self.format_instruction_prompt_fn = format_instruction_prompt  
+    
     def _find_shards(self, dataset: str) -> list[str]:
-        try:
-            dataset_dir = glob(f"{self.disk_root_dir}/mount_dir*/{self.dataset_family}_*/{dataset}")[0]
-            shard_files = glob(f"{dataset_dir}/translated_shard_*")
-            tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
-            return tfds_shards
-        except IndexError:
-            print(f"Cannot identify the directory to the dataset {dataset}. Skipping this dataset.")
-            return []
-        
-    def _validate_text_output(self, output: Any, shape: tuple[int]) -> np.array:
-        if output is None or not isinstance(output, list) or len(output) != shape[0] or any(isinstance(x, (str, np.string_, set)) for x in output):
-            output = np.random.random(size=shape)
-        
-        return np.array(output)
-
+        return _find_shards(self, dataset, self.disk_root_dir)
+    
     # Evaluation of one dataset.
     def _run_eval_dataset(self, dataset: str) -> dict[str, Union[list, float]]:
         result = {}
@@ -53,7 +55,8 @@ class OpenXModule(DatasetModule):
             #episode_count = 0
             action_success = []
             timestep_mse = []
-
+            total_invalid_preds = 0
+            
             for batch in dataloader:
                 # Action stats need to be retrieved only once for each dataset, after they have been populated.
                 if self.action_stats is None:
@@ -63,18 +66,22 @@ class OpenXModule(DatasetModule):
 
                 # Consuming the batch until all timesteps in the batch.
                 for cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts in self._process_batch(batch, dataset):
-                       
-                    
                     outputs = self.modality_module.infer_step(cur_inputs, k_shots_examples, instructions, output_types)  # (B)
                     
-                    # Any invalid output 'None' should be initialized into a random action.
-                    outputs = [self._validate_text_output(output, shape=labels[o].shape) for o, output in enumerate(outputs)]
-                        
-                    if isinstance(outputs[0][0], float)==False:
-                        outputs = [[float(item) for item in sublist] for sublist in outputs]
-
+                    mses = []
+                    for i, output in enumerate(outputs):
+                        if _validate_text_output(output, shape=labels[i].shape):
+                            output = [float(item) for item in output]
+                            mses.append(np.mean((np.array(labels[i]) - np.array(output)) ** 2))
+                        else:
+                            # max value of MSE for invalid outputs
+                            max_vals = np.array(self.action_stats['max'])
+                            min_vals = np.array(self.action_stats['min'])
+                            mse = np.mean((max_vals - min_vals) ** 2)
+                            mses.append(mse)
+                            total_invalid_preds += 1
+                            
                     # This only works for continuous vector actions. (Okay for OpenX)
-                    mses = np.mean((np.array(labels) - np.array(outputs)) ** 2, axis=-1)
                     assert len(mses) == len(idxs), "The calculated MSEs are not matched with the processed inputs."
 
                     for i, idx in enumerate(idxs):
@@ -135,7 +142,8 @@ class OpenXModule(DatasetModule):
             result['avg_dataset_amse'] = avg_dataset_mse
             result['normalized_amse'] = normalized_amse
             result['eval_time'] = eval_time
-
+            result['total_invalid_preds'] = total_invalid_preds
+            
         except KeyError:
             print(f"The VLMModule cannot be initialized since there is no dataset called {dataset} in OpenX. Moving on to the next one...")
             return {}
@@ -149,12 +157,9 @@ class OpenXBatchModule(DatasetBatchModule):
         self._dataloader_fn = get_openx_dataloader
         self.dataset_family = 'openx'
         self.format_instruction_prompt_fn = format_instruction_prompt
-
-    def _validate_text_output(self, output: Any, shape: tuple[int]) -> np.array:
-        if output is None or not isinstance(output, list) or len(output) != shape[0] or any(isinstance(x, (str, np.string_, set)) for x in output):
-            output = np.random.random(size=shape)
-        
-        return np.array(output)
+    
+    def _find_shards(self, dataset: str) -> list[str]:
+        return _find_shards(self, dataset, self.disk_root_dir)
     
     def _run_eval_dataset(self, dataset_batch_info_folder):
         result = {}
@@ -165,6 +170,7 @@ class OpenXBatchModule(DatasetBatchModule):
         action_success = []
         timestep_mse = []
         start_time = time.time()
+        total_invalid_preds = 0
         
         paths = Path(dataset_batch_info_folder).iterdir()
         for fp in paths:
@@ -189,13 +195,20 @@ class OpenXBatchModule(DatasetBatchModule):
                 raise Exception(f'Batch not completed for batch {ds} batch num {batch_num} '
                                 f'with batch id {batch_id}. Status: {status}. Skipping...')
             
-            outputs = [self._validate_text_output(output, shape=labels[o].shape) for o, output in enumerate(outputs)]
-                
-            if isinstance(outputs[0][0], float)==False:
-                outputs = [[float(item) for item in sublist] for sublist in outputs]
-
+            mses = []
+            for i, output in enumerate(outputs):
+                if _validate_text_output(output, shape=labels[i].shape):
+                    output = [float(item) for item in output]
+                    mses.append(np.mean((np.array(labels[i]) - np.array(output)) ** 2))
+                else:
+                    # max value of MSE for invalid outputs
+                    max_vals = np.array(self.action_stats['max'])
+                    min_vals = np.array(self.action_stats['min'])
+                    mse = np.mean((max_vals - min_vals) ** 2)
+                    mses.append(mse)
+                    total_invalid_preds += 1
+                    
             # This only works for continuous vector actions. (Okay for OpenX)
-            mses = np.mean((np.array(labels) - np.array(outputs)) ** 2, axis=-1)
             assert len(mses) == num_inputs, "The calculated MSEs are not matched with the processed inputs."
 
             for i in range(num_inputs):
@@ -250,5 +263,6 @@ class OpenXBatchModule(DatasetBatchModule):
         result['avg_dataset_amse'] = avg_dataset_mse
         result['normalized_amse'] = normalized_amse
         result['eval_time'] = eval_time
+        result['total_invalid_preds'] = total_invalid_preds
         
         return result

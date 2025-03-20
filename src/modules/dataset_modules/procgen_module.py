@@ -7,6 +7,37 @@ import numpy as np
 import time
 from glob import glob
 
+def _validate_text_output(output, num_actions) -> bool:
+    if not isinstance(output, list) or not all([isinstance(d, dict) for d in output]):
+        return False
+    
+    keys, vals = set(), []
+    for d in output:
+        for k, v in d.items():
+            # Check if the key is a digit and within the action space and if it is not a duplicate
+            if not str(k).isdigit() or not 0 <= int(k) < num_actions or k in keys:
+                return False
+            keys.add(int(k))
+            vals.append(float(v))
+    
+    # Check if the sum of the probabilities is 1, avoiding floating point errors
+    if sum(vals) < 0.999:
+        return False
+    
+    return True
+    
+# Finding the translated TFDS shards.
+def _find_shards(dataset: str, disk_root_dir: str) -> list[str]:
+    try:
+        #FIXME: this needs to change when doing final evals depending on the files' naming scheme
+        dataset_dir = glob(f"{disk_root_dir}/mount_dir*/procgen_*/{dataset}")[0]
+        shard_files = glob(f"{dataset_dir}/translated_shard_*")
+        tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
+        return tfds_shards
+    except IndexError:
+        print(f"Cannot identify the directory to the dataset {dataset}. Skipping this dataset.")
+        return []
+        
 class ProcgenModule(DatasetModule):
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0) -> None:
         super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
@@ -17,16 +48,8 @@ class ProcgenModule(DatasetModule):
         
     # Finding the translated TFDS shards.
     def _find_shards(self, dataset: str) -> list[str]:
-        try:
-            #FIXME: this needs to change when doing final evals depending on the files' naming scheme
-            dataset_dir = glob(f"{self.disk_root_dir}/mount_dir*/{self.dataset_family}_*/{dataset}")[0]
-            shard_files = glob(f"{dataset_dir}/translated_shard_*")
-            tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
-            return tfds_shards
-        except IndexError:
-            print(f"Cannot identify the directory to the dataset {dataset}. Skipping this dataset.")
-            return []
-        
+        return _find_shards(dataset, self.disk_root_dir)
+            
     def _run_eval_dataset(self, dataset: str) -> dict:
         result = {}
 
@@ -42,7 +65,7 @@ class ProcgenModule(DatasetModule):
             result = {}
         
             timestep_mse = []
-            total_preds = 0
+            total_invalid_preds = 0
             start_time = time.time()
             for batch in dataloader:
                 # Action stats need to be retrieved only once for each dataset, after they have been populated.
@@ -58,43 +81,29 @@ class ProcgenModule(DatasetModule):
                     num_actions  = 0
                     for action_idx, (_, action_dict) in action_space.items():
                         num_actions += len(action_dict)
-                        
-                    # validate outputs
+                    labels = np.array([label[0] for label in labels])
+                    one_hot_labels = self._get_one_hot(labels, num_actions)
+                                       
                     if not isinstance(outputs, list):
-                        outputs = []
-                    
-                    valid_idxs = []
-                    for i, output in enumerate(outputs):
-                        valid = True
-                        if isinstance(output, list) and all([isinstance(d, dict) for d in output]):
-                            keys, vals = set(), []
-                            for d in output:
-                                for k, v in d.items():
-                                    if not str(k).isdigit() or not 0 <= int(k) < num_actions or k in keys:
-                                        valid = False
-                                        break
-                                    keys.add(int(k))
-                                    vals.append(float(v))
-                                
-                            if valid and sum(vals) >= 0.999:
-                                valid_idxs.append(i)
-                    
-                    valid_probs = []
-                    for idx in valid_idxs:
-                        output = outputs[idx]
-                        output = {int(k): float(v) for d in output for k, v in d.items()}
-                        probs = [0.0]*num_actions
-                        for i in range(len(probs)):
-                            if i in output:
-                                probs[i] = output[i]
-                        valid_probs.append(probs)
-                    
-                    valid_labels = np.array([labels[i][0] for i in valid_idxs])
-                    valid_labels = self._get_one_hot(valid_labels, num_actions)
-                    
-                    brier_mses = np.mean((valid_probs - valid_labels)**2, axis=-1)
+                        outputs = [None]*len(labels)
+                        
+                    brier_mses = []                    
+                    # Validate outputs and calculate Brier MSEs
+                    for o, output in enumerate(outputs):
+                        if _validate_text_output(output, num_actions):
+                            output = {int(k): float(v) for d in output for k, v in d.items()}
+                            probs = [0.0]*num_actions
+                            for i in range(len(probs)):
+                                if i in output:
+                                    probs[i] = output[i]
+
+                            # TODO: placeholder metric
+                            brier_mses.append(np.sum((np.array(probs) - one_hot_labels[o])**2))
+                        else:
+                            # max possible Brier MSE is 2.0
+                            brier_mses.append(2.0)
+                            total_invalid_preds += 1
                     timestep_mse.extend(brier_mses)
-                    total_preds += len(valid_idxs)
 
             total_dataset_mse = sum(timestep_mse)
             num_timesteps = len(timestep_mse)
@@ -116,6 +125,7 @@ class ProcgenModule(DatasetModule):
             result['avg_dataset_amse'] = avg_dataset_mse
             result['normalized_amse'] = normalized_amse
             result['eval_time'] = eval_time
+            result['total_invalid_preds'] = total_invalid_preds
 
         except KeyError:
             print(f"The VLMModule cannot be initialized since there is no dataset called {dataset} in OpenX. Moving on to the next one...")
@@ -132,11 +142,15 @@ class ProcgenBatchModule(DatasetBatchModule):
         self.dataset_family = 'procgen'
         self.format_instruction_prompt_fn = format_instruction_prompt
         
+    # Finding the translated TFDS shards.
+    def _find_shards(self, dataset: str) -> list[str]:
+        return _find_shards(dataset, self.disk_root_dir)
+        
     def _run_eval_dataset(self, dataset_batch_info_folder):
         result = {}
         
         timestep_mse = []
-        total_preds = 0
+        total_invalid_preds = 0
         start_time = time.time()
         
         paths = Path(dataset_batch_info_folder).iterdir()
@@ -165,43 +179,29 @@ class ProcgenBatchModule(DatasetBatchModule):
             num_actions  = 0
             for action_idx, (_, action_dict) in action_space.items():
                 num_actions += len(action_dict)
-                
-            # validate outputs
+            labels = np.array([label[0] for label in labels])
+            one_hot_labels = self._get_one_hot(labels, num_actions)
+            
             if not isinstance(outputs, list):
-                outputs = []
-            
-            valid_idxs = []
-            for i, output in enumerate(outputs):
-                valid = True
-                if isinstance(output, list) and all([isinstance(d, dict) for d in output]):
-                    keys, vals = set(), []
-                    for d in output:
-                        for k, v in d.items():
-                            if not str(k).isdigit() or not 0 <= int(k) < num_actions or k in keys:
-                                valid = False
-                                break
-                            keys.add(int(k))
-                            vals.append(float(v))
-                        
-                    if valid and sum(vals) >= 0.999:
-                        valid_idxs.append(i)
-            
-            valid_probs = []
-            for idx in valid_idxs:
-                output = outputs[idx]
-                output = {int(k): float(v) for d in output for k, v in d.items()}
-                probs = [0.0]*num_actions
-                for i in range(len(probs)):
-                    if i in output:
-                        probs[i] = output[i]
-                valid_probs.append(probs)
-            
-            valid_labels = np.array([labels[i][0] for i in valid_idxs])
-            valid_labels = self._get_one_hot(valid_labels, num_actions)
-            
-            brier_mses = np.mean((valid_probs - valid_labels)**2, axis=-1)
+                outputs = [None]*len(labels)
+                
+            brier_mses = []                    
+            # Validate outputs and calculate Brier MSEs
+            for o, output in enumerate(outputs):
+                if _validate_text_output(output, num_actions):
+                    output = {int(k): float(v) for d in output for k, v in d.items()}
+                    probs = [0.0]*num_actions
+                    for i in range(len(probs)):
+                        if i in output:
+                            probs[i] = output[i]
+
+                    # TODO: placeholder metric
+                    brier_mses.append(np.sum((np.array(probs) - one_hot_labels[o])**2))
+                else:
+                    # max possible Brier MSE is 2.0
+                    brier_mses.append(2.0)
+                    total_invalid_preds += 1
             timestep_mse.extend(brier_mses)
-            total_preds += len(valid_idxs)
             
         total_dataset_mse = sum(timestep_mse)
         num_timesteps = len(timestep_mse)
@@ -223,5 +223,6 @@ class ProcgenBatchModule(DatasetBatchModule):
         result['avg_dataset_amse'] = avg_dataset_mse
         result['normalized_amse'] = normalized_amse
         result['eval_time'] = eval_time
+        result['total_invalid_preds'] = total_invalid_preds
             
         return result
