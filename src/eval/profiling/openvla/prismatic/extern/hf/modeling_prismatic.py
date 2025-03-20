@@ -551,7 +551,7 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
             action_high, action_low = np.array(action_norm_stats["q99"]), np.array(action_norm_stats["q01"])
 
             # Discrete dimension mask
-            discrete = action_norm_stats.get("discrete", np.zeros_like(mask, dtype=bool))
+            discrete = np.array(action_norm_stats.get("discrete", np.zeros_like(mask, dtype=bool)), dtype=bool)
 
             # Compute discrete actions
             actions = np.zeros_like(normalized_actions)

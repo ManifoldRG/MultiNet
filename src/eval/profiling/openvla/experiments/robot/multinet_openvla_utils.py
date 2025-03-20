@@ -224,7 +224,11 @@ def convert_action(action: np.ndarray, dataset_name: str):
     except KeyError:
         raise ValueError(f"Post inference manual conversion undefined for dataset: {dataset_name}")
     
-    return convert_func(action)
+    try:
+        return convert_func(action)
+    except ValueError as e:
+        logger.error(f"Error during conversion for dataset {dataset_name}: {e}")
+        raise
 
 
 def drop_is_terminal_dim(action: np.ndarray, dataset_name: str) -> np.ndarray:

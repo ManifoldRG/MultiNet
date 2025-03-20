@@ -23,7 +23,8 @@ sys.path.append(str(project_root))
 
 from src.eval.profiling.openvla.experiments.robot.robot_utils import get_model
 from src.eval.profiling.openvla.experiments.robot.openvla_utils import get_processor
-from src.eval.profiling.openvla.experiments.robot.openvla_openx_eval import evaluate_openvla_model
+from src.eval.profiling.openvla.experiments.robot.openvla_openx_eval import evaluate_openvla_on_openx
+from src.eval.profiling.openvla.experiments.robot.openvla_procgen_eval import evaluate_openvla_on_procgen
 from definitions.procgen import ProcGenDefinitions
 from definitions.openx import OpenXDefinitions
 
@@ -41,6 +42,9 @@ PROFILING_DATASETS = [
     'imperialcollege_sawyer_wrist_cam',                     'utokyo_pr2_opening_fridge_converted_externally_to_rlds',
     'bigfish', 'bossfight', 'caveflyer', 'chaser'
 ]
+
+PROCGEN_DATASET_NAMES = ProcGenDefinitions.DESCRIPTIONS.keys()
+OPENX_DATASET_NAMES = OpenXDefinitions.DESCRIPTIONS.keys()
 
 @dataclass
 class EvalConfig:
@@ -114,18 +118,16 @@ def sort_files_in_folder_by_name(dataset_path: str) -> list[str]:
     if not shard_files:
         raise FileNotFoundError(f"No files found in dataset directory: {dataset_path}")
 
-    procgen_keys = ProcGenDefinitions.DESCRIPTIONS.keys()
-    if procgen_keys is None:
-        raise ValueError("ProcGen descriptions is empty")
-
-    if os.path.basename(dataset_path) in procgen_keys:
+    if os.path.basename(dataset_path) in PROCGEN_DATASET_NAMES:
         # Sort the procgen files by the timestamp in the filename before the first underscore _ in ascending order
         return sorted(
             shard_files, 
             key=lambda x: datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S")
         )
-    else:
+    elif os.path.basename(dataset_path) in OPENX_DATASET_NAMES:
         return sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
+    else:
+        raise ValueError(f"Dataset type undefined in definitions: {os.path.basename(dataset_path)}")
 
 
 def is_dataset_completed(dataset_name: str, result_file_path: Path) -> bool:
@@ -145,25 +147,37 @@ def is_dataset_completed(dataset_name: str, result_file_path: Path) -> bool:
 
 
 def process_single_dataset(
-    dataset_name: str, 
-    model, 
+    dataset_name: str,
+    model,
     processor,
-    eval_cfg: EvalConfig, 
+    eval_cfg: EvalConfig,
     tfds_shards: list[str]
 ) -> dict[str, any]:
     try:
         logger.info(f"\nEvaluating {dataset_name}...")
         # Start timing
         start_time = time.time()
-        
-        # Evaluate model
-        results = evaluate_openvla_model(
-            eval_cfg,
-            model,
-            processor,
-            tfds_shards,
-            dataset_name
-        )
+
+        if dataset_name in PROCGEN_DATASET_NAMES:
+            logger.debug(f"Evaluating {dataset_name} on procgen...")
+            results = evaluate_openvla_on_procgen(
+                eval_cfg,
+                model,
+                processor,
+                tfds_shards,
+                dataset_name
+            )
+        elif dataset_name in OPENX_DATASET_NAMES:
+            logger.debug(f"Evaluating {dataset_name} on openx...")
+            results = evaluate_openvla_on_openx(
+                eval_cfg,
+                model,
+                processor,
+                tfds_shards,
+                dataset_name
+            )
+        else:
+            raise ValueError(f"Dataset type undefined in definitions: {dataset_name}")
 
         (action_success_rate, total_dataset_amse, avg_dataset_amse,
          num_timesteps, normalized_amse) = results
@@ -242,9 +256,9 @@ def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_
 
             # Skip if the dataset is already in the eval_results
             if is_dataset_completed(dataset, result_file_path):
-                logger.info(f"Skipping dataset: {dataset} (already evaluated)")
+                logger.info(f"SKIPPING: {dataset} (already evaluated)")
                 continue
-            
+
             # Prepare dataset path
             dataset_path = Path(profiling_dataset_folder_path) / dataset
             logger.info(f'\nDATASET PATH: {dataset_path}')
