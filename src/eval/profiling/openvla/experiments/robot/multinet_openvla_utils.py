@@ -127,20 +127,19 @@ def convert_action(action: np.ndarray, dataset_name: str):
     def utokyo_xarm_bimanual_conversion(action: np.ndarray) -> np.ndarray:
         return action
 
-    def bigfish_conversion(action: np.ndarray) -> np.ndarray:
+    def openvla_to_bigfish_conversion(action: np.ndarray) -> np.ndarray:
         """
         Convert OpenVLA standard to Bigfish action space:
-            [   
-                ("LEFT", "DOWN"),
-                ("LEFT",),
-                ("LEFT", "UP"),
-                ("DOWN",),
-                ("",),
-                ("UP",),
-                ("RIGHT", "DOWN"),
-                ("RIGHT",),
-                ("RIGHT", "UP")
-            ]
+            0: Move left-down (-1, -1)
+            1: Move down (0, -1)
+            2: Move right-down (1, -1)
+            3: Move left (-1, 0)
+            4: Stand still (0, 0)
+            5: Move right (1, 0)
+            6: Move left-up (-1, 1)
+            7: Move up (0, 1)
+            8: Move right-up (1, 1)
+            actions >= 9 represent special actions while the agent stands still
         
         In OpenVLA format, typically:
         - x dimension (index 0) corresponds to horizontal movement (LEFT/RIGHT)
@@ -157,40 +156,28 @@ def convert_action(action: np.ndarray, dataset_name: str):
         
         # Determine horizontal direction
         if x_movement < -threshold:
-            horizontal = "LEFT"
+            horizontal = -1  # LEFT
         elif x_movement > threshold:
-            horizontal = "RIGHT"
+            horizontal = 1   # RIGHT
         else:
-            horizontal = None
+            horizontal = 0
             
         # Determine vertical direction
         if z_movement < -threshold:
-            vertical = "DOWN"
+            vertical = -1  # DOWN
         elif z_movement > threshold:
-            vertical = "UP"
+            vertical = 1   # UP
         else:
-            vertical = None
+            vertical = 0
 
-        if horizontal == "LEFT" and vertical == "DOWN":
-            return [0]
-        elif horizontal == "LEFT" and vertical is None:
-            return [1]
-        elif horizontal == "LEFT" and vertical == "UP":
-            return [2]
-        elif horizontal is None and vertical == "DOWN":
-            return [3]
-        elif horizontal is None and vertical is None:
-            return [4]
-        elif horizontal is None and vertical == "UP":
-            return [5]
-        elif horizontal == "RIGHT" and vertical == "DOWN":
-            return [6]
-        elif horizontal == "RIGHT" and vertical is None:
-            return [7]
-        elif horizontal == "RIGHT" and vertical == "UP":
-            return [8]
-        else:
-            return [4]
+        # Calculate action index based on direction vectors
+        # Map (horizontal, vertical) to action indices:
+        # (-1, -1): 0, (0, -1): 1, (1, -1): 2
+        # (-1, 0): 3, (0, 0): 4, (1, 0): 5
+        # (-1, 1): 6, (0, 1): 7, (1, 1): 8
+        action_index = (horizontal + 1) + (vertical + 1) * 3
+        
+        return [action_index]
 
 
     conversion_functions: dict[str, Callable[[np.ndarray, bool], np.ndarray]] = {
@@ -215,10 +202,10 @@ def convert_action(action: np.ndarray, dataset_name: str):
         'conq_hose_manipulation': conq_hose_manipulation_conversion,
         'plex_robosuite': plex_robosuite_conversion,
         'utokyo_xarm_bimanual_converted_externally_to_rlds': utokyo_xarm_bimanual_conversion,
-        'bigfish': bigfish_conversion
+        'bigfish': openvla_to_bigfish_conversion
     }
     
-    
+
     try:
         convert_func = conversion_functions.get(dataset_name)
     except KeyError:
@@ -272,3 +259,21 @@ def drop_dimension(action: np.ndarray, index: int) -> np.ndarray:
         raise IndexError(f"Index {index} is out of bounds for array of shape {action.shape}")
     
     return np.delete(action, index)
+
+
+def clip_out_of_range_action_to_default(action: np.ndarray, dataset_name: str) -> np.ndarray:
+    """
+    Clip an action array to a default value if it is outside the specified range.
+
+    Args:
+        action (np.ndarray): The action array to clip.
+        dataset_name (str): The name of the dataset to use for default values.
+
+    Returns:
+        np.ndarray: The clipped action array.
+    """
+    if dataset_name == "bigfish":
+        if action[0] >= 9:
+            return [4]  # default bigfish special action index to stand still based on procgen codebase
+    else:
+        return action

@@ -1,6 +1,9 @@
 import numpy as np
 import logging
-from src.eval.profiling.openvla.experiments.robot.multinet_openvla_utils import drop_is_terminal_dim, convert_action
+from src.eval.profiling.openvla.experiments.robot.multinet_openvla_utils import (
+    clip_out_of_range_action_to_default,
+    drop_is_terminal_dim, convert_action
+)
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +18,6 @@ def get_action_decoding_strategy(model, dataset_name):
         )
     except AttributeError:
         raise ValueError("Default action decoding strategy not found")
-        # logger.warning("Default action decoding strategy not found, using fallback")
-        # return 'naive_dimension_extension'
 
 def calculate_mse(predicted, actual):
     """Calculate mean squared error between predicted and actual values"""
@@ -40,10 +41,12 @@ def normalize_mse_values(mse_values):
     normalized_mse = np.array(mse_values)
     return (normalized_mse - min_mse) / (max_mse - min_mse) if max_mse != min_mse else np.zeros_like(normalized_mse)
 
-def process_batch_actions(batch, dataset_name, batch_idx, idx):
+def process_batch_actions(batch, dataset_name, batch_idx, idx, action_decoding_strategy):
     """Process batch actions with error handling"""
     try:
         action_data = batch['action'][batch_idx][idx] if isinstance(batch['action'][batch_idx], list) else batch['action'][batch_idx]
+        if action_decoding_strategy == 'manual_rule_mapping':
+            action_data = clip_out_of_range_action_to_default(action_data, dataset_name)
         return drop_is_terminal_dim(action_data, dataset_name)
     except (IndexError, KeyError) as e:
         logger.warning(f"Error processing actions: {e}")

@@ -23,11 +23,10 @@ from src.eval.profiling.openvla.experiments.robot.eval_utils import (
 
 logger = logging.getLogger(__name__)
 
-
 def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
     action_decoding_strategy = get_action_decoding_strategy(model, dataset_name)
-    if action_decoding_strategy == model.default_action_decoding_strategy:
-        logger.warning(f"Action decoding strategy not found for dataset {dataset_name}. Defaulting to {model.default_action_decoding_strategy}")
+    if action_decoding_strategy == cfg.default_action_decoding_strategy:
+        logger.warning(f"Action decoding strategy not found for dataset {dataset_name}. Defaulting to {cfg.default_action_decoding_strategy}")
 
     dataloader = get_openx_dataloader(tfds_shards, batch_size=1)
 
@@ -46,7 +45,9 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
 
         for idx in range(obs_len):
             try:
-                actual_action = process_batch_actions(batch, dataset_name, 0, idx)
+                # batch_idx is 0 for OpenX dataset
+                actual_action = process_batch_actions(batch, dataset_name, 0, idx, action_decoding_strategy)
+                logger.debug(f"Actual action: {actual_action}")
                 if actual_action is None:
                     continue
 
@@ -57,12 +58,15 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
 
                 text_obs = batch['text_observation'][0][idx]
                 predicted_action = get_action(cfg, model, obs, text_obs, processor)
+                logger.debug(f"Predicted action: {predicted_action}")
 
                 standardized_predicted_action = standardize_predicted_action(
                     predicted_action,
                     action_decoding_strategy,
                     dataset_name
                 )
+                logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
+
                 mse = calculate_mse(standardized_predicted_action, actual_action)
                 timestep_mses.append(mse)
 
