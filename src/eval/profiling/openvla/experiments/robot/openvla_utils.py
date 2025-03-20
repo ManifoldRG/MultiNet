@@ -47,7 +47,7 @@ def get_vla(cfg):
         load_in_8bit=cfg.load_in_8bit,
         load_in_4bit=cfg.load_in_4bit,
         low_cpu_mem_usage=True,
-        trust_remote_code=True,
+        trust_remote_code=False,
     )
 
     # Move model to device.
@@ -65,6 +65,7 @@ def get_vla(cfg):
         with open(dataset_statistics_path, "r") as f:
             norm_stats = json.load(f)
         vla.norm_stats = norm_stats
+        vla.default_action_decoding_strategy = cfg.default_action_decoding_strategy
     else:
         print(
             "WARNING: No local dataset_statistics.json file found for current checkpoint.\n"

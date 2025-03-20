@@ -1,6 +1,7 @@
-import sys
+import numpy as np
 import logging
 from pathlib import Path
+import sys
 
 current_file = Path(__file__).resolve()
 project_root = next(
@@ -11,20 +12,16 @@ sys.path.append(str(project_root))
 
 from src.eval.profiling.openvla.experiments.robot.openvla_openx_dataloader import get_openx_dataloader
 from src.eval.profiling.openvla.experiments.robot.robot_utils import get_action
-from src.eval.profiling.openvla.experiments.robot.multinet_openvla_utils import convert_action, drop_is_terminal_dim
-
-import numpy as np
+from src.eval.profiling.openvla.experiments.robot.eval_utils import (
+    get_action_decoding_strategy,
+    calculate_mse,
+    calculate_success_rate,
+    normalize_mse_values,
+    standardize_predicted_action,
+    process_batch_actions
+)
 
 logger = logging.getLogger(__name__)
-
-OPENVLA_STANDARD_ACTION_DIM = 7
-
-def get_action_decoding_strategy(model, dataset_name):
-    """Get action decoding strategy with fallback to default"""
-    return model.norm_stats.get(dataset_name, {}).get(
-        'action_decoding_strategy', 
-        model.default_action_decoding_strategy
-    )
 
 
 def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
@@ -35,57 +32,40 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
     dataloader = get_openx_dataloader(tfds_shards, batch_size=1)
 
     action_success = []
-    timestep_mse = []
+    timestep_mses = []
 
     obs = {}
 
     for batch in dataloader:
         try:
-            # Get the number of observations in the batch
             obs_len = len(batch['continuous_observation'][0])
         except (KeyError, IndexError, TypeError) as e:
             logger.error(f"Error accessing continuous_observation: {e}")
             logger.info(f"Available keys: {batch.keys()}")
-            if 'continuous_observation' not in batch:
-                logger.error("'continuous_observation' key not found in batch")
-                if len(batch.keys()) > 0:
-                    logger.info(f"First key value type: {type(batch[list(batch.keys())[0]])}")
             continue
 
         for idx in range(obs_len):
             try:
-                # Get the actual (expert) action
-                actual_action = drop_is_terminal_dim(batch['action'][0][idx], dataset_name) # only drops is_last dim if the action space has one
+                actual_action = process_batch_actions(batch, dataset_name, 0, idx)
+                if actual_action is None:
+                    continue
 
-                # Get the preprocessed image from the dataloader
                 obs['full_image'] = batch['continuous_observation'][0][idx]
-
-                # Check if the image is None
                 if obs['full_image'] is None:
-                    logger.warning(f"Image is None for timestep {idx} for dataset {dataset_name}. Skipping.")
+                    logger.warning(f"Observation is None for dataset {dataset_name}")
                     continue
 
                 text_obs = batch['text_observation'][0][idx]
-                
                 predicted_action = get_action(cfg, model, obs, text_obs, processor)
-                
-                # Standardize the predicted action to match the actual action space
-                if action_decoding_strategy == 'manual_rule_mapping':
-                    assert predicted_action.shape[0] == OPENVLA_STANDARD_ACTION_DIM, \
-                        f"predicted action shape {predicted_action.shape[0]} != OpenVLA standard action dimension {OPENVLA_STANDARD_ACTION_DIM}"
-                    standardized_predicted_action = convert_action(predicted_action, dataset_name)
-                elif action_decoding_strategy == 'simple_mapping':
-                    standardized_predicted_action = convert_action(predicted_action, dataset_name)
-                elif action_decoding_strategy == 'naive_dimension_extension':
-                    standardized_predicted_action = predicted_action
-                else:
-                    raise ValueError(f"Unknown action decoding strategy: {action_decoding_strategy}")
-                    
-                # Calculate RMSE for this timestep
-                mse = np.mean((np.array(standardized_predicted_action) - np.array(actual_action)) ** 2)
-                timestep_mse.append(mse)
-                
-                # At the last timestep, check if the predicted action is the same as the actual action. If yes, it is considered a success
+
+                standardized_predicted_action = standardize_predicted_action(
+                    predicted_action,
+                    action_decoding_strategy,
+                    dataset_name
+                )
+                mse = calculate_mse(standardized_predicted_action, actual_action)
+                timestep_mses.append(mse)
+
                 if batch['is_last'][0][idx] == True:
                     logger.info(f"Episode final predicted action: {np.array(standardized_predicted_action)}")
                     logger.info(f"Episode final actual action: {np.array(actual_action)}")
@@ -97,34 +77,16 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
                 logger.warning(f"Error processing OpenX dataset at index {idx}: {e}")
                 continue
 
-
-    if len(action_success) == 0:
-        logger.warning("Action success list is EMPTY. Defaulting to 0.0 action success rate.")
-        action_success_rate = 0.0
-    else:
-        action_success_rate = (sum(action_success) / len(action_success)) * 100
-    
+    action_success_rate = calculate_success_rate(action_success)
     logger.debug(f"Action Success Rate Percentage for the dataset: {action_success_rate:.4f}")
 
-    # Calculate overall average RMSE across all episodes
-    total_dataset_amse = sum(timestep_mse)
-    logger.info(f"\nTotal MSE across {len(timestep_mse)} timesteps: {total_dataset_amse:.4f}")
-    num_timesteps = len(timestep_mse)
+    total_dataset_amse = sum(timestep_mses)
+    logger.info(f"\nTotal MSE across {len(timestep_mses)} timesteps: {total_dataset_amse:.4f}")
+    num_timesteps = len(timestep_mses)
     avg_dataset_amse = total_dataset_amse / num_timesteps if num_timesteps > 0 else 0.0
-    
-    # Calculate min-max normalized AMSE
-    if len(timestep_mse) > 0:
-        min_mse = min(timestep_mse)
-        max_mse = max(timestep_mse)
-        normalized_mse = np.array(timestep_mse)
-        normalized_mse = (normalized_mse - min_mse) / (max_mse - min_mse) if max_mse != min_mse else np.zeros_like(normalized_mse)
-        normalized_amse = sum(normalized_mse) / len(normalized_mse)
-    else:
-        logger.warning("No timestep MSE values collected. Setting normalized AMSE to 0.0")
-        normalized_amse = 0.0
-    
+
+    normalized_mses = normalize_mse_values(timestep_mses)
+    normalized_amse = sum(normalized_mses) / len(normalized_mses) if len(normalized_mses) > 0 else 0.0
     logger.debug(f"Normalized Average AMSE for dataset: {normalized_amse:.4f}")
-    logger.debug(f"Timesteps for each episode: {timesteps}")
-    logger.debug(f"Total timesteps: {sum(timesteps)}")
 
     return action_success_rate, total_dataset_amse, avg_dataset_amse, num_timesteps, normalized_amse
