@@ -152,7 +152,7 @@ def convert_action(action: np.ndarray, dataset_name: str):
         z_movement = action[2]  # Vertical movement (UP/DOWN)
         
         # threshold for movement detection
-        threshold = 0.2
+        threshold = 0.3
         
         # Determine horizontal direction
         if x_movement < -threshold:
@@ -275,5 +275,6 @@ def clip_out_of_range_action_to_default(action: np.ndarray, dataset_name: str) -
     if dataset_name == "bigfish":
         if action[0] >= 9:
             return [4]  # default bigfish special action index to stand still based on procgen codebase
+        return action
     else:
         return action

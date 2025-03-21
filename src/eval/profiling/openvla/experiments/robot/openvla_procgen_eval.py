@@ -20,8 +20,11 @@ from src.eval.profiling.openvla.experiments.robot.eval_utils import (
     standardize_predicted_action,
     process_batch_actions
 )
+from definitions.procgen import ProcGenDefinitions
+
 
 logger = logging.getLogger(__name__)
+# logger.setLevel(logging.DEBUG)
 
 def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name):
     """
@@ -66,10 +69,16 @@ def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name
 
                 obs['full_image'] = batch_observations[idx]
                 if obs['full_image'] is None:
-                    logger.warning(f"Observation is None for dataset {dataset_name}")
-                    continue
+                    raise ValueError(f"Observation is None for dataset {dataset_name}")
 
-                text_obs = batch['text_observation'][batch_idx][idx]
+                try:
+                    text_obs = next(iter(ProcGenDefinitions.DESCRIPTIONS.get(dataset_name).values()))[0]
+                except (IndexError, KeyError) as e:
+                    raise ValueError(f"Error getting text observation: {e}")
+                
+                logger.debug(f"Observation shape: {obs['full_image'].shape}")
+                logger.debug(f"Text observation: {text_obs}")
+                
                 predicted_action = get_action(cfg, model, obs, text_obs, processor)
                 logger.debug(f"Predicted action: {predicted_action}")
 

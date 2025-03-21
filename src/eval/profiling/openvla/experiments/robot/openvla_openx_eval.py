@@ -22,6 +22,7 @@ from src.eval.profiling.openvla.experiments.robot.eval_utils import (
 )
 
 logger = logging.getLogger(__name__)
+# logger.setLevel(logging.DEBUG)
 
 def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
     action_decoding_strategy = get_action_decoding_strategy(model, dataset_name)
@@ -53,10 +54,15 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
 
                 obs['full_image'] = batch['continuous_observation'][0][idx]
                 if obs['full_image'] is None:
-                    logger.warning(f"Observation is None for dataset {dataset_name}")
-                    continue
+                    raise ValueError(f"Observation is None for dataset {dataset_name}")
 
                 text_obs = batch['text_observation'][0][idx]
+                if text_obs is None:
+                    raise ValueError(f"Text observation is None for dataset {dataset_name}")
+                
+                logger.debug(f"Observation shape: {obs['full_image'].shape}")
+                logger.debug(f"Text observation: {text_obs}")
+
                 predicted_action = get_action(cfg, model, obs, text_obs, processor)
                 logger.debug(f"Predicted action: {predicted_action}")
 
