@@ -565,9 +565,11 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
 
             # Only add normalized and discretized actions that are unmasked
             actions = np.where(mask, actions, normalized_actions)
-        else:
+        elif action_decoding_strategy == "manual_rule_mapping":
             # return OpenVLA standard normalized actions for manual rule mapping
             actions = normalized_actions
+        else:
+            raise ValueError(f"Unknown action decoding strategy: {action_decoding_strategy}")
 
         return actions
 
