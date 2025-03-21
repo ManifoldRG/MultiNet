@@ -14,27 +14,33 @@ logger = logging.getLogger(__name__)
 if IS_DEV:
     logger.setLevel(logging.DEBUG)
 
-# multinet_v0_1_openx_datasets = ['nyu_door_opening_surprising_effectiveness', 'columbia_cairlab_pusht_real', 'conq_hose_manipulation', 'plex_robosuite', 'stanford_mask_vit_converted_externally_to_rlds', 'usc_cloth_sim_converted_externally_to_rlds', 'utokyo_pr2_opening_fridge_converted_externally_to_rlds', 'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds', 'utokyo_xarm_pick_and_place_converted_externally_to_rlds', 'nyu_rot_dataset_converted_externally_to_rlds', 'ucsd_pick_and_place_dataset_converted_externally_to_rlds', 'eth_agent_affordances', 'imperialcollege_sawyer_wrist_cam']
-
-# openx_datasets = [
-#     'nyu_door_opening_surprising_effectiveness', 'ucsd_pick_and_place_dataset_converted_externally_to_rlds',
-#     'nyu_rot_dataset_converted_externally_to_rlds',         'usc_cloth_sim_converted_externally_to_rlds',
-#     'columbia_cairlab_pusht_real',       'plex_robosuite',                                       'utokyo_pr2_opening_fridge_converted_externally_to_rlds',
-#     'conq_hose_manipulation',            'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds',
-#     'eth_agent_affordances',             'stanford_mask_vit_converted_externally_to_rlds',       
-#     'imperialcollege_sawyer_wrist_cam'
-# ]
-
 # MultiNet 0.2
-PROFILING_DATASETS = ['utokyo_xarm_bimanual_converted_externally_to_rlds', 'bigfish']
 
 ACTION_DECODE_STRATEGIES = {
     'utokyo_xarm_bimanual_converted_externally_to_rlds': 'simple_mapping',
-    'bigfish': 'manual_rule_mapping',
-    'bossfight': 'naive_dim_extension'
+    'bigfish': 'naive_dim_extension',
+    'bossfight': 'naive_dim_extension',
+    'caveflyer': 'naive_dim_extension',
+    'chaser': 'naive_dim_extension',
+    'climber': 'naive_dim_extension',
+    'coinrun': 'naive_dim_extension',
+    'dodgeball': 'naive_dim_extension',
+    'fruitbot': 'naive_dim_extension',
+    'heist': 'naive_dim_extension',
+    'jumper': 'naive_dim_extension',
+    'leaper': 'naive_dim_extension',
+    'maze': 'naive_dim_extension',
+    'miner': 'naive_dim_extension',
+    'ninja': 'naive_dim_extension',
+    'plunder': 'naive_dim_extension',
+    'starpilot': 'naive_dim_extension'
 }
 
-DISCRETE_DATASETS = ['bigfish']
+OPENX_DATASETS = ['nyu_door_opening_surprising_effectiveness', 'columbia_cairlab_pusht_real', 'conq_hose_manipulation', 'plex_robosuite', 'stanford_mask_vit_converted_externally_to_rlds', 'usc_cloth_sim_converted_externally_to_rlds', 'utokyo_pr2_opening_fridge_converted_externally_to_rlds', 'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds', 'utokyo_xarm_pick_and_place_converted_externally_to_rlds', 'nyu_rot_dataset_converted_externally_to_rlds', 'ucsd_pick_and_place_dataset_converted_externally_to_rlds', 'eth_agent_affordances', 'imperialcollege_sawyer_wrist_cam']
+PROCGEN_DATASETS = ['bossfight', 'caveflyer', 'chaser', 'climber', 'coinrun', 'dodgeball', 'fruitbot', 'heist', 'jumper', 'leaper', 'maze', 'miner', 'ninja', 'plunder', 'starpilot']
+DISCRETE_DATASETS = PROCGEN_DATASETS
+PROFILING_DATASETS = PROCGEN_DATASETS \
+    # + OPENX_DATASETS
 
 class OpenXDataset:
     def __init__(self, tfds_shards: List[str]):
@@ -110,7 +116,7 @@ class OpenXDataset:
                     if len(float_action_tensors) == 14:
                         print(float_action_tensors)
 
-                elif dataset_name == 'bigfish':
+                elif dataset_name in PROCGEN_DATASETS:
                     # print(f"action shape: {elem['actions'].shape}")
                     # print(f"actions: {elem['actions']}")
 
@@ -184,7 +190,7 @@ if __name__ == "__main__":
     
     if IS_DEV:
         # openx_train_datasets_path = '/home/locke/ManifoldRG/MultiNet/data/openx'
-        train_datasets_path = '/home/locke/ManifoldRG/MultiNet/data/translated'
+        train_datasets_path = '/home/locke/ManifoldRG/MultiNet/data/translated/procgen'
     else:
         train_datasets_path = '/mnt/disks/mount_dir/multinettranslated/openx_translated/'
     
@@ -230,7 +236,7 @@ if __name__ == "__main__":
         else:
             # TODO: modify this path to handle procgen datasets
             # Procgen dataset paths
-            if dataset in ['bigfish']:
+            if dataset in PROCGEN_DATASETS:
                 train_shard_files = os.listdir(os.path.join(train_datasets_path, dataset))
                 sorted_train_shard_files = sorted(train_shard_files, key=lambda x: datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"))
                 tfds_shards = [os.path.join(train_datasets_path, dataset, f) 
@@ -251,8 +257,14 @@ if __name__ == "__main__":
 
         # Calculate discrete action mask
         action_dim = len(openxobj.action_tensors[0])
-        mask = [True] * (action_dim - 1) + [False]
-        discrete = [True] * action_dim if dataset in DISCRETE_DATASETS else [False] * action_dim
+        if dataset in OPENX_DATASETS:
+            mask = [True] * (action_dim - 1) + [False]
+            discrete = [False] * action_dim
+        elif dataset in PROCGEN_DATASETS:
+            mask = [True] * action_dim
+            discrete = [True] * action_dim
+        else:
+            raise ValueError(f"Unknown dataset: {dataset}")
 
         action_stats = openxobj._get_action_stats(discrete=discrete, mask=mask)
 
@@ -269,3 +281,5 @@ if __name__ == "__main__":
         # Dump the updated dataset_statistics to a JSON file
         with open('dataset_statistics.json', 'w') as f:
             json.dump(existing_statistics, f, indent=4)
+
+        print(f"Finished calculating statistics for dataset: {dataset}")

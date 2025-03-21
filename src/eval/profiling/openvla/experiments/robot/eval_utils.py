@@ -61,7 +61,7 @@ def standardize_predicted_action(predicted_action, action_decoding_strategy, dat
         return convert_action(predicted_action, dataset_name)
     elif action_decoding_strategy == 'simple_mapping':
         return convert_action(predicted_action, dataset_name)
-    elif action_decoding_strategy == 'naive_dimension_extension':
+    elif action_decoding_strategy == 'naive_dim_extension':
         return predicted_action
     else:
         raise ValueError(f"Unknown action decoding strategy: {action_decoding_strategy}")
