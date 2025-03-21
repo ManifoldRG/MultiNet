@@ -79,9 +79,9 @@ class ProcGenDataset(Dataset):
                 idx = len(self.tfds_shards) + idx
             
             if self.cur_shard_idx != idx:
-                self.cur_shard = self._process_shard(idx)
+                self.cur_shard = self._process_episode(self._process_shard(idx))
                 self.cur_shard_idx = idx
-            return self._process_episode(self.cur_shard)
+            return self.cur_shard
         
         # Handle negative indices
         if idx < 0:
