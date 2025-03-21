@@ -6,6 +6,7 @@ from src.eval.profiling.openvla.experiments.robot.multinet_openvla_utils import 
 )
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 OPENVLA_STANDARD_ACTION_DIM = 7
 
@@ -49,8 +50,8 @@ def process_batch_actions(batch, dataset_name, batch_idx, idx, action_decoding_s
             action_data = clip_out_of_range_action_to_default(action_data, dataset_name)
         return drop_is_terminal_dim(action_data, dataset_name)
     except (IndexError, KeyError) as e:
-        logger.warning(f"Error processing actions: {e}")
-        return None
+        raise ValueError(f"Error processing actions: {e}")
+
 
 def standardize_predicted_action(predicted_action, action_decoding_strategy, dataset_name):
     """Standardize predicted action based on decoding strategy"""
