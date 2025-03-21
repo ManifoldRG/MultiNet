@@ -32,6 +32,9 @@ from definitions.openx import OpenXDefinitions
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
+PROCGEN_DATASET_NAMES = ProcGenDefinitions.DESCRIPTIONS.keys()
+OPENX_DATASET_NAMES = OpenXDefinitions.DESCRIPTIONS.keys()
+
 # List of datasets to evaluate
 PROFILING_DATASETS = [
     'nyu_door_opening_surprising_effectiveness',            'ucsd_pick_and_place_dataset_converted_externally_to_rlds',
@@ -40,11 +43,9 @@ PROFILING_DATASETS = [
     'conq_hose_manipulation',                               'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds',
     'eth_agent_affordances',                                'stanford_mask_vit_converted_externally_to_rlds',       
     'imperialcollege_sawyer_wrist_cam',                     'utokyo_pr2_opening_fridge_converted_externally_to_rlds',
-    'bigfish', 'bossfight', 'caveflyer', 'chaser'
-]
-
-PROCGEN_DATASET_NAMES = ProcGenDefinitions.DESCRIPTIONS.keys()
-OPENX_DATASET_NAMES = OpenXDefinitions.DESCRIPTIONS.keys()
+    # 'bigfish', 
+    # 'bossfight', 'caveflyer', 'chaser'
+] + [d for d in PROCGEN_DATASET_NAMES if d != 'bigfish']
 
 @dataclass
 class EvalConfig:
