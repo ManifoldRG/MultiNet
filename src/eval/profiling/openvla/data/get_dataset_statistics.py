@@ -1,12 +1,48 @@
 import json
 
-from typing import List, Dict, Any
-
+from typing import List
+from datetime import datetime
 import tensorflow as tf
 import numpy as np
 import os
+import logging
 
-class OpenXDataset():
+
+IS_DEV = True
+
+logger = logging.getLogger(__name__)
+if IS_DEV:
+    logger.setLevel(logging.DEBUG)
+
+# MultiNet 0.2
+
+ACTION_DECODE_STRATEGIES = {
+    'utokyo_xarm_bimanual_converted_externally_to_rlds': 'simple_mapping',
+    'bigfish': 'naive_dim_extension',
+    'bossfight': 'naive_dim_extension',
+    'caveflyer': 'naive_dim_extension',
+    'chaser': 'naive_dim_extension',
+    'climber': 'naive_dim_extension',
+    'coinrun': 'naive_dim_extension',
+    'dodgeball': 'naive_dim_extension',
+    'fruitbot': 'naive_dim_extension',
+    'heist': 'naive_dim_extension',
+    'jumper': 'naive_dim_extension',
+    'leaper': 'naive_dim_extension',
+    'maze': 'naive_dim_extension',
+    'miner': 'naive_dim_extension',
+    'ninja': 'naive_dim_extension',
+    'plunder': 'naive_dim_extension',
+    'starpilot': 'naive_dim_extension'
+}
+
+OPENX_DATASETS = ['nyu_door_opening_surprising_effectiveness', 'columbia_cairlab_pusht_real', 'conq_hose_manipulation', 'plex_robosuite', 'stanford_mask_vit_converted_externally_to_rlds', 'usc_cloth_sim_converted_externally_to_rlds', 'utokyo_pr2_opening_fridge_converted_externally_to_rlds', 'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds', 'utokyo_xarm_pick_and_place_converted_externally_to_rlds', 'nyu_rot_dataset_converted_externally_to_rlds', 'ucsd_pick_and_place_dataset_converted_externally_to_rlds', 'eth_agent_affordances', 'imperialcollege_sawyer_wrist_cam']
+PROCGEN_DATASETS = ['bossfight', 'caveflyer', 'chaser', 'climber', 'coinrun', 'dodgeball', 'fruitbot', 'heist', 'jumper', 'leaper', 'maze', 'miner', 'ninja', 'plunder', 'starpilot']
+DISCRETE_DATASETS = PROCGEN_DATASETS
+PROFILING_DATASETS = PROCGEN_DATASETS \
+    # + OPENX_DATASETS
+
+class OpenXDataset:
     def __init__(self, tfds_shards: List[str]):
         self.tfds_shards = tfds_shards
         self.action_tensor_size = None
@@ -16,10 +52,7 @@ class OpenXDataset():
         self.timestep_count = 0
         
     def _process_shards(self, dataset_name: str):
-
         for shard_idx, shard in enumerate(self.tfds_shards):
-            
-            print(shard)
             dataset = tf.data.Dataset.load(shard)
 
             #Process the input data for each element in the shard
@@ -68,62 +101,103 @@ class OpenXDataset():
                     float_action_tensors.append(np.array(elem['action'][4])) # y rotation
                     float_action_tensors.append(np.array(elem['action'][3])) # x rotation
                     float_action_tensors.append(np.array(elem['action'][6])) #gripper
-                
+
+                elif dataset_name == 'utokyo_xarm_bimanual_converted_externally_to_rlds':
+                    float_action_tensors.append(np.array(elem['action'][:3])) #xyz
+                    float_action_tensors.append(np.array(elem['action'][5])) #roll
+                    float_action_tensors.append(np.array(elem['action'][4])) #pitch
+                    float_action_tensors.append(np.array(elem['action'][3])) #yaw
+                    float_action_tensors.append(np.array(elem['action'][6])) #gripper
+                    float_action_tensors.append(np.array(elem['action'][7:10])) #xyz
+                    float_action_tensors.append(np.array(elem['action'][12])) #roll
+                    float_action_tensors.append(np.array(elem['action'][11])) #pitch
+                    float_action_tensors.append(np.array(elem['action'][10])) #yaw
+                    float_action_tensors.append(np.array(elem['action'][13])) #gripper
+                    if len(float_action_tensors) == 14:
+                        print(float_action_tensors)
+
+                elif dataset_name in PROCGEN_DATASETS:
+                    # print(f"action shape: {elem['actions'].shape}")
+                    # print(f"actions: {elem['actions']}")
+
+                    # print(f"dones: {elem['dones']}")
+                    # print(f"observations: {elem['observations'].shape}")
+                    # print(f"rewards: {elem['rewards']}")
+                    float_action_tensors.append(np.array(elem['actions'][0]))
+
                 if float_action_tensors:
                     float_action_tensors = [np.atleast_1d(tensor) for tensor in float_action_tensors]
                     concatenated_action_float = np.concatenate(float_action_tensors, axis=0)
-                    if concatenated_action_float.shape!=(7,):
-                        raise ValueError(f"Action tensor shape is {concatenated_action_float.shape}, expected 7")
+                    # if concatenated_action_float.shape != (7,):
+                    #     raise ValueError(f"Action tensor shape is {concatenated_action_float.shape}, expected 7")
                 
                 else:
                     raise ValueError(f"No float action tensors found for dataset {dataset_name}")
 
                 
                 self.timestep_count += 1
-                if elem['is_last']:
+                if elem.get('is_last', False) or elem.get('dones', False):
                     self.is_last_count += 1
                 
 
                 self.action_tensors.append(concatenated_action_float)
                 
-            
-                
 
-    def _get_action_stats(self):
+    def _get_action_stats(self, mask: list, discrete: list):
         if len(self.action_tensors) == 0:
             raise AttributeError("action_stats is None, it has not been populated yet")
         
+        action_dim = self.action_tensors[0].shape[0]
+        
+        if len(mask) != action_dim:
+            raise ValueError(f"Mask length {len(mask)} does not match action dimension {action_dim}")
+        
+        if len(discrete) != action_dim:
+            raise ValueError(f"Discrete length {len(discrete)} does not match action dimension {action_dim}")
 
-        return {
+        action_stats = {
             "mean": np.mean(self.action_tensors, axis=0).tolist(),
             "std": np.std(self.action_tensors, axis=0).tolist(),
             "max": np.max(self.action_tensors, axis=0).tolist(),
             "min": np.min(self.action_tensors, axis=0).tolist(),
             "q01": np.percentile(self.action_tensors, 1, axis=0).tolist(),
             "q99": np.percentile(self.action_tensors, 99, axis=0).tolist(),
-            "mask": [True] * (len(self.action_tensors[0]) - 1) + [False]
-        }
-    
-    def _get_proprio_stats(self):
-        return{
-            "mean": np.zeros(7).tolist(),
-            "std": np.zeros(7).tolist(),
-            "max": np.zeros(7).tolist(),
-            "min": np.zeros(7).tolist(),
-            "q01": np.zeros(7).tolist(),
-            "q99": np.zeros(7).tolist(),
+            "mask": mask,
+            "discrete": discrete
         }
 
+        return action_stats
+    
+    def _get_proprio_stats(self):
+        if len(self.action_tensors) == 0:
+            raise AttributeError("proprio_stats is None, it has not been populated yet")
+        
+        dim = len(self.action_tensors[0])
+
+        return {
+            "mean": np.zeros(dim).tolist(),
+            "std": np.zeros(dim).tolist(),
+            "max": np.zeros(dim).tolist(),
+            "min": np.zeros(dim).tolist(),
+            "q01": np.zeros(dim).tolist(),
+            "q99": np.zeros(dim).tolist(),
+        }
+
+    
 if __name__ == "__main__":
     
     dataset_statistics = {}
-    openx_test_datasets_path = '/mnt/disks/mount_dir/openx_test_translated/'
-    openx_train_datasets_path = '/mnt/disks/mount_dir/multinettranslated/openx_translated/'
-    openx_val_datasets_path = '/mnt/disks/mount_dir/openx_val_translated/'
-    openx_datasets = ['nyu_door_opening_surprising_effectiveness', 'columbia_cairlab_pusht_real', 'conq_hose_manipulation', 'plex_robosuite', 'stanford_mask_vit_converted_externally_to_rlds', 'usc_cloth_sim_converted_externally_to_rlds', 'utokyo_pr2_opening_fridge_converted_externally_to_rlds', 'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds', 'utokyo_xarm_pick_and_place_converted_externally_to_rlds', 'nyu_rot_dataset_converted_externally_to_rlds', 'ucsd_pick_and_place_dataset_converted_externally_to_rlds', 'eth_agent_affordances', 'imperialcollege_sawyer_wrist_cam']
     
-    for openx_dataset in openx_datasets:
-        
+    if IS_DEV:
+        # openx_train_datasets_path = '/home/locke/ManifoldRG/MultiNet/data/openx'
+        train_datasets_path = '/home/locke/ManifoldRG/MultiNet/data/translated/procgen'
+    else:
+        train_datasets_path = '/mnt/disks/mount_dir/multinettranslated/openx_translated/'
+    
+    test_datasets_path = '/mnt/disks/mount_dir/openx_test_translated/'
+    val_datasets_path = '/mnt/disks/mount_dir/openx_val_translated/'
+
+    for dataset in PROFILING_DATASETS:
         # Check if the dataset is already in the JSON file
         if os.path.exists('dataset_statistics.json'):
             with open('dataset_statistics.json', 'r') as f:
@@ -131,49 +205,75 @@ if __name__ == "__main__":
         else:
             existing_statistics = {}
         
-        if openx_dataset in existing_statistics:
-            print(f"Skipping {openx_dataset} as it's already in the dataset statistics.")
+        if dataset in existing_statistics:
+            print(f"Skipping {dataset} as it's already in the dataset statistics.")
             continue
         
-        if openx_dataset in ['conq_hose_manipulation', 'plex_robosuite', 'stanford_mask_vit_converted_externally_to_rlds', 'usc_cloth_sim_converted_externally_to_rlds', 'utokyo_pr2_opening_fridge_converted_externally_to_rlds', 'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds', 'utokyo_xarm_pick_and_place_converted_externally_to_rlds']:
-            train_shard_files = os.listdir(os.path.join(openx_train_datasets_path, openx_dataset))
-            sorted_train_shard_files = sorted(train_shard_files, key=lambda x: int(x.split('_')[-1]))
-            train_tfds_shards = [os.path.join(openx_train_datasets_path, openx_dataset, f) 
-                        for f in sorted_train_shard_files]
+        if not IS_DEV:
+            if dataset in ['conq_hose_manipulation', 'plex_robosuite', 'stanford_mask_vit_converted_externally_to_rlds', 'usc_cloth_sim_converted_externally_to_rlds', 'utokyo_pr2_opening_fridge_converted_externally_to_rlds', 'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds', 'utokyo_xarm_pick_and_place_converted_externally_to_rlds']:
+                train_shard_files = os.listdir(os.path.join(train_datasets_path, dataset))
+                sorted_train_shard_files = sorted(train_shard_files, key=lambda x: int(x.split('_')[-1]))
+                train_tfds_shards = [os.path.join(train_datasets_path, dataset, f) 
+                            for f in sorted_train_shard_files]
+                
+                val_shard_files = os.listdir(os.path.join(val_datasets_path, dataset))
+                sorted_val_shard_files = sorted(val_shard_files, key=lambda x: int(x.split('_')[-1]))
+                val_tfds_shards = [os.path.join(val_datasets_path, dataset, f) 
+                            for f in sorted_val_shard_files]
+                tfds_shards = train_tfds_shards + val_tfds_shards
             
-            val_shard_files = os.listdir(os.path.join(openx_val_datasets_path, openx_dataset))
-            sorted_val_shard_files = sorted(val_shard_files, key=lambda x: int(x.split('_')[-1]))
-            val_tfds_shards = [os.path.join(openx_val_datasets_path, openx_dataset, f) 
-                        for f in sorted_val_shard_files]
-            tfds_shards = train_tfds_shards + val_tfds_shards
-        
-        elif openx_dataset in ['nyu_door_opening_surprising_effectiveness', 'columbia_cairlab_pusht_real']:
-            train_shard_files = os.listdir(os.path.join(openx_train_datasets_path, openx_dataset))
-            sorted_train_shard_files = sorted(train_shard_files, key=lambda x: int(x.split('_')[-1]))
-            train_tfds_shards = [os.path.join(openx_train_datasets_path, openx_dataset, f) 
-                        for f in sorted_train_shard_files]
-            
-            test_shard_files = os.listdir(os.path.join(openx_test_datasets_path, openx_dataset))
-            sorted_test_shard_files = sorted(test_shard_files, key=lambda x: int(x.split('_')[-1]))
-            test_tfds_shards = [os.path.join(openx_test_datasets_path, openx_dataset, f) 
-                        for f in sorted_test_shard_files]
-            tfds_shards = train_tfds_shards + test_tfds_shards
-        
+            elif dataset in ['nyu_door_opening_surprising_effectiveness', 'columbia_cairlab_pusht_real']:
+                train_shard_files = os.listdir(os.path.join(train_datasets_path, dataset))
+                sorted_train_shard_files = sorted(train_shard_files, key=lambda x: int(x.split('_')[-1]))
+                train_tfds_shards = [os.path.join(train_datasets_path, dataset, f) 
+                            for f in sorted_train_shard_files]
+                
+                test_shard_files = os.listdir(os.path.join(test_datasets_path, dataset))
+                sorted_test_shard_files = sorted(test_shard_files, key=lambda x: int(x.split('_')[-1]))
+                test_tfds_shards = [os.path.join(test_datasets_path, dataset, f) 
+                            for f in sorted_test_shard_files]
+                tfds_shards = train_tfds_shards + test_tfds_shards
         else:
-            train_shard_files = os.listdir(os.path.join(openx_train_datasets_path, openx_dataset))
-            sorted_train_shard_files = sorted(train_shard_files, key=lambda x: int(x.split('_')[-1]))
-            train_tfds_shards = [os.path.join(openx_train_datasets_path, openx_dataset, f) 
-                        for f in sorted_train_shard_files]
-            tfds_shards = train_tfds_shards
+            # TODO: modify this path to handle procgen datasets
+            # Procgen dataset paths
+            if dataset in PROCGEN_DATASETS:
+                train_shard_files = os.listdir(os.path.join(train_datasets_path, dataset))
+                sorted_train_shard_files = sorted(train_shard_files, key=lambda x: datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"))
+                tfds_shards = [os.path.join(train_datasets_path, dataset, f) 
+                            for f in sorted_train_shard_files]
+                # TODO: add train, test or val shard files depending on the cloud folder structures
 
+            else:
+                # OpenX dataset paths
+                logger.debug(f"Loading OpenX dataset: {dataset}")
+                train_shard_files = os.listdir(os.path.join(train_datasets_path, dataset))
+                sorted_train_shard_files = sorted(train_shard_files, key=lambda x: int(x.split('_')[-1]))
+                train_tfds_shards = [os.path.join(train_datasets_path, dataset, f) 
+                            for f in sorted_train_shard_files]
+                tfds_shards = train_tfds_shards
 
         openxobj = OpenXDataset(tfds_shards)
-        openxobj._process_shards(openx_dataset)
-        dataset_statistics[openx_dataset] = {
-            'action': openxobj._get_action_stats(),
+        openxobj._process_shards(dataset)
+
+        # Calculate discrete action mask
+        action_dim = len(openxobj.action_tensors[0])
+        if dataset in OPENX_DATASETS:
+            mask = [True] * (action_dim - 1) + [False]
+            discrete = [False] * action_dim
+        elif dataset in PROCGEN_DATASETS:
+            mask = [True] * action_dim
+            discrete = [True] * action_dim
+        else:
+            raise ValueError(f"Unknown dataset: {dataset}")
+
+        action_stats = openxobj._get_action_stats(discrete=discrete, mask=mask)
+
+        dataset_statistics[dataset] = {
+            'action': action_stats,
             'proprio': openxobj._get_proprio_stats(),
             'num_transitions': openxobj.timestep_count,
-            'num_trajectories': openxobj.is_last_count
+            'num_trajectories': openxobj.is_last_count,
+            'action_decoding_strategy': ACTION_DECODE_STRATEGIES.get(dataset, 'simple_mapping')
         }
 
         existing_statistics.update(dataset_statistics)
@@ -181,3 +281,5 @@ if __name__ == "__main__":
         # Dump the updated dataset_statistics to a JSON file
         with open('dataset_statistics.json', 'w') as f:
             json.dump(existing_statistics, f, indent=4)
+
+        print(f"Finished calculating statistics for dataset: {dataset}")

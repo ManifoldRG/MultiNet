@@ -10,7 +10,7 @@ project_root = next(
 )
 sys.path.append(str(project_root))
 
-from src.eval.profiling.openvla.experiments.robot.openvla_openx_dataloader import get_openx_dataloader
+from src.data_utils.procgen_dataloader import get_procgen_dataloader
 from src.eval.profiling.openvla.experiments.robot.robot_utils import get_action
 from src.eval.profiling.openvla.experiments.robot.eval_utils import (
     get_action_decoding_strategy,
@@ -20,16 +20,31 @@ from src.eval.profiling.openvla.experiments.robot.eval_utils import (
     standardize_predicted_action,
     process_batch_actions
 )
+from definitions.procgen import ProcGenDefinitions
+
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
-def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
+def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name):
+    """
+    Evaluate OpenVLA model on ProcGen dataset.
+    
+    Args:
+        cfg: Configuration for evaluation
+        model: OpenVLA model
+        processor: Image processor for OpenVLA
+        tfds_shards: List of TFDS shards
+        dataset_name: Name of the dataset
+        
+    Returns:
+        Tuple of (action_success_rate, total_dataset_amse, avg_dataset_amse, num_timesteps, normalized_amse)
+    """
     action_decoding_strategy = get_action_decoding_strategy(model, dataset_name)
     if action_decoding_strategy == cfg.default_action_decoding_strategy:
         logger.warning(f"Action decoding strategy not found for dataset {dataset_name}. Defaulting to {cfg.default_action_decoding_strategy}")
 
-    dataloader = get_openx_dataloader(tfds_shards, batch_size=1)
+    _, dataloader = get_procgen_dataloader(tfds_shards, batch_size=1)
 
     action_success = []
     timestep_mses = []
@@ -37,55 +52,58 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
     obs = {}
 
     for batch in dataloader:
-        try:
-            obs_len = len(batch['continuous_observation'][0])
-        except (KeyError, IndexError, TypeError) as e:
-            logger.error(f"Error accessing continuous_observation: {e}")
-            logger.info(f"Available keys: {batch.keys()}")
-            continue
+        obs_key = 'continuous_observation' if 'continuous_observation' in batch else 'image_observation'
 
-        for idx in range(obs_len):
-            try:
-                # batch_idx is 0 for OpenX dataset
-                actual_action = process_batch_actions(batch, dataset_name, 0, idx, action_decoding_strategy)
+        for batch_idx, batch_observations in enumerate(batch[obs_key]):
+            if isinstance(batch_observations, list):
+                obs_len = len(batch_observations)
+            else:
+                batch_observations = [batch_observations]
+                obs_len = 1
+
+            for idx in range(obs_len):
+                actual_action = process_batch_actions(batch, dataset_name, batch_idx, idx, action_decoding_strategy)
                 logger.debug(f"Actual action: {actual_action}")
                 if actual_action is None:
                     continue
 
-                obs['full_image'] = batch['continuous_observation'][0][idx]
+                obs['full_image'] = batch_observations[idx]
                 if obs['full_image'] is None:
                     raise ValueError(f"Observation is None for dataset {dataset_name}")
 
-                text_obs = batch['text_observation'][0][idx]
-                if text_obs is None:
-                    raise ValueError(f"Text observation is None for dataset {dataset_name}")
+                try:
+                    text_obs = next(iter(ProcGenDefinitions.DESCRIPTIONS.get(dataset_name).values()))[0]
+                except (IndexError, KeyError) as e:
+                    raise ValueError(f"Error getting text observation: {e}")
                 
                 logger.debug(f"Observation shape: {obs['full_image'].shape}")
                 logger.debug(f"Text observation: {text_obs}")
-
+                
                 predicted_action = get_action(cfg, model, obs, text_obs, processor)
                 logger.debug(f"Predicted action: {predicted_action}")
 
+                # Standardize the predicted action to match the actual action space
                 standardized_predicted_action = standardize_predicted_action(
                     predicted_action,
                     action_decoding_strategy,
                     dataset_name
                 )
-                logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
 
+                logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
                 mse = calculate_mse(standardized_predicted_action, actual_action)
                 timestep_mses.append(mse)
 
-                if batch['is_last'][0][idx] == True:
-                    logger.info(f"Episode final predicted action: {np.array(standardized_predicted_action)}")
-                    logger.info(f"Episode final actual action: {np.array(actual_action)}")
-                    if np.array_equal(np.array(standardized_predicted_action), np.array(actual_action)):
-                        action_success.append(1)
-                    else:
-                        action_success.append(0)
-            except (IndexError, KeyError) as e:
-                logger.warning(f"Error processing OpenX dataset at index {idx}: {e}")
-                continue
+                try:
+                    is_last = batch['is_last'][batch_idx][idx] if isinstance(batch['is_last'][batch_idx], list) else batch['is_last'][batch_idx]
+                    if is_last == True:
+                        logger.info(f"Episode final predicted action: {np.array(standardized_predicted_action)}")
+                        logger.info(f"Episode final actual action: {np.array(actual_action)}")
+                        if np.array_equal(np.array(standardized_predicted_action), np.array(actual_action)):
+                            action_success.append(1)
+                        else:
+                            action_success.append(0)
+                except (IndexError, KeyError) as e:
+                    logger.warning(f"Error checking is_last: {e}")
 
     action_success_rate = calculate_success_rate(action_success)
     logger.debug(f"Action Success Rate Percentage for the dataset: {action_success_rate:.4f}")

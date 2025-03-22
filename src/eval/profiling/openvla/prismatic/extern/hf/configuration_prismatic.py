@@ -133,8 +133,10 @@ class OpenVLAConfig(PrismaticConfig):
         self,
         norm_stats: Optional[Dict[str, Dict[str, Dict[str, Dict[str, List[float]]]]]] = None,
         n_action_bins: int = 256,
+        default_action_decoding_strategy: str = "simple_mapping",
         **kwargs: str,
     ) -> None:
         self.norm_stats, self.n_action_bins = norm_stats, n_action_bins
+        self.default_action_decoding_strategy = default_action_decoding_strategy
 
         super().__init__(**kwargs)

@@ -33,4 +33,4 @@ echo "Reminder: Please run the following command before executing openvla profil
 echo "export PYTHONPATH=\$PYTHONPATH:$(pwd)/eval/profiling/openvla"
 echo "conda activate multinet-openvla"
 
-echo "python eval/profiling/openvla/experiments/robot/openvla_openx_profiling.py --openx_datasets_path ~/ManifoldRG/MultiNet/data/openx --dataset_statistics_path ~/ManifoldRG/MultiNet/src/eval/profiling/openvla/data/dataset_statistics.json --result_save_path ~/ManifoldRG/MultiNet/src"
+echo "python eval/profiling/openvla/experiments/robot/openvla_profiling.py --profiling_dataset_folder_path ~/ManifoldRG/MultiNet/data/openx --dataset_statistics_path ~/ManifoldRG/MultiNet/src/eval/profiling/openvla/data/dataset_statistics.json --result_save_path ~/ManifoldRG/MultiNet/src"
