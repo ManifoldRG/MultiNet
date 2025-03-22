@@ -38,7 +38,7 @@ def _find_shards(dataset: str, disk_root_dir: str) -> list[str]:
         print(f"Cannot identify the directory to the dataset {dataset}. Skipping this dataset.")
         return []
         
-class ProcgenModule(DatasetModule):
+class ProcGenModule(DatasetModule):
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0) -> None:
         super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
         self._definitions_class = ProcGenDefinitions
@@ -134,7 +134,7 @@ class ProcgenModule(DatasetModule):
         return result
 
 
-class ProcgenBatchModule(DatasetBatchModule):
+class ProcGenBatchModule(DatasetBatchModule):
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0):
         super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
         self._definitions_class = ProcGenDefinitions
