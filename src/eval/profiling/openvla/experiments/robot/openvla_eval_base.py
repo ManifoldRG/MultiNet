@@ -16,9 +16,9 @@ sys.path.append(str(project_root))
 from src.eval.profiling.openvla.experiments.robot.robot_utils import get_action
 from src.eval.profiling.openvla.experiments.robot.eval_utils import (
     get_action_decoding_strategy,
-    calculate_mse,
+    calculate_mae,
     calculate_success_rate,
-    normalize_mse_values,
+    min_max_normalize,
     standardize_predicted_action
 )
 
@@ -108,6 +108,7 @@ class OpenVLABaseEvaluator:
         """
         raise NotImplementedError("Subclasses must implement get_dataloader")
     
+    @abstractmethod
     def process_batch(self, batch: Dict[str, Any], episode_idx: int) -> Tuple[List[float], List[int]]:
         """Process a single batch (episode) of data.
         
@@ -118,69 +119,7 @@ class OpenVLABaseEvaluator:
         Returns:
             Tuple of (timestep_mses, action_success) for this batch
         """
-        timestep_mses = []
-        action_success = []
-        obs = {}
-        
-        try:
-            obs_len = len(batch['image_observation'][0])
-        except (KeyError, IndexError, TypeError) as e:
-            logger.error(f"Error accessing image_observation: {e}")
-            logger.info(f"Available keys: {batch.keys()}")
-
-            return timestep_mses, action_success
-        
-        for timestep_idx in range(obs_len):
-            logger.debug("================================")
-            logger.debug(f"{self.dataset_name}")
-            logger.debug(f"episode-{episode_idx} timestep-{timestep_idx}")
-            logger.debug("================================")
-            
-            try:
-                # Process observation
-                obs, text_obs = self.process_observation(batch, obs, timestep_idx)
-                if not obs or not text_obs:
-                    continue
-
-                # Get and process action
-                predicted_action = get_action(self.cfg, self.model, obs, text_obs, self.processor)
-                logger.debug(f"Predicted action: {predicted_action}")
-                
-                # Standardize predicted action
-                standardized_predicted_action = standardize_predicted_action(
-                    predicted_action,
-                    self.action_decoding_strategy,
-                    self.dataset_name
-                )
-                
-                # Get actual action
-                actual_action = self.get_actual_action(batch, episode_idx, timestep_idx)
-                if actual_action is None:
-                    raise ValueError(f"Actual action is None for dataset {self.dataset_name}")
-                
-                logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
-                logger.debug(f"Actual action: {actual_action}")
-                
-                # Calculate MSE
-                mse = calculate_mse(standardized_predicted_action, actual_action)
-                timestep_mses.append(mse)
-                
-                # Check if this is the last timestep
-                is_last = self.is_last_timestep(batch, timestep_idx)
-                if is_last:
-                    logger.info(f"Episode {episode_idx} final predicted action: {np.array(standardized_predicted_action)}")
-                    logger.info(f"Episode {episode_idx} final actual action: {np.array(actual_action)}")
-                    
-                    if np.array_equal(np.array(standardized_predicted_action), np.array(actual_action)):
-                        action_success.append(1)
-                    else:
-                        action_success.append(0)
-                        
-            except (IndexError, KeyError) as e:
-                raise f"Error processing dataset at timestep {timestep_idx}: {e}"
-
-                
-        return timestep_mses, action_success
+        raise NotImplementedError("Subclasses must implement process_batch")
 
     def evaluate(self, tfds_shards: List[str]) -> Tuple[float, float, float, int, float]:
         """Evaluate the model on the dataset.
@@ -194,15 +133,15 @@ class OpenVLABaseEvaluator:
         """
         dataloader = self.get_dataloader(tfds_shards)
         
-        all_timestep_mses = []
+        all_timestep_maes = []
         all_action_success = []
         
         episode_idx = 0
         
         for batch in dataloader:
-            batch_timestep_mses, batch_action_success = self.process_batch(batch, episode_idx)
+            batch_timestep_maes, batch_action_success = self.process_batch(batch, episode_idx)
             
-            all_timestep_mses.extend(batch_timestep_mses)
+            all_timestep_maes.extend(batch_timestep_maes)
             all_action_success.extend(batch_action_success)
             
             episode_idx += 1
@@ -215,14 +154,14 @@ class OpenVLABaseEvaluator:
         action_success_rate = calculate_success_rate(all_action_success)
         logger.debug(f"Action Success Rate Percentage for the dataset: {action_success_rate:.4f}")
         
-        total_dataset_amse = sum(all_timestep_mses)
-        logger.info(f"\nTotal MSE across {len(all_timestep_mses)} timesteps: {total_dataset_amse:.4f}")
+        total_dataset_amse = sum(all_timestep_maes)
+        logger.info(f"\nTotal MSE across {len(all_timestep_maes)} timesteps: {total_dataset_amse:.4f}")
         
-        num_timesteps = len(all_timestep_mses)
+        num_timesteps = len(all_timestep_maes)
         avg_dataset_amse = total_dataset_amse / num_timesteps if num_timesteps > 0 else 0.0
         
-        normalized_mses = normalize_mse_values(all_timestep_mses)
-        normalized_amse = sum(normalized_mses) / len(normalized_mses) if len(normalized_mses) > 0 else 0.0
+        normalized_maes = min_max_normalize(all_timestep_maes)
+        normalized_amse = sum(normalized_maes) / len(normalized_maes) if len(normalized_maes) > 0 else 0.0
         logger.debug(f"Normalized Average AMSE for dataset: {normalized_amse:.4f}")
         
         return action_success_rate, total_dataset_amse, avg_dataset_amse, num_timesteps, normalized_amse

@@ -13,7 +13,17 @@ sys.path.append(str(project_root))
 
 from src.data_utils.procgen_dataloader import get_procgen_dataloader
 from src.eval.profiling.openvla.experiments.robot.openvla_eval_base import OpenVLABaseEvaluator
-from src.eval.profiling.openvla.experiments.robot.eval_utils import load_preprocessed_expert_action
+from src.eval.profiling.openvla.experiments.robot.robot_utils import get_action
+from src.eval.profiling.openvla.experiments.robot.eval_utils import (
+    get_action_decoding_strategy,
+    calculate_mse,
+    calculate_success_rate,
+    min_max_normalize,
+    standardize_predicted_action,
+    preprocess_expert_actions
+)
+from definitions.procgen import ProcGenDefinitions
+
 
 logger = logging.getLogger(__name__)
 if os.environ.get('ENVIRONMENT', 'prod') == 'dev':
@@ -60,13 +70,24 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
         return obs, text_obs
     
     def get_actual_action(self, batch: Dict[str, Any], episode_idx: int, timestep_idx: int) -> any:
-        return load_preprocessed_expert_action(
+        return preprocess_expert_actions(
             batch, 
             self.dataset_name, 
             0,  # batch_idx is 0 for ProcGen dataset
             timestep_idx
         )
     
+    def process_batch(self, batch: dict[str, any], episode_idx: int) -> tuple[list[float], list[int]]:
+        """Process a single batch (episode) of data.
+        
+        Args:
+            batch: Batch of data from the dataloader
+            episode_idx: Index of the current episode
+            
+        Returns:
+        """
+        raise NotImplementedError("Processing batch is not implemented for ProcGen dataset")
+
     def is_last_timestep(self, batch: dict[str, any], timestep_idx: int) -> bool:
         """Check if the current timestep is the last one in the ProcGen episode"""
         logger.debug(f"is_last: {batch['is_last'][0][timestep_idx]}")
