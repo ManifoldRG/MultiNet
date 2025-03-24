@@ -16,9 +16,9 @@ from src.eval.profiling.openvla.experiments.robot.eval_utils import (
     get_action_decoding_strategy,
     calculate_mse,
     calculate_success_rate,
-    normalize_mse_values,
+    min_max_normalize,
     standardize_predicted_action,
-    process_batch_actions
+    preprocess_expert_actions
 )
 from definitions.procgen import ProcGenDefinitions
 
@@ -42,14 +42,15 @@ def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name
     """
     action_decoding_strategy = get_action_decoding_strategy(model, dataset_name)
     if action_decoding_strategy == cfg.default_action_decoding_strategy:
-        logger.warning(f"Action decoding strategy not found for dataset {dataset_name}. Defaulting to {cfg.default_action_decoding_strategy}")
+        logger.info(f"Action decoding strategy not found for dataset {dataset_name}. Defaulting to {cfg.default_action_decoding_strategy}")
 
-    _, dataloader = get_procgen_dataloader(tfds_shards, batch_size=1)
+    _, dataloader = get_procgen_dataloader(tfds_shards, batch_size=1, by_episode=True)
 
     action_success = []
     timestep_mses = []
 
     obs = {}
+    num_timesteps = 0
 
     for batch in dataloader:
         obs_key = 'continuous_observation' if 'continuous_observation' in batch else 'image_observation'
@@ -62,7 +63,7 @@ def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name
                 obs_len = 1
 
             for idx in range(obs_len):
-                actual_action = process_batch_actions(batch, dataset_name, batch_idx, idx, action_decoding_strategy)
+                actual_action = preprocess_expert_actions(batch, dataset_name, batch_idx, idx, action_decoding_strategy)
                 logger.debug(f"Actual action: {actual_action}")
                 if actual_action is None:
                     continue
@@ -113,7 +114,7 @@ def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name
     num_timesteps = len(timestep_mses)
     avg_dataset_amse = total_dataset_amse / num_timesteps if num_timesteps > 0 else 0.0
 
-    normalized_mses = normalize_mse_values(timestep_mses)
+    normalized_mses = min_max_normalize(timestep_mses)
     normalized_amse = sum(normalized_mses) / len(normalized_mses) if len(normalized_mses) > 0 else 0.0
     logger.debug(f"Normalized Average AMSE for dataset: {normalized_amse:.4f}")
 

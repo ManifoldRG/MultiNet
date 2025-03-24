@@ -15,24 +15,28 @@ from src.eval.profiling.openvla.experiments.robot.robot_utils import get_action
 from src.eval.profiling.openvla.experiments.robot.eval_utils import (
     get_action_decoding_strategy,
     calculate_mse,
+    calculate_mae,
+    calculate_mean,
     calculate_success_rate,
-    normalize_mse_values,
+    quantile_filter,
+    min_max_normalize,
     standardize_predicted_action,
-    process_batch_actions
+    preprocess_expert_actions
 )
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
     action_decoding_strategy = get_action_decoding_strategy(model, dataset_name)
     if action_decoding_strategy == cfg.default_action_decoding_strategy:
-        logger.warning(f"Action decoding strategy not found for dataset {dataset_name}. Defaulting to {cfg.default_action_decoding_strategy}")
+        logger.info(f"Action decoding strategy not found for dataset {dataset_name}. Defaulting to {cfg.default_action_decoding_strategy}")
 
     dataloader = get_openx_dataloader(tfds_shards, batch_size=1)
 
     action_success = []
     timestep_mses = []
+    timestep_maes = []
 
     obs = {}
 
@@ -47,7 +51,7 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
         for idx in range(obs_len):
             try:
                 # batch_idx is 0 for OpenX dataset
-                actual_action = process_batch_actions(batch, dataset_name, 0, idx, action_decoding_strategy)
+                actual_action = preprocess_expert_actions(batch, dataset_name, 0, idx, action_decoding_strategy)
                 logger.debug(f"Actual action: {actual_action}")
                 if actual_action is None:
                     continue
@@ -76,6 +80,9 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
                 mse = calculate_mse(standardized_predicted_action, actual_action)
                 timestep_mses.append(mse)
 
+                mae = calculate_mae(standardized_predicted_action, actual_action)
+                timestep_maes.append(mae)
+                
                 if batch['is_last'][0][idx] == True:
                     logger.info(f"Episode final predicted action: {np.array(standardized_predicted_action)}")
                     logger.info(f"Episode final actual action: {np.array(actual_action)}")
@@ -87,6 +94,21 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
                 logger.warning(f"Error processing OpenX dataset at index {idx}: {e}")
                 continue
 
+    # Calculate metrics
+    normalized_maes = min_max_normalize(timestep_maes)
+    average_normalized_mae = calculate_mean(normalized_maes)
+
+    logger.debug(f"Normalized MAEs length for the dataset: {len(normalized_maes)}")
+    logger.debug(f"Normalized Average MAE for the dataset: {average_normalized_mae:.4f}")
+
+    # Calculate quantile filtered metrics
+    quantile_filtered_maes = quantile_filter(timestep_maes)
+    normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
+    average_quantile_filtered_normalized_mae = calculate_mean(normalized_quantile_filtered_maes)
+    
+    logger.debug(f"Quantile filtered MAEs length for the dataset: {len(quantile_filtered_maes)}")
+    logger.debug(f"Average quantile filtered NMAE for the dataset: {average_quantile_filtered_normalized_mae:.4f}")
+
     action_success_rate = calculate_success_rate(action_success)
     logger.debug(f"Action Success Rate Percentage for the dataset: {action_success_rate:.4f}")
 
@@ -95,8 +117,8 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
     num_timesteps = len(timestep_mses)
     avg_dataset_amse = total_dataset_amse / num_timesteps if num_timesteps > 0 else 0.0
 
-    normalized_mses = normalize_mse_values(timestep_mses)
-    normalized_amse = sum(normalized_mses) / len(normalized_mses) if len(normalized_mses) > 0 else 0.0
+    normalized_mses = min_max_normalize(timestep_mses)
+    normalized_amse = calculate_mean(normalized_mses)
     logger.debug(f"Normalized Average AMSE for dataset: {normalized_amse:.4f}")
 
-    return action_success_rate, total_dataset_amse, avg_dataset_amse, num_timesteps, normalized_amse
+    return action_success_rate, total_dataset_amse, avg_dataset_amse, num_timesteps, normalized_amse, average_normalized_mae, average_quantile_filtered_normalized_mae

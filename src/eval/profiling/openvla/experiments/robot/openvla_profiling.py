@@ -43,9 +43,8 @@ PROFILING_DATASETS = [
     'conq_hose_manipulation',                               'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds',
     'eth_agent_affordances',                                'stanford_mask_vit_converted_externally_to_rlds',       
     'imperialcollege_sawyer_wrist_cam',                     'utokyo_pr2_opening_fridge_converted_externally_to_rlds',
-    # 'bigfish', 
-    # 'bossfight', 'caveflyer', 'chaser'
-] + [d for d in PROCGEN_DATASET_NAMES if d != 'bigfish']
+] \
+ + [d for d in PROCGEN_DATASET_NAMES if d == 'bigfish']
 
 @dataclass
 class EvalConfig:
@@ -182,7 +181,7 @@ def process_single_dataset(
             raise ValueError(f"Dataset type undefined in definitions: {dataset_name}")
 
         (action_success_rate, total_dataset_amse, avg_dataset_amse,
-         num_timesteps, normalized_amse) = results
+         num_timesteps, normalized_amse, average_normalized_mse, average_normalized_quantile_filtered_mae) = results
         
         # End timing
         end_time = time.time()
@@ -196,7 +195,9 @@ def process_single_dataset(
             'eval_time': eval_time,
             'num_timesteps': num_timesteps,
             'avg_dataset_amse': avg_dataset_amse,
-            'normalized_amse': normalized_amse
+            'normalized_amse': normalized_amse,
+            'average_normalized_mse': average_normalized_mse,
+            'average_normalized_quantile_filtered_mae': average_normalized_quantile_filtered_mae
         }
     finally:
         if model is not None:
