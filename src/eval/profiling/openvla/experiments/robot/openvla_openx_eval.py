@@ -19,6 +19,8 @@ from src.eval.profiling.openvla.experiments.robot.eval_utils import (
     calculate_mean,
     calculate_success_rate,
     quantile_filter,
+    calculate_max_relative_mae,
+    calculate_proportion_beyond_mae_threshold,
     min_max_normalize,
     standardize_predicted_action,
     preprocess_expert_actions
@@ -94,14 +96,14 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
                 logger.warning(f"Error processing OpenX dataset at index {idx}: {e}")
                 continue
 
-    # Calculate metrics
+    # Calculate MAE metrics
     normalized_maes = min_max_normalize(timestep_maes)
     average_normalized_mae = calculate_mean(normalized_maes)
 
     logger.debug(f"Normalized MAEs length for the dataset: {len(normalized_maes)}")
     logger.debug(f"Normalized Average MAE for the dataset: {average_normalized_mae:.4f}")
 
-    # Calculate quantile filtered metrics
+    # Calculate quantile filtered MAE metrics
     quantile_filtered_maes = quantile_filter(timestep_maes)
     normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
     average_quantile_filtered_normalized_mae = calculate_mean(normalized_quantile_filtered_maes)
@@ -109,6 +111,13 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
     logger.debug(f"Quantile filtered MAEs length for the dataset: {len(quantile_filtered_maes)}")
     logger.debug(f"Average quantile filtered NMAE for the dataset: {average_quantile_filtered_normalized_mae:.4f}")
 
+    max_rel_mae = calculate_max_relative_mae(timestep_maes)
+    prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(timestep_maes)
+
+    logger.debug(f"Maximum Relative MAE: {max_rel_mae:.4f}")
+    logger.debug(f"Proportion Beyond MAE Threshold (3x median): {prop_beyond_threshold_mae:.4f}")    
+
+    # Multinet v0.1 metrics
     action_success_rate = calculate_success_rate(action_success)
     logger.debug(f"Action Success Rate Percentage for the dataset: {action_success_rate:.4f}")
 
