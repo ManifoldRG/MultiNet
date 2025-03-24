@@ -17,6 +17,12 @@ from src.eval.profiling.openvla.experiments.robot.openvla_eval_base import OpenV
 from src.eval.profiling.openvla.experiments.robot.robot_utils import get_action
 from src.eval.profiling.openvla.experiments.robot.eval_utils import (
     calculate_mae,
+    calculate_mean,
+    calculate_success_rate,
+    quantile_filter,
+    calculate_max_relative_mae,
+    calculate_proportion_beyond_mae_threshold,
+    min_max_normalize,
     standardize_predicted_action,
     preprocess_expert_actions
 )
@@ -140,6 +146,74 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
         """Check if the current timestep is the last one in the OpenX episode"""
         logger.debug(f"is_last: {batch['is_last'][0][timestep_idx]}")
         return batch['is_last'][0][timestep_idx] == True  # batch_idx is 0 for OpenX dataset
+    
+    def evaluate(self, tfds_shards: list[str]) -> tuple[float, float, float, int, float]:
+        """Evaluate the model on the dataset.
+        
+        Args:
+            tfds_shards: List of TensorFlow dataset shard paths
+            
+        Returns:
+            Tuple of (action_success_rate, total_dataset_amse, avg_dataset_amse,
+                     num_timesteps, normalized_amse)
+        """
+        dataloader = self.get_dataloader(tfds_shards)
+        
+        all_timestep_maes = []
+        all_action_success = []
+        
+        episode_idx = 0
+        
+        for batch in dataloader:
+            batch_timestep_maes, batch_action_success = self.process_batch(batch, episode_idx)
+            
+            all_timestep_maes.extend(batch_timestep_maes)
+            all_action_success.extend(batch_action_success)
+            
+            episode_idx += 1
+
+            # Uncomment to limit evaluation to 5 episodes
+            # if episode_idx == 2:
+            #     break
+
+        # Calculate quantile filtered MAE metrics
+        quantile_filtered_maes = quantile_filter(all_timestep_maes)
+        normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
+        average_quantile_filtered_normalized_mae = calculate_mean(normalized_quantile_filtered_maes)
+
+        logger.debug(f"Quantile filtered MAEs length for the dataset: {len(quantile_filtered_maes)}")
+        logger.debug(f"Average quantile filtered NMAE for the dataset: {average_quantile_filtered_normalized_mae:.4f}")
+
+        max_rel_mae = calculate_max_relative_mae(all_timestep_maes)
+        prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(all_timestep_maes)
+
+        logger.debug(f"Maximum Relative MAE: {max_rel_mae:.4f}")
+        logger.debug(f"Proportion Beyond MAE Threshold (3x median): {prop_beyond_threshold_mae:.4f}")
+
+        # Multinet v0.1 metrics
+        action_success_rate = calculate_success_rate(all_action_success)
+        logger.debug(f"Action Success Rate Percentage for the dataset: {action_success_rate:.4f}")
+
+        total_dataset_amse = sum(all_timestep_maes)
+        logger.info(f"\nTotal MSE across {len(all_timestep_maes)} timesteps: {total_dataset_amse:.4f}")
+        num_timesteps = len(all_timestep_maes)
+        avg_dataset_amse = total_dataset_amse / num_timesteps if num_timesteps > 0 else 0.0
+
+        normalized_mses = min_max_normalize(all_timestep_maes)
+        normalized_amse = calculate_mean(normalized_mses)
+        logger.debug(f"Normalized Average AMSE for dataset: {normalized_amse:.4f}")
+
+        return (
+            action_success_rate,
+            total_dataset_amse,
+            avg_dataset_amse,
+            num_timesteps,
+            normalized_amse,
+            average_quantile_filtered_normalized_mae
+        )
+
+        return action_success_rate, total_dataset_amse, avg_dataset_amse, num_timesteps, normalized_amse
+
 
 def evaluate_openvla_on_openx(cfg: any, model: any, processor: any, 
                              tfds_shards: list[str], dataset_name: str) -> tuple[float, float, float, int, float]:

@@ -95,3 +95,25 @@ def calculate_mean(values: list[float]) -> float:
     if len(values) == 0:
         raise ValueError("No values collected")
     return np.mean(values)
+
+
+def calculate_max_relative_mae(mae_values: list[float]) -> float:
+    """Calculate maximum relative error (outlier severity)"""
+    if len(mae_values) == 0:
+        raise ValueError("No values collected")
+
+    abs_values = np.abs(np.array(mae_values))
+    median_value = np.median(abs_values)
+    if median_value == 0:
+        median_value = 1e-10
+    return max(abs_values) / median_value
+
+
+def calculate_proportion_beyond_mae_threshold(mae_values: list[float], threshold_multiplier: float = 3.0) -> float:
+    """Calculate proportion of values beyond threshold (outlier frequency)"""
+    if len(mae_values) == 0:
+        raise ValueError("No values collected")
+
+    median_value = np.median(mae_values)
+    threshold = threshold_multiplier * median_value
+    return sum(1 for value in values if value > threshold) / len(values)
