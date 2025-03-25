@@ -37,15 +37,10 @@ OPENX_DATASET_NAMES = OpenXDefinitions.DESCRIPTIONS.keys()
 
 # List of datasets to evaluate
 PROFILING_DATASETS = [
-    'nyu_door_opening_surprising_effectiveness',            'ucsd_pick_and_place_dataset_converted_externally_to_rlds',
-    'nyu_rot_dataset_converted_externally_to_rlds',         'usc_cloth_sim_converted_externally_to_rlds',
-    'columbia_cairlab_pusht_real',                          'plex_robosuite',
-    'conq_hose_manipulation',                               'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds',
-    'eth_agent_affordances',                                'stanford_mask_vit_converted_externally_to_rlds',       
-    'imperialcollege_sawyer_wrist_cam',                     'utokyo_pr2_opening_fridge_converted_externally_to_rlds',
-    # 'bigfish', 
-    # 'bossfight', 'caveflyer', 'chaser'
-] + [d for d in PROCGEN_DATASET_NAMES if d != 'bigfish']
+    d for d in OPENX_DATASET_NAMES
+] + [
+    d for d in PROCGEN_DATASET_NAMES
+]
 
 @dataclass
 class EvalConfig:
@@ -72,29 +67,17 @@ def clear_gpu_memory() -> None:
         torch.cuda.synchronize()
         torch.cuda.empty_cache()
         logger.debug("PyTorch memory cleared")
+        torch.cuda.reset_peak_memory_stats()
     
     gc.collect()
     logger.debug("Garbage collector collected objects")
 
 
-def log_memory_usage() -> None:
+def log_gpu_memory_usage() -> None:
     if torch.cuda.is_available():
         timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
         peak_mb = torch.cuda.max_memory_allocated() / 1024**2
         logger.debug(f"[{timestamp}] Peak GPU Usage: {peak_mb / 1024:.1f}GiB")
-
-
-@contextlib.contextmanager
-def gpu_memory_context():
-    try:
-        clear_gpu_memory()
-        if logger.isEnabledFor(logging.DEBUG):
-            log_memory_usage()
-        yield
-    finally:
-        clear_gpu_memory()
-        if logger.isEnabledFor(logging.DEBUG):
-            log_memory_usage()
 
 
 def get_dataset_paths(datasets_dir: str) -> list[str]:
@@ -155,54 +138,48 @@ def process_single_dataset(
     eval_cfg: EvalConfig,
     tfds_shards: list[str]
 ) -> dict[str, any]:
-    try:
-        logger.info(f"\nEvaluating {dataset_name}...")
-        # Start timing
-        start_time = time.time()
+    logger.info(f"\nEvaluating {dataset_name}...")
+    # Start timing
+    start_time = time.time()
 
-        if dataset_name in PROCGEN_DATASET_NAMES:
-            logger.debug(f"Evaluating {dataset_name} on procgen...")
-            results = evaluate_openvla_on_procgen(
-                eval_cfg,
-                model,
-                processor,
-                tfds_shards,
-                dataset_name
-            )
-        elif dataset_name in OPENX_DATASET_NAMES:
-            logger.debug(f"Evaluating {dataset_name} on openx...")
-            results = evaluate_openvla_on_openx(
-                eval_cfg,
-                model,
-                processor,
-                tfds_shards,
-                dataset_name
-            )
-        else:
-            raise ValueError(f"Dataset type undefined in definitions: {dataset_name}")
+    if dataset_name in PROCGEN_DATASET_NAMES:
+        logger.debug(f"Evaluating {dataset_name} on procgen...")
+        results = evaluate_openvla_on_procgen(
+            eval_cfg,
+            model,
+            processor,
+            tfds_shards,
+            dataset_name
+        )
+    elif dataset_name in OPENX_DATASET_NAMES:
+        logger.debug(f"Evaluating {dataset_name} on openx...")
+        results = evaluate_openvla_on_openx(
+            eval_cfg,
+            model,
+            processor,
+            tfds_shards,
+            dataset_name
+        )
+    else:
+        raise ValueError(f"Dataset type undefined in definitions: {dataset_name}")
 
-        (action_success_rate, total_dataset_amse, avg_dataset_amse,
-         num_timesteps, normalized_amse) = results
-        
-        # End timing
-        end_time = time.time()
-        eval_time = end_time - start_time
-        logger.info(f'Evaluation time for {dataset_name}: {eval_time:.2f} seconds')
+    (action_success_rate, total_dataset_amse, avg_dataset_amse,
+        num_timesteps, normalized_amse) = results
+    
+    # End timing
+    end_time = time.time()
+    eval_time = end_time - start_time
+    logger.info(f'Evaluation time for {dataset_name}: {eval_time:.2f} seconds')
 
-        # Return results
-        return {
-            'action_success_rate': action_success_rate,
-            'total_dataset_amse': total_dataset_amse,
-            'eval_time': eval_time,
-            'num_timesteps': num_timesteps,
-            'avg_dataset_amse': avg_dataset_amse,
-            'normalized_amse': normalized_amse
-        }
-    finally:
-        if model is not None:
-            del model
-        if processor is not None:
-            del processor
+    # Return results
+    return {
+        'action_success_rate': action_success_rate,
+        'total_dataset_amse': total_dataset_amse,
+        'eval_time': eval_time,
+        'num_timesteps': num_timesteps,
+        'avg_dataset_amse': avg_dataset_amse,
+        'normalized_amse': normalized_amse
+    }
 
 
 def save_results(results: dict[str, dict], result_file_path: Path) -> None:
@@ -237,7 +214,7 @@ def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_
     eval_results = {}
     result_file_path = Path(result_save_path) / 'openvla_eval_results.json'
     
-    # Set seed
+    clear_gpu_memory()
     set_seed_everywhere(cfg.seed)
 
     # Load model and processor
@@ -249,50 +226,55 @@ def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_
         logger.error(f"Error loading model or processor: {e}")
         return
 
+
     for dataset in eval_dataset_paths:
-        with gpu_memory_context():
-            if torch.cuda.is_available():
-                torch.cuda.reset_peak_memory_stats()
+        # Skip unsupported datasets
+        if dataset not in PROFILING_DATASETS:
+            logger.info(f"SKIPPING: {dataset} (not in list)")
+            continue
 
-            # Skip unsupported datasets
-            if dataset not in PROFILING_DATASETS:
-                logger.info(f"SKIPPING: {dataset} (not in list)")
-                continue
+        # Skip if the dataset is already in the eval_results
+        if is_dataset_completed(dataset, result_file_path):
+            logger.info(f"SKIPPING: {dataset} (already evaluated)")
+            continue
 
-            # Skip if the dataset is already in the eval_results
-            if is_dataset_completed(dataset, result_file_path):
-                logger.info(f"SKIPPING: {dataset} (already evaluated)")
-                continue
+        # Prepare dataset path
+        dataset_path = Path(profiling_dataset_folder_path) / dataset
+        logger.info(f'\nDATASET PATH: {dataset_path}')
 
-            # Prepare dataset path
-            dataset_path = Path(profiling_dataset_folder_path) / dataset
-            logger.info(f'\nDATASET PATH: {dataset_path}')
+        if not os.path.exists(dataset_path):
+            logger.warning(f"Warning: Dataset directory does not exist: {dataset_path}")
+            continue
 
-            if not os.path.exists(dataset_path):
-                logger.warning(f"Warning: Dataset directory does not exist: {dataset_path}")
-                continue
+        try:
+            sorted_shard_files = sort_files_in_folder_by_name(dataset_path)
+            tfds_shards = [os.path.join(profiling_dataset_folder_path, dataset, f) 
+                            for f in sorted_shard_files]
 
-            try:
-                sorted_shard_files = sort_files_in_folder_by_name(dataset_path)
-                tfds_shards = [os.path.join(profiling_dataset_folder_path, dataset, f) 
-                                for f in sorted_shard_files]
+            # Set unnormalization key for the dataset
+            cfg.unnorm_key = dataset
+        
+            results = process_single_dataset(dataset, model, processor, cfg, tfds_shards)
 
-                # Set unnormalization key for the dataset
-                cfg.unnorm_key = dataset
-            
-                results = process_single_dataset(dataset, model, processor, cfg, tfds_shards)
+            # Store results
+            eval_results[dataset] = results
+            save_results(eval_results, result_file_path)
 
-                # Store results
-                eval_results[dataset] = results
-                save_results(eval_results, result_file_path)
+            log_gpu_memory_usage()
 
-            except FileNotFoundError:
-                logger.error(f"Error: Unable to access dataset directory: {dataset_path}")
-                continue
-            except Exception as e:
-                logger.exception(f"Error: {e}")
-                continue
-            
+        except FileNotFoundError:
+            logger.error(f"Error: Unable to access dataset directory: {dataset_path}")
+            continue
+        except Exception as e:
+            logger.exception(f"Error: {e}")
+            continue
+
+    # Cleanup
+    clear_gpu_memory()
+    if model is not None:
+        del model
+    if processor is not None:
+        del processor
 
     # Print overall results
     logger.info('\n===== Overall Results =====')
