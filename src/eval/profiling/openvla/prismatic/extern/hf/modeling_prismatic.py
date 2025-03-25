@@ -32,23 +32,8 @@ from transformers.modeling_outputs import ModelOutput
 
 from .configuration_prismatic import OpenVLAConfig, PrismaticConfig
 
-import sys
-
 # Get Logger
 logger = logging.getLogger(__name__)
-# Create console handler
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.DEBUG)
-
-# Create formatter and add to handler
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-console_handler.setFormatter(formatter)
-
-# Add handler to logger
-logger.addHandler(console_handler)
-
-# Set log level
-logger.setLevel(logging.DEBUG)
 
 # === PyTorch/HuggingFace Default IGNORE_INDEX (for CrossEntropyLoss labels)
 IGNORE_INDEX = -100

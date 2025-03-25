@@ -42,7 +42,7 @@ def normalize_mse_values(mse_values):
     normalized_mse = np.array(mse_values)
     return (normalized_mse - min_mse) / (max_mse - min_mse) if max_mse != min_mse else np.zeros_like(normalized_mse)
 
-def process_batch_actions(batch, dataset_name, batch_idx, idx, action_decoding_strategy):
+def load_preprocessed_expert_action(batch, dataset_name, batch_idx, idx, action_decoding_strategy):
     """Process batch actions with error handling"""
     try:
         action_data = batch['action'][batch_idx][idx] if isinstance(batch['action'][batch_idx], list) else batch['action'][batch_idx]

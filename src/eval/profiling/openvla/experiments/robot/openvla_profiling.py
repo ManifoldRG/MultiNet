@@ -30,7 +30,7 @@ from definitions.openx import OpenXDefinitions
 
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 PROCGEN_DATASET_NAMES = ProcGenDefinitions.DESCRIPTIONS.keys()
 OPENX_DATASET_NAMES = OpenXDefinitions.DESCRIPTIONS.keys()
@@ -106,7 +106,7 @@ def sort_files_in_folder_by_name(dataset_path: str) -> list[str]:
     if os.path.basename(dataset_path) in PROCGEN_DATASET_NAMES:
         # Sort the procgen files by the timestamp in the filename before the first underscore _ in ascending order
         return sorted(
-            shard_files, 
+            shard_files,
             key=lambda x: datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S")
         )
     elif os.path.basename(dataset_path) in OPENX_DATASET_NAMES:
@@ -207,6 +207,10 @@ def save_results(results: dict[str, dict], result_file_path: Path) -> None:
 
 def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_save_path: str):
     eval_dataset_paths = get_dataset_paths(profiling_dataset_folder_path)
+
+    logger.info(f"Found {len(eval_dataset_paths)} datasets in {profiling_dataset_folder_path}")
+    logger.debug(f"Datasets: {eval_dataset_paths}")
+
     if not eval_dataset_paths:
         logger.error(f"No datasets found in {profiling_dataset_folder_path}")
         return

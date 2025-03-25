@@ -18,7 +18,7 @@ from src.eval.profiling.openvla.experiments.robot.eval_utils import (
     calculate_success_rate,
     normalize_mse_values,
     standardize_predicted_action,
-    process_batch_actions
+    load_preprocessed_expert_action
 )
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
         for idx in range(obs_len):
             try:
                 # batch_idx is 0 for OpenX dataset
-                actual_action = process_batch_actions(batch, dataset_name, 0, idx, action_decoding_strategy)
+                actual_action = load_preprocessed_expert_action(batch, dataset_name, 0, idx, action_decoding_strategy)
                 logger.debug(f"Actual action: {actual_action}")
                 if actual_action is None:
                     continue

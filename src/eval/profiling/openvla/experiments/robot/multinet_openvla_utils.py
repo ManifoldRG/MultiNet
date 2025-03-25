@@ -1,6 +1,8 @@
 import numpy as np
 from typing import Callable
 from .robot_utils import normalize_gripper_action, invert_gripper_action
+from definitions.procgen import ProcGenDefinitions
+
 
 def binarize_gripper_action_for_0_1_range(action: float) -> int:
     if action < 0:
@@ -221,25 +223,28 @@ def convert_action(action: np.ndarray, dataset_name: str):
 def drop_is_terminal_dim(action: np.ndarray, dataset_name: str) -> np.ndarray:
     if dataset_name == "berkeley_cable_routing":
         return drop_dimension(action, 3)
-    if dataset_name == "nyu_door_opening_surprising_effectiveness":
+    elif dataset_name == "nyu_door_opening_surprising_effectiveness":
         return drop_dimension(action, 4)
-    if dataset_name == "viola":
+    elif dataset_name == "viola":
         return drop_dimension(action, 4)
-    if dataset_name == "berkeley_autolab_ur5":
+    elif dataset_name == "berkeley_autolab_ur5":
         return drop_dimension(action, 4)
-    if dataset_name == "toto":
+    elif dataset_name == "toto":
         return drop_dimension(action, 3)
-    if dataset_name == "columbia_cairlab_pusht_real":
+    elif dataset_name == "columbia_cairlab_pusht_real":
         return drop_dimension(action, 4)
-    if dataset_name == "ucsd_kitchen_dataset_converted_externally_to_rlds":
+    elif dataset_name == "ucsd_kitchen_dataset_converted_externally_to_rlds":
         return drop_dimension(action, 7)
-    if dataset_name == "utokyo_pr2_opening_fridge_converted_externally_to_rlds" \
+    elif dataset_name == "utokyo_pr2_opening_fridge_converted_externally_to_rlds" \
         or dataset_name == "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds":
         return drop_dimension(action, 7)
-    if dataset_name == "imperialcollege_sawyer_wrist_cam":
+    elif dataset_name == "imperialcollege_sawyer_wrist_cam":
         return drop_dimension(action, 7)
-    return action
-
+    elif dataset_name in ProcGenDefinitions.DESCRIPTIONS.keys():
+        return action
+    else:
+        raise ValueError(f"Dataset {dataset_name} not supported for drop_is_terminal_dim")
+    
 
 def drop_dimension(action: np.ndarray, index: int) -> np.ndarray:
     """

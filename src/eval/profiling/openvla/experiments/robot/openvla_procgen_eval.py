@@ -18,7 +18,7 @@ from src.eval.profiling.openvla.experiments.robot.eval_utils import (
     calculate_success_rate,
     normalize_mse_values,
     standardize_predicted_action,
-    process_batch_actions
+    load_preprocessed_expert_action
 )
 from definitions.procgen import ProcGenDefinitions
 
@@ -62,7 +62,7 @@ def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name
                 obs_len = 1
 
             for idx in range(obs_len):
-                actual_action = process_batch_actions(batch, dataset_name, batch_idx, idx, action_decoding_strategy)
+                actual_action = load_preprocessed_expert_action(batch, dataset_name, batch_idx, idx, action_decoding_strategy)
                 logger.debug(f"Actual action: {actual_action}")
                 if actual_action is None:
                     continue
