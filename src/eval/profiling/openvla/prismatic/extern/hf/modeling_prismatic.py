@@ -570,7 +570,7 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
             unnorm_key = next(iter(norm_stats.keys()))
 
         assert unnorm_key in norm_stats, (
-            f"The `unnorm_key` you chose is not in the set of available dataset statistics, "
+            f"The unnorm_key {unnorm_key} is missing in dataset statistics, "
             f"please choose from: {norm_stats.keys()}"
         )
         return unnorm_key

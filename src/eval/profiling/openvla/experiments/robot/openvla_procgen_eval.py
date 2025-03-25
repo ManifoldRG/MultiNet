@@ -42,7 +42,7 @@ def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name
     """
     action_decoding_strategy = get_action_decoding_strategy(model, dataset_name)
     if action_decoding_strategy == cfg.default_action_decoding_strategy:
-        logger.warning(f"Action decoding strategy not found for dataset {dataset_name}. Defaulting to {cfg.default_action_decoding_strategy}")
+        logger.info(f"Action decoding strategy not found for dataset {dataset_name}. Defaulting to {cfg.default_action_decoding_strategy}")
 
     _, dataloader = get_procgen_dataloader(tfds_shards, batch_size=1)
 

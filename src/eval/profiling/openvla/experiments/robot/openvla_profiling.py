@@ -1,6 +1,5 @@
 import argparse
 import logging
-import contextlib
 import os
 import time
 import json
@@ -30,7 +29,7 @@ from definitions.openx import OpenXDefinitions
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 PROCGEN_DATASET_NAMES = ProcGenDefinitions.DESCRIPTIONS.keys()
 OPENX_DATASET_NAMES = OpenXDefinitions.DESCRIPTIONS.keys()
@@ -80,7 +79,7 @@ def log_gpu_memory_usage() -> None:
         logger.debug(f"[{timestamp}] Peak GPU Usage: {peak_mb / 1024:.1f}GiB")
 
 
-def get_dataset_paths(datasets_dir: str) -> list[str]:
+def get_dataset_files(datasets_dir: str) -> list[str]:
     try:
         dataset_paths = [
             d for d in os.listdir(datasets_dir) 
@@ -90,7 +89,6 @@ def get_dataset_paths(datasets_dir: str) -> list[str]:
             logger.warning(f"No subdirectories found in {datasets_dir}")
             return []
         
-        logger.info(f"Found {len(dataset_paths)} datasets in {datasets_dir}")
         return dataset_paths
     except FileNotFoundError:
         logger.error(f"The specified path does not exist: {datasets_dir}")
@@ -201,17 +199,16 @@ def save_results(results: dict[str, dict], result_file_path: Path) -> None:
     # Save updated results
     with open(result_file_path, 'w') as f:
         json.dump(existing_results, f, indent=4, default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
-    
-    logger.info(f"Results saved to {result_file_path}")
+    logger.info(f"Eval results have been saved to '{result_file_path}'")
 
 
 def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_save_path: str):
-    eval_dataset_paths = get_dataset_paths(profiling_dataset_folder_path)
+    eval_dataset_files = get_dataset_files(profiling_dataset_folder_path)
 
-    logger.info(f"Found {len(eval_dataset_paths)} datasets in {profiling_dataset_folder_path}")
-    logger.debug(f"Datasets: {eval_dataset_paths}")
+    logger.info(f"Found {len(eval_dataset_files)} datasets in {profiling_dataset_folder_path}")
+    logger.debug(f"Datasets: {eval_dataset_files}")
 
-    if not eval_dataset_paths:
+    if not eval_dataset_files:
         logger.error(f"No datasets found in {profiling_dataset_folder_path}")
         return
 
@@ -230,8 +227,7 @@ def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_
         logger.error(f"Error loading model or processor: {e}")
         return
 
-
-    for dataset in eval_dataset_paths:
+    for dataset in eval_dataset_files:
         # Skip unsupported datasets
         if dataset not in PROFILING_DATASETS:
             logger.info(f"SKIPPING: {dataset} (not in list)")
@@ -244,11 +240,12 @@ def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_
 
         # Prepare dataset path
         dataset_path = Path(profiling_dataset_folder_path) / dataset
-        logger.info(f'\nDATASET PATH: {dataset_path}')
 
         if not os.path.exists(dataset_path):
             logger.warning(f"Warning: Dataset directory does not exist: {dataset_path}")
             continue
+        else:
+            logger.info(f'\nDATASET PATH: {dataset_path}')
 
         try:
             sorted_shard_files = sort_files_in_folder_by_name(dataset_path)
@@ -274,11 +271,12 @@ def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_
             continue
 
     # Cleanup
-    clear_gpu_memory()
     if model is not None:
         del model
     if processor is not None:
         del processor
+
+    clear_gpu_memory()
 
     # Print overall results
     logger.info('\n===== Overall Results =====')
@@ -290,8 +288,6 @@ def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_
         logger.info(f'Average MSE: {result["avg_dataset_amse"]:.4f}')
         logger.info(f'Number of Timesteps: {result["num_timesteps"]}')
         logger.info(f'Normalized AMSE: {result["normalized_amse"]:.4f}')
-    
-    logger.info(f"\nEval results have been saved to '{result_file_path}'")
 
 
 if __name__ == "__main__":
