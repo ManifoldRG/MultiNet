@@ -29,13 +29,21 @@ class ProcGenDataset(Dataset):
         dataset = tf.data.Dataset.load(shard)
         dataset_name = Path(shard).parts[-2]
         #Process the input data for each element in the shard
-        for elem_idx, elem in enumerate(dataset):                
-            action = elem['actions'].numpy()
+        
+        
+        for elem_idx, elem in enumerate(dataset):
+            # There is an extra observation which is most likely just the last state of the episode
+            # For TFDS translation to work, the 0th timestep is padded with 0s for actions, rewards, and dones
+            # Save the first observation for use in the next iteration and skip everything else
+            if elem_idx == 0:
+                image_observation = elem['observations']                      
+                continue
             
-            image_observation = elem['observations'].numpy().astype(np.uint8)
-            
+            image_observation = image_observation.numpy().astype(np.uint8)
             # PIL expects channel in 3rd axis when converting image to URL for inference
             image_observation = np.moveaxis(image_observation, 0, 2)
+            
+            action = elem['actions'].numpy()
             
             # Extract relevant features from the example
             step_data = {
@@ -52,6 +60,10 @@ class ProcGenDataset(Dataset):
                 }
             
             current_shard.append(step_data)
+            
+            # Save the current observation for use in the next iteration
+            # There will be an extra ignorable end observation which is the terminal state
+            image_observation = elem['observations']                     
         return current_shard
 
     @property
