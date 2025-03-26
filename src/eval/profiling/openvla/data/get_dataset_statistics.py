@@ -22,7 +22,6 @@ from definitions.procgen import ProcGenDefinitions
 DATASET_CONFIG_NAME = 'dataset_statistics_config.yaml'
 
 PROFILING_DATASETS = OpenXDefinitions.DESCRIPTIONS.keys() | ProcGenDefinitions.DESCRIPTIONS.keys()
-ACTION_DECODE_STRATEGIES = OpenXDefinitions.ACTION_DECODE_STRATEGIES | ProcGenDefinitions.ACTION_DECODE_STRATEGIES
 
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'prod')
 if ENVIRONMENT == 'dev':
@@ -120,8 +119,8 @@ class OpenXDataset:
 
                 else:
                     logger.error(f"Undefined action tensor mapping logic for {self.dataset_name}")
-                    return
-                
+                    break
+
                 self.timestep_count += 1
                 if elem.get('is_last', False) or elem.get('dones', False):
                     self.is_last_count += 1
@@ -251,6 +250,19 @@ def collect_shards(dataset: str, dataset_folder_paths: list[str]) -> list[str]:
     return tfds_shards
 
 
+def get_dataset_action_decoding_strategy(dataset: str) -> str:
+    if dataset in OpenXDefinitions.DESCRIPTIONS.keys():
+        return OpenXDefinitions.ACTION_DECODE_STRATEGIES.get(
+            dataset, OpenXDefinitions.ACTION_DECODE_STRATEGIES.get('default')
+        )
+    elif dataset in ProcGenDefinitions.DESCRIPTIONS.keys():
+        return ProcGenDefinitions.ACTION_DECODE_STRATEGIES.get(
+            dataset, ProcGenDefinitions.ACTION_DECODE_STRATEGIES.get('default')
+        )
+    else:
+        raise ValueError(f"Unknown dataset: {dataset}")
+
+
 def calculate_dataset_statistics(openxobj: OpenXDataset, dataset: str) -> dict:
     try:
         logger.debug(f"Processing {len(openxobj.action_tensors)} action tensors for {dataset}")
@@ -262,7 +274,7 @@ def calculate_dataset_statistics(openxobj: OpenXDataset, dataset: str) -> dict:
             'proprio': proprio_stats,
             'num_transitions': openxobj.timestep_count,
             'num_trajectories': openxobj.is_last_count,
-            'action_decoding_strategy': ACTION_DECODE_STRATEGIES.get(dataset)
+            'action_decoding_strategy': get_dataset_action_decoding_strategy(dataset)
         }
     except Exception as e:
         logger.error(f"Error calculating statistics for {dataset}: {str(e)}")
@@ -276,6 +288,7 @@ if __name__ == "__main__":
         raise Exception(f"Error loading dataset statistics: {str(e)}")
 
     dataset_path_config = load_dataset_path_config()
+    added_dataset_stats_counter = 0
 
     for dataset in PROFILING_DATASETS:
         if dataset in dataset_statistics:
@@ -302,6 +315,7 @@ if __name__ == "__main__":
             # If we have processed shards successfully
             if len(openxobj.action_tensors) > 0:
                 dataset_statistics[dataset] = calculate_dataset_statistics(openxobj, dataset)
+                added_dataset_stats_counter += 1
             else:
                 logger.warning(f"No action tensors were gathered for dataset {dataset}")
         
@@ -311,4 +325,11 @@ if __name__ == "__main__":
             logger.error(f"Error processing dataset {dataset}: {str(e)}")
             raise
 
-    logger.info("Dataset statistics updated.")
+    logger.info(
+        f"""
+        ==============Dataset statistics updated================
+        - Added {added_dataset_stats_counter} datasets.
+        - Total datasets: {len(dataset_statistics)}
+        ========================================================
+        """
+    )

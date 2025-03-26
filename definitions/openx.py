@@ -805,3 +805,7 @@ class OpenXDefinitions:
             ]
         }
     }
+
+    ACTION_DECODE_STRATEGIES = {
+        "default": "simple_mapping"
+    }
