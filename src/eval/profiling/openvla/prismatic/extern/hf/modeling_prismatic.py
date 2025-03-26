@@ -509,7 +509,23 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
     def predict_action(
         self, input_ids: Optional[torch.LongTensor] = None, unnorm_key: Optional[str] = None, **kwargs: str
     ) -> np.ndarray:
-        """Thin wrapper around .generate() that decodes predicted actions and unnormalizes them."""
+        """Thin wrapper around .generate() that decodes predicted actions and unnormalizes them.
+        
+        Operations:
+        1. model -> [tokens] of size action_dim
+        2. translate the tokens to the bins of a normal distribution in the range of [-1, 1]
+        For discrete dimensions of the action vector
+            1. [actions] += 1 to shift the interval to [0, 2]
+            2. [actions] = 0.5 * [actions] to scale the interval to [0, 1]
+            3. [actions] = [actions] * ([action_high - action_low]) to scale to dataset range
+            4. np.floor([actions]) to discretize
+            5. [actions] + action_low to match the lower end of the dataset range
+        For continuous dimensions of the action vector
+            1. [actions] += 1 to shift the interval to [0, 2]
+            2. [actions] = 0.5 * [actions] to scale the interval to [0, 1]
+            3. [actions] * ([action_high - action_low]) to scale to dataset range
+            4. [actions] + action_low to add offset to match the lower end of the dataset range
+        """
         # If the special empty token ('') does not already appear after the colon (':') token in the prompt
         # (after "OUT:" or "ASSISTANT:"), insert it to match the inputs seen at training time
         if not torch.all(input_ids[:, -1] == 29871):
@@ -538,13 +554,10 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
             # Discrete dimension mask
             discrete = np.array(action_norm_stats.get("discrete", np.zeros_like(mask, dtype=bool)), dtype=bool)
 
-            # Compute discrete actions
             actions = np.zeros_like(normalized_actions)
-            actions[discrete] = np.clip(
-                np.floor(0.5 * (normalized_actions[discrete] + 1) * (action_high[discrete] - action_low[discrete]) + action_low[discrete]).astype(int),
-                action_low[discrete],
-                action_high[discrete],
-            )
+            # Compute discrete actions
+            actions[discrete] = np.floor(0.5 * (normalized_actions[discrete] + 1) * (action_high[discrete] - action_low[discrete]) + action_low[discrete])
+
             # Compute continuous actions
             actions[~discrete] = 0.5 * (normalized_actions[~discrete] + 1) * (action_high[~discrete] - action_low[~discrete]) + action_low[~discrete]
 
@@ -554,7 +567,7 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
             # return OpenVLA standard normalized actions for manual rule mapping
             actions = normalized_actions
         else:
-            raise ValueError(f"Unknown action decoding strategy: {action_decoding_strategy}")
+            raise ValueError(f"Unknown action decoding strategy: {action_decoding_strategy} for {unnorm_key}")
 
         return actions
 
@@ -565,14 +578,15 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
             assert len(norm_stats) == 1, (
                 f"Your model was trained on more than one dataset, "
                 f"please pass a `unnorm_key` from the following options to choose the statistics "
-                f"used for un-normalizing actions: {norm_stats.keys()}"
+                f"used for un-normalizing actions: {', '.join(norm_stats.keys())}"
             )
             unnorm_key = next(iter(norm_stats.keys()))
 
-        assert unnorm_key in norm_stats, (
-            f"The unnorm_key {unnorm_key} is missing in dataset statistics, "
-            f"please choose from: {norm_stats.keys()}"
-        )
+        if unnorm_key not in norm_stats:
+            raise ValueError(
+                f"The unnorm_key {unnorm_key} is missing in dataset statistics, "
+                f"Existing dataset statistics: {', '.join(norm_stats.keys())}"
+            )
         return unnorm_key
 
     def get_action_dim(self, unnorm_key: Optional[str] = None, decoding_strategy: Optional[str] = None) -> int:

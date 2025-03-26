@@ -2,6 +2,10 @@ import numpy as np
 from typing import Callable
 from .robot_utils import normalize_gripper_action, invert_gripper_action
 from definitions.procgen import ProcGenDefinitions
+from definitions.openx import OpenXDefinitions
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def binarize_gripper_action_for_0_1_range(action: float) -> int:
@@ -240,10 +244,12 @@ def drop_is_terminal_dim(action: np.ndarray, dataset_name: str) -> np.ndarray:
         return drop_dimension(action, 7)
     elif dataset_name == "imperialcollege_sawyer_wrist_cam":
         return drop_dimension(action, 7)
-    elif dataset_name in ProcGenDefinitions.DESCRIPTIONS.keys():
+    elif dataset_name in ProcGenDefinitions.DESCRIPTIONS.keys():  # no is_terminal dimension in procgen
+        return action
+    elif dataset_name in OpenXDefinitions.DESCRIPTIONS.keys():
         return action
     else:
-        raise ValueError(f"Dataset {dataset_name} not supported for drop_is_terminal_dim")
+        raise ValueError(f"Unknown dataset {dataset_name} for drop_is_terminal_dim")
     
 
 def drop_dimension(action: np.ndarray, index: int) -> np.ndarray:

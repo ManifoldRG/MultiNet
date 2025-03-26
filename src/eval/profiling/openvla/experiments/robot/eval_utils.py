@@ -1,6 +1,6 @@
 import numpy as np
 import logging
-from src.eval.profiling.openvla.experiments.robot.multinet_openvla_utils import (
+from src.eval.profiling.openvla.experiments.robot.openvla_action_transform_utils import (
     clip_out_of_range_action_to_default,
     drop_is_terminal_dim, convert_action
 )

@@ -2,6 +2,7 @@ import numpy as np
 import logging
 from pathlib import Path
 import sys
+import os
 
 current_file = Path(__file__).resolve()
 project_root = next(
@@ -22,7 +23,8 @@ from src.eval.profiling.openvla.experiments.robot.eval_utils import (
 )
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+if os.environ.get('ENVIRONMENT', 'prod') == 'dev':
+    logger.setLevel(logging.DEBUG)
 
 def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
     action_decoding_strategy = get_action_decoding_strategy(model, dataset_name)
@@ -35,6 +37,7 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
     timestep_mses = []
 
     obs = {}
+    batch_counter = 0
 
     for batch in dataloader:
         try:
@@ -45,14 +48,17 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
             continue
 
         for idx in range(obs_len):
+            logger.debug("================================")
+            logger.debug(f"{dataset_name} batch-{batch_counter} timestep-{idx}")
+            logger.debug("================================")
             try:
                 # batch_idx is 0 for OpenX dataset
                 actual_action = load_preprocessed_expert_action(batch, dataset_name, 0, idx, action_decoding_strategy)
-                logger.debug(f"Actual action: {actual_action}")
                 if actual_action is None:
                     continue
+                
 
-                obs['full_image'] = batch['continuous_observation'][0][idx]
+                obs['full_image'] = batch['image_observation'][0][idx]
                 if obs['full_image'] is None:
                     raise ValueError(f"Observation is None for dataset {dataset_name}")
 
@@ -60,8 +66,10 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
                 if text_obs is None:
                     raise ValueError(f"Text observation is None for dataset {dataset_name}")
                 
-                logger.debug(f"Observation shape: {obs['full_image'].shape}")
-                logger.debug(f"Text observation: {text_obs}")
+                logger.debug(f"Batch fields: {batch.keys()}")
+                logger.debug(f"Batch continuous obs: {batch['continuous_observation'][0][idx]}")
+                logger.debug(f"Image obs shape: {obs['full_image'].shape}")
+                logger.debug(f"Text obs: {text_obs}")
 
                 predicted_action = get_action(cfg, model, obs, text_obs, processor)
                 logger.debug(f"Predicted action: {predicted_action}")
@@ -72,13 +80,14 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
                     dataset_name
                 )
                 logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
+                logger.debug(f"Actual action: {actual_action}")
 
                 mse = calculate_mse(standardized_predicted_action, actual_action)
                 timestep_mses.append(mse)
 
                 if batch['is_last'][0][idx] == True:
-                    logger.info(f"Episode final predicted action: {np.array(standardized_predicted_action)}")
-                    logger.info(f"Episode final actual action: {np.array(actual_action)}")
+                    logger.info(f"Batch {batch_counter} final predicted action: {np.array(standardized_predicted_action)}")
+                    logger.info(f"Batch {batch_counter} final actual action: {np.array(actual_action)}")
                     if np.array_equal(np.array(standardized_predicted_action), np.array(actual_action)):
                         action_success.append(1)
                     else:
@@ -86,6 +95,10 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
             except (IndexError, KeyError) as e:
                 logger.warning(f"Error processing OpenX dataset at index {idx}: {e}")
                 continue
+
+        batch_counter += 1
+        if batch_counter == 5:
+            break
 
     action_success_rate = calculate_success_rate(action_success)
     logger.debug(f"Action Success Rate Percentage for the dataset: {action_success_rate:.4f}")
