@@ -1,7 +1,7 @@
-import sys
-from dataclasses import dataclass
-from typing import Union
+import numpy as np
+import logging
 from pathlib import Path
+import sys
 
 current_file = Path(__file__).resolve()
 project_root = next(
@@ -12,96 +12,132 @@ sys.path.append(str(project_root))
 
 from src.eval.profiling.openvla.experiments.robot.openvla_openx_dataloader import get_openx_dataloader
 from src.eval.profiling.openvla.experiments.robot.robot_utils import get_action
-from src.eval.profiling.openvla.experiments.robot.multinet_openvla_utils import convert_action, drop_is_terminal_dim
+from src.eval.profiling.openvla.experiments.robot.eval_utils import (
+    get_action_decoding_strategy,
+    calculate_mse,
+    calculate_mae,
+    calculate_mean,
+    calculate_success_rate,
+    quantile_filter,
+    calculate_max_relative_mae,
+    calculate_proportion_beyond_mae_threshold,
+    min_max_normalize,
+    standardize_predicted_action,
+    preprocess_expert_actions
+)
 
-import numpy as np
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
+def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
+    action_decoding_strategy = get_action_decoding_strategy(model, dataset_name)
+    if action_decoding_strategy == cfg.default_action_decoding_strategy:
+        logger.info(f"Action decoding strategy not found for dataset {dataset_name}. Defaulting to {cfg.default_action_decoding_strategy}")
 
-def evaluate_openvla_model(cfg, model, processor, tfds_shards, dataset_name):
     dataloader = get_openx_dataloader(tfds_shards, batch_size=1)
 
-    total_dataset_amse = 0.0
     action_success = []
-    timestep_mse = []
+    timestep_mses = []
+    timestep_maes = []
 
     obs = {}
 
-    # batch_idx = 0
     for batch in dataloader:
-        # num_timesteps = len(batch['continuous_observation'][0])
-        # print(f"Batch {batch_idx}:")
-        # print(f"  Number of timesteps: {num_timesteps}")
+        try:
+            obs_len = len(batch['continuous_observation'][0])
+        except (KeyError, IndexError, TypeError) as e:
+            logger.error(f"Error accessing continuous_observation: {e}")
+            logger.info(f"Available keys: {batch.keys()}")
+            continue
 
-        #Because the batch size is 1, 1 batch contains 1 episode, which is why the first element is indexed
-        for idx in range(len(batch['continuous_observation'][0])):
-            # Get the actual (expert) action
-            actual_action = batch['action'][0][idx]
+        for idx in range(obs_len):
+            try:
+                # batch_idx is 0 for OpenX dataset
+                actual_action = preprocess_expert_actions(batch, dataset_name, 0, idx, action_decoding_strategy)
+                logger.debug(f"Actual action: {actual_action}")
+                if actual_action is None:
+                    continue
 
-            mse = 0.0
+                obs['full_image'] = batch['continuous_observation'][0][idx]
+                if obs['full_image'] is None:
+                    raise ValueError(f"Observation is None for dataset {dataset_name}")
 
-            obs['full_image'] = batch['image_observation'][0][idx]
+                text_obs = batch['text_observation'][0][idx]
+                if text_obs is None:
+                    raise ValueError(f"Text observation is None for dataset {dataset_name}")
+                
+                logger.debug(f"Observation shape: {obs['full_image'].shape}")
+                logger.debug(f"Text observation: {text_obs}")
 
-            # Debug information
-            # print(f"  Timestep {idx}:")
-            # print(f"    Image shape: {batch['image_observation'][0][idx].shape if batch['image_observation'][0][idx] is not None else 'None'}")
-            # print(f"    Text observation: {batch['text_observation'][0][idx]}")
+                predicted_action = get_action(cfg, model, obs, text_obs, processor)
+                logger.debug(f"Predicted action: {predicted_action}")
 
-            # Check if the image is None
-            if obs['full_image'] is None:
-                raise Exception(f"Image is None for timestep {idx} for dataset {dataset_name}.")
+                standardized_predicted_action = standardize_predicted_action(
+                    predicted_action,
+                    action_decoding_strategy,
+                    dataset_name
+                )
+                logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
 
+                mse = calculate_mse(standardized_predicted_action, actual_action)
+                timestep_mses.append(mse)
 
-            # Get the model's predicted action
-            predicted_action = get_action(cfg, 
-                                          model, 
-                                          obs, 
-                                          batch['text_observation'][0][idx], 
-                                          processor)
-            
+                mae = calculate_mae(standardized_predicted_action, actual_action)
+                timestep_maes.append(mae)
+                
+                if batch['is_last'][0][idx] == True:
+                    logger.info(f"Episode final predicted action: {np.array(standardized_predicted_action)}")
+                    logger.info(f"Episode final actual action: {np.array(actual_action)}")
+                    if np.array_equal(np.array(standardized_predicted_action), np.array(actual_action)):
+                        action_success.append(1)
+                    else:
+                        action_success.append(0)
+            except (IndexError, KeyError) as e:
+                logger.warning(f"Error processing OpenX dataset at index {idx}: {e}")
+                continue
 
-            # Get the actual (expert) action
-            actual_action = drop_is_terminal_dim(batch['action'][0][idx], dataset_name)
+    # Calculate MAE metrics
+    normalized_maes = min_max_normalize(timestep_maes)
+    average_normalized_mae = calculate_mean(normalized_maes)
 
-            # Standardize the predicted action to match the actual action space
-            standardized_predicted_action = convert_action(predicted_action,
-                                                           dataset_name)
+    logger.debug(f"Normalized MAEs length for the dataset: {len(normalized_maes)}")
+    logger.debug(f"Normalized Average MAE for the dataset: {average_normalized_mae:.4f}")
 
-            # print(f"Predicted action: {predicted_action}")
-            # print(f"Standardized predicted action: {standardized_predicted_action}")
-            # print(f"Actual action: {actual_action}")
-
-            # Calculate RMSE for this timestep
-            mse = np.mean((np.array(standardized_predicted_action) - np.array(actual_action)) ** 2)
-            timestep_mse.append(mse)
-
-            # At the last timestep, check if the predicted action is the same as the actual action. If yes, it is considered a success
-            if batch['is_last'][0][idx] == True:
-                print(f"Standardized predicted action: {np.array(standardized_predicted_action)}")
-                print(f"Standardized actual action: {np.array(actual_action)}")
-                if np.array_equal(np.array(standardized_predicted_action), np.array(actual_action)):
-                    action_success.append(1)
-                else:
-                    action_success.append(0)
-
-
-    action_success_rate = (sum(action_success) / len(action_success)) * 100
-    # print(f"Action Success Rate Percentage for the dataset: {action_success_rate:.4f}")
-
-    # Calculate overall average RMSE across all episodes
-    total_dataset_amse = sum(timestep_mse)
-    print(f"\nTotal MSE across {len(timestep_mse)} timesteps: {total_dataset_amse:.4f}")
-    num_timesteps = len(timestep_mse)
-    avg_dataset_amse = total_dataset_amse / num_timesteps
+    # Calculate quantile filtered MAE metrics
+    quantile_filtered_maes = quantile_filter(timestep_maes)
+    normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
+    average_normalized_quantile_filtered_mae = calculate_mean(normalized_quantile_filtered_maes)
     
-    # Calculate min-max normalized AMSE
-    min_mse = min(timestep_mse)
-    max_mse = max(timestep_mse)
-    normalized_mse = (timestep_mse - min_mse) / (max_mse - min_mse) if max_mse != min_mse else 0    
-    normalized_amse = sum(normalized_mse) / len(normalized_mse)
-    
-    # print(f"Normalized Average AMSE for dataset: {normalized_amse:.4f}")
-    # print(f"Timesteps for each episode: {timesteps}")
-    # print(f"Total timesteps: {sum(timesteps)}")
+    logger.debug(f"Quantile filtered MAEs length for the dataset: {len(quantile_filtered_maes)}")
+    logger.debug(f"Average quantile filtered NMAE for the dataset: {average_normalized_quantile_filtered_mae:.4f}")
 
+    max_rel_mae = calculate_max_relative_mae(timestep_maes)
+    prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(timestep_maes)
 
-    return action_success_rate, total_dataset_amse, avg_dataset_amse, num_timesteps, normalized_amse
+    logger.debug(f"Maximum Relative MAE: {max_rel_mae:.4f}")
+    logger.debug(f"Proportion Beyond MAE Threshold (3x median): {prop_beyond_threshold_mae:.4f}")    
+
+    # Multinet v0.1 metrics
+    action_success_rate = calculate_success_rate(action_success)
+    logger.debug(f"Action Success Rate Percentage for the dataset: {action_success_rate:.4f}")
+
+    total_dataset_amse = sum(timestep_mses)
+    logger.info(f"\nTotal MSE across {len(timestep_mses)} timesteps: {total_dataset_amse:.4f}")
+    num_timesteps = len(timestep_mses)
+    avg_dataset_amse = total_dataset_amse / num_timesteps if num_timesteps > 0 else 0.0
+
+    normalized_mses = min_max_normalize(timestep_mses)
+    normalized_amse = calculate_mean(normalized_mses)
+    logger.debug(f"Normalized Average AMSE for dataset: {normalized_amse:.4f}")
+
+    return (
+        action_success_rate, 
+        total_dataset_amse, 
+        avg_dataset_amse, 
+        num_timesteps, 
+        normalized_amse, 
+        average_normalized_mae, 
+        average_normalized_quantile_filtered_mae,
+        max_rel_mae,
+        prop_beyond_threshold_mae
+    )
