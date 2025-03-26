@@ -56,9 +56,6 @@ def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name
                 logger.debug("================================")
                 logger.debug(f"{dataset_name} batch-{batch_counter} timestep-{idx}")
                 logger.debug("================================")
-                actual_action = load_preprocessed_expert_action(batch, dataset_name, batch_idx, idx, action_decoding_strategy)
-                if actual_action is None:
-                    continue
 
                 obs['full_image'] = batch_obs[idx]
                 if obs['full_image'] is None:
@@ -82,6 +79,10 @@ def evaluate_openvla_on_procgen(cfg, model, processor, tfds_shards, dataset_name
                     action_decoding_strategy,
                     dataset_name
                 )
+
+                actual_action = load_preprocessed_expert_action(batch, dataset_name, batch_idx, idx, action_decoding_strategy)
+                if actual_action is None:
+                    raise ValueError(f"Actual action is None for dataset {dataset_name}")
 
                 logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
                 logger.debug(f"Actual action: {actual_action}")

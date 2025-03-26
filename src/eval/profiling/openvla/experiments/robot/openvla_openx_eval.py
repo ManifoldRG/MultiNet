@@ -53,11 +53,6 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
             logger.debug("================================")
             try:
                 # batch_idx is 0 for OpenX dataset
-                actual_action = load_preprocessed_expert_action(batch, dataset_name, 0, idx, action_decoding_strategy)
-                if actual_action is None:
-                    continue
-                
-
                 obs['full_image'] = batch['image_observation'][0][idx]
                 if obs['full_image'] is None:
                     raise ValueError(f"Observation is None for dataset {dataset_name}")
@@ -79,6 +74,10 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
                     action_decoding_strategy,
                     dataset_name
                 )
+                actual_action = load_preprocessed_expert_action(batch, dataset_name, 0, idx, action_decoding_strategy)
+                if actual_action is None:
+                    raise ValueError(f"Actual action is None for dataset {dataset_name}")
+                
                 logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
                 logger.debug(f"Actual action: {actual_action}")
 
