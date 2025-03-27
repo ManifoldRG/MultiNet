@@ -127,13 +127,21 @@ class ProcGenInference:
         """
         # Convert to numpy array if actions is a jax array
         actions = np.array(actions)
+        # Get only first dimension since Procgen uses 1D action space
+        actions = actions[..., 0:1]  # Keep the first dimension while preserving batch dimensions
         
         # Load normalization statistics
         norm_stats = dataset_stats
         
+
+        print('Action before unnormalization: ', actions)
         # Create and apply unnormalize transform
-        unnormalizer = Unnormalize(norm_stats=norm_stats)
+        unnormalizer = Unnormalize(norm_stats=norm_stats, use_quantiles=True)
         unnormalized_actions = unnormalizer({'action': actions})['action']
+        print('Action after unnormalization: ', unnormalized_actions)
+
+        """Discretize the actions after scaling them back to the original action space"""
+        unnormalized_actions = np.round(unnormalized_actions, 0)
         
         return unnormalized_actions
 
