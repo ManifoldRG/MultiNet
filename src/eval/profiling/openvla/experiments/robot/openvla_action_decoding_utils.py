@@ -8,131 +8,221 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def binarize_gripper_action_for_0_1_range(action: float) -> int:
-    if action < 0:
-        raise ValueError("Gripper action is less than 0. use normalize_gripper_action(action, binarize=True) from robot_utils.py instead.")
+class SimpleMapping:
+    """Decode action using simple mapping strategy with only reordering and gripper processing"""
+    ACTION_ORDER_TYPES: dict[str, list[int]] = {
+            'XYZ_RPY_GRIPPER': [0, 1, 2, 3, 4, 5, 6],
+            'GRIPPER_XYZ': [6, 0, 1, 2],
+            'RPY_XYZ': [3, 4, 5, 0, 1, 2],
+            'GRIPPER_RPY_XYZ': [6, 3, 4, 5, 0, 1, 2],
+            'XYZ_GRIPPER': [0, 1, 2, 6],
+            'XYZ_YPR_GRIPPER': [0, 1, 2, 5, 4, 3, 6],
+            'XYZ_Y_GRIPPER': [0, 1, 2, 5, 6],
+            'XYZ_RPY': [0, 1, 2, 3, 4, 5],
+        }
 
-    if action > 0.5:
-        return 1
-    else:
-        return 0
+    REORDER_PATTERNS: dict[str, list[int]] = {
+        'jaco_play': ACTION_ORDER_TYPES['GRIPPER_XYZ'],
+        'berkeley_cable_routing': ACTION_ORDER_TYPES['RPY_XYZ'],
+        'nyu_door_opening_surprising_effectiveness': ACTION_ORDER_TYPES['GRIPPER_RPY_XYZ'],
+        'viola': ACTION_ORDER_TYPES['GRIPPER_RPY_XYZ'],
+        'berkeley_autolab_ur5': ACTION_ORDER_TYPES['GRIPPER_RPY_XYZ'],
+        'toto': ACTION_ORDER_TYPES['RPY_XYZ'],
+        'columbia_cairlab_pusht_real': ACTION_ORDER_TYPES['GRIPPER_RPY_XYZ'],
+        'nyu_rot_dataset_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_RPY_GRIPPER'],
+        'stanford_hydra_dataset_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_RPY_GRIPPER'],
+        'ucsd_kitchen_dataset_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_RPY_GRIPPER'],
+        'ucsd_pick_and_place_dataset_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_GRIPPER'],  # NOTE: ucsd_pick_and_place is using velocity and torque for gripper not position
+        'usc_cloth_sim_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_GRIPPER'],
+        'utokyo_pr2_opening_fridge_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_RPY_GRIPPER'],
+        'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_RPY_GRIPPER'],
+        'utokyo_xarm_pick_and_place_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_YPR_GRIPPER'],
+        'stanford_mask_vit_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_Y_GRIPPER'],
+        'eth_agent_affordances': ACTION_ORDER_TYPES['XYZ_RPY'],  # NOTE: eth uses velocity and angular velocity
+        'imperialcollege_sawyer_wrist_cam': ACTION_ORDER_TYPES['XYZ_RPY_GRIPPER'],
+        'conq_hose_manipulation': ACTION_ORDER_TYPES['XYZ_RPY_GRIPPER'],
+        'plex_robosuite': ACTION_ORDER_TYPES['XYZ_RPY_GRIPPER'],
+        'utokyo_xarm_bimanual_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_RPY_GRIPPER'],  # TODO: simple mapping undefined for 14D bimanual action space
+    }
 
-def discretize_range_0_to_pos_1_gripper_action_to_3_values(gripper_value: float) -> float:
-    """
-    Convert gripper action value to discrete format with closed (-1), open (1), and no movement (0) values
-    
-    Uses the thresholds based on binarize_gripper_actions() 
-    in src/eval/profiling/openvla/prismatic/vla/datasets/rlds/utils/data_utils.py
+    GRIPPER_PATTERNS: dict[str, str] = {
+        'jaco_play': 'discrete_neg',
+        'nyu_door_opening': 'normalize_neg',
+        'viola': 'normalize_neg',
+        'berkeley_autolab_ur5': 'discrete_neg',
+        'columbia_cairlab_pusht': 'binary_complement',
+        'nyu_rot': 'binary',
+        'stanford_hydra': 'binary_complement',
+        'ucsd_kitchen': 'binary',
+        'usc_cloth_sim': 'complement',
+        'utokyo_pr2': 'binary',
+        'utokyo_xarm_pick_and_place': 'binary',
+        'stanford_mask_vit': 'normalize_binary_neg',
+        'imperialcollege_sawyer': 'binary',
+        'conq_hose_manipulation': 'binary',
+        'plex_robosuite': 'normalize_binary_neg',
+    }
 
-    0.05 and 0.95 for range [0, 1]
-
-    Args:
-        gripper_value (float): The input gripper value.
-
-    Returns:
-        float: Standardized gripper action value.
-            -1.0 for closed gripper (gripper_value < 0.05)
-            1.0 for open gripper (gripper_value > 0.95)
-            0.0 for no movement (0.05 <= gripper_value <= 0.95)
-    """
-    if gripper_value < 0.05:
-        return -1.0  # Gripper closed
-    elif gripper_value > 0.95:
-        return 1.0  # Gripper open
-    else:
-        return 0.0  # Gripper doesn't move
-
-def convert_action(action: np.ndarray, dataset_name: str):
-    """
-    Convert the predicted action from OpenVLA to the OpenX standard.
-
-    see definitions/openx.py for more details.
-    """
-    def jaco_play_conversion(action: np.ndarray) -> np.ndarray:
-        standard_action = np.zeros(4)  # Initialize with 4 elements
+    @staticmethod
+    def binarize_gripper_action_to_0_1(gripper_value: float) -> int:
+        """
+        Binarizes a gripper action value to 0 or 1.
         
-        gripper_value = action[-1]
-        standard_action[0] = -1 * discretize_range_0_to_pos_1_gripper_action_to_3_values(gripper_value)
+        Args:
+            gripper_value (float): The input gripper action value.
         
-        standard_action[1:4] = action[:3]  # Copy the first 3 elements
-        return standard_action
+        Returns:
+            int: Binarized gripper action value (0 or 1).
+        """
+        if gripper_value < 0 or gripper_value > 1:
+            raise ValueError("Gripper action is outside the expected range of [0, 1]")
 
-    def berkeley_cable_routing_conversion(action: np.ndarray) -> np.ndarray:
-        return np.array([action[3], action[4], action[5], action[0], action[1], action[2]])
+        if gripper_value < 0:
+            raise ValueError("Gripper action is less than 0. use normalize_gripper_action(action, binarize=True) from robot_utils.py instead.")
 
-    def nyu_door_opening_conversion(action: np.ndarray) -> np.ndarray:
-        action = normalize_gripper_action(action, binarize=False)
-        return np.array([-1 * action[6], action[3], action[4], action[5], action[0], action[1], action[2]])
+        if gripper_value > 0.5:
+            return 1
+        else:
+            return 0
+
+    @staticmethod
+    def binarize_gripper_action_to_neg1_1(gripper_value: float) -> float:
+        """Binarizes a gripper action value to -1 or 1."""
+        if gripper_value < -1 or gripper_value > 1:
+            raise ValueError("Gripper action is outside the expected range of [-1, 1]")
+
+        return np.sign(gripper_value)
+
+    @staticmethod
+    def discretize_gripper_action_to_neg1_0_1(gripper_value: float) -> float:
+        """
+        Convert gripper action value to discrete format with closed (-1), open (1), and no movement (0) values
+        
+        Uses the thresholds based on binarize_gripper_actions() 
+        in src/eval/profiling/openvla/prismatic/vla/datasets/rlds/utils/data_utils.py
+
+        0.05 and 0.95 for range [0, 1]
+
+        Args:
+            gripper_value (float): The input gripper value.
+
+        Returns:
+            float: Standardized gripper action value.
+                -1.0 for closed gripper (gripper_value < thresholds[0])
+                1.0 for open gripper (gripper_value > thresholds[1])
+                0.0 for no movement (thresholds[0] <= gripper_value <= thresholds[1])
+        """
+        if gripper_value < 0 or gripper_value > 1:
+            raise ValueError("Gripper action is outside the expected range of [-1, 1]")
+
+        if gripper_value < 0.05:
+            return -1.0  # Gripper closed
+        elif gripper_value > 0.95:
+            return 1.0  # Gripper open
+        else:
+            return 0.0  # Gripper doesn't move
+
+    @staticmethod
+    def normalize_gripper_action_from_0_1_to_neg1_1(gripper_value: float) -> float:
+        """
+        Modified from robot_utils.normalize_gripper_action()
+
+        Changes gripper action (last dimension of action vector) from [0,1] to [-1,+1].
+
+        Necessary for some environments (not Bridge) because the dataset wrapper standardizes gripper actions to [0,1].
+        Note that unlike the other action dimensions, the gripper action is not normalized to [-1,+1] by default by
+        the dataset wrapper.
+
+        Normalization formula: y = 2 * (x - orig_low) / (orig_high - orig_low) - 1
+
+        Args:
+            gripper_value: The input gripper value in range [0,1]
+
+        Returns:
+            float: The normalized gripper value in range [-1,1].
+        """
+        if gripper_value < 0 or gripper_value > 1:
+            raise ValueError("Gripper action is outside the expected range of [0, 1]")
+
+        # Just normalize the last action to [-1,+1].
+        orig_low, orig_high = 0.0, 1.0
+        gripper_value = 2 * (gripper_value - orig_low) / (orig_high - orig_low) - 1
+
+        return gripper_value
+
+    @staticmethod
+    def decode_action(action: np.ndarray, dataset_name: str) -> np.ndarray:
+        """
+        Convert OpenVLA (7D) action format to dataset-specific action space using simple mapping.
+
+        This function handles action space conversion through two mechanisms:
+        1. Reordering: Rearranging action dimensions (e.g., [x,y,z] -> [z,y,x])
+        2. Gripper Processing: Converting gripper values between different formats
+
+        Args:
+            action: Input action array in OpenVLA format [x,y,z,rx,ry,rz,gripper]
+            dataset_name: Name of the target dataset
+        """
+        def transform_gripper(value: float, transform_type: str) -> float:
+            """
+            Apply transformation to gripper value based on specified type.
+            
+            Args:
+                value: Input gripper value
+                transform_type: Type of transformation to apply
+                
+            Returns:
+                float: Transformed gripper value
+                
+            Raises:
+                ValueError: If transform_type is unknown
+            """
+            transforms = {
+                'binary': lambda x: SimpleMapping.binarize_gripper_action_to_0_1(x),
+                'binary_complement': lambda x: 1 - SimpleMapping.binarize_gripper_action_to_0_1(x),
+                'discrete': lambda x: SimpleMapping.discretize_gripper_action_to_neg1_0_1(x),
+                'discrete_neg': lambda x: -1 * SimpleMapping.discretize_gripper_action_to_neg1_0_1(x),
+                'normalize': lambda x: SimpleMapping.normalize_gripper_action_from_0_1_to_neg1_1(x),
+                'normalize_neg': lambda x: -1 * SimpleMapping.normalize_gripper_action_from_0_1_to_neg1_1(x),
+                'normalize_binary_neg': lambda x: -1 * SimpleMapping.binarize_gripper_action_to_neg1_1(SimpleMapping.normalize_gripper_action_from_0_1_to_neg1_1(x)),
+                'complement': lambda x: 1 - x,
+            }
+            if transform_type not in transforms:
+                raise ValueError(f"Unknown gripper transform type: {transform_type}")
+            return transforms[transform_type](value)
+
+        try:
+            # Apply gripper transformation first to OpenVLA standard format
+            if dataset_name in SimpleMapping.GRIPPER_PATTERNS:
+                transform = SimpleMapping.GRIPPER_PATTERNS[dataset_name]
+                gripper_val = action[6]  # gripper value is at index 6 in OpenVLA format
+                action[6] = transform_gripper(gripper_val, transform)
+
+            # Apply dimension reordering
+            if dataset_name in SimpleMapping.REORDER_PATTERNS:
+                indices = SimpleMapping.REORDER_PATTERNS[dataset_name]
+                action = np.array([action[i] for i in indices])
+
+            return action
+
+        except Exception as e:
+            logger.error(f"Error converting action for dataset {dataset_name}: {str(e)}")
+            raise
+
+
+class ManualRuleMapping:
+    """Decode action using manual rule mapping strategy using assumed rules for converting between environments"""
+    SUPPORTED_DATASET_NAMES = ['bigfish']
+
+    @staticmethod
+    def decode_action(action: np.ndarray, dataset_name: str) -> np.ndarray:
+        """Decode action using manual rule mapping"""
+        if dataset_name not in ManualRuleMapping.SUPPORTED_DATASET_NAMES:
+            raise ValueError(f"dataset {dataset_name} undefined for manual rule mapping action decoding strategy")
+
+        return ManualRuleMapping.openvla_to_bigfish_conversion(action)
     
-    def viola_conversion(action: np.ndarray) -> np.ndarray:
-        action = normalize_gripper_action(action, binarize=True)  # normalize to [-1, 1]
-        return np.array([-1 * action[6], action[3], action[4], action[5], action[0], action[1], action[2]])
-
-    def berkeley_autolab_ur5_conversion(action: np.ndarray) -> np.ndarray:
-        action = normalize_gripper_action(action, binarize=False)
-        action[6] = -1 * discretize_range_0_to_pos_1_gripper_action_to_3_values(action[6])
-
-        return np.array([action[6], action[3], action[4], action[5], action[0], action[1], action[2]])
-
-    def toto_conversion(action: np.ndarray) -> np.ndarray:
-        return np.array([action[3], action[4], action[5], action[0], action[1], action[2]])
-
-    def columbia_cairlab_pusht_real_conversion(action: np.ndarray) -> np.ndarray:
-        return np.array([1 - binarize_gripper_action_for_0_1_range(action[6]), action[3], action[4], action[5], action[0], action[1], action[2]])
-
-    def nyu_rot_conversion(action: np.ndarray) -> np.ndarray:
-        action[6] = binarize_gripper_action_for_0_1_range(action[6])
-        return action
-
-    def stanford_hydra_conversion(action: np.ndarray) -> np.ndarray:
-        action[6] = 1 - binarize_gripper_action_for_0_1_range(action[6])
-        return action
-
-    def ucsd_kitchen_conversion(action: np.ndarray) -> np.ndarray:
-        return np.array([action[0], action[1], action[2], action[3], action[4], action[5], binarize_gripper_action_for_0_1_range(action[6])])
-
-    # NOTE: ucsd_pick_and_place is using velocity and torque for gripper not position
-    def ucsd_pick_and_place_conversion(action: np.ndarray) -> np.ndarray:
-        # the last gripper dimension action gets scaled based on the dataset statistics during inference in predict_action() in modeling_prismatic.py
-        return np.array([action[0], action[1], action[2], action[6]])
-
-    def usc_cloth_sim_conversion(action: np.ndarray) -> np.ndarray:
-        return np.array([action[0], action[1], action[2], 1 - action[6]])
-
-    def utokyo_pr2_conversion(action: np.ndarray) -> np.ndarray:
-
-        return np.array([
-            action[0], action[1], action[2],  # positional delta
-            action[3], action[4], action[5],  # RPY angles
-            binarize_gripper_action_for_0_1_range(action[6])
-        ])
-    
-    def utokyo_xarm_pick_and_place_conversion(action: np.ndarray) -> np.ndarray:
-        action[6] = binarize_gripper_action_for_0_1_range(action[6])
-        return np.array([action[0], action[1], action[2], action[5], action[4], action[3], action[6]])
-
-    def stanford_mask_vit_conversion(action: np.ndarray) -> np.ndarray:
-        action = normalize_gripper_action(action, binarize=True)  # normalize to [-1, 1]
-        return np.array([action[0], action[1], action[2], action[5], -1 * action[6]])
-
-    #  NOTE: eth uses velocity and angular velocity
-    def eth_agent_affordances_conversion(action: np.ndarray) -> np.ndarray:
-        return action[:6]
-
-    def imperialcollege_sawyer_wrist_cam_conversion(action: np.ndarray) -> np.ndarray:
-        return np.array([action[0], action[1], action[2], action[3], action[4], action[5], binarize_gripper_action_for_0_1_range(action[6])])
-    
-    def conq_hose_manipulation_conversion(action: np.ndarray) -> np.ndarray:
-        action[6] = binarize_gripper_action_for_0_1_range(action[6])
-        return action
-
-    def plex_robosuite_conversion(action: np.ndarray) -> np.ndarray:
-        action = normalize_gripper_action(action, binarize=True)  # normalize to [-1, 1]
-        return invert_gripper_action(action)
-
-    def utokyo_xarm_bimanual_conversion(action: np.ndarray) -> np.ndarray:
-        return action
-
+    @staticmethod
     def openvla_to_bigfish_conversion(action: np.ndarray) -> np.ndarray:
         """
         Convert OpenVLA standard to Bigfish action space:
@@ -185,107 +275,75 @@ def convert_action(action: np.ndarray, dataset_name: str):
         
         return [action_index]
 
+    # For small scale experiments with Procgen using manual rule mapping action decoding strategy
+    @staticmethod
+    def filter_bigfish_expert_special_actions(action: np.ndarray, dataset_name: str) -> np.ndarray:
+        """
+        Clip an action array to a default value if it is outside the specified range.
 
-    conversion_functions: dict[str, Callable[[np.ndarray, bool], np.ndarray]] = {
-        'jaco_play': jaco_play_conversion,
-        'berkeley_cable_routing': berkeley_cable_routing_conversion,
-        'nyu_door_opening_surprising_effectiveness': nyu_door_opening_conversion,
-        'viola': viola_conversion,
-        'berkeley_autolab_ur5': berkeley_autolab_ur5_conversion,
-        'toto': toto_conversion,
-        'columbia_cairlab_pusht_real': columbia_cairlab_pusht_real_conversion,
-        "nyu_rot_dataset_converted_externally_to_rlds": nyu_rot_conversion,
-        'stanford_hydra_dataset_converted_externally_to_rlds': stanford_hydra_conversion,
-        'ucsd_kitchen_dataset_converted_externally_to_rlds': ucsd_kitchen_conversion,
-        'ucsd_pick_and_place_dataset_converted_externally_to_rlds': ucsd_pick_and_place_conversion,
-        "usc_cloth_sim_converted_externally_to_rlds": usc_cloth_sim_conversion,
-        "utokyo_pr2_opening_fridge_converted_externally_to_rlds": utokyo_pr2_conversion,
-        'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds': utokyo_pr2_conversion,
-        'utokyo_xarm_pick_and_place_converted_externally_to_rlds': utokyo_xarm_pick_and_place_conversion,
-        'stanford_mask_vit_converted_externally_to_rlds': stanford_mask_vit_conversion,
-        'eth_agent_affordances': eth_agent_affordances_conversion,
-        'imperialcollege_sawyer_wrist_cam': imperialcollege_sawyer_wrist_cam_conversion,
-        'conq_hose_manipulation': conq_hose_manipulation_conversion,
-        'plex_robosuite': plex_robosuite_conversion,
-        'utokyo_xarm_bimanual_converted_externally_to_rlds': utokyo_xarm_bimanual_conversion,
-        'bigfish': openvla_to_bigfish_conversion
-    }
+        Args:
+            action (np.ndarray): The action array to clip.
+            dataset_name (str): The name of the dataset to use for default values.
+
+        Returns:
+            np.ndarray: The clipped action array.
+        """
+        if dataset_name == "bigfish":
+            if action[0] >= 9:
+                return [4]  # default bigfish special action index to stand still based on procgen codebase
+            return action
+        else:
+            return action
+
+
+# === utils for expert actions ===
+class ExpertActionUtils:
     
-
-    try:
-        convert_func = conversion_functions.get(dataset_name)
-    except KeyError:
-        raise ValueError(f"Post inference manual conversion undefined for dataset: {dataset_name}")
-    
-    try:
-        return convert_func(action)
-    except ValueError as e:
-        logger.error(f"Error during conversion for dataset {dataset_name}: {e}")
-        raise
-
-
-def drop_is_terminal_dim(action: np.ndarray, dataset_name: str) -> np.ndarray:
-    if dataset_name == "berkeley_cable_routing":
-        return drop_dimension(action, 3)
-    elif dataset_name == "nyu_door_opening_surprising_effectiveness":
-        return drop_dimension(action, 4)
-    elif dataset_name == "viola":
-        return drop_dimension(action, 4)
-    elif dataset_name == "berkeley_autolab_ur5":
-        return drop_dimension(action, 4)
-    elif dataset_name == "toto":
-        return drop_dimension(action, 3)
-    elif dataset_name == "columbia_cairlab_pusht_real":
-        return drop_dimension(action, 4)
-    elif dataset_name == "ucsd_kitchen_dataset_converted_externally_to_rlds":
-        return drop_dimension(action, 7)
-    elif dataset_name == "utokyo_pr2_opening_fridge_converted_externally_to_rlds" \
-        or dataset_name == "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds":
-        return drop_dimension(action, 7)
-    elif dataset_name == "imperialcollege_sawyer_wrist_cam":
-        return drop_dimension(action, 7)
-    elif dataset_name in ProcGenDefinitions.DESCRIPTIONS.keys():  # no is_terminal dimension in procgen
-        return action
-    elif dataset_name in OpenXDefinitions.DESCRIPTIONS.keys():
-        return action
-    else:
-        raise ValueError(f"Unknown dataset {dataset_name} for drop_is_terminal_dim")
-    
-
-def drop_dimension(action: np.ndarray, index: int) -> np.ndarray:
-    """
-    Drop a specific dimension from a NumPy array.
-
-    Args:
-        action (np.ndarray): The input NumPy array.
-        index (int): The index of the dimension to drop.
-
-    Returns:
-        np.ndarray: A new NumPy array with the specified dimension removed.
-
-    Raises:
-        IndexError: If the index is out of bounds for the input array.
-    """
-    if index < 0 or index >= action.shape[0]:
-        raise IndexError(f"Index {index} is out of bounds for array of shape {action.shape}")
-    
-    return np.delete(action, index)
+    @staticmethod
+    def drop_is_terminal_dim(action: np.ndarray, dataset_name: str) -> np.ndarray:
+        if dataset_name == "berkeley_cable_routing":
+            return ExpertActionUtils.drop_dimension(action, 3)
+        elif dataset_name == "nyu_door_opening_surprising_effectiveness":
+            return ExpertActionUtils.drop_dimension(action, 4)
+        elif dataset_name == "viola":
+            return ExpertActionUtils.drop_dimension(action, 4)
+        elif dataset_name == "berkeley_autolab_ur5":
+            return ExpertActionUtils.drop_dimension(action, 4)
+        elif dataset_name == "toto":
+            return ExpertActionUtils.drop_dimension(action, 3)
+        elif dataset_name == "columbia_cairlab_pusht_real":
+            return ExpertActionUtils.drop_dimension(action, 4)
+        elif dataset_name == "ucsd_kitchen_dataset_converted_externally_to_rlds":
+            return ExpertActionUtils.drop_dimension(action, 7)
+        elif dataset_name == "utokyo_pr2_opening_fridge_converted_externally_to_rlds" \
+            or dataset_name == "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds":
+            return ExpertActionUtils.drop_dimension(action, 7)
+        elif dataset_name == "imperialcollege_sawyer_wrist_cam":
+            return ExpertActionUtils.drop_dimension(action, 7)
+        elif dataset_name in ProcGenDefinitions.DESCRIPTIONS.keys():  # no is_terminal dimension in procgen
+            return action
+        elif dataset_name in OpenXDefinitions.DESCRIPTIONS.keys():
+            return action
+        else:
+            raise ValueError(f"Unknown dataset {dataset_name} for drop_is_terminal_dim")
 
 
-def clip_out_of_range_action_to_default(action: np.ndarray, dataset_name: str) -> np.ndarray:
-    """
-    Clip an action array to a default value if it is outside the specified range.
+    @staticmethod
+    def drop_dimension(action: np.ndarray, index: int) -> np.ndarray:
+        """
+        Drop a specific dimension from a NumPy array.
 
-    Args:
-        action (np.ndarray): The action array to clip.
-        dataset_name (str): The name of the dataset to use for default values.
+        Args:
+            action (np.ndarray): The input NumPy array.
+            index (int): The index of the dimension to drop.
 
-    Returns:
-        np.ndarray: The clipped action array.
-    """
-    if dataset_name == "bigfish":
-        if action[0] >= 9:
-            return [4]  # default bigfish special action index to stand still based on procgen codebase
-        return action
-    else:
-        return action
+        Returns:
+            np.ndarray: A new NumPy array with the specified dimension removed.
+
+        Raises:
+            IndexError: If the index is out of bounds for the input array.
+        """
+        if index < 0 or index >= action.shape[0]:
+            raise IndexError(f"Index {index} is out of bounds for array of shape {action.shape}")
+        
+        return np.delete(action, index)

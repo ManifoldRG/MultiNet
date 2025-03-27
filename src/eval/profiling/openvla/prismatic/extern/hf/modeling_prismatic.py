@@ -556,7 +556,7 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
 
             actions = np.zeros_like(normalized_actions)
             # Compute discrete actions
-            actions[discrete] = np.floor(0.5 * (normalized_actions[discrete] + 1) * (action_high[discrete] - action_low[discrete]) + action_low[discrete])
+            actions[discrete] = np.round(0.5 * (normalized_actions[discrete] + 1) * (action_high[discrete] - action_low[discrete]) + action_low[discrete], decimals=0)
 
             # Compute continuous actions
             actions[~discrete] = 0.5 * (normalized_actions[~discrete] + 1) * (action_high[~discrete] - action_low[~discrete]) + action_low[~discrete]
