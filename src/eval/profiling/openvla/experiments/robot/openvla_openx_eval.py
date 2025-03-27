@@ -96,8 +96,8 @@ def evaluate_openvla_on_openx(cfg, model, processor, tfds_shards, dataset_name):
                 continue
 
         batch_counter += 1
-        if batch_counter == 5:
-            break
+        # if batch_counter == 5:
+        #     break
 
     action_success_rate = calculate_success_rate(action_success)
     logger.debug(f"Action Success Rate Percentage for the dataset: {action_success_rate:.4f}")
