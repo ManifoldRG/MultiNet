@@ -167,7 +167,9 @@ class OpenXDataset:
 
     def _define_unnorm_mask_and_discrete_mask(self, action_dim: int) -> tuple:
         if self.dataset_name in OpenXDefinitions.DESCRIPTIONS.keys():
-            mask = [True] * (action_dim - 1) + [False]
+            mask = [True] * (action_dim - 1) \
+                + [True] if self.dataset_name == 'ucsd_pick_and_place_dataset_converted_externally_to_rlds' \
+                else [False] * action_dim
             discrete = [False] * action_dim
         elif self.dataset_name in ProcGenDefinitions.DESCRIPTIONS.keys():
             mask = [True] * action_dim
