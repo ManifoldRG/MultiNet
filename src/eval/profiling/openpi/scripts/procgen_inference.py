@@ -1,6 +1,7 @@
 import datetime
 import os
 import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../../')))
 from openpi.models import pi0
 from openpi.models import model as _model
 from openpi.models.model import Observation
@@ -13,7 +14,9 @@ import jax
 import numpy as np
 import tensorflow as tf
 import gc
-
+from openpi.shared import normalize
+from openpi.transforms import Unnormalize
+from openpi.shared.normalize import RunningStats
 # Configure JAX memory settings
 os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.8'
@@ -85,6 +88,55 @@ class ProcGenInference:
         
         return transformed_dict
 
+    def get_dataset_stats(self, root_dir: str):
+        
+        running_stats = RunningStats()
+
+        print('Calculating dataset stats...')
+        #Load the dataset shards and calculate the stats
+        for shard in root_dir:
+            print(f'Processing shard: {shard}')
+            dataset = tf.data.Dataset.load(shard)
+            actions = []
+            for elem in dataset:
+                actions.append(elem['actions'].numpy())
+            
+            # Update running statistics
+            actions = np.array(actions)
+            running_stats.update(actions)
+
+            # Free memory from actions list and dataset
+            del actions
+            del dataset
+            import gc
+            gc.collect()
+    
+        # Get final statistics
+        stats = running_stats.get_statistics()
+        return {'action': stats}
+
+    def process_output(self, actions, dataset_stats: dict):
+        """
+        Unnormalize the model's action outputs using stored normalization statistics.
+        
+        Args:
+            actions (jax.numpy.ndarray): Normalized actions from the model
+            
+        Returns:
+            np.ndarray: Unnormalized actions scaled back to the original action space
+        """
+        # Convert to numpy array if actions is a jax array
+        actions = np.array(actions)
+        
+        # Load normalization statistics
+        norm_stats = dataset_stats
+        
+        # Create and apply unnormalize transform
+        unnormalizer = Unnormalize(norm_stats=norm_stats)
+        unnormalized_actions = unnormalizer({'action': actions})['action']
+        
+        return unnormalized_actions
+
 def main():
     # Initialize model
     config = pi0.Pi0Config(action_horizon=1) #We want to predict only for the next timestep
@@ -101,8 +153,13 @@ def main():
     # Add path to shards
     tfds_sorted_shard_paths = [os.path.join('../../../../../../bigfish', shard) for shard in tfds_sorted_shards]
 
+
+    # Get dataset stats
+    dataset_stats = procgen_inference.get_dataset_stats(tfds_sorted_shard_paths)
+    print('Dataset stats calculated: ', dataset_stats)
+
     # Create dataloader
-    dataset, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=8)
+    dataset, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=5)
     
     counter = 0
     for batch in dataloader:
@@ -146,10 +203,11 @@ def main():
         
         # Sample actions for entire episode
         actions = model.sample_actions(key, observation, num_steps=10)
-        print(f"Batch {counter} actions:", actions)
+        unnormalized_actions = procgen_inference.process_output(actions, dataset_stats)
+        print(f"Batch {counter} actions:", unnormalized_actions)
         
         # Memory management
-        del transformed_dict, observation, actions
+        del transformed_dict, observation, actions, unnormalized_actions
         
         # Clear memory every 10 episodes
         #counter += 1
