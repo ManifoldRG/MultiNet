@@ -4,7 +4,6 @@ from src.eval.profiling.openvla.experiments.robot.openvla_action_decoding_utils 
     SimpleMapping, ManualRuleMapping, ExpertActionUtils
 )
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -50,13 +49,13 @@ def normalize_mse_values(mse_values):
 def load_preprocessed_expert_action(batch, dataset_name, batch_idx, idx, action_decoding_strategy):
     """Process batch actions with error handling"""
     try:
-        action_data = batch['action'][batch_idx][idx] if isinstance(batch['action'][batch_idx], list) else batch['action'][batch_idx]
+        action_data = batch['action'][batch_idx][idx]
+
         if action_decoding_strategy == 'manual_rule_mapping':
             action_data = ManualRuleMapping.filter_bigfish_expert_special_actions(action_data, dataset_name)
         return ExpertActionUtils.drop_is_terminal_dim(action_data, dataset_name)
     except (IndexError, KeyError) as e:
-        raise ValueError(f"Error processing actions: {e}")
-
+        raise ValueError(f"Error processing actions for batch {batch_idx} and index {idx}: {e}")
 
 def standardize_predicted_action(predicted_action, action_decoding_strategy, dataset_name):
     """Standardize predicted action based on decoding strategy"""

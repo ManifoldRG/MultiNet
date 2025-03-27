@@ -32,7 +32,7 @@ class SimpleMapping:
         'nyu_rot_dataset_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_RPY_GRIPPER'],
         'stanford_hydra_dataset_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_RPY_GRIPPER'],
         'ucsd_kitchen_dataset_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_RPY_GRIPPER'],
-        'ucsd_pick_and_place_dataset_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_GRIPPER'],  # NOTE: ucsd_pick_and_place is using velocity and torque for gripper not position
+        'ucsd_pick_and_place_dataset_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_GRIPPER'],  # NOTE: ucsd_pick_and_place is using velocity for xyz and torque for gripper not position
         'usc_cloth_sim_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_GRIPPER'],
         'utokyo_pr2_opening_fridge_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_RPY_GRIPPER'],
         'utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds': ACTION_ORDER_TYPES['XYZ_RPY_GRIPPER'],
