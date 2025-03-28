@@ -85,12 +85,11 @@ class OpenVLABaseEvaluator:
         raise NotImplementedError("Subclasses must implement get_actual_action")
     
     @abstractmethod
-    def is_last_timestep(self, batch: Dict[str, Any], episode_idx: int, timestep_idx: int) -> bool:
+    def is_last_timestep(self, batch: Dict[str, Any], timestep_idx: int) -> bool:
         """Check if the current timestep is the last one in the episode.
         
         Args:
             batch: Batch of data from the dataloader
-            episode_idx: Index of the current episode
             timestep_idx: Index of the current timestep
             
         Returns:
@@ -168,7 +167,7 @@ class OpenVLABaseEvaluator:
                 timestep_mses.append(mse)
                 
                 # Check if this is the last timestep
-                is_last = self.is_last_timestep(batch, episode_idx, timestep_idx)
+                is_last = self.is_last_timestep(batch, timestep_idx)
                 if is_last:
                     logger.info(f"Episode {episode_idx} final predicted action: {np.array(standardized_predicted_action)}")
                     logger.info(f"Episode {episode_idx} final actual action: {np.array(actual_action)}")

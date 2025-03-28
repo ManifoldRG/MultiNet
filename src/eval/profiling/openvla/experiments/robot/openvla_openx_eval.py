@@ -70,7 +70,7 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
             self.action_decoding_strategy
         )
 
-    def is_last_timestep(self, batch: dict[str, any], episode_idx: int, timestep_idx: int) -> bool:
+    def is_last_timestep(self, batch: dict[str, any], timestep_idx: int) -> bool:
         """Check if the current timestep is the last one in the OpenX episode"""
         logger.debug(f"is_last: {batch['is_last'][0][timestep_idx]}")
         return batch['is_last'][0][timestep_idx] == True  # batch_idx is 0 for OpenX dataset

@@ -63,15 +63,16 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
         return load_preprocessed_expert_action(
             batch, 
             self.dataset_name, 
-            episode_idx,
+            0,  # batch_idx is 0 for ProcGen dataset
             timestep_idx, 
             self.action_decoding_strategy
         )
     
-    def is_last_timestep(self, batch: dict[str, any], episode_idx: int, timestep_idx: int) -> bool:
+    def is_last_timestep(self, batch: dict[str, any], timestep_idx: int) -> bool:
         """Check if the current timestep is the last one in the ProcGen episode"""
-        logger.debug(f"is_last: {batch['is_last'][episode_idx][timestep_idx]}")
-        return batch['is_last'][episode_idx][timestep_idx] == True
+        logger.debug(f"is_last: {batch['is_last'][0][timestep_idx]}")
+        return batch['is_last'][0][timestep_idx] == True
+
 
 def evaluate_openvla_on_procgen(cfg: any, model: any, processor: any, 
                                tfds_shards: list[str], dataset_name: str) -> tuple[float, float, float, int, float]:
