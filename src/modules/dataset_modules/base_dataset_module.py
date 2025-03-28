@@ -10,7 +10,7 @@ import numpy as np
 import json
 import string
 import os
-
+import warnings
 
 class DatasetModule(ABC):
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0) -> None:
@@ -256,6 +256,7 @@ class DatasetModule(ABC):
 
 @dataclass
 class BatchInfo:
+    dataset_family: str
     dataset_name: str
     batch_num: int
     batch_id: str
@@ -267,7 +268,7 @@ class BatchInfo:
     save_root: str
     
     def save_to_file(self) -> str:
-        save_dir = f"{self.save_root}/batch_info/{self.dataset_name}_size_{self.num_inputs}"
+        save_dir = f"{self.save_root}/batch_info/{self.dataset_family}/{self.dataset_name}_size_{self.num_inputs}"
         # Create folders if they dont exist        
         Path(save_dir).mkdir(parents=True, exist_ok=True)
         
@@ -296,18 +297,22 @@ class DatasetBatchModule(DatasetModule, ABC):
         if self._batch_list is None:
             self._batch_list = {ds : [] for ds in self.datasets}
         return self._batch_list
-        
+    
+    @abstractmethod
+    def _run_eval_dataset(self, dataset_batch_info_folder: str) -> dict:
+        pass
+    
     def _send_batch_job(self, batch, dataset_name, batch_num):
         cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts = self._process_batch(batch, dataset_name)
         num_inputs = len(cur_inputs)
         batch_id, token_count = self.modality_module.send_batch_job(cur_inputs, [], instructions)
         
         is_lasts = [int(is_last) for is_last in is_lasts]
-        labels = [label.numpy() for label in labels if not isinstance(label, np.ndarray)]
+        labels = [label.numpy() if not isinstance(label, np.ndarray) else label for label in labels]
 
-        batch_job = BatchInfo(dataset_name, batch_num, batch_id, output_types, token_count, is_lasts, labels, num_inputs, self.disk_root_dir)
+        batch_job = BatchInfo(self.dataset_family, dataset_name, batch_num, batch_id, output_types, token_count, is_lasts, labels, num_inputs, self.disk_root_dir)
         fp = batch_job.save_to_file()
-        self.batch_list[dataset_name].append(fp)
+        self.batch_list[dataset_name].append(str(fp))
         
     def _send_batch_jobs_for_dataset(self, dataset):
         tfds_shards = self._find_shards(dataset)
@@ -370,3 +375,25 @@ class DatasetBatchModule(DatasetModule, ABC):
         
         return cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts
     
+    # Pass dict output from send_batch_jobs_for_all_datasets() for batch_info_dict
+    def run_eval(self, results_path, batch_info_dict) -> None:
+        if not batch_info_dict:
+            batch_info_dict = self.batch_list
+        
+        total_results = {}
+        if os.path.exists(results_path):
+            with open(results_path, 'r') as f:
+                total_results = json.load(f)
+
+        for dataset, batches in batch_info_dict.items():
+            if dataset in total_results:
+                warnings.warn(f'Skipping dataset: {dataset} (already evaluated)!' 
+                                f'Delete the results from the results json for any dataset that should be overwritten.')
+                continue
+                
+            result = self._run_eval_dataset(batches)
+            total_results[dataset] = result
+
+            # Write the updated or new results to the file
+            with open(results_path, 'w') as f:
+                json.dump(total_results, f, indent=4, default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
