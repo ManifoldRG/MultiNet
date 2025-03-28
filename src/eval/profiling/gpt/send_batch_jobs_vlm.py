@@ -2,8 +2,8 @@ import os
 import sys
 import datetime
 
-from src.modules.dataset_modules.procgen_module import ProcGenModule
-from src.modules.dataset_modules.openx_module import OpenXModule
+from src.modules.dataset_modules.procgen_module import ProcGenBatchModule
+from src.modules.dataset_modules.openx_module import OpenXBatchModule
 
 import argparse
 import json
@@ -37,9 +37,9 @@ if __name__=="__main__":
     # TODO: More branches will be added during the implementation.
     dataset_module = None
     if args.dataset_family == 'procgen':
-        dataset_module = ProcGenModule(args.disk_root_dir, modality, source, args.model, args.batch_size, args.k_shots)
+        dataset_module = ProcGenBatchModule(args.disk_root_dir, modality, source, args.model, args.batch_size, args.k_shots)
     elif args.dataset_family == 'openx':
-        dataset_module = OpenXModule(args.disk_root_dir, modality, source, args.model, args.batch_size, args.k_shots)
+        dataset_module = OpenXBatchModule(args.disk_root_dir, modality, source, args.model, args.batch_size, args.k_shots)
     
     batch_list = dataset_module.send_batch_jobs_for_all_datasets()
     with open(f"{args.dataset_family}_batch_list_{datetime.datetime.now()}.json", 'w') as f:

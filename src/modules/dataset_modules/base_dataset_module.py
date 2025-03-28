@@ -22,6 +22,7 @@ class DatasetModule(ABC):
         self.disk_root_dir = disk_root_dir
         self.batch_size = batch_size
         self.modality_module = None
+        self.model = model
         if modality == 'vlm':
             self.modality_module = VLMModule(source, model, max_concurrent_prompts=self.batch_size)
         assert self.modality_module is not None, "The modality module has not been set correcly. Check required."
@@ -266,6 +267,7 @@ class BatchInfo:
     labels: list
     num_inputs: int
     save_root: str
+    model: str
     
     def save_to_file(self) -> str:
         save_dir = f"{self.save_root}/batch_info/{self.dataset_family}/{self.dataset_name}_size_{self.num_inputs}"
@@ -278,10 +280,10 @@ class BatchInfo:
             run += 1
         Path(f'{save_dir}/run_{run}').mkdir()
                     
-        np.savez(f'{save_dir}/run_{run}/{file_name}', 
+        np.savez(f'{save_dir}/run_{run}/{file_name}', dataset_family=self.dataset_family,
                  dataset_name=self.dataset_name, batch_num=self.batch_num, batch_id=self.batch_id, 
                  output_types=self.output_types, token_count=self.token_count, is_lasts=self.is_lasts, 
-                 labels=self.labels, num_inputs=self.num_inputs)
+                 labels=self.labels, num_inputs=self.num_inputs, model=self.model)
                 
         return Path(f'{save_dir}/run_{run}/{file_name}').absolute()
  
@@ -310,7 +312,7 @@ class DatasetBatchModule(DatasetModule, ABC):
         is_lasts = [int(is_last) for is_last in is_lasts]
         labels = [label.numpy() if not isinstance(label, np.ndarray) else label for label in labels]
 
-        batch_job = BatchInfo(self.dataset_family, dataset_name, batch_num, batch_id, output_types, token_count, is_lasts, labels, num_inputs, self.disk_root_dir)
+        batch_job = BatchInfo(self.dataset_family, dataset_name, batch_num, batch_id, output_types, token_count, is_lasts, labels, num_inputs, self.disk_root_dir, self.model)
         fp = batch_job.save_to_file()
         self.batch_list[dataset_name].append(str(fp))
         
@@ -376,10 +378,7 @@ class DatasetBatchModule(DatasetModule, ABC):
         return cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts
     
     # Pass dict output from send_batch_jobs_for_all_datasets() for batch_info_dict
-    def run_eval(self, results_path, batch_info_dict) -> None:
-        if not batch_info_dict:
-            batch_info_dict = self.batch_list
-        
+    def run_eval(self, results_path, batch_info_dict) -> None:        
         total_results = {}
         if os.path.exists(results_path):
             with open(results_path, 'r') as f:
