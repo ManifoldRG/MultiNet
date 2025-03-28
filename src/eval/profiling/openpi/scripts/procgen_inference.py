@@ -145,7 +145,7 @@ class ProcGenInference:
 
         print('Action before unnormalization: ', actions)
         # Create and apply unnormalize transform
-        unnormalizer = Unnormalize(norm_stats=norm_stats)
+        unnormalizer = Unnormalize(norm_stats=norm_stats, use_quantiles=True)
         unnormalized_actions = unnormalizer({'action': actions})['action']
         print('Action after unnormalization: ', unnormalized_actions)
 
