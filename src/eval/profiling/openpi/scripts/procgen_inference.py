@@ -1,4 +1,6 @@
+import argparse
 import datetime
+import json
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../../')))
@@ -99,7 +101,7 @@ class ProcGenInference:
             dataset = tf.data.Dataset.load(shard)
             actions = []
             for elem in dataset:
-                actions.append(elem['actions'].numpy())
+                actions.append(elem['actions'][0].numpy()) # Procgen has 1D action space
             
             # Update running statistics
             actions = np.array(actions)
@@ -136,7 +138,7 @@ class ProcGenInference:
 
         print('Action before unnormalization: ', actions)
         # Create and apply unnormalize transform
-        unnormalizer = Unnormalize(norm_stats=norm_stats, use_quantiles=True)
+        unnormalizer = Unnormalize(norm_stats=norm_stats)
         unnormalized_actions = unnormalizer({'action': actions})['action']
         print('Action after unnormalization: ', unnormalized_actions)
 
@@ -145,8 +147,106 @@ class ProcGenInference:
         
         return unnormalized_actions
 
+    def evaluate_model(self, model, key, config, dataset_stats: dict, dataloader: tf.data.Dataset):
+        """Evaluate the model on the dataset"""
+        counter = 0
+        for batch in dataloader:
+            '''# Process each timestep in episode
+            for timestep_idx in range(len(batch['image_observation'])):
+                obs = {
+                    'image_observation': batch['image_observation'][0][timestep_idx],
+                    'text_observation': batch['text_observation'][0][timestep_idx]
+                }
+                
+                # Transform observation
+                transformed_dict = procgen_inference.prepare_observation(obs, max_token_length=config.max_token_len)
+                observation = Observation.from_dict(transformed_dict) # Process according to model input format
+                
+                # Sample actions
+                actions = model.sample_actions(key, observation, num_steps=10)
+                procgen_action = actions[0] #Procgen has an action space of 1 dimension and discrete 
+                print(f"Timestep {timestep_idx} actions:", procgen_action)
+
+
+                
+                # Memory management
+                del transformed_dict, observation, actions
+
+            # Clear memory every 10 episodes
+            counter += 1
+            if counter % 10 == 0:
+                gc.collect()
+                jax.clear_caches()
+                print(f"Processed {counter} episodes, cleared memory")'''
+            
+            # Process entire batch at once
+            obs = {
+                'image_observation': batch['image_observation'],  # Full batch
+                'text_observation': batch['text_observation']     # Full batch
+            }
+            
+            # Transform observation
+            transformed_dict = self.prepare_observation(obs, max_token_length=config.max_token_len)
+            observation = Observation.from_dict(transformed_dict)
+            
+            # Sample actions for entire episode
+            actions = model.sample_actions(key, observation, num_steps=10)
+            unnormalized_actions = self.process_output(actions, dataset_stats)
+            counter += 1
+            print(f"Batch {counter} actions:", unnormalized_actions)
+            
+            # Memory management
+            del transformed_dict, observation, actions, unnormalized_actions
+            
+            # Clear memory every 10 episodes
+            #counter += 1
+            #if counter % 10 == 0:
+            gc.collect()
+            jax.clear_caches()
+            print(f"Processed {counter} episodes, cleared memory")
+        
+        
+def parse_args() -> argparse.Namespace:
+    """Parse and validate command line arguments.
+    
+    Returns:
+        argparse.Namespace: Parsed arguments with output_dir and dataset_dir
+    """
+    parser = argparse.ArgumentParser(
+        description="Run inference on ProcGen datasets"
+    )
+    
+    parser.add_argument(
+        '--output_dir', 
+        type=str, 
+        required=True,
+        help='Directory to store results and dataset statistics'
+    )
+    parser.add_argument(
+        '--dataset_dir',
+        type=str,
+        required=True,
+        help='Root directory containing the procgen datasets'
+    )
+    
+    args = parser.parse_args()
+    
+    # Validate paths exist
+    if not os.path.exists(args.dataset_dir):
+        raise FileNotFoundError(f"Dataset directory not found: {args.dataset_dir}")
+        
+    return args
+
 def main():
-    # Initialize model
+    # Parse arguments
+    args = parse_args()
+    
+    # Create output directory if it doesn't exist
+    os.makedirs(args.output_dir, exist_ok=True)
+    print(f'\nResults will be stored in: {args.output_dir}')
+    print(f'\nReading datasets from: {args.dataset_dir}')
+    
+    # Initialize model and inference object
     config = pi0.Pi0Config(action_horizon=1) #We want to predict only for the next timestep
     tokenizer = PaligemmaTokenizer()
     key = jax.random.key(0)
@@ -156,73 +256,32 @@ def main():
    
 
     # Get dataset shards
-    tfds_shards = os.listdir('../../../../../../bigfish') # Update path as needed
-    tfds_sorted_shards = sorted(tfds_shards, key=lambda x: datetime.datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"))
-    # Add path to shards
-    tfds_sorted_shard_paths = [os.path.join('../../../../../../bigfish', shard) for shard in tfds_sorted_shards]
+    procgen_dataset_list = os.listdir(args.dataset_dir) # Update path as needed
+    for dataset in procgen_dataset_list:
+        print(f'\n ---- EVALUATING {dataset} ---- \n')
+        tfds_shards = os.listdir(f'{args.dataset_dir}/{dataset}') # Update path as needed
+        tfds_sorted_shards = sorted(tfds_shards, key=lambda x: datetime.datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"))
+        # Add path to shards
+        tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}', shard) for shard in tfds_sorted_shards]
 
 
-    # Get dataset stats
-    dataset_stats = procgen_inference.get_dataset_stats(tfds_sorted_shard_paths)
-    print('Dataset stats calculated: ', dataset_stats)
+        # Get dataset stats
+        dataset_stats = procgen_inference.get_dataset_stats(tfds_sorted_shard_paths)
+        print('Dataset stats calculated: ', dataset_stats)
 
-    # Create dataloader
-    dataset, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=5)
+        # Save dataset stats to JSON file
+        stats_output_path = os.path.join(args.output_dir, f'{dataset}_dataset_stats.json')
+        print(f'Saving dataset stats to {stats_output_path}')
+        with open(stats_output_path, 'w') as f:
+            json.dump(dataset_stats, f, indent=4)
+        
+
+        # Create dataloader
+        dataset, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=5)
+
+        procgen_inference.evaluate_model(model, key, config, dataset_stats, dataloader)
     
-    counter = 0
-    for batch in dataloader:
-        '''# Process each timestep in episode
-        for timestep_idx in range(len(batch['image_observation'])):
-            obs = {
-                'image_observation': batch['image_observation'][0][timestep_idx],
-                'text_observation': batch['text_observation'][0][timestep_idx]
-            }
-            
-            # Transform observation
-            transformed_dict = procgen_inference.prepare_observation(obs, max_token_length=config.max_token_len)
-            observation = Observation.from_dict(transformed_dict) # Process according to model input format
-            
-            # Sample actions
-            actions = model.sample_actions(key, observation, num_steps=10)
-            procgen_action = actions[0] #Procgen has an action space of 1 dimension and discrete 
-            print(f"Timestep {timestep_idx} actions:", procgen_action)
-
-
-            
-            # Memory management
-            del transformed_dict, observation, actions
-
-        # Clear memory every 10 episodes
-        counter += 1
-        if counter % 10 == 0:
-            gc.collect()
-            jax.clear_caches()
-            print(f"Processed {counter} episodes, cleared memory")'''
-        
-        # Process entire batch at once
-        obs = {
-            'image_observation': batch['image_observation'],  # Full batch
-            'text_observation': batch['text_observation']     # Full batch
-        }
-        
-        # Transform observation
-        transformed_dict = procgen_inference.prepare_observation(obs, max_token_length=config.max_token_len)
-        observation = Observation.from_dict(transformed_dict)
-        
-        # Sample actions for entire episode
-        actions = model.sample_actions(key, observation, num_steps=10)
-        unnormalized_actions = procgen_inference.process_output(actions, dataset_stats)
-        print(f"Batch {counter} actions:", unnormalized_actions)
-        
-        # Memory management
-        del transformed_dict, observation, actions, unnormalized_actions
-        
-        # Clear memory every 10 episodes
-        #counter += 1
-        #if counter % 10 == 0:
-        gc.collect()
-        jax.clear_caches()
-        print(f"Processed {counter} episodes, cleared memory")
+    
 
 if __name__ == "__main__":
     main()
