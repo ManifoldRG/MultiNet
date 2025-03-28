@@ -21,16 +21,25 @@ class DatasetModule(ABC):
 
         self.disk_root_dir = disk_root_dir
         self.batch_size = batch_size
-        self.modality_module = None
+        if modality not in ['vlm']:
+            raise ValueError(f"Modality {modality} is not supported. Supported modalities are: ['vlm']")
+        self.modality = modality
+        
+        self.source = source
+        self._modality_module = None
         self.model = model
-        if modality == 'vlm':
-            self.modality_module = VLMModule(source, model, max_concurrent_prompts=self.batch_size)
-        assert self.modality_module is not None, "The modality module has not been set correcly. Check required."
 
         self.k_shots = k_shots
         self.action_stats = None
         self._datasets = []
-        
+    
+    @property
+    def modality_module(self):
+        if self.modality == 'vlm' and self._modality_module is None:
+            self._modality_module = VLMModule(self.source, self.model, max_concurrent_prompts=self.batch_size)
+            
+        return self._modality_module
+    
     @property
     def datasets(self):
         if len(self._datasets) == 0:
@@ -289,7 +298,7 @@ class BatchInfo:
  
 
 class DatasetBatchModule(DatasetModule, ABC):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0):
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0, no_inference: bool = False) -> None:
         super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
         self.batch_size = batch_size
         self._batch_list = None
@@ -387,7 +396,7 @@ class DatasetBatchModule(DatasetModule, ABC):
         for dataset, batches in batch_info_dict.items():
             if dataset in total_results:
                 warnings.warn(f'Skipping dataset: {dataset} (already evaluated)!' 
-                                f'Delete the results from the results json for any dataset that should be overwritten.')
+                              f'Delete the results from the results json for any dataset that should be overwritten.')
                 continue
                 
             result = self._run_eval_dataset(batches)
