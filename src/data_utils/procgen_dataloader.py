@@ -20,7 +20,7 @@ class ProcGenDataset(Dataset):
         self.samples_per_shard = []
         for shard in self.tfds_shards:
             dataset = tf.data.Dataset.load(shard)
-            self.samples_per_shard.append(len(dataset))
+            self.samples_per_shard.append(len(dataset) - 1) # Ignore the last observation which is the terminal state
         
     def _process_shard(self, shard_idx):
         current_shard = []
