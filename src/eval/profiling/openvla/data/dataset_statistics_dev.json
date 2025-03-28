@@ -4749,16 +4749,16 @@
         "num_transitions": 7148,
         "num_trajectories": 170
     },
-    "bigfish": {
+    "starpilot": {
         "action": {
             "mean": [
-                6.789732537081107
+                4.59349593495935
             ],
             "std": [
-                4.256311374699775
+                2.7105256993905527
             ],
             "max": [
-                14
+                10
             ],
             "min": [
                 0
@@ -4767,7 +4767,7 @@
                 0.0
             ],
             "q99": [
-                14.0
+                10.0
             ],
             "mask": [
                 true
@@ -4796,20 +4796,20 @@
                 0.0
             ]
         },
-        "num_transitions": 1002195,
-        "num_trajectories": 2048,
+        "num_transitions": 123,
+        "num_trajectories": 1,
         "action_decoding_strategy": "naive_dim_extension"
     },
     "coinrun": {
         "action": {
             "mean": [
-                6.926829268292683
+                5.0
             ],
             "std": [
-                3.3304965124784576
+                2.036256728267493
             ],
             "max": [
-                14
+                8
             ],
             "min": [
                 0
@@ -4818,7 +4818,7 @@
                 0.0
             ],
             "q99": [
-                14.0
+                8.0
             ],
             "mask": [
                 true
@@ -4851,118 +4851,16 @@
         "num_trajectories": 1,
         "action_decoding_strategy": "naive_dim_extension"
     },
-    "heist": {
-        "action": {
-            "mean": [
-                6.876123876123876
-            ],
-            "std": [
-                4.17602683905155
-            ],
-            "max": [
-                14
-            ],
-            "min": [
-                0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                14.0
-            ],
-            "mask": [
-                true
-            ],
-            "discrete": [
-                true
-            ]
-        },
-        "proprio": {
-            "mean": [
-                0.0
-            ],
-            "std": [
-                0.0
-            ],
-            "max": [
-                0.0
-            ],
-            "min": [
-                0.0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                0.0
-            ]
-        },
-        "num_transitions": 1001,
-        "num_trajectories": 1,
-        "action_decoding_strategy": "naive_dim_extension"
-    },
-    "chaser": {
-        "action": {
-            "mean": [
-                6.653333333333333
-            ],
-            "std": [
-                4.327411338073709
-            ],
-            "max": [
-                14
-            ],
-            "min": [
-                0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                14.0
-            ],
-            "mask": [
-                true
-            ],
-            "discrete": [
-                true
-            ]
-        },
-        "proprio": {
-            "mean": [
-                0.0
-            ],
-            "std": [
-                0.0
-            ],
-            "max": [
-                0.0
-            ],
-            "min": [
-                0.0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                0.0
-            ]
-        },
-        "num_transitions": 300,
-        "num_trajectories": 1,
-        "action_decoding_strategy": "naive_dim_extension"
-    },
     "caveflyer": {
         "action": {
             "mean": [
-                7.142857142857143
+                5.25
             ],
             "std": [
-                3.2095202769515674
+                2.21399767711841
             ],
             "max": [
-                13
+                9
             ],
             "min": [
                 0
@@ -4971,7 +4869,7 @@
                 0.0
             ],
             "q99": [
-                13.0
+                8.450000000000003
             ],
             "mask": [
                 true
@@ -5004,16 +4902,16 @@
         "num_trajectories": 1,
         "action_decoding_strategy": "naive_dim_extension"
     },
-    "climber": {
+    "leaper": {
         "action": {
             "mean": [
-                8.066666666666666
+                3.9181636726546905
             ],
             "std": [
-                4.231626952682227
+                1.9338587853187665
             ],
             "max": [
-                14
+                8
             ],
             "min": [
                 0
@@ -5022,109 +4920,7 @@
                 0.0
             ],
             "q99": [
-                14.0
-            ],
-            "mask": [
-                true
-            ],
-            "discrete": [
-                true
-            ]
-        },
-        "proprio": {
-            "mean": [
-                0.0
-            ],
-            "std": [
-                0.0
-            ],
-            "max": [
-                0.0
-            ],
-            "min": [
-                0.0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                0.0
-            ]
-        },
-        "num_transitions": 90,
-        "num_trajectories": 1,
-        "action_decoding_strategy": "naive_dim_extension"
-    },
-    "dodgeball": {
-        "action": {
-            "mean": [
-                7.331360946745562
-            ],
-            "std": [
-                3.996628599164335
-            ],
-            "max": [
-                14
-            ],
-            "min": [
-                0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                14.0
-            ],
-            "mask": [
-                true
-            ],
-            "discrete": [
-                true
-            ]
-        },
-        "proprio": {
-            "mean": [
-                0.0
-            ],
-            "std": [
-                0.0
-            ],
-            "max": [
-                0.0
-            ],
-            "min": [
-                0.0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                0.0
-            ]
-        },
-        "num_transitions": 169,
-        "num_trajectories": 1,
-        "action_decoding_strategy": "naive_dim_extension"
-    },
-    "maze": {
-        "action": {
-            "mean": [
-                7.341317365269461
-            ],
-            "std": [
-                4.306295519223
-            ],
-            "max": [
-                14
-            ],
-            "min": [
-                0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                14.0
+                8.0
             ],
             "mask": [
                 true
@@ -5157,16 +4953,16 @@
         "num_trajectories": 1,
         "action_decoding_strategy": "naive_dim_extension"
     },
-    "fruitbot": {
+    "bossfight": {
         "action": {
             "mean": [
-                7.391923990498812
+                3.625
             ],
             "std": [
-                4.441312355954451
+                2.368411915187052
             ],
             "max": [
-                14
+                8
             ],
             "min": [
                 0
@@ -5175,7 +4971,7 @@
                 0.0
             ],
             "q99": [
-                14.0
+                7.85
             ],
             "mask": [
                 true
@@ -5204,7 +5000,160 @@
                 0.0
             ]
         },
-        "num_transitions": 421,
+        "num_transitions": 16,
+        "num_trajectories": 1,
+        "action_decoding_strategy": "naive_dim_extension"
+    },
+    "jumper": {
+        "action": {
+            "mean": [
+                5.533333333333333
+            ],
+            "std": [
+                2.276449477195183
+            ],
+            "max": [
+                8
+            ],
+            "min": [
+                0
+            ],
+            "q01": [
+                0.58
+            ],
+            "q99": [
+                8.0
+            ],
+            "mask": [
+                true
+            ],
+            "discrete": [
+                true
+            ]
+        },
+        "proprio": {
+            "mean": [
+                0.0
+            ],
+            "std": [
+                0.0
+            ],
+            "max": [
+                0.0
+            ],
+            "min": [
+                0.0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                0.0
+            ]
+        },
+        "num_transitions": 30,
+        "num_trajectories": 1,
+        "action_decoding_strategy": "naive_dim_extension"
+    },
+    "chaser": {
+        "action": {
+            "mean": [
+                4.1433333333333335
+            ],
+            "std": [
+                2.3754555118732257
+            ],
+            "max": [
+                8
+            ],
+            "min": [
+                0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                8.0
+            ],
+            "mask": [
+                true
+            ],
+            "discrete": [
+                true
+            ]
+        },
+        "proprio": {
+            "mean": [
+                0.0
+            ],
+            "std": [
+                0.0
+            ],
+            "max": [
+                0.0
+            ],
+            "min": [
+                0.0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                0.0
+            ]
+        },
+        "num_transitions": 300,
+        "num_trajectories": 1,
+        "action_decoding_strategy": "naive_dim_extension"
+    },
+    "climber": {
+        "action": {
+            "mean": [
+                4.377777777777778
+            ],
+            "std": [
+                1.8533919521771594
+            ],
+            "max": [
+                8
+            ],
+            "min": [
+                0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                8.0
+            ],
+            "mask": [
+                true
+            ],
+            "discrete": [
+                true
+            ]
+        },
+        "proprio": {
+            "mean": [
+                0.0
+            ],
+            "std": [
+                0.0
+            ],
+            "max": [
+                0.0
+            ],
+            "min": [
+                0.0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                0.0
+            ]
+        },
+        "num_transitions": 90,
         "num_trajectories": 1,
         "action_decoding_strategy": "naive_dim_extension"
     },
@@ -5307,19 +5256,19 @@
                 1.0
             ],
             "mask": [
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
                 false
             ],
             "discrete": [
@@ -5439,168 +5388,15 @@
         },
         "num_transitions": 514,
         "num_trajectories": 22,
-        "action_decoding_strategy": "simple_mapping"
-    },
-    "bossfight": {
-        "action": {
-            "mean": [
-                6.0625
-            ],
-            "std": [
-                4.616123238172915
-            ],
-            "max": [
-                14
-            ],
-            "min": [
-                0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                13.85
-            ],
-            "mask": [
-                true
-            ],
-            "discrete": [
-                true
-            ]
-        },
-        "proprio": {
-            "mean": [
-                0.0
-            ],
-            "std": [
-                0.0
-            ],
-            "max": [
-                0.0
-            ],
-            "min": [
-                0.0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                0.0
-            ]
-        },
-        "num_transitions": 16,
-        "num_trajectories": 1,
         "action_decoding_strategy": "naive_dim_extension"
     },
-    "leaper": {
+    "ninja": {
         "action": {
             "mean": [
-                6.92814371257485
+                5.782051282051282
             ],
             "std": [
-                4.33603781112508
-            ],
-            "max": [
-                14
-            ],
-            "min": [
-                0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                14.0
-            ],
-            "mask": [
-                true
-            ],
-            "discrete": [
-                true
-            ]
-        },
-        "proprio": {
-            "mean": [
-                0.0
-            ],
-            "std": [
-                0.0
-            ],
-            "max": [
-                0.0
-            ],
-            "min": [
-                0.0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                0.0
-            ]
-        },
-        "num_transitions": 501,
-        "num_trajectories": 1,
-        "action_decoding_strategy": "naive_dim_extension"
-    },
-    "jumper": {
-        "action": {
-            "mean": [
-                5.833333333333333
-            ],
-            "std": [
-                2.6214923654709015
-            ],
-            "max": [
-                13
-            ],
-            "min": [
-                0
-            ],
-            "q01": [
-                0.58
-            ],
-            "q99": [
-                11.550000000000004
-            ],
-            "mask": [
-                true
-            ],
-            "discrete": [
-                true
-            ]
-        },
-        "proprio": {
-            "mean": [
-                0.0
-            ],
-            "std": [
-                0.0
-            ],
-            "max": [
-                0.0
-            ],
-            "min": [
-                0.0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                0.0
-            ]
-        },
-        "num_transitions": 30,
-        "num_trajectories": 1,
-        "action_decoding_strategy": "naive_dim_extension"
-    },
-    "miner": {
-        "action": {
-            "mean": [
-                4.113636363636363
-            ],
-            "std": [
-                2.7404039938641853
+                2.8628810837920344
             ],
             "max": [
                 12
@@ -5612,58 +5408,7 @@
                 0.0
             ],
             "q99": [
-                10.71
-            ],
-            "mask": [
-                true
-            ],
-            "discrete": [
-                true
-            ]
-        },
-        "proprio": {
-            "mean": [
-                0.0
-            ],
-            "std": [
-                0.0
-            ],
-            "max": [
-                0.0
-            ],
-            "min": [
-                0.0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                0.0
-            ]
-        },
-        "num_transitions": 44,
-        "num_trajectories": 1,
-        "action_decoding_strategy": "naive_dim_extension"
-    },
-    "ninja": {
-        "action": {
-            "mean": [
-                6.756410256410256
-            ],
-            "std": [
-                3.6133154653589963
-            ],
-            "max": [
-                14
-            ],
-            "min": [
-                0
-            ],
-            "q01": [
-                0.0
-            ],
-            "q99": [
-                14.0
+                12.0
             ],
             "mask": [
                 true
@@ -5696,16 +5441,16 @@
         "num_trajectories": 1,
         "action_decoding_strategy": "naive_dim_extension"
     },
-    "starpilot": {
+    "fruitbot": {
         "action": {
             "mean": [
-                7.691056910569106
+                4.34916864608076
             ],
             "std": [
-                4.551654896581483
+                2.3432686273493153
             ],
             "max": [
-                14
+                9
             ],
             "min": [
                 0
@@ -5714,7 +5459,7 @@
                 0.0
             ],
             "q99": [
-                14.0
+                9.0
             ],
             "mask": [
                 true
@@ -5743,20 +5488,20 @@
                 0.0
             ]
         },
-        "num_transitions": 123,
+        "num_transitions": 421,
         "num_trajectories": 1,
         "action_decoding_strategy": "naive_dim_extension"
     },
-    "plunder": {
+    "maze": {
         "action": {
             "mean": [
-                6.502551020408164
+                3.9540918163672654
             ],
             "std": [
-                4.5445632041797674
+                1.8912257279459808
             ],
             "max": [
-                14
+                8
             ],
             "min": [
                 0
@@ -5765,7 +5510,7 @@
                 0.0
             ],
             "q99": [
-                14.0
+                8.0
             ],
             "mask": [
                 true
@@ -5794,8 +5539,212 @@
                 0.0
             ]
         },
-        "num_transitions": 392,
+        "num_transitions": 501,
         "num_trajectories": 1,
+        "action_decoding_strategy": "naive_dim_extension"
+    },
+    "heist": {
+        "action": {
+            "mean": [
+                4.263736263736264
+            ],
+            "std": [
+                2.1071150164812895
+            ],
+            "max": [
+                8
+            ],
+            "min": [
+                0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                8.0
+            ],
+            "mask": [
+                true
+            ],
+            "discrete": [
+                true
+            ]
+        },
+        "proprio": {
+            "mean": [
+                0.0
+            ],
+            "std": [
+                0.0
+            ],
+            "max": [
+                0.0
+            ],
+            "min": [
+                0.0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                0.0
+            ]
+        },
+        "num_transitions": 1001,
+        "num_trajectories": 1,
+        "action_decoding_strategy": "naive_dim_extension"
+    },
+    "dodgeball": {
+        "action": {
+            "mean": [
+                5.017751479289941
+            ],
+            "std": [
+                2.659077058331101
+            ],
+            "max": [
+                9
+            ],
+            "min": [
+                0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                9.0
+            ],
+            "mask": [
+                true
+            ],
+            "discrete": [
+                true
+            ]
+        },
+        "proprio": {
+            "mean": [
+                0.0
+            ],
+            "std": [
+                0.0
+            ],
+            "max": [
+                0.0
+            ],
+            "min": [
+                0.0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                0.0
+            ]
+        },
+        "num_transitions": 169,
+        "num_trajectories": 1,
+        "action_decoding_strategy": "naive_dim_extension"
+    },
+    "miner": {
+        "action": {
+            "mean": [
+                3.590909090909091
+            ],
+            "std": [
+                2.0484826071352273
+            ],
+            "max": [
+                8
+            ],
+            "min": [
+                0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                8.0
+            ],
+            "mask": [
+                true
+            ],
+            "discrete": [
+                true
+            ]
+        },
+        "proprio": {
+            "mean": [
+                0.0
+            ],
+            "std": [
+                0.0
+            ],
+            "max": [
+                0.0
+            ],
+            "min": [
+                0.0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                0.0
+            ]
+        },
+        "num_transitions": 44,
+        "num_trajectories": 1,
+        "action_decoding_strategy": "naive_dim_extension"
+    },
+    "bigfish": {
+        "action": {
+            "mean": [
+                3.9425860236780266
+            ],
+            "std": [
+                1.9588679958603912
+            ],
+            "max": [
+                8
+            ],
+            "min": [
+                0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                8.0
+            ],
+            "mask": [
+                true
+            ],
+            "discrete": [
+                true
+            ]
+        },
+        "proprio": {
+            "mean": [
+                0.0
+            ],
+            "std": [
+                0.0
+            ],
+            "max": [
+                0.0
+            ],
+            "min": [
+                0.0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                0.0
+            ]
+        },
+        "num_transitions": 1002195,
+        "num_trajectories": 2048,
         "action_decoding_strategy": "naive_dim_extension"
     }
 }

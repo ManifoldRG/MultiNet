@@ -19,8 +19,7 @@ from src.eval.profiling.openvla.experiments.robot.eval_utils import (
     calculate_mse,
     calculate_success_rate,
     normalize_mse_values,
-    standardize_predicted_action,
-    load_preprocessed_expert_action
+    standardize_predicted_action
 )
 
 logger = logging.getLogger(__name__)

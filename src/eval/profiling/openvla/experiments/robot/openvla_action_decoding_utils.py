@@ -275,11 +275,10 @@ class ManualRuleMapping:
         
         return [action_index]
 
-    # For small scale experiments with Procgen using manual rule mapping action decoding strategy
     @staticmethod
-    def filter_bigfish_expert_special_actions(action: np.ndarray, dataset_name: str) -> np.ndarray:
+    def set_procgen_unused_special_action_to_stand_still(action: np.ndarray, dataset_name: str) -> np.ndarray:
         """
-        Clip an action array to a default value if it is outside the specified range.
+        Set unused action in procgen to stand still action index 4
 
         Args:
             action (np.ndarray): The action array to clip.
@@ -288,12 +287,22 @@ class ManualRuleMapping:
         Returns:
             np.ndarray: The clipped action array.
         """
-        if dataset_name == "bigfish":
-            if action[0] >= 9:
-                return [4]  # default bigfish special action index to stand still based on procgen codebase
-            return action
+        # only use special actions that are used in the specific procgen environment
+        special_action_space = ProcGenDefinitions.ACTION_SPACES[dataset_name]['default'][1][1].keys() \
+                                if dataset_name in ProcGenDefinitions.ACTION_SPACES.keys() \
+                                else {}
+        move_action_space = ProcGenDefinitions.movement_actions.keys()
+        valid_action_space = list(special_action_space) + list(move_action_space)
+
+        if action.size == 1:
+            action_value = int(action)
         else:
-            return action
+            raise ValueError(f"Action size is not 1 for procgen dataset {dataset_name}")
+
+        if action_value not in valid_action_space:
+            return np.array([4]) # action index for stand still based on procgen codebase
+        else:
+            return np.array(action)
 
 
 # === utils for expert actions ===

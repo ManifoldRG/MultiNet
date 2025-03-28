@@ -18,6 +18,8 @@ sys.path.append(str(project_root))
 
 from definitions.openx import OpenXDefinitions
 from definitions.procgen import ProcGenDefinitions
+from src.eval.profiling.openvla.experiments.robot.openvla_action_decoding_utils import ManualRuleMapping
+
 
 DATASET_CONFIG_NAME = 'dataset_statistics_config.yaml'
 
@@ -31,9 +33,10 @@ else:
 
 logging.basicConfig(
     format='%(asctime)s [%(levelname)-4s] | %(filename)s:%(lineno)d | %(message)s',
-    level=logging.DEBUG if ENVIRONMENT == 'dev' else logging.INFO
 )
 logger = logging.getLogger(__name__)
+if ENVIRONMENT == 'dev':
+    logger.setLevel(logging.DEBUG)
 
 
 class DatasetActionStatisticsCalculator:
@@ -111,7 +114,9 @@ class DatasetActionStatisticsCalculator:
                         logger.debug(f"float_action_tensors: {float_action_tensors}")
 
                 elif self.dataset_name in ProcGenDefinitions.DESCRIPTIONS.keys():
-                    float_action_tensors.append(np.array(elem['actions'][0]))
+                    float_action_tensor = ManualRuleMapping.set_procgen_unused_special_action_to_stand_still(
+                        np.array(elem['actions'][0]), self.dataset_name)
+                    float_action_tensors.append(float_action_tensor)
 
                 if float_action_tensors:
                     float_action_tensors = [np.atleast_1d(tensor) for tensor in float_action_tensors]
@@ -302,15 +307,15 @@ if __name__ == "__main__":
         if dataset not in os.listdir(dataset_folder_paths[0]):
             logger.warning(f"{dataset} not found in '{dataset_folder_paths[0]}'")
             continue
-
+        
         try:
             tfds_shards = collect_shards(dataset, dataset_folder_paths)
 
             if not tfds_shards:
                 logger.warning(f"{dataset} has no shards.")
                 continue
-            logger.debug(f"Processing dataset {dataset} with {len(tfds_shards)} shards.")
 
+            logger.info(f"Calculating dataset statistics for {dataset} with {len(tfds_shards)} shards.")
             stats_calculator = DatasetActionStatisticsCalculator(tfds_shards, dataset)
             stats_calculator.process_shards()
 
@@ -324,7 +329,7 @@ if __name__ == "__main__":
             save_dataset_statistics(dataset_statistics, DATASET_STATISTICS_FILE)
 
         except Exception as e:
-            logger.error(f"Error processing dataset {dataset}: {str(e)}")
+            logger.exception(f"Error processing dataset {dataset}: {str(e)}")
             raise
 
     logger.info(

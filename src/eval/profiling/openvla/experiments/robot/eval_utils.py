@@ -3,6 +3,7 @@ import logging
 from src.eval.profiling.openvla.experiments.robot.openvla_action_decoding_utils import (
     SimpleMapping, ManualRuleMapping, ExpertActionUtils
 )
+from definitions.procgen import ProcGenDefinitions
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -46,13 +47,14 @@ def normalize_mse_values(mse_values):
     return (normalized_mse - min_mse) / (max_mse - min_mse) if max_mse != min_mse else np.zeros_like(normalized_mse)
 
 
-def load_preprocessed_expert_action(batch, dataset_name, batch_idx, idx, action_decoding_strategy):
+def load_preprocessed_expert_action(batch, dataset_name, batch_idx, idx):
     """Process batch actions with error handling"""
     try:
         action_data = batch['action'][batch_idx][idx]
 
-        if action_decoding_strategy == 'manual_rule_mapping':
-            action_data = ManualRuleMapping.filter_bigfish_expert_special_actions(action_data, dataset_name)
+        if dataset_name in ProcGenDefinitions.DESCRIPTIONS.keys():
+            action_data = ManualRuleMapping.set_procgen_unused_special_action_to_stand_still(action_data, dataset_name)
+
         return ExpertActionUtils.drop_is_terminal_dim(action_data, dataset_name)
     except (IndexError, KeyError) as e:
         raise ValueError(f"Error processing actions for batch {batch_idx} and index {idx}: {e}")

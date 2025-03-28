@@ -66,8 +66,7 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
             batch, 
             self.dataset_name, 
             0,  # batch_idx is 0 for OpenX dataset
-            timestep_idx, 
-            self.action_decoding_strategy
+            timestep_idx
         )
 
     def is_last_timestep(self, batch: dict[str, any], timestep_idx: int) -> bool:
