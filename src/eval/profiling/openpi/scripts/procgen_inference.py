@@ -4,21 +4,21 @@ import json
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../../')))
-from openpi.models import pi0
-from openpi.models import model as _model
-from openpi.models.model import Observation
-from openpi.models.tokenizer import PaligemmaTokenizer
-from openpi.transforms import pad_to_dim
+from src.eval.profiling.openpi.src.openpi.models import pi0
+from src.eval.profiling.openpi.src.openpi.models import model as _model
+from src.eval.profiling.openpi.src.openpi.models.model import Observation
+from src.eval.profiling.openpi.src.openpi.models.tokenizer import PaligemmaTokenizer
+from src.eval.profiling.openpi.src.openpi.transforms import pad_to_dim
 from src.data_utils.procgen_dataloader import get_procgen_dataloader
 from definitions.procgen import ProcGenDefinitions
-from openpi.shared import download
+from src.eval.profiling.openpi.src.openpi.shared import download
 import jax
 import numpy as np
 import tensorflow as tf
 import gc
-from openpi.shared import normalize
-from openpi.transforms import Unnormalize
-from openpi.shared.normalize import RunningStats
+from src.eval.profiling.openpi.src.openpi.shared import normalize
+from src.eval.profiling.openpi.src.openpi.transforms import Unnormalize
+from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
 # Configure JAX memory settings
 os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.8'
@@ -101,7 +101,7 @@ class ProcGenInference:
             dataset = tf.data.Dataset.load(shard)
             actions = []
             for elem in dataset:
-                actions.append(elem['actions'][0].numpy()) # Procgen has 1D action space
+                actions.append(elem['actions'][0].numpy()) # Procgen has 1D action space so only first dimension is used
             
             # Update running statistics
             actions = np.array(actions)
@@ -115,7 +115,14 @@ class ProcGenInference:
     
         # Get final statistics
         stats = running_stats.get_statistics()
-        return {'action': stats}
+        # Convert NormStats to dictionary format
+        stats_dict = {
+            'mean': stats.mean.tolist(),
+            'std': stats.std.tolist(),
+            'q01': stats.q01.tolist(),
+            'q99': stats.q99.tolist()
+        }
+        return {'action': stats_dict}, {'action': stats}
 
     def process_output(self, actions, dataset_stats: dict):
         """
@@ -198,8 +205,10 @@ class ProcGenInference:
 
             #Compare to gt actions and calculate error value
             # Get ground truth actions from batch
-            gt_actions = batch['actions'].numpy()
+            gt_actions = np.array(batch['action'])
             
+            print('Ground truth actions: ', gt_actions)
+            print('Predicted actions: ', unnormalized_discrete_actions)
             # Calculate error metrics
 
             """CHANGE ME!: Placeholder for error metrics until the new Quantile-filtered MAE is implemented"""
@@ -245,7 +254,7 @@ class ProcGenInference:
             print(f"Dataset: {dataset}, Batch {counter} metrics - MAE: {mae:.4f}, MSE: {mse:.4f}, RMSE: {rmse:.4f}")
             
             # Memory management
-            del transformed_dict, observation, actions, unnormalized_actions
+            del transformed_dict, observation, actions, unnormalized_discrete_actions
             gc.collect()
             jax.clear_caches()
             print(f"Processed {counter} episodes, cleared memory")
@@ -310,16 +319,21 @@ def main():
         tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}', shard) for shard in tfds_sorted_shards]
 
 
-        # Get dataset stats
-        dataset_stats = procgen_inference.get_dataset_stats(tfds_sorted_shard_paths)
-        print('Dataset stats calculated: ', dataset_stats)
-
-        # Save dataset stats to JSON file
+        # Get dataset stats and save to JSON file
         stats_output_path = os.path.join(args.output_dir, f'{dataset}_dataset_stats.json')
-        print(f'Saving dataset stats to {stats_output_path}')
-        with open(stats_output_path, 'w') as f:
-            json.dump(dataset_stats, f, indent=4)
-        
+        if os.path.exists(stats_output_path):
+            print(f'Dataset stats already exist at {stats_output_path}')
+            with open(stats_output_path, 'r') as f:
+                dataset_stats_dict = json.load(f)
+            dataset_stats = {}
+            dataset_stats['action'] = normalize.NormStats(**dataset_stats_dict['action'])
+            
+        else:
+            dataset_stats_dict, dataset_stats = procgen_inference.get_dataset_stats(tfds_sorted_shard_paths)
+            print('Dataset stats calculated: ', dataset_stats_dict)
+            print(f'Saving dataset stats to {stats_output_path}')
+            with open(stats_output_path, 'w') as f:
+                json.dump(dataset_stats_dict, f, indent=4)
 
         # Create dataloader
         dataset_obj, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=5)
