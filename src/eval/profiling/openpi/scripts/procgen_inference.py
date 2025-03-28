@@ -147,9 +147,10 @@ class ProcGenInference:
         
         return unnormalized_actions
 
-    def evaluate_model(self, model, key, config, dataset_stats: dict, dataloader: tf.data.Dataset):
+    def evaluate_model(self, model, key, config, dataset_stats: dict, dataloader: tf.data.Dataset, dataset: str, output_dir: str):
         """Evaluate the model on the dataset"""
         counter = 0
+        results_file = os.path.join(output_dir, f'{dataset}_results.json')
         for batch in dataloader:
             '''# Process each timestep in episode
             for timestep_idx in range(len(batch['image_observation'])):
@@ -191,16 +192,60 @@ class ProcGenInference:
             
             # Sample actions for entire episode
             actions = model.sample_actions(key, observation, num_steps=10)
-            unnormalized_actions = self.process_output(actions, dataset_stats)
+            unnormalized_discrete_actions = self.process_output(actions, dataset_stats)
             counter += 1
-            print(f"Batch {counter} actions:", unnormalized_actions)
+            print(f"Batch {counter} actions:", unnormalized_discrete_actions)
+
+            #Compare to gt actions and calculate error value
+            # Get ground truth actions from batch
+            gt_actions = batch['actions'].numpy()
+            
+            # Calculate error metrics
+
+            """CHANGE ME!: Placeholder for error metrics until the new Quantile-filtered MAE is implemented"""
+            # Mean absolute error
+            mae = np.mean(np.abs(gt_actions - unnormalized_discrete_actions))
+            # Mean squared error 
+            mse = np.mean(np.square(gt_actions - unnormalized_discrete_actions))
+            # Root mean squared error
+            rmse = np.sqrt(mse)
+            
+            # Store results for this batch
+            batch_results = {
+                "dataset": dataset,
+                "batch_id": counter,
+                "metrics": {
+                    "mae": float(mae),
+                    "mse": float(mse), 
+                    "rmse": float(rmse)
+                },
+                "predictions": {
+                    "ground_truth": gt_actions.tolist(),
+                    "predicted": unnormalized_discrete_actions.tolist()
+                }
+            }
+            
+            # Load existing results if file exists, otherwise create new
+            if os.path.exists(results_file):
+                with open(results_file, 'r') as f:
+                    dataset_results = json.load(f)
+            else:
+                dataset_results = {
+                    "dataset": dataset,
+                    "batches": []
+                }
+            
+            # Add new batch results
+            dataset_results["batches"].append(batch_results)
+            
+            # Save updated results
+            with open(results_file, 'w') as f:
+                json.dump(dataset_results, f, indent=4)
+            
+            print(f"Dataset: {dataset}, Batch {counter} metrics - MAE: {mae:.4f}, MSE: {mse:.4f}, RMSE: {rmse:.4f}")
             
             # Memory management
             del transformed_dict, observation, actions, unnormalized_actions
-            
-            # Clear memory every 10 episodes
-            #counter += 1
-            #if counter % 10 == 0:
             gc.collect()
             jax.clear_caches()
             print(f"Processed {counter} episodes, cleared memory")
@@ -277,9 +322,9 @@ def main():
         
 
         # Create dataloader
-        dataset, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=5)
+        dataset_obj, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=5)
 
-        procgen_inference.evaluate_model(model, key, config, dataset_stats, dataloader)
+        procgen_inference.evaluate_model(model, key, config, dataset_stats, dataloader, dataset, args.output_dir)
     
     
 
