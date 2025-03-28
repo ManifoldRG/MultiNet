@@ -36,7 +36,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class OpenXDataset:
+class DatasetActionStatisticsCalculator:
     def __init__(self, tfds_shards: list[str], dataset_name: str):
         self.tfds_shards = tfds_shards
         self.action_tensor_size = None
@@ -265,17 +265,17 @@ def get_dataset_action_decoding_strategy(dataset: str) -> str:
         raise ValueError(f"Unknown dataset: {dataset}")
 
 
-def calculate_dataset_statistics(openxobj: OpenXDataset, dataset: str) -> dict:
+def calculate_dataset_statistics(stats_calculator: DatasetActionStatisticsCalculator, dataset: str) -> dict:
     try:
-        logger.debug(f"Processing {len(openxobj.action_tensors)} action tensors for {dataset}")
-        action_stats = openxobj._get_action_stats()
-        proprio_stats = openxobj._get_proprio_stats()
+        logger.debug(f"Processing {len(stats_calculator.action_tensors)} action tensors for {dataset}")
+        action_stats = stats_calculator._get_action_stats()
+        proprio_stats = stats_calculator._get_proprio_stats()
         
         return {
             'action': action_stats,
             'proprio': proprio_stats,
-            'num_transitions': openxobj.timestep_count,
-            'num_trajectories': openxobj.is_last_count,
+            'num_transitions': stats_calculator.timestep_count,
+            'num_trajectories': stats_calculator.is_last_count,
             'action_decoding_strategy': get_dataset_action_decoding_strategy(dataset)
         }
     except Exception as e:
@@ -311,12 +311,12 @@ if __name__ == "__main__":
                 continue
             logger.debug(f"Processing dataset {dataset} with {len(tfds_shards)} shards.")
 
-            openxobj = OpenXDataset(tfds_shards, dataset)
-            openxobj.process_shards()
+            stats_calculator = DatasetActionStatisticsCalculator(tfds_shards, dataset)
+            stats_calculator.process_shards()
 
             # If we have processed shards successfully
-            if len(openxobj.action_tensors) > 0:
-                dataset_statistics[dataset] = calculate_dataset_statistics(openxobj, dataset)
+            if len(stats_calculator.action_tensors) > 0:
+                dataset_statistics[dataset] = calculate_dataset_statistics(stats_calculator, dataset)
                 added_dataset_stats_counter += 1
             else:
                 logger.warning(f"No action tensors were gathered for dataset {dataset}")
