@@ -13,6 +13,7 @@ from glob import glob
 
 MAX_BRIER_MAE_ERROR = 2.0
 MAX_BRIER_MSE_ERROR = 2.0
+NOOP_ACTION = 4
 
 def _validate_text_output(output, num_actions) -> bool:
     if not isinstance(output, list) or not all([isinstance(d, dict) for d in output]):
@@ -149,7 +150,10 @@ class ProcGenModule(DatasetModule):
                     num_actions  = 0
                     for action_idx, (_, action_dict) in action_space.items():
                         num_actions += len(action_dict)
-                    labels = np.array([label[0] for label in labels])
+                        
+                    # Check if labels are within the action space, otherwise set to NoOp action
+                    labels = np.array([label[0] if label[0] < num_actions else NOOP_ACTION for label in labels])
+                    
                     one_hot_labels = self._get_one_hot(labels, num_actions)
                                        
                     if not isinstance(outputs, list):
@@ -223,11 +227,9 @@ class ProcGenBatchModule(DatasetBatchModule):
             num_actions  = 0
             for action_idx, (_, action_dict) in action_space.items():
                 num_actions += len(action_dict)
-            labels = np.array([label[0] for label in labels])
             
-            #FIXME: this is a hack until we figure out the action space 
-            labels = np.clip(labels, 0, num_actions-1)
-            #############################
+            # Check if labels are within the action space, otherwise set to NoOp action
+            labels = np.array([label[0] if label[0] < num_actions else NOOP_ACTION for label in labels])
             
             one_hot_labels = self._get_one_hot(labels, num_actions)
             
