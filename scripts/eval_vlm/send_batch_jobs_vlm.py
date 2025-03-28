@@ -1,18 +1,20 @@
-import os
-import sys
-import datetime
+import os, sys
+
+# Adding the root directory to the system path
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.append(ROOT_DIR)
 
 from src.modules.dataset_modules.procgen_module import ProcGenBatchModule
 from src.modules.dataset_modules.openx_module import OpenXBatchModule
 
+import datetime
 import argparse
 import json
 
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--disk_root_dir', type=str, required=True, help="The root directory of the translated data.")
-    parser.add_argument('--config_path', type=str, required=True, help="The directory of the configuration files.")
+    parser.add_argument('--data_root_dir', type=str, required=True, help="The root directory of the translated data.")
     parser.add_argument('--dataset_family', type=str, required=True, help="The name of the dataset to evaluate.")
     parser.add_argument('--model', type=str, required=True, help="The name of the model to evaluate.")
     parser.add_argument('--batch_size', type=int, default=1, help="The batch size used for evaluation.")
@@ -20,13 +22,18 @@ if __name__=="__main__":
 
     args = parser.parse_args()
 
+    
     # Argument validation.
     # TODO: Update config.json everytime a new dataset or model is added into the new version.
-    with open(args.config_path, 'r') as f:
+    config_path = os.path.join(ROOT_DIR, 'src', 'config.json')
+    assert os.path.exists(config_path), f"The config file does not exist: {config_path}"
+    
+    with open(config_path, 'r') as f:
         config = json.load(f)
-    assert args.dataset in config['datasets'].keys(), f"Specify the correct dataset name supported:\n{list(config['datasets'].keys())}"
+    
+    assert args.dataset_family in config['datasets'].keys(), f"Specify the correct dataset name supported:\n{list(config['datasets'].keys())}"
     assert args.model in config["models"].keys(), f"Specify the correct model index supported.\n{list(config['models'].keys())}"
-
+    
     # Setting the configurations of the current evaluation job.
     modality, source = config['models'][args.model]
 
@@ -34,15 +41,23 @@ if __name__=="__main__":
     if source == 'openai':
         os.environ["OPENAI_API_KEY"] = input("Enter the OpenAI API key: ")
 
-    # TODO: More branches will be added during the implementation.
+    data_root_dir = os.path.abspath(args.data_root_dir)
+    assert os.path.exists(data_root_dir), f"The data root directory does not exist: {data_root_dir}"
+    assert os.path.isdir(data_root_dir), f"The data root directory is not a directory: {data_root_dir}"
+    
     dataset_module = None
     if args.dataset_family == 'procgen':
-        dataset_module = ProcGenBatchModule(args.disk_root_dir, modality, source, args.model, args.batch_size, args.k_shots)
+        dataset_module = ProcGenBatchModule(data_root_dir, modality, source, args.model, args.batch_size, args.k_shots)
     elif args.dataset_family == 'openx':
-        dataset_module = OpenXBatchModule(args.disk_root_dir, modality, source, args.model, args.batch_size, args.k_shots)
+        dataset_module = OpenXBatchModule(data_root_dir, modality, source, args.model, args.batch_size, args.k_shots)
+    else:
+        print(f"The dataset family {args.dataset_family} is not supported.")
+        exit(1)
+        
+    assert dataset_module is not None, "The dataset module has not been set correctly. Check required."
     
     batch_list = dataset_module.send_batch_jobs_for_all_datasets()
     with open(f"{args.dataset_family}_batch_list_{datetime.datetime.now()}.json", 'w') as f:
         json.dump(batch_list, f)
 
-    assert dataset_module is not None, "The dataset module has not been set correctly. Check required."
+    
