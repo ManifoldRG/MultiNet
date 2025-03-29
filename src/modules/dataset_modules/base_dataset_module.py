@@ -10,7 +10,7 @@ import numpy as np
 import json
 import string
 import os
-
+import warnings
 
 class DatasetModule(ABC):
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0) -> None:
@@ -21,15 +21,25 @@ class DatasetModule(ABC):
 
         self.disk_root_dir = disk_root_dir
         self.batch_size = batch_size
-        self.modality_module = None
-        if modality == 'vlm':
-            self.modality_module = VLMModule(source, model, max_concurrent_prompts=self.batch_size)
-        assert self.modality_module is not None, "The modality module has not been set correcly. Check required."
+        if modality not in ['vlm']:
+            raise ValueError(f"Modality {modality} is not supported. Supported modalities are: ['vlm']")
+        self.modality = modality
+        
+        self.source = source
+        self._modality_module = None
+        self.model = model
 
         self.k_shots = k_shots
         self.action_stats = None
         self._datasets = []
-        
+    
+    @property
+    def modality_module(self):
+        if self.modality == 'vlm' and self._modality_module is None:
+            self._modality_module = VLMModule(self.source, self.model, max_concurrent_prompts=self.batch_size)
+            
+        return self._modality_module
+    
     @property
     def datasets(self):
         if len(self._datasets) == 0:
@@ -256,6 +266,7 @@ class DatasetModule(ABC):
 
 @dataclass
 class BatchInfo:
+    dataset_family: str
     dataset_name: str
     batch_num: int
     batch_id: str
@@ -265,9 +276,10 @@ class BatchInfo:
     labels: list
     num_inputs: int
     save_root: str
+    model: str
     
     def save_to_file(self) -> str:
-        save_dir = f"{self.save_root}/batch_info/{self.dataset_name}_size_{self.num_inputs}"
+        save_dir = f"{self.save_root}/batch_info/{self.dataset_family}/{self.dataset_name}_size_{self.num_inputs}"
         # Create folders if they dont exist        
         Path(save_dir).mkdir(parents=True, exist_ok=True)
         
@@ -277,16 +289,16 @@ class BatchInfo:
             run += 1
         Path(f'{save_dir}/run_{run}').mkdir()
                     
-        np.savez(f'{save_dir}/run_{run}/{file_name}', 
+        np.savez(f'{save_dir}/run_{run}/{file_name}', dataset_family=self.dataset_family,
                  dataset_name=self.dataset_name, batch_num=self.batch_num, batch_id=self.batch_id, 
                  output_types=self.output_types, token_count=self.token_count, is_lasts=self.is_lasts, 
-                 labels=self.labels, num_inputs=self.num_inputs)
+                 labels=self.labels, num_inputs=self.num_inputs, model=self.model)
                 
         return Path(f'{save_dir}/run_{run}/{file_name}').absolute()
  
 
 class DatasetBatchModule(DatasetModule, ABC):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0):
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0, no_inference: bool = False) -> None:
         super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
         self.batch_size = batch_size
         self._batch_list = None
@@ -296,18 +308,22 @@ class DatasetBatchModule(DatasetModule, ABC):
         if self._batch_list is None:
             self._batch_list = {ds : [] for ds in self.datasets}
         return self._batch_list
-        
+    
+    @abstractmethod
+    def _run_eval_dataset(self, dataset_batch_info_folder: str) -> dict:
+        pass
+    
     def _send_batch_job(self, batch, dataset_name, batch_num):
         cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts = self._process_batch(batch, dataset_name)
         num_inputs = len(cur_inputs)
         batch_id, token_count = self.modality_module.send_batch_job(cur_inputs, [], instructions)
         
         is_lasts = [int(is_last) for is_last in is_lasts]
-        labels = [label.numpy() for label in labels if not isinstance(label, np.ndarray)]
+        labels = [label.numpy() if not isinstance(label, np.ndarray) else label for label in labels]
 
-        batch_job = BatchInfo(dataset_name, batch_num, batch_id, output_types, token_count, is_lasts, labels, num_inputs, self.disk_root_dir)
+        batch_job = BatchInfo(self.dataset_family, dataset_name, batch_num, batch_id, output_types, token_count, is_lasts, labels, num_inputs, self.disk_root_dir, self.model)
         fp = batch_job.save_to_file()
-        self.batch_list[dataset_name].append(fp)
+        self.batch_list[dataset_name].append(str(fp))
         
     def _send_batch_jobs_for_dataset(self, dataset):
         tfds_shards = self._find_shards(dataset)
@@ -370,3 +386,22 @@ class DatasetBatchModule(DatasetModule, ABC):
         
         return cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts
     
+    # Pass dict output from send_batch_jobs_for_all_datasets() for batch_info_dict
+    def run_eval(self, results_path, batch_info_dict) -> None:        
+        total_results = {}
+        if os.path.exists(results_path):
+            with open(results_path, 'r') as f:
+                total_results = json.load(f)
+
+        for dataset, batches in batch_info_dict.items():
+            if dataset in total_results:
+                warnings.warn(f'Skipping dataset: {dataset} (already evaluated)!' 
+                              f'Delete the results from the results json for any dataset that should be overwritten.')
+                continue
+                
+            result = self._run_eval_dataset(batches)
+            total_results[dataset] = result
+
+            # Write the updated or new results to the file
+            with open(results_path, 'w') as f:
+                json.dump(total_results, f, indent=4, default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
