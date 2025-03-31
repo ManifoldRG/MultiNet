@@ -13,14 +13,7 @@ project_root = next(
 )
 sys.path.append(str(project_root))
 
-from src.eval.profiling.openvla.experiments.robot.robot_utils import get_action
-from src.eval.profiling.openvla.experiments.robot.eval_utils import (
-    get_action_decoding_strategy,
-    calculate_mae,
-    calculate_success_rate,
-    min_max_normalize,
-    standardize_predicted_action
-)
+from src.eval.profiling.openvla.experiments.robot.eval_utils import get_action_decoding_strategy
 
 logger = logging.getLogger(__name__)
 if os.environ.get('ENVIRONMENT', 'prod') == 'dev':
@@ -121,6 +114,7 @@ class OpenVLABaseEvaluator:
         """
         raise NotImplementedError("Subclasses must implement process_batch")
 
+    @abstractmethod
     def evaluate(self, tfds_shards: List[str]) -> Tuple[float, float, float, int, float]:
         """Evaluate the model on the dataset"""
         raise NotImplementedError("Subclasses must implement evaluate")
