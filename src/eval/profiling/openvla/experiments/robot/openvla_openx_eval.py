@@ -142,12 +142,11 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
 
         return timestep_maes, action_success
 
-<<<<<<< HEAD
     def is_last_timestep(self, batch: dict[str, any], timestep_idx: int) -> bool:
         """Check if the current timestep is the last one in the OpenX episode"""
         logger.debug(f"is_last: {batch['is_last'][0][timestep_idx]}")
         return batch['is_last'][0][timestep_idx] == True  # batch_idx is 0 for OpenX dataset
-    
+
     def evaluate(self, tfds_shards: list[str]) -> tuple[float, float, float, int, float]:
         """Evaluate the model on the dataset.
         
@@ -172,18 +171,6 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
             all_action_success.extend(batch_action_success)
             
             episode_idx += 1
-=======
-    logger.debug(f"Normalized MAEs length for the dataset: {len(normalized_maes)}")
-    logger.debug(f"Normalized Average MAE for the dataset: {average_normalized_mae:.4f}")
-
-    # Calculate quantile filtered MAE metrics
-    quantile_filtered_maes = quantile_filter(timestep_maes)
-    normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
-    average_normalized_quantile_filtered_mae = calculate_mean(normalized_quantile_filtered_maes)
-    
-    logger.debug(f"Quantile filtered MAEs length for the dataset: {len(quantile_filtered_maes)}")
-    logger.debug(f"Average quantile filtered NMAE for the dataset: {average_normalized_quantile_filtered_mae:.4f}")
->>>>>>> a85d619 (Fixes procgen eval errors regarding the new metrics)
 
             # Uncomment to limit evaluation to 5 episodes
             # if episode_idx == 2:
@@ -191,42 +178,43 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
 
         # Calculate quantile filtered MAE metrics
         quantile_filtered_maes = quantile_filter(all_timestep_maes)
+        total_quantile_filtered_mae = sum(quantile_filtered_maes)
         normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
         average_quantile_filtered_normalized_mae = calculate_mean(normalized_quantile_filtered_maes)
-
-        logger.debug(f"Quantile filtered MAEs length for the dataset: {len(quantile_filtered_maes)}")
-        logger.debug(f"Average quantile filtered NMAE for the dataset: {average_quantile_filtered_normalized_mae:.4f}")
 
         max_rel_mae = calculate_max_relative_mae(all_timestep_maes)
         prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(all_timestep_maes)
 
-        logger.debug(f"Maximum Relative MAE: {max_rel_mae:.4f}")
-        logger.debug(f"Proportion Beyond MAE Threshold (3x median): {prop_beyond_threshold_mae:.4f}")
-
-<<<<<<< HEAD
-        # Multinet v0.1 metrics
         action_success_rate = calculate_success_rate(all_action_success)
-        logger.debug(f"Action Success Rate Percentage for the dataset: {action_success_rate:.4f}")
-
-        total_dataset_amse = sum(all_timestep_maes)
-        logger.info(f"\nTotal MSE across {len(all_timestep_maes)} timesteps: {total_dataset_amse:.4f}")
         num_timesteps = len(all_timestep_maes)
-        avg_dataset_amse = total_dataset_amse / num_timesteps if num_timesteps > 0 else 0.0
 
-        normalized_mses = min_max_normalize(all_timestep_maes)
-        normalized_amse = calculate_mean(normalized_mses)
-        logger.debug(f"Normalized Average AMSE for dataset: {normalized_amse:.4f}")
+        total_dataset_amae = sum(all_timestep_maes)
+        avg_dataset_amae = calculate_mean(all_timestep_maes)
+
+        normalized_maes = min_max_normalize(all_timestep_maes)
+        average_normalized_mae = calculate_mean(normalized_maes)
+
+        logger.debug(f"num_timesteps: {num_timesteps}")
+        logger.debug(f"action_success_rate: {action_success_rate}")
+        logger.debug(f"total_dataset_amae: {total_dataset_amae}")
+        logger.debug(f"avg_dataset_amae: {avg_dataset_amae}")
+        logger.debug(f"average_normalized_mae: {average_normalized_mae}")
+        logger.debug(f"total_quantile_filtered_mae: {total_quantile_filtered_mae}")
+        logger.debug(f"average_quantile_filtered_normalized_mae: {average_quantile_filtered_normalized_mae}")
+        logger.debug(f"max_rel_mae: {max_rel_mae}")
+        logger.debug(f"prop_beyond_threshold_mae: {prop_beyond_threshold_mae}")
 
         return (
-            action_success_rate,
-            total_dataset_amse,
-            avg_dataset_amse,
             num_timesteps,
-            normalized_amse,
-            average_quantile_filtered_normalized_mae
+            action_success_rate,
+            total_dataset_amae,
+            avg_dataset_amae,
+            average_normalized_mae,
+            total_quantile_filtered_mae,
+            average_quantile_filtered_normalized_mae,
+            max_rel_mae,
+            prop_beyond_threshold_mae
         )
-
-        return action_success_rate, total_dataset_amse, avg_dataset_amse, num_timesteps, normalized_amse
 
 
 def evaluate_openvla_on_openx(cfg: any, model: any, processor: any, 
@@ -246,16 +234,3 @@ def evaluate_openvla_on_openx(cfg: any, model: any, processor: any,
     """
     evaluator = OpenXEvaluator(cfg, model, processor, dataset_name)
     return evaluator.evaluate(tfds_shards)
-=======
-    return (
-        action_success_rate, 
-        total_dataset_amse, 
-        avg_dataset_amse, 
-        num_timesteps, 
-        normalized_amse, 
-        average_normalized_mae, 
-        average_normalized_quantile_filtered_mae,
-        max_rel_mae,
-        prop_beyond_threshold_mae
-    )
->>>>>>> a85d619 (Fixes procgen eval errors regarding the new metrics)

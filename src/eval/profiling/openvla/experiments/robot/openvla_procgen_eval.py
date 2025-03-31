@@ -93,6 +93,8 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
         logger.debug(f"is_last: {batch['is_last'][0][timestep_idx]}")
         return batch['is_last'][0][timestep_idx] == True
 
+    def evaluate(self, tfds_shards: list[str]) -> tuple[float, float, float, int, float]:
+        raise NotImplementedError("Processing batch is not implemented for ProcGen dataset")
 
 def evaluate_openvla_on_procgen(cfg: any, model: any, processor: any, 
                                tfds_shards: list[str], dataset_name: str) -> tuple[float, float, float, int, float]:

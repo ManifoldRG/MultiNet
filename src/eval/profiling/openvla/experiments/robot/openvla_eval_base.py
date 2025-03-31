@@ -122,46 +122,5 @@ class OpenVLABaseEvaluator:
         raise NotImplementedError("Subclasses must implement process_batch")
 
     def evaluate(self, tfds_shards: List[str]) -> Tuple[float, float, float, int, float]:
-        """Evaluate the model on the dataset.
-        
-        Args:
-            tfds_shards: List of TensorFlow dataset shard paths
-            
-        Returns:
-            Tuple of (action_success_rate, total_dataset_amse, avg_dataset_amse,
-                     num_timesteps, normalized_amse)
-        """
-        dataloader = self.get_dataloader(tfds_shards)
-        
-        all_timestep_maes = []
-        all_action_success = []
-        
-        episode_idx = 0
-        
-        for batch in dataloader:
-            batch_timestep_maes, batch_action_success = self.process_batch(batch, episode_idx)
-            
-            all_timestep_maes.extend(batch_timestep_maes)
-            all_action_success.extend(batch_action_success)
-            
-            episode_idx += 1
-
-            # Uncomment to limit evaluation to 5 episodes
-            # if episode_idx == 2:
-            #     break
-        
-        # Calculate metrics
-        action_success_rate = calculate_success_rate(all_action_success)
-        logger.debug(f"Action Success Rate Percentage for the dataset: {action_success_rate:.4f}")
-        
-        total_dataset_amse = sum(all_timestep_maes)
-        logger.info(f"\nTotal MSE across {len(all_timestep_maes)} timesteps: {total_dataset_amse:.4f}")
-        
-        num_timesteps = len(all_timestep_maes)
-        avg_dataset_amse = total_dataset_amse / num_timesteps if num_timesteps > 0 else 0.0
-        
-        normalized_maes = min_max_normalize(all_timestep_maes)
-        normalized_amse = sum(normalized_maes) / len(normalized_maes) if len(normalized_maes) > 0 else 0.0
-        logger.debug(f"Normalized Average AMSE for dataset: {normalized_amse:.4f}")
-        
-        return action_success_rate, total_dataset_amse, avg_dataset_amse, num_timesteps, normalized_amse
+        """Evaluate the model on the dataset"""
+        raise NotImplementedError("Subclasses must implement evaluate")

@@ -116,4 +116,4 @@ def calculate_proportion_beyond_mae_threshold(mae_values: list[float], threshold
 
     median_value = np.median(mae_values)
     threshold = threshold_multiplier * median_value
-    return sum(1 for value in values if value > threshold) / len(values)
+    return sum(1 for value in mae_values if value > threshold) / len(mae_values)
