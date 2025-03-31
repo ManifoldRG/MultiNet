@@ -47,7 +47,7 @@ def get_vla(cfg):
         load_in_8bit=cfg.load_in_8bit,
         load_in_4bit=cfg.load_in_4bit,
         low_cpu_mem_usage=True,
-        trust_remote_code=True,
+        trust_remote_code=False,
     )
 
     # Move model to device.
@@ -65,6 +65,7 @@ def get_vla(cfg):
         with open(dataset_statistics_path, "r") as f:
             norm_stats = json.load(f)
         vla.norm_stats = norm_stats
+        vla.default_action_decoding_strategy = cfg.default_action_decoding_strategy
     else:
         print(
             "WARNING: No local dataset_statistics.json file found for current checkpoint.\n"
@@ -162,7 +163,46 @@ def get_vla_action(vla, processor, base_vla_name, obs, task_label, unnorm_key, c
         prompt = (
             f"{OPENVLA_V01_SYSTEM_PROMPT} USER: What action should the robot take to {task_label.lower()}? ASSISTANT:"
         )
-    else:  # OpenVLA
+    # elif unnorm_key == "utokyo_xarm_bimanual_converted_externally_to_rlds":
+    #     prompt = (
+    #         f"In: In the action space consists of 14 dimensions: 7 for the left arm and 7 for the right arm."
+    #         f" What action should the robot take to {task_label.lower()} using both arms?\nOut:"
+    #     )
+
+    # ProcGen
+    elif unnorm_key in "bigfish":
+        prompt = f"In: What action should the fish take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "bossfight":
+        prompt = f"In: What action should the player take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "caveflyer":
+        prompt = f"In: What action should the cave flyer take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "chaser":
+        prompt = f"In: What action should the chaser take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "climber":
+        prompt = f"In: What action should the climber take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "coinrun":
+        prompt = f"In: What action should the coin runner take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "dodgeball":
+        prompt = f"In: What action should the player take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "fruitbot":
+        prompt = f"In: What action should the fruit bot take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "heist":
+        prompt = f"In: What action should the player take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "jumper":
+        prompt = f"In: What action should the player take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "leaper":
+        prompt = f"In: What action should the player take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "maze":
+        prompt = f"In: What action should the player take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "miner":
+        prompt = f"In: What action should the miner take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "ninja":
+        prompt = f"In: What action should the ninja take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "plunder":
+        prompt = f"In: What action should the plunderer take to {task_label.lower()}?\nOut:"
+    elif unnorm_key == "starpilot":
+        prompt = f"In: What action should the star pilot take to {task_label.lower()}?\nOut:"
+    else:  # OpenX
         prompt = f"In: What action should the robot take to {task_label.lower()}?\nOut:"
 
     # Process inputs.

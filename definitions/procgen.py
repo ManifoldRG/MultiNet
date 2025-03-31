@@ -209,3 +209,7 @@ class ProcGenDefinitions:
 
     ADDITIONAL_INSTRUCTIONS = {
     }
+
+    ACTION_DECODE_STRATEGIES = {
+        "default": "naive_dim_extension"
+    }
