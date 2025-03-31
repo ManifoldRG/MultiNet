@@ -122,7 +122,7 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
                 logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
                 logger.debug(f"Actual action: {actual_action}")
                 
-                # Calculate MSE
+                # Calculate MAE
                 mae = calculate_mae(standardized_predicted_action, actual_action)
                 timestep_maes.append(mae)
                 
@@ -172,7 +172,7 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
             
             episode_idx += 1
 
-            # Uncomment to limit evaluation to 5 episodes
+            # Uncomment to limit evaluation to 2 episodes
             # if episode_idx == 2:
             #     break
 
