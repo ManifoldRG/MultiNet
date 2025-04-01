@@ -507,7 +507,8 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
         self.vocab_size = self.config.text_config.vocab_size - self.config.pad_to_multiple_of
 
     def predict_action(
-        self, input_ids: Optional[torch.LongTensor] = None, unnorm_key: Optional[str] = None, **kwargs: str
+        self, input_ids: Optional[torch.LongTensor] = None, unnorm_key: Optional[str] = None, 
+        return_logits: bool = False, top_k: int = 10, **kwargs: str
     ) -> np.ndarray:
         """Thin wrapper around .generate() that decodes predicted actions and unnormalizes them.
         
@@ -525,52 +526,164 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
             2. [actions] = 0.5 * [actions] to scale the interval to [0, 1]
             3. [actions] * ([action_high - action_low]) to scale to dataset range
             4. [actions] + action_low to add offset to match the lower end of the dataset range
+
+        Args:
+            input_ids: Input token IDs
+            unnorm_key: Key for unnormalization statistics
+            return_logits: Whether to return logits and probabilities
+            top_k: Number of top logits/probabilities to return (default: 10)
+            **kwargs: Additional arguments for model forward pass
+            
+        Returns:
+            Dictionary containing:
+                - 'actions': Unnormalized actions (numpy array)
+                - If return_logits=True, also includes:
+                    - 'top_k_logits': Top-k logits for each action dimension
+                    - 'top_k_probs': Top-k probabilities for each action dimension
+                    - 'top_k_indices': Indices of top-k tokens for each action dimension
         """
+        # Ensure input has the special token
+        input_ids = self._ensure_special_token(input_ids)
+
+        action_decoding_strategy = self.get_action_decoding_strategy(unnorm_key)
+        action_dim = self.get_action_dim(unnorm_key, action_decoding_strategy)
+
+        # Run model inference
+        if return_logits:
+            # Add the necessary parameters to get scores during generation
+            generate_kwargs = {
+                **kwargs,
+                "return_dict_in_generate": True,
+                "output_scores": True,
+                "max_new_tokens": action_dim
+            }
+            
+            # Run generation with scores
+            generation_output = self.generate(input_ids, **generate_kwargs)
+            
+            # Extract generated tokens
+            generated_ids = generation_output.sequences
+            
+            # Extract scores (logits) for all generation steps
+            all_token_scores = generation_output.scores  # List of length action_dim
+            
+            # Initialize arrays to store top-k values for all tokens
+            all_top_k_logits = []
+            all_top_k_indices = []
+            all_top_k_probs = []
+            
+            # Process each generation step
+            for step_scores in all_token_scores:
+                # Get top-k logits and their indices for this step
+                step_top_k_logits, step_top_k_indices = torch.topk(step_scores, top_k, dim=-1)
+                
+                # Convert to probabilities using softmax
+                step_top_k_probs = torch.softmax(step_top_k_logits, dim=-1)
+                
+                # Detach and convert to numpy
+                all_top_k_logits.append(step_top_k_logits.detach().cpu().numpy())
+                all_top_k_indices.append(step_top_k_indices.detach().cpu().numpy())
+                all_top_k_probs.append(step_top_k_probs.detach().cpu().numpy())
+            
+            # Convert lists to numpy arrays
+            top_k_logits_np = np.array(all_top_k_logits)  # Shape: [action_dim, batch_size, top_k]
+            top_k_indices_np = np.array(all_top_k_indices)  # Shape: [action_dim, batch_size, top_k]
+            top_k_probs_np = np.array(all_top_k_probs)  # Shape: [action_dim, batch_size, top_k]
+            
+            # Reshape to make batch_size the first dimension
+            top_k_logits_np = np.transpose(top_k_logits_np, (1, 0, 2))  # Shape: [batch_size, action_dim, top_k]
+            top_k_indices_np = np.transpose(top_k_indices_np, (1, 0, 2))  # Shape: [batch_size, action_dim, top_k]
+            top_k_probs_np = np.transpose(top_k_probs_np, (1, 0, 2))  # Shape: [batch_size, action_dim, top_k]
+        else:
+            generated_ids = self.generate(input_ids, max_new_tokens=action_dim, **kwargs)
+
+        # Extract predicted action tokens and translate into (normalized) continuous actions (OpenVLA standard)
+        openvla_normalized_actions = self._tokens_to_normalized_actions(
+            generated_ids, action_dim
+        )
+
+        # Unnormalize and discretize (if needed) actions
+        actions = self._unnormalize_actions(
+            normalized_actions=openvla_normalized_actions,
+            unnorm_key=unnorm_key,
+            action_decoding_strategy=action_decoding_strategy
+        )
+
+        result = {'actions': actions}
+
+        if return_logits:
+            result.update({
+                'top_k_logits': top_k_logits_np,
+                'top_k_probs': top_k_probs_np,
+                'top_k_indices': top_k_indices_np
+            })
+
+        return result
+    
+    def _ensure_special_token(self, input_ids: torch.LongTensor) -> torch.LongTensor:
+        """Ensure input_ids has the special empty token."""
         # If the special empty token ('') does not already appear after the colon (':') token in the prompt
         # (after "OUT:" or "ASSISTANT:"), insert it to match the inputs seen at training time
         if not torch.all(input_ids[:, -1] == 29871):
             input_ids = torch.cat(
                 (input_ids, torch.unsqueeze(torch.Tensor([29871]).long(), dim=0).to(input_ids.device)), dim=1
             )
+        return input_ids
 
-        action_decoding_strategy = self.get_action_decoding_strategy(unnorm_key)
-        action_dim = self.get_action_dim(unnorm_key, action_decoding_strategy)
-
-        # Run VLA inference
-        generated_ids = self.generate(input_ids, max_new_tokens=action_dim, **kwargs)
-
-        # Extract predicted action tokens and translate into (normalized) continuous actions
-        predicted_action_token_ids = generated_ids[0, -action_dim :].cpu().numpy()
-        discretized_actions = self.vocab_size - predicted_action_token_ids
-        discretized_actions = np.clip(discretized_actions - 1, a_min=0, a_max=self.bin_centers.shape[0] - 1)
+    def _tokens_to_normalized_actions(
+        self, generated_ids: torch.Tensor, action_dim: int
+    ) -> np.ndarray:
+        """Convert token IDs to normalized actions in [-1, 1] range."""
+        predicted_tokens = generated_ids[0, -action_dim:].cpu().numpy()
+        discretized_actions = np.clip(self.vocab_size - predicted_tokens - 1, a_min=0, a_max=self.bin_centers.shape[0] - 1)
         normalized_actions = self.bin_centers[discretized_actions]
-
-        # Unnormalize and discretize (if needed) actions
+        return normalized_actions
+    
+    def _unnormalize_actions(
+        self, normalized_actions: np.ndarray, unnorm_key: Optional[str], action_decoding_strategy: str
+    ) -> np.ndarray:
+        """Unnormalize actions based on the decoding strategy."""
         if action_decoding_strategy in ["naive_dim_extension", "simple_mapping"]:
-            action_norm_stats = self.get_action_stats(unnorm_key)
-            mask = action_norm_stats.get("mask", np.ones_like(action_norm_stats["q01"], dtype=bool))
-            action_high, action_low = np.array(action_norm_stats["q99"]), np.array(action_norm_stats["q01"])
-
-            # Discrete dimension mask
-            discrete = np.array(action_norm_stats.get("discrete", np.zeros_like(mask, dtype=bool)), dtype=bool)
-
-            actions = np.zeros_like(normalized_actions)
-            # Compute discrete actions
-            actions[discrete] = np.round(0.5 * (normalized_actions[discrete] + 1) * (action_high[discrete] - action_low[discrete]) + action_low[discrete], decimals=0)
-
-            # Compute continuous actions
-            actions[~discrete] = 0.5 * (normalized_actions[~discrete] + 1) * (action_high[~discrete] - action_low[~discrete]) + action_low[~discrete]
-
-            # Only add normalized and discretized actions that are unmasked
+            # Get action statistics
+            action_stats = self.get_action_stats(unnorm_key)
+            action_high = np.array(action_stats["q99"])
+            action_low = np.array(action_stats["q01"])
+            mask = action_stats.get("mask", np.ones_like(action_low, dtype=bool))
+            discrete = np.array(action_stats.get("discrete", np.zeros_like(mask, dtype=bool)))
+            
+            # Scale from [-1,1] to [0,1] to [low,high]
+            actions = 0.5 * (normalized_actions + 1) * (action_high - action_low) + action_low
+            
+            # Round discrete dimensions
+            if np.any(discrete):
+                actions[discrete] = np.round(actions[discrete], decimals=0)
+            
+            # Apply mask
             actions = np.where(mask, actions, normalized_actions)
         elif action_decoding_strategy == "manual_rule_mapping":
-            # return OpenVLA standard normalized actions for manual rule mapping
             actions = normalized_actions
         else:
             raise ValueError(f"Unknown action decoding strategy: {action_decoding_strategy} for {unnorm_key}")
-
+        
         return actions
 
+    def _extract_top_k_logits(
+        self, logits, top_k=None
+    ):
+        # Get the last token's logits
+        token_logits = logits[:, -1, :]
+        
+        # Get top-k logits and their indices
+        if top_k is not None:
+            top_k_logits, top_k_indices = torch.topk(token_logits, top_k, dim=-1)
+            
+            # Fix: Detach tensors before converting to NumPy
+            return {
+                "top_k_logits": top_k_logits.detach().cpu().numpy(),
+                "top_k_indices": top_k_indices.detach().cpu().numpy()
+            }
+        else:
+            raise ValueError("top_k is None")
 
     @staticmethod
     def _check_unnorm_key(norm_stats: Dict[str, Dict[str, Any]], unnorm_key: Optional[str]) -> str:

@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 import sys
 import os
+import numpy as np
 from typing import Dict, Any, Optional
 
 current_file = Path(__file__).resolve()
@@ -15,12 +16,15 @@ from src.data_utils.procgen_dataloader import get_procgen_dataloader
 from src.eval.profiling.openvla.experiments.robot.openvla_eval_base import OpenVLABaseEvaluator
 from src.eval.profiling.openvla.experiments.robot.robot_utils import get_action
 from src.eval.profiling.openvla.experiments.robot.eval_utils import (
-    get_action_decoding_strategy,
-    calculate_mse,
     calculate_success_rate,
+    calculate_brier_mae,
     min_max_normalize,
     standardize_predicted_action,
-    preprocess_expert_actions
+    preprocess_expert_actions,
+    quantile_filter,
+    calculate_mean,
+    calculate_max_relative_mae,
+    calculate_proportion_beyond_mae_threshold
 )
 from definitions.procgen import ProcGenDefinitions
 
@@ -76,7 +80,7 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
             0,  # batch_idx is 0 for ProcGen dataset
             timestep_idx
         )
-    
+
     def process_batch(self, batch: dict[str, any], episode_idx: int) -> tuple[list[float], list[int]]:
         """Process a single batch (episode) of data.
         
@@ -85,16 +89,178 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
             episode_idx: Index of the current episode
             
         Returns:
+            Tuple of (timestep_brier_maes, action_success)
         """
-        raise NotImplementedError("Processing batch is not implemented for ProcGen dataset")
+        timestep_brier_maes = []
+        action_success = []
+        obs = {}
+        
+        try:
+            obs_len = len(batch['image_observation'][0])
+        except (KeyError, IndexError, TypeError) as e:
+            raise ValueError(f"Error accessing image_observation: {e}")
+        
+        # Get action space information
+        action_space = ProcGenDefinitions.get_valid_action_space(self.dataset_name, 'default')
+        num_actions = len(action_space)
+        
+        for timestep_idx in range(obs_len):
+            logger.debug("================================")
+            logger.debug(f"{self.dataset_name}")
+            logger.debug(f"episode-{episode_idx} timestep-{timestep_idx}")
+            logger.debug("================================")
+            
+            try:
+                # Process observation
+                obs, text_obs = self.process_observation(batch, obs, timestep_idx)
+                if not obs or not text_obs:
+                    continue
 
+                # Get and process action
+                predictions = get_action(
+                    self.cfg,
+                    self.model,
+                    obs,
+                    text_obs,
+                    self.processor,
+                    return_logits=True,
+                    top_k=10
+                )
+                predicted_action = predictions['actions']
+                logger.debug(f"Predicted action: {predicted_action}")
+                
+                # Log the shape of the top-k arrays to understand their structure
+                logger.debug(f"Top-k probs shape: {predictions['top_k_probs'].shape}")
+                logger.debug(f"Top-k indices shape: {predictions['top_k_indices'].shape}")
+                logger.debug(f"Top-k logits shape: {predictions['top_k_logits'].shape}")
+                
+                # Standardize predicted action
+                standardized_predicted_action = standardize_predicted_action(
+                    predicted_action,
+                    self.action_decoding_strategy,
+                    self.dataset_name
+                )
+                
+                # Get actual action
+                actual_action = self.get_actual_action(batch, episode_idx, timestep_idx)
+                if actual_action is None:
+                    raise ValueError(f"Actual action is None for dataset {self.dataset_name}")
+                
+                logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
+                logger.debug(f"Actual action: {actual_action}")
+                
+                # Create one-hot encoding
+                one_hot_actual = [0.0] * num_actions
+                one_hot_actual[int(actual_action[0])] = 1.0
+                
+                # Create probability distribution from model predictions
+                probs = [0.0] * num_actions
+                
+                # The shape of top_k_indices and top_k_probs is now [batch_size, action_dim, top_k]
+                # We want the first token's predictions (index 0 in the action_dim dimension)
+                if 'top_k_indices' in predictions and 'top_k_probs' in predictions:
+                    for idx, prob in zip(predictions['top_k_indices'][0, 0], predictions['top_k_probs'][0, 0]):
+                        if idx < num_actions:
+                            probs[idx] = prob
+                
+                # Calculate Brier MAE
+                brier_mae = calculate_brier_mae(probs, one_hot_actual)
+                timestep_brier_maes.append(brier_mae)
+                
+                logger.debug(f"Predicted probs: {probs}")
+                logger.debug(f"Actual one-hot: {one_hot_actual}")
+                logger.debug(f"Brier MAE: {brier_mae}")
+                
+                # Check if this is the last timestep
+                is_last = self.is_last_timestep(batch, timestep_idx)
+                if is_last:
+                    logger.info(f"Episode {episode_idx} final predicted action: {np.array(standardized_predicted_action)}")
+                    logger.info(f"Episode {episode_idx} final actual action: {np.array(actual_action)}")
+                    
+                    if np.array_equal(np.array(standardized_predicted_action), np.array(actual_action)):
+                        action_success.append(1)
+                    else:
+                        action_success.append(0)
+                        
+            except (IndexError, KeyError) as e:
+                raise f"Error processing dataset at timestep {timestep_idx}: {e}"
+                
+        return timestep_brier_maes, action_success
+        
+    
     def is_last_timestep(self, batch: dict[str, any], timestep_idx: int) -> bool:
         """Check if the current timestep is the last one in the ProcGen episode"""
         logger.debug(f"is_last: {batch['is_last'][0][timestep_idx]}")
         return batch['is_last'][0][timestep_idx] == True
 
     def evaluate(self, tfds_shards: list[str]) -> tuple[float, float, float, int, float]:
-        raise NotImplementedError("Processing batch is not implemented for ProcGen dataset")
+        """Evaluate the model on the dataset.
+        
+        Args:
+            tfds_shards: List of TensorFlow dataset shard paths
+            
+        Returns:
+            Tuple of metrics (
+                num_timesteps,
+                action_success_rate,
+                total_dataset_amae,
+                avg_dataset_amae,
+                average_normalized_mae,
+                total_quantile_filtered_mae,
+                average_quantile_filtered_normalized_mae,
+                max_rel_mae,
+                prop_beyond_threshold_mae
+            )
+        """
+        dataloader = self.get_dataloader(tfds_shards)
+        
+        all_brier_maes, all_action_successes = [], []
+        
+        episode_idx = 0
+        
+        for batch in dataloader:
+            batch_brier_maes, batch_action_successes = self.process_batch(batch, episode_idx)
+            
+            all_brier_maes.extend(batch_brier_maes)
+            all_action_successes.extend(batch_action_successes)
+            
+            episode_idx += 1
+
+            # Uncomment to limit evaluation to 5 episodes
+            if episode_idx == 2:
+                break
+
+        # Calculate quantile filtered MAE metrics
+        quantile_filtered_maes = quantile_filter(all_brier_maes)
+        total_quantile_filtered_mae = sum(quantile_filtered_maes)
+        normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
+        average_quantile_filtered_normalized_mae = calculate_mean(normalized_quantile_filtered_maes)
+
+        max_rel_mae = calculate_max_relative_mae(all_brier_maes)
+        prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(all_brier_maes)
+
+        action_success_rate = calculate_success_rate(all_action_successes)
+        num_timesteps = len(all_brier_maes)
+
+        total_dataset_amae = sum(all_brier_maes)
+        avg_dataset_amae = calculate_mean(all_brier_maes)
+
+        normalized_maes = min_max_normalize(all_brier_maes)
+        average_normalized_mae = calculate_mean(normalized_maes)
+
+
+        return (
+            num_timesteps,
+            action_success_rate,
+            total_dataset_amae,
+            avg_dataset_amae,
+            average_normalized_mae,
+            total_quantile_filtered_mae,
+            average_quantile_filtered_normalized_mae,
+            max_rel_mae,
+            prop_beyond_threshold_mae
+        )
+
 
 def evaluate_openvla_on_procgen(cfg: any, model: any, processor: any, 
                                tfds_shards: list[str], dataset_name: str) -> tuple[float, float, float, int, float]:
