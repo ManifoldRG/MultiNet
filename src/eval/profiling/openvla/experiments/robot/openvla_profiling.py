@@ -137,47 +137,83 @@ def process_single_dataset(
     tfds_shards: list[str]
 ) -> dict[str, any]:
     logger.info(f"\nEvaluating {dataset_name}...")
-    # Start timing
     start_time = time.time()
 
     if dataset_name in PROCGEN_DATASET_NAMES:
         logger.debug(f"Evaluating {dataset_name} on procgen...")
-        results = evaluate_openvla_on_procgen(
+        (
+            num_timesteps,
+            action_success_rate,
+            total_dataset_amae,
+            avg_dataset_amae,
+            average_normalized_mae,
+            total_quantile_filtered_mae,
+            average_quantile_filtered_normalized_mae,
+            max_rel_mae,
+            prop_beyond_threshold_mae
+        ) = evaluate_openvla_on_procgen(
             eval_cfg,
             model,
             processor,
             tfds_shards,
             dataset_name
         )
+
+        # End timing
+        end_time = time.time()
+        eval_time = end_time - start_time
+        logger.info(f'Evaluation time for {dataset_name}: {eval_time:.2f} seconds')
+
+        return {
+            'num_timesteps': num_timesteps,
+            'action_success_rate': action_success_rate,
+            'total_dataset_amae': total_dataset_amae,
+            'avg_dataset_amae': avg_dataset_amae,
+            'average_normalized_mae': average_normalized_mae,
+            'total_quantile_filtered_mae': total_quantile_filtered_mae,
+            'average_quantile_filtered_normalized_mae': average_quantile_filtered_normalized_mae,
+            'max_rel_mae': max_rel_mae,
+            'prop_beyond_threshold_mae': prop_beyond_threshold_mae,
+            'eval_time': eval_time
+        }
     elif dataset_name in OPENX_DATASET_NAMES:
         logger.debug(f"Evaluating {dataset_name} on openx...")
-        results = evaluate_openvla_on_openx(
+        (
+            num_timesteps,
+            action_success_rate,
+            total_dataset_amae,
+            avg_dataset_amae,
+            average_normalized_mae,
+            total_quantile_filtered_mae,
+            average_quantile_filtered_normalized_mae,
+            max_rel_mae,
+            prop_beyond_threshold_mae
+        ) = evaluate_openvla_on_openx(
             eval_cfg,
             model,
             processor,
             tfds_shards,
             dataset_name
         )
+
+        end_time = time.time()
+        eval_time = end_time - start_time
+        logger.info(f'Evaluation time for {dataset_name}: {eval_time:.2f} seconds')
+
+        return {
+            'num_timesteps': num_timesteps,
+            'action_success_rate': action_success_rate,
+            'total_dataset_amae': total_dataset_amae,
+            'avg_dataset_amae': avg_dataset_amae,
+            'average_normalized_mae': average_normalized_mae,
+            'total_quantile_filtered_mae': total_quantile_filtered_mae,
+            'average_quantile_filtered_normalized_mae': average_quantile_filtered_normalized_mae,
+            'max_rel_mae': max_rel_mae,
+            'prop_beyond_threshold_mae': prop_beyond_threshold_mae,
+            'eval_time': eval_time
+        }
     else:
         raise ValueError(f"Dataset type undefined in definitions: {dataset_name}")
-
-    (action_success_rate, total_dataset_amse, avg_dataset_amse,
-        num_timesteps, normalized_amse) = results
-    
-    # End timing
-    end_time = time.time()
-    eval_time = end_time - start_time
-    logger.info(f'Evaluation time for {dataset_name}: {eval_time:.2f} seconds')
-
-    # Return results
-    return {
-        'action_success_rate': action_success_rate,
-        'total_dataset_amse': total_dataset_amse,
-        'eval_time': eval_time,
-        'num_timesteps': num_timesteps,
-        'avg_dataset_amse': avg_dataset_amse,
-        'normalized_amse': normalized_amse
-    }
 
 
 def save_results(results: dict[str, dict], result_file_path: Path) -> None:
