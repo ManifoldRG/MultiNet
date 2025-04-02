@@ -38,7 +38,7 @@ OPENX_DATASET_NAMES = OpenXDefinitions.DESCRIPTIONS.keys()
 PROFILING_DATASETS = [
     d for d in OPENX_DATASET_NAMES
 ] + [
-    d for d in PROCGEN_DATASET_NAMES if d == "bigfish"
+    d for d in PROCGEN_DATASET_NAMES
 ]
 
 @dataclass

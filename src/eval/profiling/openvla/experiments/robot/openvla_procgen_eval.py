@@ -143,20 +143,18 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
                 
                 logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
                 logger.debug(f"Actual action: {actual_action}")
-                    
 
-                if 'action_probs' in predictions:
-                    action_probs = predictions['action_probs'][0]  # Procgen only has 1 action dim
+                action_probs = predictions['action_probs_by_dimension'][0]  # Procgen only has 1 action dim
 
-                    one_hot_actual = [0.0] * num_actions
-                    one_hot_actual[int(actual_action[0])] = 1.0
-                    
-                    brier_mae = calculate_brier_mae(action_probs, one_hot_actual)
-                    timestep_brier_maes.append(brier_mae)
+                one_hot_actual = [0.0] * num_actions
+                one_hot_actual[int(actual_action[0])] = 1.0
+                
+                brier_mae = calculate_brier_mae(action_probs, one_hot_actual)
+                timestep_brier_maes.append(brier_mae)
 
-                    logger.debug(f"Predicted probs: {action_probs}")
-                    logger.debug(f"Actual one-hot: {one_hot_actual}")
-                    logger.debug(f"Brier MAE: {brier_mae}")
+                logger.debug(f"Predicted probs: {action_probs}")
+                logger.debug(f"Actual one-hot: {one_hot_actual}")
+                logger.debug(f"Brier MAE: {brier_mae}")
                     
                 # Check if this is the last timestep
                 is_last = self.is_last_timestep(batch, timestep_idx)
@@ -214,8 +212,8 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
             episode_idx += 1
 
             # Uncomment to limit evaluation to 2 episodes
-            # if episode_idx == 2:
-            #     break
+            if episode_idx == 2:
+                break
 
         # Calculate quantile filtered MAE metrics
         quantile_filtered_brier_maes = quantile_filter(all_brier_maes)
