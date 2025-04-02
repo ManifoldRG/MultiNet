@@ -2,6 +2,7 @@ import abc
 from collections.abc import Sequence
 import dataclasses
 import enum
+import gc
 import logging
 import pathlib
 from typing import Generic, TypeVar
@@ -15,8 +16,8 @@ import jax.numpy as jnp
 import numpy as np
 import orbax.checkpoint as ocp
 
-from openpi.shared import image_tools
-import openpi.shared.array_typing as at
+from src.eval.profiling.openpi.src.openpi.shared import image_tools
+import src.eval.profiling.openpi.src.openpi.shared.array_typing as at
 
 logger = logging.getLogger("openpi")
 

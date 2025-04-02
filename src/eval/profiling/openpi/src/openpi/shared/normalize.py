@@ -7,7 +7,7 @@ import pydantic
 
 
 @pydantic.dataclasses.dataclass
-class NormStats:
+class NormStats():
     mean: numpydantic.NDArray
     std: numpydantic.NDArray
     q01: numpydantic.NDArray | None = None  # 1st quantile

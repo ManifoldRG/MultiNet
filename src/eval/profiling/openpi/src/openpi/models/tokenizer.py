@@ -4,7 +4,7 @@ import numpy as np
 import sentencepiece
 from transformers import AutoProcessor
 
-import openpi.shared.download as download
+import src.eval.profiling.openpi.src.openpi.shared.download as download
 
 
 class PaligemmaTokenizer:
@@ -75,7 +75,6 @@ class FASTTokenizer:
             )
         else:
             postfix_tokens = []
-
         # Create output token sequence & masks
         # AR mask is 0 on prefix (bidirectional attention) and 1 on postfix (causal attention to all previous tokens)
         tokens = prefix_tokens + postfix_tokens
@@ -106,11 +105,13 @@ class FASTTokenizer:
 
     def extract_actions(self, tokens: np.ndarray, action_horizon: int, action_dim: int) -> np.ndarray:
         # Decode predicted output tokens
+        print('Decoding tokens')
+        print(tokens)
         decoded_tokens = self._paligemma_tokenizer.decode(tokens.tolist())
 
         # Extract actions from FAST model outputs
-        if "Action: " not in decoded_tokens:
-            return np.zeros((action_horizon, action_dim), dtype=np.float32)
+        '''if "Action: " not in decoded_tokens:
+            return np.zeros((action_horizon, action_dim), dtype=np.float32)'''
 
         # Extract actions from decoded tokens
         raw_action_tokens = np.array(

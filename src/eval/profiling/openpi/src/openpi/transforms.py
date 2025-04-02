@@ -8,9 +8,9 @@ import jax
 import numpy as np
 from openpi_client import image_tools
 
-from openpi.models import tokenizer as _tokenizer
-from openpi.shared import array_typing as at
-from openpi.shared import normalize as _normalize
+from src.eval.profiling.openpi.src.openpi.models import tokenizer as _tokenizer
+from src.eval.profiling.openpi.src.openpi.shared import array_typing as at
+from src.eval.profiling.openpi.src.openpi.shared import normalize as _normalize
 
 DataDict: TypeAlias = at.PyTree
 NormStats: TypeAlias = _normalize.NormStats
