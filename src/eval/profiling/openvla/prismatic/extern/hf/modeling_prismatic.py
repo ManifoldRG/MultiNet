@@ -509,38 +509,20 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
     def predict_action(
         self, input_ids: Optional[torch.LongTensor] = None, unnorm_key: Optional[str] = None, 
         return_logits: bool = False, top_k: int = 10, **kwargs: str
-    ) -> np.ndarray:
+    ) -> dict[str, np.ndarray]:
         """Thin wrapper around .generate() that decodes predicted actions and unnormalizes them.
-        
-        Operations:
-        1. model -> [tokens] of size action_dim
-        2. translate the tokens to the bins of a normal distribution in the range of [-1, 1]
-        For discrete dimensions of the action vector
-            1. [actions] += 1 to shift the interval to [0, 2]
-            2. [actions] = 0.5 * [actions] to scale the interval to [0, 1]
-            3. [actions] = [actions] * ([action_high - action_low]) to scale to dataset range
-            4. np.floor([actions]) to discretize
-            5. [actions] + action_low to match the lower end of the dataset range
-        For continuous dimensions of the action vector
-            1. [actions] += 1 to shift the interval to [0, 2]
-            2. [actions] = 0.5 * [actions] to scale the interval to [0, 1]
-            3. [actions] * ([action_high - action_low]) to scale to dataset range
-            4. [actions] + action_low to add offset to match the lower end of the dataset range
 
         Args:
             input_ids: Input token IDs
             unnorm_key: Key for unnormalization statistics
             return_logits: Whether to return logits and probabilities
-            top_k: Number of top logits/probabilities to return (default: 10)
             **kwargs: Additional arguments for model forward pass
             
         Returns:
             Dictionary containing:
                 - 'actions': Unnormalized actions (numpy array)
                 - If return_logits=True, also includes:
-                    - 'top_k_logits': Top-k logits for each action dimension
-                    - 'top_k_probs': Top-k probabilities for each action dimension
-                    - 'top_k_indices': Indices of top-k tokens for each action dimension
+                    - 'action_probs': Full probability distributions for all tokens for all action dimensions
         """
         # Ensure input has the special token
         input_ids = self._ensure_special_token(input_ids)
@@ -558,42 +540,17 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
                 "max_new_tokens": action_dim
             }
             
-            # Run generation with scores
+            # Run inference with logits
             generation_output = self.generate(input_ids, **generate_kwargs)
-            
-            # Extract generated tokens
             generated_ids = generation_output.sequences
+            all_token_scores = generation_output.scores
             
-            # Extract scores (logits) for all generation steps
-            all_token_scores = generation_output.scores  # List of length action_dim
-            
-            # Initialize arrays to store top-k values for all tokens
-            all_top_k_logits = []
-            all_top_k_indices = []
-            all_top_k_probs = []
-            
-            # Process each generation step
-            for step_scores in all_token_scores:
-                # Get top-k logits and their indices for this step
-                step_top_k_logits, step_top_k_indices = torch.topk(step_scores, top_k, dim=-1)
-                
-                # Convert to probabilities using softmax
-                step_top_k_probs = torch.softmax(step_top_k_logits, dim=-1)
-                
-                # Detach and convert to numpy
-                all_top_k_logits.append(step_top_k_logits.detach().cpu().numpy())
-                all_top_k_indices.append(step_top_k_indices.detach().cpu().numpy())
-                all_top_k_probs.append(step_top_k_probs.detach().cpu().numpy())
-            
-            # Convert lists to numpy arrays
-            top_k_logits_np = np.array(all_top_k_logits)  # Shape: [action_dim, batch_size, top_k]
-            top_k_indices_np = np.array(all_top_k_indices)  # Shape: [action_dim, batch_size, top_k]
-            top_k_probs_np = np.array(all_top_k_probs)  # Shape: [action_dim, batch_size, top_k]
-            
-            # Reshape to make batch_size the first dimension
-            top_k_logits_np = np.transpose(top_k_logits_np, (1, 0, 2))  # Shape: [batch_size, action_dim, top_k]
-            top_k_indices_np = np.transpose(top_k_indices_np, (1, 0, 2))  # Shape: [batch_size, action_dim, top_k]
-            top_k_probs_np = np.transpose(top_k_probs_np, (1, 0, 2))  # Shape: [batch_size, action_dim, top_k]
+            probs_over_bin_centers_list = self._get_action_probs_from_logits(all_token_scores)
+            logger.debug(f"probs_over_bin_centers: {probs_over_bin_centers_list}")
+
+            # Unnormalize action probabilities to dataset action space
+            unnormalized_action_probs_list = self._unnormalize_action_probs(probs_over_bin_centers_list, unnorm_key)
+            logger.debug(f"unnormalized_action_probs: {unnormalized_action_probs_list}")
         else:
             generated_ids = self.generate(input_ids, max_new_tokens=action_dim, **kwargs)
 
@@ -613,9 +570,7 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
 
         if return_logits:
             result.update({
-                'top_k_logits': top_k_logits_np,
-                'top_k_probs': top_k_probs_np,
-                'top_k_indices': top_k_indices_np
+                'action_probs': unnormalized_action_probs_list
             })
 
         return result
@@ -638,6 +593,62 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
         discretized_actions = np.clip(self.vocab_size - predicted_tokens - 1, a_min=0, a_max=self.bin_centers.shape[0] - 1)
         normalized_actions = self.bin_centers[discretized_actions]
         return normalized_actions
+    
+    def _get_action_probs_from_logits(self, logits: torch.Tensor) -> list[np.ndarray]:
+        """Get the full probability distribution for all action tokens for all action dimensions.
+        
+        Based on the clipping logic for OpenVLA in _tokens_to_normalized_actions(), we infer the
+        full probability distribution for all action tokens using the same clipping logic.
+
+        Since all tokens before the first action token are mapped to the first action token, we 
+        aggregate the probs of all tokens below the first action token to the first action token.
+
+        Args:
+            logits: Logits for every action dimension
+
+        Returns:
+            action_probs_list: list of action_probs for each action dimension
+        """
+        # Calculate token indices for the 256 action tokens
+        n_action_tokens = self.config.n_action_bins  # 256
+        n_bin_centers = self.bin_centers.shape[0]  # 255
+        
+        first_action_token_idx = self.vocab_size - n_action_tokens
+        last_action_token_idx = self.vocab_size - 1
+        
+        action_probs_list = []
+        
+        for logits_for_single_action_dim in logits[0]:
+            # Create array for probabilities over the 255 bin centers
+            probs_over_bin_centers = torch.zeros(n_bin_centers,
+                                    device=logits_for_single_action_dim.device,
+                                    dtype=logits_for_single_action_dim.dtype)
+            
+            # Get probabilities over the entire vocabulary
+            probs_over_entire_vocab = torch.softmax(logits_for_single_action_dim, dim=-1)
+            
+            # 1. Aggregate probabilities for tokens before the first action token
+            # These map to the first bin center (index 0) due to a_min=0 clipping
+            probs_over_bin_centers[0] = torch.sum(probs_over_entire_vocab[:first_action_token_idx])
+            
+            # 2. Map the first 254 action tokens directly to bin centers 0 to 253
+            for token_offset in range(n_bin_centers - 1):  # 0 to 253
+                token_idx = first_action_token_idx + token_offset
+                bin_center_idx = token_offset
+                probs_over_bin_centers[bin_center_idx] += probs_over_entire_vocab[token_idx]
+            
+            # 3. The last two action tokens (254 and 255) both map to the last bin center (254)
+            # due to a_max=254 clipping
+            probs_over_bin_centers[-1] += torch.sum(probs_over_entire_vocab[first_action_token_idx + (n_bin_centers - 1):last_action_token_idx + 1])
+            
+            # 4. Any tokens after the last action token also map to the last bin center
+            # (this shouldn't happen in practice but included for completeness)
+            if last_action_token_idx + 1 < probs_over_entire_vocab.shape[0]:
+                probs_over_bin_centers[-1] += torch.sum(probs_over_entire_vocab[last_action_token_idx + 1:])
+            
+            action_probs_list.append(probs_over_bin_centers.detach().cpu().numpy())
+    
+        return action_probs_list
     
     def _unnormalize_actions(
         self, normalized_actions: np.ndarray, unnorm_key: Optional[str], action_decoding_strategy: str
@@ -666,24 +677,66 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
             raise ValueError(f"Unknown action decoding strategy: {action_decoding_strategy} for {unnorm_key}")
         
         return actions
+    
+    def _unnormalize_action_probs(
+        self, action_probs_list: list[np.ndarray], unnorm_key: Optional[str]
+    ) -> list[np.ndarray]:
+        """Unnormalize action probabilities based on the decoding strategy."""
+        action_stats = self.get_action_stats(unnorm_key)
+        action_high = np.array(action_stats["q99"])
+        action_low = np.array(action_stats["q01"])
+        mask = action_stats.get("mask", np.ones_like(action_low, dtype=bool))
+        discrete = np.array(action_stats.get("discrete", np.zeros_like(mask, dtype=bool)))
+    
+        continuous_dims = np.where(~discrete & mask)[0]
+        if len(continuous_dims) > 0:
+            raise ValueError(
+                f"_unnormalize_action_probs() only supports discrete action dimensions. "
+                f"Found continuous dimensions at indices: {continuous_dims}. "
+                f"Please use a dataset with only discrete action dimensions."
+            )
 
-    def _extract_top_k_logits(
-        self, logits, top_k=None
-    ):
-        # Get the last token's logits
-        token_logits = logits[:, -1, :]
+        # Create a list to store unnormalized probability distributions for each action dimension
+        unnormalized_action_probs_list = []
         
-        # Get top-k logits and their indices
-        if top_k is not None:
-            top_k_logits, top_k_indices = torch.topk(token_logits, top_k, dim=-1)
+        # Process each action dimension separately
+        for dim_idx, action_probs in enumerate(action_probs_list):
+            if not mask[dim_idx]:
+                # For masked dimensions, just pass through the original probabilities
+                unnormalized_action_probs_list.append(action_probs)
+                continue
+
+            dim_high = action_high[dim_idx]
+            dim_low = action_low[dim_idx]
+            unnormalized_bin_centers = 0.5 * (self.bin_centers + 1) * (dim_high - dim_low) + dim_low
             
-            # Fix: Detach tensors before converting to NumPy
-            return {
-                "top_k_logits": top_k_logits.detach().cpu().numpy(),
-                "top_k_indices": top_k_indices.detach().cpu().numpy()
-            }
-        else:
-            raise ValueError("top_k is None")
+            # Determine the range of possible discrete actions for this dimension
+            min_action = int(np.floor(dim_low))
+            max_action = int(np.ceil(dim_high))
+            action_range = max_action - min_action + 1
+            
+            # Initialize array for unnormalized probabilities for this dimension
+            dim_unnorm_probs = np.zeros(action_range)
+            
+            # Map probabilities from bin centers to discrete actions
+            for bin_center, prob in zip(unnormalized_bin_centers, action_probs):
+                # Round to nearest integer and convert to array index
+                action_value = int(np.round(bin_center))
+                index = action_value - min_action  # shift to 0-indexed
+                
+                # Ensure index is within bounds
+                if 0 <= index < action_range:
+                    dim_unnorm_probs[index] += prob
+                else:
+                    # Handle out-of-bounds indices by clipping to the nearest valid index
+                    clipped_index = np.clip(index, 0, action_range - 1)
+                    dim_unnorm_probs[clipped_index] += prob
+                
+            # Normalize the probabilities to sum to 1
+            dim_unnorm_probs = dim_unnorm_probs / np.sum(dim_unnorm_probs)
+            unnormalized_action_probs_list.append(dim_unnorm_probs)
+        
+        return unnormalized_action_probs_list
 
     @staticmethod
     def _check_unnorm_key(norm_stats: Dict[str, Dict[str, Any]], unnorm_key: Optional[str]) -> str:

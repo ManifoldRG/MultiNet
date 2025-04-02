@@ -128,12 +128,7 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
                 )
                 predicted_action = predictions['actions']
                 logger.debug(f"Predicted action: {predicted_action}")
-                
-                # Log the shape of the top-k arrays to understand their structure
-                logger.debug(f"Top-k probs shape: {predictions['top_k_probs'].shape}")
-                logger.debug(f"Top-k indices shape: {predictions['top_k_indices'].shape}")
-                logger.debug(f"Top-k logits shape: {predictions['top_k_logits'].shape}")
-                
+
                 # Standardize predicted action
                 standardized_predicted_action = standardize_predicted_action(
                     predicted_action,
@@ -148,29 +143,21 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
                 
                 logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
                 logger.debug(f"Actual action: {actual_action}")
-                
-                # Create one-hot encoding
-                one_hot_actual = [0.0] * num_actions
-                one_hot_actual[int(actual_action[0])] = 1.0
-                
-                # Create probability distribution from model predictions
-                probs = [0.0] * num_actions
-                
-                # The shape of top_k_indices and top_k_probs is now [batch_size, action_dim, top_k]
-                # We want the first token's predictions (index 0 in the action_dim dimension)
-                if 'top_k_indices' in predictions and 'top_k_probs' in predictions:
-                    for idx, prob in zip(predictions['top_k_indices'][0, 0], predictions['top_k_probs'][0, 0]):
-                        if idx < num_actions:
-                            probs[idx] = prob
-                
-                # Calculate Brier MAE
-                brier_mae = calculate_brier_mae(probs, one_hot_actual)
-                timestep_brier_maes.append(brier_mae)
-                
-                logger.debug(f"Predicted probs: {probs}")
-                logger.debug(f"Actual one-hot: {one_hot_actual}")
-                logger.debug(f"Brier MAE: {brier_mae}")
-                
+                    
+
+                if 'action_probs' in predictions:
+                    action_probs = predictions['action_probs'][0]  # Procgen only has 1 action dim
+
+                    one_hot_actual = [0.0] * num_actions
+                    one_hot_actual[int(actual_action[0])] = 1.0
+                    
+                    brier_mae = calculate_brier_mae(action_probs, one_hot_actual)
+                    timestep_brier_maes.append(brier_mae)
+
+                    logger.debug(f"Predicted probs: {action_probs}")
+                    logger.debug(f"Actual one-hot: {one_hot_actual}")
+                    logger.debug(f"Brier MAE: {brier_mae}")
+                    
                 # Check if this is the last timestep
                 is_last = self.is_last_timestep(batch, timestep_idx)
                 if is_last:
@@ -226,39 +213,39 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
             
             episode_idx += 1
 
-            # Uncomment to limit evaluation to 5 episodes
-            if episode_idx == 2:
-                break
+            # Uncomment to limit evaluation to 2 episodes
+            # if episode_idx == 2:
+            #     break
 
         # Calculate quantile filtered MAE metrics
-        quantile_filtered_maes = quantile_filter(all_brier_maes)
-        total_quantile_filtered_mae = sum(quantile_filtered_maes)
-        normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
-        average_quantile_filtered_normalized_mae = calculate_mean(normalized_quantile_filtered_maes)
+        quantile_filtered_brier_maes = quantile_filter(all_brier_maes)
+        total_quantile_filtered_brier_mae = sum(quantile_filtered_brier_maes)
+        normalized_quantile_filtered_brier_maes = min_max_normalize(quantile_filtered_brier_maes)
+        average_quantile_filtered_normalized_brier_mae = calculate_mean(normalized_quantile_filtered_brier_maes)
 
-        max_rel_mae = calculate_max_relative_mae(all_brier_maes)
-        prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(all_brier_maes)
+        max_rel_brier_mae = calculate_max_relative_mae(all_brier_maes)
+        prop_beyond_threshold_brier_mae = calculate_proportion_beyond_mae_threshold(all_brier_maes)
 
         action_success_rate = calculate_success_rate(all_action_successes)
         num_timesteps = len(all_brier_maes)
 
-        total_dataset_amae = sum(all_brier_maes)
-        avg_dataset_amae = calculate_mean(all_brier_maes)
+        total_dataset_brier_mae = sum(all_brier_maes)
+        avg_dataset_brier_mae = calculate_mean(all_brier_maes)
 
-        normalized_maes = min_max_normalize(all_brier_maes)
-        average_normalized_mae = calculate_mean(normalized_maes)
+        normalized_brier_maes = min_max_normalize(all_brier_maes)
+        average_normalized_brier_mae = calculate_mean(normalized_brier_maes)
 
 
         return (
             num_timesteps,
             action_success_rate,
-            total_dataset_amae,
-            avg_dataset_amae,
-            average_normalized_mae,
-            total_quantile_filtered_mae,
-            average_quantile_filtered_normalized_mae,
-            max_rel_mae,
-            prop_beyond_threshold_mae
+            total_dataset_brier_mae,
+            avg_dataset_brier_mae,
+            average_normalized_brier_mae,
+            total_quantile_filtered_brier_mae,
+            average_quantile_filtered_normalized_brier_mae,
+            max_rel_brier_mae,
+            prop_beyond_threshold_brier_mae
         )
 
 

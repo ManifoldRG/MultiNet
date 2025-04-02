@@ -38,7 +38,7 @@ OPENX_DATASET_NAMES = OpenXDefinitions.DESCRIPTIONS.keys()
 PROFILING_DATASETS = [
     d for d in OPENX_DATASET_NAMES
 ] + [
-    d for d in PROCGEN_DATASET_NAMES
+    d for d in PROCGEN_DATASET_NAMES if d == "bigfish"
 ]
 
 @dataclass
@@ -144,13 +144,13 @@ def process_single_dataset(
         (
             num_timesteps,
             action_success_rate,
-            total_dataset_amae,
-            avg_dataset_amae,
-            average_normalized_mae,
-            total_quantile_filtered_mae,
-            average_quantile_filtered_normalized_mae,
-            max_rel_mae,
-            prop_beyond_threshold_mae
+            total_dataset_brier_mae,
+            avg_dataset_brier_mae,
+            average_normalized_brier_mae,
+            total_quantile_filtered_brier_mae,
+            average_quantile_filtered_normalized_brier_mae,
+            max_rel_brier_mae,
+            prop_beyond_threshold_brier_mae
         ) = evaluate_openvla_on_procgen(
             eval_cfg,
             model,
@@ -162,18 +162,27 @@ def process_single_dataset(
         # End timing
         end_time = time.time()
         eval_time = end_time - start_time
+        logger.info("================================================")
         logger.info(f'Evaluation time for {dataset_name}: {eval_time:.2f} seconds')
+        logger.info(f'Action Success Rate: {action_success_rate:.4f}')
+        logger.info(f'Total Dataset Brier MAE: {total_dataset_brier_mae:.4f}')
+        logger.info(f'Average Dataset Brier MAE: {avg_dataset_brier_mae:.4f}')
+        logger.info(f'Average Normalized Brier MAE: {average_normalized_brier_mae:.4f}')
+        logger.info(f'Total Quantile Filtered Brier MAE: {total_quantile_filtered_brier_mae:.4f}')
+        logger.info(f'Average Quantile Filtered Normalized Brier MAE: {average_quantile_filtered_normalized_brier_mae:.4f}')
+        logger.info(f'Max Relative Brier MAE: {max_rel_brier_mae:.4f}')
+        logger.info(f'Prop Beyond Threshold Brier MAE: {prop_beyond_threshold_brier_mae:.4f}')
 
         return {
             'num_timesteps': num_timesteps,
             'action_success_rate': action_success_rate,
-            'total_dataset_amae': total_dataset_amae,
-            'avg_dataset_amae': avg_dataset_amae,
-            'average_normalized_mae': average_normalized_mae,
-            'total_quantile_filtered_mae': total_quantile_filtered_mae,
-            'average_quantile_filtered_normalized_mae': average_quantile_filtered_normalized_mae,
-            'max_rel_mae': max_rel_mae,
-            'prop_beyond_threshold_mae': prop_beyond_threshold_mae,
+            'total_dataset_brier_mae': total_dataset_brier_mae,
+            'avg_dataset_brier_mae': avg_dataset_brier_mae,
+            'average_normalized_brier_mae': average_normalized_brier_mae,
+            'total_quantile_filtered_brier_mae': total_quantile_filtered_brier_mae,
+            'average_quantile_filtered_normalized_brier_mae': average_quantile_filtered_normalized_brier_mae,
+            'max_rel_brier_mae': max_rel_brier_mae,
+            'prop_beyond_threshold_brier_mae': prop_beyond_threshold_brier_mae,
             'eval_time': eval_time
         }
     elif dataset_name in OPENX_DATASET_NAMES:
@@ -198,7 +207,17 @@ def process_single_dataset(
 
         end_time = time.time()
         eval_time = end_time - start_time
+        
+        logger.info("================================================")
         logger.info(f'Evaluation time for {dataset_name}: {eval_time:.2f} seconds')
+        logger.info(f'Action Success Rate: {action_success_rate:.4f}')
+        logger.info(f'Total Dataset AMSE: {total_dataset_amae:.4f}')
+        logger.info(f'Average AMSE: {avg_dataset_amae:.4f}')
+        logger.info(f'Average Normalized AMSE: {average_normalized_mae:.4f}')
+        logger.info(f'Total Quantile Filtered AMSE: {total_quantile_filtered_mae:.4f}')
+        logger.info(f'Average Quantile Filtered Normalized AMSE: {average_quantile_filtered_normalized_mae:.4f}')
+        logger.info(f'Max Relative AMSE: {max_rel_mae:.4f}')
+        logger.info(f'Prop Beyond Threshold AMSE: {prop_beyond_threshold_mae:.4f}')
 
         return {
             'num_timesteps': num_timesteps,
@@ -314,17 +333,7 @@ def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_
 
     clear_gpu_memory()
 
-    # Print overall results
-    logger.info('\n===== Overall Results =====')
-    for dataset, result in eval_results.items():
-        logger.info(f'\nDataset: {dataset}')
-        logger.info(f'Total AMSE: {result["total_dataset_amse"]:.4f}')
-        logger.info(f'Evaluation Time: {result["eval_time"]:.2f} seconds')
-        logger.info(f'Action Success Rate: {result["action_success_rate"]:.4f}')
-        logger.info(f'Average MSE: {result["avg_dataset_amse"]:.4f}')
-        logger.info(f'Number of Timesteps: {result["num_timesteps"]}')
-        logger.info(f'Normalized AMSE: {result["normalized_amse"]:.4f}')
-
+    logger.info(f"Evaluation complete, results saved to: {result_file_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate OpenVLA on datasets")
