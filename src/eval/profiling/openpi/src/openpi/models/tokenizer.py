@@ -121,6 +121,7 @@ class FASTTokenizer:
             self._paligemma_tokenizer.encode(decoded_tokens)#.split("Action: ")[1].strip())
         )
         action_tokens = self._act_tokens_to_paligemma_tokens(raw_action_tokens)
+        
         return self._fast_tokenizer.decode(
             [action_tokens.tolist()], time_horizon=action_horizon, action_dim=action_dim
         )[0]

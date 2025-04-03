@@ -251,14 +251,34 @@ class ProcGenInferenceFast:
             # Transfer necessary data to accelerator only for model inference
             # The model's sample_actions will handle the device transfer internally
             action_tokens = self.model.sample_actions(key, observation, max_decoding_steps = 32, temperature=0.0)
-            print('\nAction tokens before decoding: ', action_tokens)
+            #print('\nAction tokens before decoding: ', action_tokens)
             decoder = ExtractFASTActions(tokenizer=self.tokenizer, action_horizon=config.action_horizon, action_dim=config.action_dim)
             
-            actions = []
-            for action_op in action_tokens:
-                actions.append(decoder({'actions': action_op})['actions'])
-            actions = np.array(actions)
-            print('\nDecoded Actions: ', actions)
+            # Process all action tokens at once instead of individually
+            decoded_actions = []
+            for each_action in action_tokens:
+                action = decoder({'actions': each_action})['actions']
+                decoded_actions.append(action)
+
+            # Process each action to ensure consistent shape and size
+            processed_actions = []
+            for action in decoded_actions:
+                # Convert to numpy and squeeze any extra dimensions
+                action = np.array(action)
+                if len(action.shape) > 1:
+                    action = np.squeeze(action)
+                # Trim to 32 dimensions if needed
+                if len(action) > config.action_dim:
+                    print('\nAction is longer than {} dimensions: '.format(config.action_dim), action)
+                    action = action[:config.action_dim]
+                elif len(action) < config.action_dim:
+                    print('\nAction is shorter than {} dimensions: '.format(config.action_dim), action)
+                    action = np.pad(action, (0, config.action_dim - len(action)))
+                processed_actions.append(action)
+            
+            # Stack the actions into a single array
+            actions = np.stack(processed_actions)
+            #print('\nDecoded Actions: ', actions)
 
             # Process outputs back on CPU
             with jax.default_device(cpu_device):
