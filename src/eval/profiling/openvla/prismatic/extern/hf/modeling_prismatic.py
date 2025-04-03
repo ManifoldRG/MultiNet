@@ -644,8 +644,8 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
                 token_idx = first_action_idx + offset
                 bin_probs[offset] += vocab_probs[token_idx]
             
-            # 3. Map final action tokens and any padding to last bin
-            last_tokens_prob = torch.sum(vocab_probs[first_action_idx + (n_bin_centers - 1):])
+            # 3. Map final action tokens and any padding to last bin (254)
+            last_tokens_prob = torch.sum(vocab_probs[first_action_idx + n_bin_centers:])
             bin_probs[-1] += last_tokens_prob
             
             # Convert to numpy and store
