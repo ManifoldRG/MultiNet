@@ -692,29 +692,20 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
         action_stats = self.get_action_stats(unnorm_key)
         action_upper_bound = np.array(action_stats["q99"]) 
         action_lower_bound = np.array(action_stats["q01"])
-        dimension_mask = action_stats.get("mask", np.ones_like(action_lower_bound, dtype=bool))
-        is_discrete = np.array(action_stats.get("discrete", np.zeros_like(dimension_mask, dtype=bool)))
-    
-        continuous_dimensions = np.where(~is_discrete & dimension_mask)[0]
-        if len(continuous_dimensions) > 0:
-            raise ValueError(
-                f"_unnormalize_action_probs() only supports discrete action dimensions. "
-                f"Found continuous dimensions at indices: {continuous_dimensions}. "
-                f"Please use a dataset with only discrete action dimensions."
-            )
+
+        assert len(action_probs_by_dimension) == len(action_upper_bound) == len(action_lower_bound), (
+            f"Inconsistent number of action dimensions in action_probs_by_dimension, action_upper_bound, and action_lower_bound. "
+            f"Got: {len(action_probs_by_dimension)}, the dataset action dim is {len(action_upper_bound)}"
+        )
 
         # Create a list to store unnormalized probability distributions for each action dimension
         unnormalized_probs_by_dimension = []
         
         # Process each action dimension separately
         for dimension_index, dimension_probs in enumerate(action_probs_by_dimension):
-            if not dimension_mask[dimension_index]:
-                # For masked dimensions, just pass through the original probabilities
-                unnormalized_probs_by_dimension.append(dimension_probs)
-                continue
-
             dimension_upper = action_upper_bound[dimension_index]
             dimension_lower = action_lower_bound[dimension_index]
+            # same unnorm logic as actions
             unnormalized_bin_centers = 0.5 * (self.bin_centers + 1) * (dimension_upper - dimension_lower) + dimension_lower
             
             # Determine the range of possible discrete actions for this dimension
@@ -725,8 +716,8 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
             # Initialize array for unnormalized probabilities for this dimension
             dimension_unnormalized_probs = np.zeros(discrete_action_range)
             
-            # Map probabilities from bin centers to discrete actions
-            for bin_center, probability in zip(unnormalized_bin_centers, dimension_probs): # 255 bin centers [0, 1, 2, ..., 254], probs from logits 1 x 255
+            # Map probabilities from (255) bin centers to (e.g, 9 for bigfish dataset) discrete actions
+            for bin_center, probability in zip(unnormalized_bin_centers, dimension_probs):
                 # Round to nearest integer and convert to array index
                 discrete_action = int(np.round(bin_center))
                 array_index = discrete_action - min_discrete_action  # shift to 0-indexed
