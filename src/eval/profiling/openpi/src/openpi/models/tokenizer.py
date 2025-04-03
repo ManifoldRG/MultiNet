@@ -65,14 +65,16 @@ class FASTTokenizer:
         if actions is not None:
             # Tokenize actions with FAST tokenizer --> map to last tokens in PaliGemma vocab
             action_tokens = self._fast_tokenizer(actions[None])[0]
+            #print('\nAction tokens: ', action_tokens)
             action_tokens_in_pg = self._act_tokens_to_paligemma_tokens(action_tokens)
-
+            #print('\nAction tokens in PaliGemma: ', action_tokens_in_pg)
             # Convention: postfix contains 'Action:' followed by FAST tokens, followed by '|'
             postfix_tokens = (
                 self._paligemma_tokenizer.encode("Action: ")
                 + action_tokens_in_pg.tolist()
                 + self._paligemma_tokenizer.encode("|")
             )
+            print('\nPostfix tokens: ', postfix_tokens)
         else:
             postfix_tokens = []
         # Create output token sequence & masks
@@ -105,17 +107,18 @@ class FASTTokenizer:
 
     def extract_actions(self, tokens: np.ndarray, action_horizon: int, action_dim: int) -> np.ndarray:
         # Decode predicted output tokens
-        print('Decoding tokens')
-        print(tokens)
+        
         decoded_tokens = self._paligemma_tokenizer.decode(tokens.tolist())
 
+        #We use this model to directly decode the action tokens, so there's no need to check for "Action: " in decoded_tokens
         # Extract actions from FAST model outputs
         '''if "Action: " not in decoded_tokens:
+            print('\nNo actions found in decoded tokens')
             return np.zeros((action_horizon, action_dim), dtype=np.float32)'''
 
-        # Extract actions from decoded tokens
+        # Extract actions from decoded tokens -- in our case only the action tokens are passed to the extracting module
         raw_action_tokens = np.array(
-            self._paligemma_tokenizer.encode(decoded_tokens.split("Action: ")[1].split("|")[0].strip())
+            self._paligemma_tokenizer.encode(decoded_tokens)#.split("Action: ")[1].strip())
         )
         action_tokens = self._act_tokens_to_paligemma_tokens(raw_action_tokens)
         return self._fast_tokenizer.decode(

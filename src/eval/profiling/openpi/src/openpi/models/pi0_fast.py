@@ -243,9 +243,6 @@ class Pi0FAST(_model.BaseModel):
 
         # Embed inputs
         prefix_token_embeddings, prefix_mask, prefix_ar_mask = self.embed_inputs(observation)
-        # Clear observation from memory as it's no longer needed
-        del observation
-
         prefix_attn_mask = make_attn_mask(prefix_mask, prefix_ar_mask)
 
         # Left to right align all input token sequences
@@ -272,26 +269,39 @@ class Pi0FAST(_model.BaseModel):
         last_logit = prefix_logits[:, -1:]
         output_tokens = jnp.zeros((last_logit.shape[0], max_decoding_steps))
 
+        # Pass the main rng key into the loop state
+        initial_carry = (last_logit, output_tokens, kv_cache, False, 0, rng)
+
         def step(carry):
-            last_logit, output_tokens, cache, _, step = carry
+            last_logit, output_tokens, cache, _, step, loop_rng = carry # Unpack rng
+
+            # Split RNG key for this step
+            step_rng, next_loop_rng = jax.random.split(loop_rng)
 
             # Sample token
             if temperature > 0.0:
-                last_logit = last_logit / temperature
-                token = jax.random.categorical(rng, last_logit, axis=-1)
+                last_logit_temp = last_logit / temperature
+                token = jax.random.categorical(step_rng, last_logit_temp, axis=-1) # Use step_rng
             else:
                 token = jnp.argmax(last_logit, axis=-1)
-            
+
+            # Use jax.debug.print for reliable printing inside loops/jit
+            #jax.debug.print("Step {s}: Sampled token = {t}", s=step, t=token)
+
             # Update output tokens
-            output_tokens = put_along_last_axis(
-                output_tokens, 
-                jnp.broadcast_to(step, (token.shape[0], 1)), 
-                token
+            indices = jnp.broadcast_to(step, (token.shape[0], 1))
+            updated_output_tokens = put_along_last_axis(
+                output_tokens,
+                indices,
+                token.astype(output_tokens.dtype) # Ensure dtype match
             )
+            #jax.debug.print("Step {s}: Updated output_tokens = {o}", s=step, o=updated_output_tokens)
+
 
             # Check for early stopping
             has_eos = jnp.any(token == PALIGEMMA_EOS_TOKEN, axis=-1)
             all_eos = jnp.all(has_eos)
+            #jax.debug.print("Step {s}: has_eos = {h}, all_eos = {a}", s=step, h=has_eos, a=all_eos)
 
             # Decode one step
             token_embedding = self.PaliGemma.llm(token, embed_only=True)
@@ -303,22 +313,29 @@ class Pi0FAST(_model.BaseModel):
                 jnp.arange(prefill_size + max_decoding_steps)[None, None, :]
                 < (jnp.broadcast_to(prefill_size + step + 1, (prefix_start.shape[0], 1, 1))),
             )
-            
             # Forward pass for current step
-            last_logit, kv_cache, _ = self.PaliGemma.llm(
+            last_logit_next, kv_cache_next, _ = self.PaliGemma.llm(
                 embedded_prefix=token_embedding, 
                 mask=mask, 
                 positions=positions, 
                 decode=True, 
                 kv_cache=cache
             )
-
-            return last_logit, output_tokens, kv_cache, all_eos, step + 1
+            return last_logit_next, updated_output_tokens, kv_cache_next, all_eos, step + 1, next_loop_rng # Pass next_loop_rng
 
         def cond(carry):
-            _, _, _, all_eos, step = carry
+            _, _, _, all_eos, step, _ = carry # Unpack rng state but don't use it in condition
             return (~all_eos) & (step < max_decoding_steps)
-        
-        # Run the decoding loop
-        _, output_tokens, _, _, _ = jax.lax.while_loop(cond, step, (last_logit, output_tokens, kv_cache, False, 0))
-        return output_tokens
+
+        # Run the decoding loop with the initial carry including rng
+        final_state = jax.lax.while_loop(
+            cond,
+            step,
+            initial_carry # Pass initial carry including rng
+        )
+
+        # Unpack the final state (ignore the final rng state)
+        _, final_output_tokens, _, _, _, _ = final_state
+
+        # Return the tokens part of the final state
+        return final_output_tokens

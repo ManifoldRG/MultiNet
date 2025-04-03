@@ -20,7 +20,7 @@ import tensorflow as tf
 import gc
 # Update imports to be relative to the project root (prefix with 'src.')
 from src.eval.profiling.openpi.src.openpi.shared import normalize
-from src.eval.profiling.openpi.src.openpi.transforms import Unnormalize, ExtractFASTActions
+from src.eval.profiling.openpi.src.openpi.transforms import Unnormalize, ExtractFASTActions, pad_to_dim
 from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
 import jax.numpy as jnp
 import jax.tree_util as jtu
@@ -38,7 +38,7 @@ class ProcGenInferenceFast:
         self.tokenizer = tokenizer
         self.config = config
 
-    def prepare_observation(self, obs_dict: dict, batch_size: int = 1, action_dim: int = 32, max_token_length: int = 48) -> dict:
+    def prepare_observation(self, obs_dict: dict, action_dim: int = 32, max_token_length: int = 48) -> dict:
         # Prepare observation dictionary for pi0 model inference
         tokenizer = self.tokenizer
 
@@ -87,12 +87,12 @@ class ProcGenInferenceFast:
         if len(text_obs) > 1:
             for text in text_obs:
                 # For inference, we don't have actions yet, so pass None
-                # We also don't need state for Procgen (or pass zeros if needed)
-                state = jnp.zeros(action_dim)  # zeros for state
+                # We also don't have a proprio state for Procgen (or pass zeros if needed)
+                state = pad_to_dim(jnp.zeros(1), action_dim)  # zeros for state
                 tokens, token_mask, token_ar_mask, token_loss_mask = self.tokenizer.tokenize(
                     prompt=text,
                     state=state,
-                    actions=None # No actions during inference
+                    actions = None
                 )
                 
                 tokens_list.append(jax.numpy.array(tokens))
@@ -100,11 +100,11 @@ class ProcGenInferenceFast:
                 token_ar_mask_list.append(jax.numpy.array(token_ar_mask))
                 token_loss_mask_list.append(jax.numpy.array(token_loss_mask))
         else:
-            state = jnp.zeros(action_dim)  # zeros for state
+            state = pad_to_dim(jnp.zeros(1), action_dim)  # zeros for state
             tokens, token_mask, token_ar_mask, token_loss_mask = self.tokenizer.tokenize(
-                prompt=text_obs,
+                prompt=text_obs[0], # Pass the first element of the list
                 state=state,
-                actions=None # No actions during inference
+                actions = None            
             )
             
             tokens_list.append(jax.numpy.array(tokens))
@@ -121,7 +121,7 @@ class ProcGenInferenceFast:
         # Create observation dictionary matching Pi0FAST schema
         transformed_dict = {
             # Use current_batch_size derived from image data
-            "state": jax.numpy.zeros((current_batch_size, action_dim)),
+            "state": jnp.asarray(pad_to_dim(jnp.zeros((current_batch_size, 1), dtype=jnp.float32), action_dim)),
             "image": {
                 "base_0_rgb": base_image,
                 "base_1_rgb": zero_image,      # Added missing view (zeros)
@@ -190,31 +190,16 @@ class ProcGenInferenceFast:
         Returns:
             np.ndarray: Decoded and rounded actions. Shape: (batch_size, 1)
         """
-        # Convert action tokens (indices) to continuous values using the tokenizer's vocabulary
-        # Assuming the tokenizer has a method like `indices_to_actions` or similar logic
-        # Placeholder: Replace with actual decoding logic based on PaligemmaTokenizer capabilities
-        # For now, we'll simulate a simple decoding assuming tokens represent discretized actions directly.
-        # This needs to be adapted based on how pi0_fast encodes actions into tokens.
-        # If action tokens directly represent bins, we might need bin centers or similar.
-        # If they represent something else (like language tokens), a different decoding is needed.
 
-        # --- Placeholder Decoding ---
         # Convert tokens to numpy
         actions_from_tokens = np.array(action_tokens)
 
-        # Example: If tokens represent integer actions directly (needs verification)
-        # Let's assume the *first* decoded token corresponds to the action for simplicity.
-        # The actual number of relevant tokens depends on the action horizon and encoding.
         if actions_from_tokens.ndim > 1:
-             actions = actions_from_tokens[:, 0:1] # Take the first token's value as the action
+             actions = actions_from_tokens[:, 0:1] # Take the first token's value as the action as Procgen has 1D action space
         else:
              actions = actions_from_tokens[:, None] # Add dimension if needed
 
-        # --- End Placeholder Decoding ---
-
-
         # Get only first dimension since Procgen uses 1D action space
-        # This was already done in the placeholder, but ensure shape is (batch, 1)
         actions = actions[..., 0:1]
 
         # Load normalization statistics
@@ -223,9 +208,8 @@ class ProcGenInferenceFast:
             raise ValueError("Dataset statistics for 'action' not found or invalid.")
 
 
-        print('Action before unnormalization: ', actions)
+        print('\nAction before unnormalization: ', actions)
         # Create and apply unnormalize transform
-        # Ensure norm_stats is passed correctly, likely needs the NormStats object itself
         unnormalizer = Unnormalize(norm_stats={'action': norm_stats}, use_quantiles=True)
         unnormalized_actions = unnormalizer({'action': actions})['action']
         print('Action after unnormalization: ', unnormalized_actions)
@@ -266,11 +250,15 @@ class ProcGenInferenceFast:
 
             # Transfer necessary data to accelerator only for model inference
             # The model's sample_actions will handle the device transfer internally
-            #print('\nObservation: ', observation)
-            action_tokens = self.model.sample_actions(key, observation, max_decoding_steps = 32)
-            #print('\nAction tokens: ', action_tokens)
+            action_tokens = self.model.sample_actions(key, observation, max_decoding_steps = 32, temperature=0.0)
+            print('\nAction tokens before decoding: ', action_tokens)
             decoder = ExtractFASTActions(tokenizer=self.tokenizer, action_horizon=config.action_horizon, action_dim=config.action_dim)
-            actions = decoder({'actions': action_tokens})['actions']
+            
+            actions = []
+            for action_op in action_tokens:
+                actions.append(decoder({'actions': action_op})['actions'])
+            actions = np.array(actions)
+            print('\nDecoded Actions: ', actions)
 
             # Process outputs back on CPU
             with jax.default_device(cpu_device):
@@ -280,6 +268,7 @@ class ProcGenInferenceFast:
                 # Get ground truth actions and compute metrics on CPU
                 gt_actions = np.array(batch['action'])
                 
+                #PLACEHOLDER METRICS - CHANGE ME!!
                 # Calculate error metrics
                 mae = np.mean(np.abs(gt_actions - unnormalized_discrete_actions))
                 mse = np.mean(np.square(gt_actions - unnormalized_discrete_actions))
@@ -366,12 +355,10 @@ def main():
 
     # Initialize model and inference object for pi0_fast
     # Use pi0_fast config and checkpoint
-    # Assuming Pi0FastConfig provides action_tokenizer needed in ProcGenInferenceFast
-    config = pi0_fast.Pi0FASTConfig(action_horizon=1) # Use default Pi0FastConfig, adjust if specific overrides needed
+    config = pi0_fast.Pi0FASTConfig(action_horizon=1) 
     tokenizer = FASTTokenizer()
     key = jax.random.key(0)
-    # Pass the pi0_fast config to the inference class
-    # Load pi0_fast_base checkpoint more efficiently
+
     params = _model.restore_params(download.maybe_download("s3://openpi-assets/checkpoints/pi0_fast_base/params"))
     model = config.load(params)
     del params
@@ -385,7 +372,7 @@ def main():
     procgen_dataset_list = os.listdir(args.dataset_dir) # Update path as needed
     for dataset in procgen_dataset_list:
         print(f'\n ---- EVALUATING {dataset} ---- \n')
-        dataset_path = os.path.join('/home/pranav/bigfish')
+        dataset_path = os.path.join('/home/pranav/bigfish') #Update path as needed
         if not os.path.isdir(dataset_path):
             print(f"Skipping {dataset}, not a directory.")
             continue
@@ -408,7 +395,7 @@ def main():
         tfds_sorted_shard_paths = [os.path.join(dataset_path, shard) for shard in tfds_sorted_shards]
 
 
-        # Re-added dataset stats calculation/loading logic from procgen_inference.py
+        #Dataset stats loading/calculation
         stats_output_path = os.path.join(args.output_dir, f'{dataset}_dataset_stats.json')
         if os.path.exists(stats_output_path):
             print(f'Loading existing dataset stats from {stats_output_path}')
@@ -420,8 +407,8 @@ def main():
                  # Assuming the dict has an 'action' key containing the stats dict
                  action_stats_dict = dataset_stats_dict.get('action', {})
                  # Convert lists back to numpy arrays if needed by NormStats constructor
-                 for key in action_stats_dict:
-                     action_stats_dict[key] = np.array(action_stats_dict[key])
+                 for stat_key in action_stats_dict:
+                     action_stats_dict[stat_key] = np.array(action_stats_dict[stat_key])
                  dataset_stats = {'action': normalize.NormStats(**action_stats_dict)}
             except TypeError as e:
                  print(f"Error creating NormStats from loaded dict: {e}. Check format in {stats_output_path}")
@@ -455,8 +442,7 @@ def main():
             gc.collect()
             jax.clear_caches()
         except Exception as e:
-            print(f"Error creating dataloader for {dataset}: {e}. Skipping.")
-            continue
+            raise Exception(f"Error creating dataloader for {dataset}: {e}")
 
         
         # Call evaluate_model with dataset_stats
