@@ -508,7 +508,7 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
 
     def predict_action(
         self, input_ids: Optional[torch.LongTensor] = None, unnorm_key: Optional[str] = None, 
-        return_logits: bool = False, top_k: int = 10, **kwargs: str
+        return_logits: bool = False, **kwargs: str
     ) -> dict[str, np.ndarray]:
         """Thin wrapper around .generate() that decodes predicted actions and unnormalizes them.
 

@@ -60,7 +60,7 @@ def get_image_resize_size(cfg):
     return resize_size
 
 
-def get_action(cfg, model, obs, task_label, processor=None, return_logits=False, top_k=None):
+def get_action(cfg, model, obs, task_label, processor=None, return_logits=False):
     """Queries the model to get an action."""
     if cfg.model_family == "openvla":
         action = get_vla_action(
@@ -71,8 +71,7 @@ def get_action(cfg, model, obs, task_label, processor=None, return_logits=False,
             task_label,
             cfg.unnorm_key,
             center_crop=cfg.center_crop,
-            return_logits=return_logits,
-            top_k=top_k
+            return_logits=return_logits
         )
         # disabled the shape check to allow naive action dimension extension
         # assert action.shape == (ACTION_DIM,), f"action shape {action.shape} != {ACTION_DIM}"

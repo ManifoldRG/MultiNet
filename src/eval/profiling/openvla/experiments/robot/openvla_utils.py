@@ -135,7 +135,8 @@ def get_vla_action(
         obs, 
         task_label, 
         unnorm_key, 
-        center_crop=False, return_logits=False, top_k=None):
+        center_crop=False,
+        return_logits=False):
     """Generates an action with the VLA policy."""
     image = Image.fromarray(obs["full_image"])
     image = image.convert("RGB")
@@ -219,6 +220,5 @@ def get_vla_action(
     action = vla.predict_action(**inputs, 
                                 unnorm_key=unnorm_key,
                                 do_sample=False,
-                                return_logits=return_logits,
-                                top_k=top_k)
+                                return_logits=return_logits)
     return action

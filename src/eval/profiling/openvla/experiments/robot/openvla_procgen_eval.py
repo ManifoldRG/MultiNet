@@ -123,8 +123,7 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
                     obs,
                     text_obs,
                     self.processor,
-                    return_logits=True,
-                    top_k=10
+                    return_logits=True
                 )
                 predicted_action = predictions['actions']
                 logger.debug(f"Predicted action: {predicted_action}")
