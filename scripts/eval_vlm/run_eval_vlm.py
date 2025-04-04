@@ -14,7 +14,7 @@ import numpy as np
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_job_info_path', type=str, required=True, help="The path to the batch job information.")
-    parser.add_argument('--results_path', type=str, required=True, help="The path to save the results.")
+    parser.add_argument('--results_path', type=str, required=True, help="A JSON file path to save the results.")
     args = parser.parse_args()
     
     with open(args.batch_job_info_path, 'r') as f:

@@ -221,7 +221,7 @@ class ProcGenBatchModule(DatasetBatchModule):
                 outputs = self.modality_module.retrieve_batch_results(batch_id, output_types)
             else:
                 raise Exception(f'Batch not completed for batch {ds} batch num {batch_num} '
-                                f'with batch id {batch_id}. Status: {status}. Skipping...')
+                                f'with batch id {batch_id}. Status: {status}. Stopping eval.')
             
             action_space = self._get_action_space(ds, 'default')
             num_actions  = 0
