@@ -154,13 +154,21 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
             tfds_shards: List of TensorFlow dataset shard paths
             
         Returns:
-            Tuple of (action_success_rate, total_dataset_amse, avg_dataset_amse,
-                     num_timesteps, normalized_amse)
+            Tuple of metrics (
+                num_timesteps,
+                action_success_rate,
+                total_dataset_amae,
+                avg_dataset_amae,
+                average_normalized_mae,
+                total_quantile_filtered_mae,
+                average_quantile_filtered_normalized_mae,
+                max_rel_mae,
+                prop_beyond_threshold_mae
+            )
         """
         dataloader = self.get_dataloader(tfds_shards)
         
-        all_timestep_maes = []
-        all_action_success = []
+        all_timestep_maes, all_action_success = [], []
         
         episode_idx = 0
         

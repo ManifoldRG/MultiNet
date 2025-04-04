@@ -287,12 +287,7 @@ class ManualRuleMapping:
         Returns:
             np.ndarray: The clipped action array.
         """
-        # only use special actions that are used in the specific procgen environment
-        special_action_space = ProcGenDefinitions.ACTION_SPACES[dataset_name]['default'][1][1].keys() \
-                                if dataset_name in ProcGenDefinitions.ACTION_SPACES.keys() \
-                                else {}
-        move_action_space = ProcGenDefinitions.movement_actions.keys()
-        valid_action_space = list(special_action_space) + list(move_action_space)
+        valid_action_space = ProcGenDefinitions.get_valid_action_space(dataset_name, 'default')
 
         if action.size == 1:
             action_value = int(action)

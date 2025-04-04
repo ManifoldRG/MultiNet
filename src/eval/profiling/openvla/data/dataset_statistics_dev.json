@@ -5746,5 +5746,56 @@
         "num_transitions": 1002195,
         "num_trajectories": 2048,
         "action_decoding_strategy": "naive_dim_extension"
+    },
+    "plunder": {
+        "action": {
+            "mean": [
+                3.943877551020408
+            ],
+            "std": [
+                2.357556947459902
+            ],
+            "max": [
+                9
+            ],
+            "min": [
+                0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                9.0
+            ],
+            "mask": [
+                true
+            ],
+            "discrete": [
+                true
+            ]
+        },
+        "proprio": {
+            "mean": [
+                0.0
+            ],
+            "std": [
+                0.0
+            ],
+            "max": [
+                0.0
+            ],
+            "min": [
+                0.0
+            ],
+            "q01": [
+                0.0
+            ],
+            "q99": [
+                0.0
+            ]
+        },
+        "num_transitions": 392,
+        "num_trajectories": 1,
+        "action_decoding_strategy": "naive_dim_extension"
     }
 }
