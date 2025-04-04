@@ -19,6 +19,10 @@ import gc
 from src.eval.profiling.openpi.src.openpi.shared import normalize
 from src.eval.profiling.openpi.src.openpi.transforms import Unnormalize
 from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
+from src.eval.profiling.openpi.scripts.procgen_utils import ActionUtils
+from definitions.procgen import ProcGenDefinitions
+
+
 # Configure JAX memory settings
 os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.8'
@@ -130,6 +134,7 @@ class ProcGenInference:
         
         Args:
             actions (jax.numpy.ndarray): Normalized actions from the model
+            dataset_stats (dict): Dictionary containing normalization statistics
             
         Returns:
             np.ndarray: Unnormalized actions scaled back to the original action space
@@ -142,8 +147,8 @@ class ProcGenInference:
         # Load normalization statistics
         norm_stats = dataset_stats
         
-
-        print('Action before unnormalization: ', actions)
+        print('Raw model actions:', actions)
+        print('Normalization stats:', norm_stats)
         # Create and apply unnormalize transform
         unnormalizer = Unnormalize(norm_stats=norm_stats)
         unnormalized_actions = unnormalizer({'action': actions})['action']
@@ -206,27 +211,32 @@ class ProcGenInference:
             #Compare to gt actions and calculate error value
             # Get ground truth actions from batch
             gt_actions = np.array(batch['action'])
+            gt_actions = ActionUtils.set_procgen_unused_special_action_to_stand_still(gt_actions, dataset)
             
             print('Ground truth actions: ', gt_actions)
             print('Predicted actions: ', unnormalized_discrete_actions)
             # Calculate error metrics
 
+            emr = ProcGenInference.get_exact_match_rate(unnormalized_discrete_actions, gt_actions)
+
+            action_space = ProcGenDefinitions.get_valid_action_space(dataset)
+            mf1 = ProcGenInference.get_micro_f1_score(unnormalized_discrete_actions, gt_actions, action_space)
+
             """CHANGE ME!: Placeholder for error metrics until the new Quantile-filtered MAE is implemented"""
-            # Mean absolute error
-            mae = np.mean(np.abs(gt_actions - unnormalized_discrete_actions))
-            # Mean squared error 
-            mse = np.mean(np.square(gt_actions - unnormalized_discrete_actions))
-            # Root mean squared error
-            rmse = np.sqrt(mse)
+            # # Mean absolute error
+            # mae = np.mean(np.abs(gt_actions - unnormalized_discrete_actions))
+            # # Mean squared error 
+            # mse = np.mean(np.square(gt_actions - unnormalized_discrete_actions))
+            # # Root mean squared error
+            # rmse = np.sqrt(mse)
             
             # Store results for this batch
             batch_results = {
                 "dataset": dataset,
                 "batch_id": counter,
                 "metrics": {
-                    "mae": float(mae),
-                    "mse": float(mse), 
-                    "rmse": float(rmse)
+                    "exact_match_rate": float(emr),
+                    "micro_f1_score": float(mf1)
                 },
                 "predictions": {
                     "ground_truth": gt_actions.tolist(),
@@ -251,7 +261,7 @@ class ProcGenInference:
             with open(results_file, 'w') as f:
                 json.dump(dataset_results, f, indent=4)
             
-            print(f"Dataset: {dataset}, Batch {counter} metrics - MAE: {mae:.4f}, MSE: {mse:.4f}, RMSE: {rmse:.4f}")
+            # print(f"Dataset: {dataset}, Batch {counter} metrics - MAE: {mae:.4f}, MSE: {mse:.4f}, RMSE: {rmse:.4f}")
             
             # Memory management
             del transformed_dict, observation, actions, unnormalized_discrete_actions
@@ -259,7 +269,79 @@ class ProcGenInference:
             jax.clear_caches()
             print(f"Processed {counter} episodes, cleared memory")
         
+    @staticmethod
+    def get_exact_match_rate(predicted_actions: np.ndarray, gt_actions: np.ndarray) -> np.ndarray:
+        """Get the exact match rate of the actions"""
+        # Ensure inputs are numpy arrays and squeeze extra dimensions
+        predicted_actions = np.asarray(predicted_actions).squeeze() # from (5, 1, 1) to (5,)
+        gt_actions = np.asarray(gt_actions).squeeze() # from (5, 1, 1) to (5,)
         
+        if predicted_actions.shape != gt_actions.shape or predicted_actions.size == 0:
+            raise ValueError("Unmatched action shapes or empty action arrays")
+
+        exact_match_rate = np.mean(predicted_actions == gt_actions)
+        return float(exact_match_rate)
+
+    @staticmethod
+    def get_micro_f1_score(predicted_actions: np.ndarray, gt_actions: np.ndarray, all_labels: list = None) -> float:
+        """
+        Calculates the micro F1 score (better for naturally imbalanced action trajectories).
+
+        Args:
+            predicted_actions: Array of predicted action labels.
+            gt_actions: Array of ground truth action labels.
+            all_labels: A list or array of all possible valid action labels for the environment.
+                       Used to ensure we only consider valid actions.
+
+        Returns:
+            The micro F1 score (float). Returns 0.0 if all_labels is empty or arrays are empty.
+        """
+        # Ensure inputs are numpy arrays
+        predicted_actions = np.asarray(predicted_actions).squeeze() # from (5, 1, 1) to (5,)
+        gt_actions = np.asarray(gt_actions).squeeze() # from (5, 1, 1) to (5,)
+
+        if predicted_actions.shape != gt_actions.shape:
+            raise ValueError("Predicted and ground truth actions must have the same shape.")
+            
+        if len(all_labels) == 0 or predicted_actions.size == 0:
+            return 0.0
+
+        # Initialize total counts
+        total_tp = 0
+        total_fp = 0
+        total_fn = 0
+
+        # Accumulate counts across all labels
+        for label in all_labels:
+            # Boolean arrays for the current label
+            pred_is_label = (predicted_actions == label)
+            gt_is_label = (gt_actions == label)
+
+            # Add to total counts
+            total_tp += np.sum(pred_is_label & gt_is_label)
+            total_fp += np.sum(pred_is_label & ~gt_is_label)
+            total_fn += np.sum(~pred_is_label & gt_is_label)
+
+        # Calculate micro-averaged precision and recall
+        if total_tp + total_fp == 0:  # No positive predictions
+            precision = 0.0
+        else:
+            precision = total_tp / (total_tp + total_fp)
+
+        if total_tp + total_fn == 0:  # No positive ground truth
+            recall = 0.0
+        else:
+            recall = total_tp / (total_tp + total_fn)
+
+        # Calculate micro F1
+        if precision + recall == 0:
+            micro_f1 = 0.0
+        else:
+            micro_f1 = 2 * (precision * recall) / (precision + recall)
+
+        return float(micro_f1)
+
+
 def parse_args() -> argparse.Namespace:
     """Parse and validate command line arguments.
     
