@@ -33,12 +33,13 @@ os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.6'
 os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
 
 class ProcGenInferenceFast:
-    def __init__(self, model, tokenizer: FASTTokenizer, config: pi0_fast.Pi0FASTConfig):
+    def __init__(self, model, tokenizer: FASTTokenizer, config: pi0_fast.Pi0FASTConfig, max_decoding_steps: int = 10):
         self.model = model
         self.tokenizer = tokenizer
         self.config = config
+        self.max_decoding_steps = max_decoding_steps
 
-    def prepare_observation(self, obs_dict: dict, action_dim: int = 32, max_token_length: int = 48) -> dict:
+    def prepare_observation(self, obs_dict: dict, action_dim: int = 1, max_token_length: int = 48) -> dict:
         # Prepare observation dictionary for pi0 model inference
         tokenizer = self.tokenizer
 
@@ -250,7 +251,7 @@ class ProcGenInferenceFast:
 
             # Transfer necessary data to accelerator only for model inference
             # The model's sample_actions will handle the device transfer internally
-            action_tokens = self.model.sample_actions(key, observation, max_decoding_steps = 32, temperature=0.0)
+            action_tokens = self.model.sample_actions(key, observation, max_decoding_steps = self.max_decoding_steps, temperature=0.0)
             #print('\nAction tokens before decoding: ', action_tokens)
             decoder = ExtractFASTActions(tokenizer=self.tokenizer, action_horizon=config.action_horizon, action_dim=config.action_dim)
             
@@ -265,15 +266,21 @@ class ProcGenInferenceFast:
             for action in decoded_actions:
                 # Convert to numpy and squeeze any extra dimensions
                 action = np.array(action)
-                if len(action.shape) > 1:
-                    action = np.squeeze(action)
-                # Trim to 32 dimensions if needed
-                if len(action) > config.action_dim:
-                    print('\nAction is longer than {} dimensions: '.format(config.action_dim), action)
-                    action = action[:config.action_dim]
-                elif len(action) < config.action_dim:
-                    print('\nAction is shorter than {} dimensions: '.format(config.action_dim), action)
-                    action = np.pad(action, (0, config.action_dim - len(action)))
+                try:
+                    if len(action.shape) > 1:
+                        action = np.squeeze(action)
+                    # Trim to 1 dimensions if needed
+                    if len(action) > self.max_decoding_steps:
+                        print('\nAction is longer than {} dimensions: '.format(self.max_decoding_steps), action)
+                        action = action[:self.max_decoding_steps]
+                    elif len(action) < self.max_decoding_steps:
+                        print('\nAction is shorter than {} dimensions: '.format(self.max_decoding_steps), action)
+                        action = np.pad(action, (0, self.max_decoding_steps - len(action)))
+                    else:
+                        print('\nAction is of correct size: ', action)
+                except:
+                    print('\n Scalar action detected: ', action)
+                
                 processed_actions.append(action)
             
             # Stack the actions into a single array
@@ -375,7 +382,7 @@ def main():
 
     # Initialize model and inference object for pi0_fast
     # Use pi0_fast config and checkpoint
-    config = pi0_fast.Pi0FASTConfig(action_horizon=1) 
+    config = pi0_fast.Pi0FASTConfig(action_horizon=1, action_dim=1) 
     tokenizer = FASTTokenizer()
     key = jax.random.key(0)
 
@@ -385,7 +392,7 @@ def main():
     gc.collect()
     jax.clear_caches()
     print('Pi0-FAST Model loaded')
-    procgen_inference = ProcGenInferenceFast(model,tokenizer, config)
+    procgen_inference = ProcGenInferenceFast(model,tokenizer, config, max_decoding_steps=10)
 
 
     # Get dataset shards
