@@ -209,3 +209,20 @@ class ProcGenDefinitions:
 
     ADDITIONAL_INSTRUCTIONS = {
     }
+
+    ACTION_DECODE_STRATEGIES = {
+        "default": "naive_dim_extension"
+    }
+
+    @staticmethod
+    def get_valid_action_space(dataset_name: str) -> dict[str, any]:
+        """
+        Get the action space for a procgen dataset
+        """
+        # only use special actions that are used in the specific procgen environment
+        special_action_space = ProcGenDefinitions.ACTION_SPACES[dataset_name]['default'][1][1].keys() \
+                                if dataset_name in ProcGenDefinitions.ACTION_SPACES.keys() \
+                                else {}
+        move_action_space = ProcGenDefinitions.movement_actions.keys()
+        valid_action_space = list(special_action_space) + list(move_action_space)
+        return valid_action_space
