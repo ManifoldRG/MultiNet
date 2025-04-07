@@ -94,7 +94,7 @@ class ProcGenInference:
         
         return transformed_dict
 
-    def get_dataset_stats(self, root_dir: str):
+    def get_dataset_stats(self, root_dir: str, dataset_name: str):
         
         running_stats = RunningStats()
 
@@ -104,9 +104,11 @@ class ProcGenInference:
             print(f'Processing shard: {shard}')
             dataset = tf.data.Dataset.load(shard)
             actions = []
-            for elem in dataset:
-                actions.append(elem['actions'][0].numpy()) # Procgen has 1D action space so only first dimension is used
-            
+            for elem in dataset:          
+                float_action_tensor = ActionUtils.set_procgen_unused_special_action_to_stand_still(   # Procgen has 1D action space so only first dimension is used
+                    np.array(elem['actions'][0].numpy()), dataset_name)
+                actions.append(float_action_tensor)
+
             # Update running statistics
             actions = np.array(actions)
             running_stats.update(actions)
@@ -391,7 +393,7 @@ def main():
             dataset_stats['action'] = normalize.NormStats(**dataset_stats_dict['action'])
             
         else:
-            dataset_stats_dict, dataset_stats = procgen_inference.get_dataset_stats(tfds_sorted_shard_paths)
+            dataset_stats_dict, dataset_stats = procgen_inference.get_dataset_stats(tfds_sorted_shard_paths, dataset_name=dataset)
             print('Dataset stats calculated: ', dataset_stats_dict)
             print(f'Saving dataset stats to {stats_output_path}')
             with open(stats_output_path, 'w') as f:
