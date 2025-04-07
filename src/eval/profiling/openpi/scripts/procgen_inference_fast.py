@@ -22,6 +22,8 @@ import gc
 from src.eval.profiling.openpi.src.openpi.shared import normalize
 from src.eval.profiling.openpi.src.openpi.transforms import Unnormalize, ExtractFASTActions, pad_to_dim
 from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
+from src.eval.profiling.openpi.scripts.procgen_utils import ActionUtils, MetricUtils
+from definitions.procgen import ProcGenDefinitions
 import jax.numpy as jnp
 import jax.tree_util as jtu
 
@@ -143,7 +145,7 @@ class ProcGenInferenceFast:
         return transformed_dict
 
 
-    def get_dataset_stats(self, root_dir: str):
+    def get_dataset_stats(self, root_dir: str, dataset_name: str):
         
         running_stats = RunningStats()
 
@@ -154,7 +156,9 @@ class ProcGenInferenceFast:
             dataset = tf.data.Dataset.load(shard)
             actions = []
             for elem in dataset:
-                actions.append(elem['actions'][0].numpy()) # Procgen has 1D action space so only first dimension is used
+                float_actions = ActionUtils.set_procgen_unused_special_action_to_stand_still(
+                    elem['actions'][0].numpy(), dataset_name) # Procgen has 1D action space so only first dimension is used
+                actions.append(float_actions)
             
             # Update running statistics
             actions = np.array(actions)
@@ -294,20 +298,21 @@ class ProcGenInferenceFast:
                 
                 # Get ground truth actions and compute metrics on CPU
                 gt_actions = np.array(batch['action'])
-                
-                #PLACEHOLDER METRICS - CHANGE ME!!
-                # Calculate error metrics
-                mae = np.mean(np.abs(gt_actions - unnormalized_discrete_actions))
-                mse = np.mean(np.square(gt_actions - unnormalized_discrete_actions))
-                rmse = np.sqrt(mse)
-                
+                gt_actions = ActionUtils.set_procgen_unused_special_action_to_stand_still(gt_actions, dataset)
+
+                action_space = ProcGenDefinitions.get_valid_action_space(dataset)
+                total_tp, total_fp, total_fn = MetricUtils._calculate_metrics_counts(gt_actions, unnormalized_discrete_actions, action_space)
+                micro_precision = MetricUtils.get_micro_precision_from_counts(total_tp, total_fp)
+                micro_recall = MetricUtils.get_micro_recall_from_counts(total_tp, total_fn)
+                micro_f1 = MetricUtils.get_micro_f1(micro_precision, micro_recall)
+
                 batch_results = {
                     "dataset": dataset,
                     "batch_id": counter,
                     "metrics": {
-                        "mae": float(mae),
-                        "mse": float(mse), 
-                        "rmse": float(rmse)
+                        "micro_precision": float(micro_precision),
+                        "micro_recall": float(micro_recall),
+                        "micro_f1_score": float(micro_f1)
                     },
                     "predictions": {
                         "ground_truth": gt_actions.tolist(),
@@ -329,7 +334,7 @@ class ProcGenInferenceFast:
             with open(results_file, 'w') as f:
                 json.dump(dataset_results, f, indent=4)
             
-            print(f"Dataset: {dataset}, Batch {counter} metrics - MAE: {mae:.4f}, MSE: {mse:.4f}, RMSE: {rmse:.4f}")
+            print(f"Dataset: {dataset}, Batch {counter} metrics - Micro Precision: {micro_precision:.4f}, Micro Recall: {micro_recall:.4f}, Micro F1: {micro_f1:.4f}")
             
 
 def parse_args() -> argparse.Namespace:
@@ -399,7 +404,7 @@ def main():
     procgen_dataset_list = os.listdir(args.dataset_dir) # Update path as needed
     for dataset in procgen_dataset_list:
         print(f'\n ---- EVALUATING {dataset} ---- \n')
-        dataset_path = os.path.join('/home/pranav/bigfish') #Update path as needed
+        dataset_path = os.path.join(args.dataset_dir, dataset) #Update path as needed
         if not os.path.isdir(dataset_path):
             print(f"Skipping {dataset}, not a directory.")
             continue
@@ -449,7 +454,7 @@ def main():
         else:
             print(f'Calculating dataset stats for {dataset}...')
             # Pass the list of full shard paths to get_dataset_stats
-            dataset_stats_dict, dataset_stats = procgen_inference.get_dataset_stats(tfds_sorted_shard_paths)
+            dataset_stats_dict, dataset_stats = procgen_inference.get_dataset_stats(tfds_sorted_shard_paths, dataset_name=dataset)
             print('Dataset stats calculated.')
             print(f'Saving dataset stats to {stats_output_path}')
             # Ensure the dictionary saved contains serializable lists (handled by get_dataset_stats)
