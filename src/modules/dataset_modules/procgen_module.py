@@ -4,6 +4,7 @@ from src.data_utils.procgen_dataloader import get_procgen_dataloader
 from src.eval_utils import quantile_filter, calculate_brier_mae, min_max_normalize, calculate_brier_mse, calculate_mean
 from src.eval_utils import calculate_max_relative_mae, calculate_proportion_beyond_mae_threshold
 from definitions.procgen_prompt import format_instruction_prompt
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 from pathlib import Path
 from typing import Union
@@ -47,7 +48,7 @@ def _find_shards(dataset: str, disk_root_dir: str) -> list[str]:
         return []
 
 def _validate_outputs_and_calculate_metrics(outputs, one_hot_labels, num_actions):
-    brier_mses, brier_maes = [], []
+    brier_mses, brier_maes, preds = [], [], []
     total_invalid_preds = 0               
     # Validate outputs and calculate Brier MSEs
     for o, output in enumerate(outputs):
@@ -63,14 +64,19 @@ def _validate_outputs_and_calculate_metrics(outputs, one_hot_labels, num_actions
             
             mse = calculate_brier_mse(probs, one_hot_labels[o])
             brier_mses.append(mse)
+            
+            preds.append(np.argmax(probs))
         else:
             # max possible Brier MSE is 2.0
             brier_maes.append(MAX_BRIER_MAE_ERROR)
             brier_mses.append(MAX_BRIER_MSE_ERROR)
+            
             total_invalid_preds += 1
-    return brier_mses, brier_maes, total_invalid_preds
+            
+            preds.append(-1)
+    return brier_mses, brier_maes, total_invalid_preds, preds
 
-def _calculate_final_metrics(timestep_mses, timestep_maes):
+def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues):
     result = {}
     
     # Calculate MAE metrics
@@ -85,6 +91,12 @@ def _calculate_final_metrics(timestep_mses, timestep_maes):
     
     max_rel_mae = calculate_max_relative_mae(timestep_maes)
     prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(timestep_maes)
+    
+    # Calculate classification metrics
+    accuracy = accuracy_score(trues, preds)
+    precision = precision_score(trues, preds, average='micro', zero_division=0)
+    recall = recall_score(trues, preds, average='micro', zero_division=0)
+    f1 = f1_score(trues, preds, average='micro', zero_division=0)
     
     # Calculate MSE metrics
     total_dataset_amse = sum(timestep_mses)
@@ -104,6 +116,10 @@ def _calculate_final_metrics(timestep_mses, timestep_maes):
     result['normalized_quantile_filtered_amae'] = average_normalized_quantile_filtered_mae
     result['max_relative_mae'] = max_rel_mae
     result['proportion_beyond_threshold_mae'] = prop_beyond_threshold_mae
+    result['accuracy'] = accuracy
+    result['recall'] = recall
+    result['precision'] = precision
+    result['f1'] = f1
     return result
             
         
@@ -133,7 +149,7 @@ class ProcGenModule(DatasetModule):
             dataloader_obj, dataloader = self.get_dataloader_fn(tfds_shards, batch_size=self.batch_size, by_episode=True)
             result = {}
         
-            timestep_mses, timestep_maes = [], []
+            timestep_mses, timestep_maes, timestep_preds, timestep_trues = [], [], [], []
             total_invalid_preds = 0
             start_time = time.time()
             for batch in dataloader:
@@ -153,18 +169,19 @@ class ProcGenModule(DatasetModule):
                         
                     # Check if labels are within the action space, otherwise set to NoOp action
                     labels = np.array([label[0] if label[0] < num_actions else NOOP_ACTION for label in labels])
-                    
                     one_hot_labels = self._get_one_hot(labels, num_actions)
                                        
                     if not isinstance(outputs, list):
                         outputs = [None]*len(labels)
                         
-                    brier_mses, brier_maes, invalid_preds = _validate_outputs_and_calculate_metrics(outputs, one_hot_labels, num_actions)
+                    brier_mses, brier_maes, invalid_preds, preds = _validate_outputs_and_calculate_metrics(outputs, one_hot_labels, num_actions)
                     timestep_mses.extend(brier_mses)
                     timestep_maes.extend(brier_maes)
-                    total_invalid_preds += invalid_preds       
+                    total_invalid_preds += invalid_preds 
+                    timestep_preds.extend(preds)
+                    timestep_trues.extend(labels)
                     
-            result = _calculate_final_metrics(timestep_mses, timestep_maes)
+            result = _calculate_final_metrics(timestep_mses, timestep_maes, timestep_preds, timestep_trues)
             result['eval_time'] = time.time() - start_time
             result['total_invalid_preds'] = total_invalid_preds
 
@@ -190,7 +207,7 @@ class ProcGenBatchModule(DatasetBatchModule):
     def _run_eval_dataset(self, dataset_batch_info_paths: Union[str, list[str]]):
         result = {}
         
-        timestep_mses, timestep_maes = [], []
+        timestep_mses, timestep_maes, timestep_preds, timestep_trues = [], [], [], []
         total_invalid_preds = 0
         start_time = time.time()
         
@@ -230,18 +247,19 @@ class ProcGenBatchModule(DatasetBatchModule):
             
             # Check if labels are within the action space, otherwise set to NoOp action
             labels = np.array([label[0] if label[0] < num_actions else NOOP_ACTION for label in labels])
-            
             one_hot_labels = self._get_one_hot(labels, num_actions)
             
             if not isinstance(outputs, list):
                 outputs = [None]*len(labels)
                 
-            brier_mses, brier_maes, invalid_preds = _validate_outputs_and_calculate_metrics(outputs, one_hot_labels, num_actions)
+            brier_mses, brier_maes, invalid_preds, preds = _validate_outputs_and_calculate_metrics(outputs, one_hot_labels, num_actions)
             timestep_mses.extend(brier_mses)
             timestep_maes.extend(brier_maes)
-            total_invalid_preds += invalid_preds  
+            total_invalid_preds += invalid_preds
+            timestep_preds.extend(preds)
+            timestep_trues.extend(labels)
             
-        result = _calculate_final_metrics(timestep_mses, timestep_maes)
+        result = _calculate_final_metrics(timestep_mses, timestep_maes, timestep_preds, timestep_trues)
         result['eval_time'] = time.time() - start_time
         result['total_invalid_preds'] = total_invalid_preds
             
