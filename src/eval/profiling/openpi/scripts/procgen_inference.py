@@ -164,34 +164,6 @@ class ProcGenInference:
         counter = 0
         results_file = os.path.join(output_dir, f'{dataset}_results.json')
         for batch in dataloader:
-            '''# Process each timestep in episode
-            for timestep_idx in range(len(batch['image_observation'])):
-                obs = {
-                    'image_observation': batch['image_observation'][0][timestep_idx],
-                    'text_observation': batch['text_observation'][0][timestep_idx]
-                }
-                
-                # Transform observation
-                transformed_dict = procgen_inference.prepare_observation(obs, max_token_length=config.max_token_len)
-                observation = Observation.from_dict(transformed_dict) # Process according to model input format
-                
-                # Sample actions
-                actions = model.sample_actions(key, observation, num_steps=10)
-                procgen_action = actions[0] #Procgen has an action space of 1 dimension and discrete 
-                print(f"Timestep {timestep_idx} actions:", procgen_action)
-
-
-                
-                # Memory management
-                del transformed_dict, observation, actions
-
-            # Clear memory every 10 episodes
-            counter += 1
-            if counter % 10 == 0:
-                gc.collect()
-                jax.clear_caches()
-                print(f"Processed {counter} episodes, cleared memory")'''
-            
             # Process entire batch at once
             obs = {
                 'image_observation': batch['image_observation'],  # Full batch
@@ -215,20 +187,26 @@ class ProcGenInference:
             
             print('Ground truth actions: ', gt_actions)
             print('Predicted actions: ', unnormalized_discrete_actions)
-            # Calculate error metrics
-
+            
+            # Calculate metrics
             emr = ProcGenInference.get_exact_match_rate(unnormalized_discrete_actions, gt_actions)
-
             action_space = ProcGenDefinitions.get_valid_action_space(dataset)
-            mf1 = ProcGenInference.get_micro_f1_score(unnormalized_discrete_actions, gt_actions, action_space)
-
-            """CHANGE ME!: Placeholder for error metrics until the new Quantile-filtered MAE is implemented"""
-            # # Mean absolute error
-            # mae = np.mean(np.abs(gt_actions - unnormalized_discrete_actions))
-            # # Mean squared error 
-            # mse = np.mean(np.square(gt_actions - unnormalized_discrete_actions))
-            # # Root mean squared error
-            # rmse = np.sqrt(mse)
+            
+            # Calculate metrics counts once and reuse
+            total_tp, total_fp, total_fn = ProcGenInference._calculate_metrics_counts(
+                unnormalized_discrete_actions, gt_actions, action_space
+            )
+            
+            # Calculate all metrics using the same counts
+            """
+            using micro to avoid minority class distortion since we expect the action predictions to be imbalanced.
+            e.g. in one episode, the agent might take the same action consecutively to reach a goal in a straight line.
+            """
+            micro_precision = ProcGenInference.get_micro_precision_from_counts(total_tp, total_fp)
+            micro_recall = ProcGenInference.get_micro_recall_from_counts(total_tp, total_fn)
+            micro_f1 = ProcGenInference.get_micro_f1(micro_precision, micro_recall)
+            
+            print(f"Micro Precision: {micro_precision}, Micro Recall: {micro_recall}, Micro F1: {micro_f1}")
             
             # Store results for this batch
             batch_results = {
@@ -236,7 +214,9 @@ class ProcGenInference:
                 "batch_id": counter,
                 "metrics": {
                     "exact_match_rate": float(emr),
-                    "micro_f1_score": float(mf1)
+                    "micro_precision": float(micro_precision),
+                    "micro_recall": float(micro_recall),
+                    "micro_f1_score": float(micro_f1)
                 },
                 "predictions": {
                     "ground_truth": gt_actions.tolist(),
@@ -261,14 +241,12 @@ class ProcGenInference:
             with open(results_file, 'w') as f:
                 json.dump(dataset_results, f, indent=4)
             
-            # print(f"Dataset: {dataset}, Batch {counter} metrics - MAE: {mae:.4f}, MSE: {mse:.4f}, RMSE: {rmse:.4f}")
-            
             # Memory management
             del transformed_dict, observation, actions, unnormalized_discrete_actions
             gc.collect()
             jax.clear_caches()
             print(f"Processed {counter} episodes, cleared memory")
-        
+
     @staticmethod
     def get_exact_match_rate(predicted_actions: np.ndarray, gt_actions: np.ndarray) -> np.ndarray:
         """Get the exact match rate of the actions"""
@@ -283,18 +261,17 @@ class ProcGenInference:
         return float(exact_match_rate)
 
     @staticmethod
-    def get_micro_f1_score(predicted_actions: np.ndarray, gt_actions: np.ndarray, all_labels: list = None) -> float:
+    def _calculate_metrics_counts(predicted_actions: np.ndarray, gt_actions: np.ndarray, all_labels: list) -> tuple[int, int, int]:
         """
-        Calculates the micro F1 score (better for naturally imbalanced action trajectories).
-
+        Helper function to calculate true positives, false positives, and false negatives.
+        
         Args:
             predicted_actions: Array of predicted action labels.
             gt_actions: Array of ground truth action labels.
-            all_labels: A list or array of all possible valid action labels for the environment.
-                       Used to ensure we only consider valid actions.
-
+            all_labels: List of all possible valid action labels.
+            
         Returns:
-            The micro F1 score (float). Returns 0.0 if all_labels is empty or arrays are empty.
+            Tuple of (total_tp, total_fp, total_fn)
         """
         # Ensure inputs are numpy arrays
         predicted_actions = np.asarray(predicted_actions).squeeze() # from (5, 1, 1) to (5,)
@@ -304,7 +281,7 @@ class ProcGenInference:
             raise ValueError("Predicted and ground truth actions must have the same shape.")
             
         if len(all_labels) == 0 or predicted_actions.size == 0:
-            return 0.0
+            raise ValueError("No valid action labels or empty action arrays")
 
         # Initialize total counts
         total_tp = 0
@@ -322,25 +299,28 @@ class ProcGenInference:
             total_fp += np.sum(pred_is_label & ~gt_is_label)
             total_fn += np.sum(~pred_is_label & gt_is_label)
 
-        # Calculate micro-averaged precision and recall
+        return total_tp, total_fp, total_fn
+
+    @staticmethod
+    def get_micro_precision_from_counts(total_tp: int, total_fp: int) -> float:
+        """Calculate precision from precomputed counts."""
         if total_tp + total_fp == 0:  # No positive predictions
-            precision = 0.0
-        else:
-            precision = total_tp / (total_tp + total_fp)
+            return 0.0
+        return float(total_tp / (total_tp + total_fp))
 
+    @staticmethod
+    def get_micro_recall_from_counts(total_tp: int, total_fn: int) -> float:
+        """Calculate recall from precomputed counts."""
         if total_tp + total_fn == 0:  # No positive ground truth
-            recall = 0.0
-        else:
-            recall = total_tp / (total_tp + total_fn)
+            return 0.0
+        return float(total_tp / (total_tp + total_fn))
 
-        # Calculate micro F1
+    @staticmethod
+    def get_micro_f1(precision: int, recall: int) -> float:
+        """Calculate micro F1 score from precomputed counts."""
         if precision + recall == 0:
-            micro_f1 = 0.0
-        else:
-            micro_f1 = 2 * (precision * recall) / (precision + recall)
-
-        return float(micro_f1)
-
+            return 0.0
+        return float(2 * (precision * recall) / (precision + recall))
 
 def parse_args() -> argparse.Namespace:
     """Parse and validate command line arguments.
@@ -386,7 +366,7 @@ def main():
     config = pi0.Pi0Config(action_horizon=1) #We want to predict only for the next timestep
     tokenizer = PaligemmaTokenizer()
     key = jax.random.key(0)
-    model = config.load(_model.restore_params(download.maybe_download("s3://openpi-assets/checkpoints/pi0_base/params")))
+    model = config.load(_model.restore_params(download.maybe_download("s3://openpi-assets/checkpoints/pi0_droid/params")))
     print('Model loaded')
     procgen_inference = ProcGenInference(model, tokenizer, config)
    
