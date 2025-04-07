@@ -16,7 +16,11 @@ class ActionUtils:
             np.ndarray: The modified action array with invalid actions replaced with stand still (4).
         """
         actions = np.atleast_1d(np.asarray(actions))
+<<<<<<< HEAD
         valid_action_space = ProcGenDefinitions.get_valid_action_space(dataset_name, 'default')
+=======
+        valid_action_space = ProcGenDefinitions.get_valid_action_space(dataset_name)
+>>>>>>> 2d95dd2 (Fixes unused action utils func)
         
         # Create a boolean mask for invalid actions
         invalid_mask = ~np.isin(actions, valid_action_space)
