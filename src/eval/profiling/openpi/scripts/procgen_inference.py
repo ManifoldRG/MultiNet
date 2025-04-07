@@ -19,7 +19,7 @@ import gc
 from src.eval.profiling.openpi.src.openpi.shared import normalize
 from src.eval.profiling.openpi.src.openpi.transforms import Unnormalize
 from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
-from src.eval.profiling.openpi.scripts.procgen_utils import ActionUtils
+from src.eval.profiling.openpi.scripts.procgen_utils import ActionUtils, MetricUtils
 from definitions.procgen import ProcGenDefinitions
 
 
@@ -191,11 +191,11 @@ class ProcGenInference:
             print('Predicted actions: ', unnormalized_discrete_actions)
             
             # Calculate metrics
-            emr = ProcGenInference.get_exact_match_rate(unnormalized_discrete_actions, gt_actions)
+            emr = MetricUtils.get_exact_match_rate(unnormalized_discrete_actions, gt_actions)
             action_space = ProcGenDefinitions.get_valid_action_space(dataset)
             
             # Calculate metrics counts once and reuse
-            total_tp, total_fp, total_fn = ProcGenInference._calculate_metrics_counts(
+            total_tp, total_fp, total_fn = MetricUtils._calculate_metrics_counts(
                 unnormalized_discrete_actions, gt_actions, action_space
             )
             
@@ -204,9 +204,9 @@ class ProcGenInference:
             using micro to avoid minority class distortion since we expect the action predictions to be imbalanced.
             e.g. in one episode, the agent might take the same action consecutively to reach a goal in a straight line.
             """
-            micro_precision = ProcGenInference.get_micro_precision_from_counts(total_tp, total_fp)
-            micro_recall = ProcGenInference.get_micro_recall_from_counts(total_tp, total_fn)
-            micro_f1 = ProcGenInference.get_micro_f1(micro_precision, micro_recall)
+            micro_precision = MetricUtils.get_micro_precision_from_counts(total_tp, total_fp)
+            micro_recall = MetricUtils.get_micro_recall_from_counts(total_tp, total_fn)
+            micro_f1 = MetricUtils.get_micro_f1(micro_precision, micro_recall)
             
             print(f"Micro Precision: {micro_precision}, Micro Recall: {micro_recall}, Micro F1: {micro_f1}")
             
@@ -248,81 +248,6 @@ class ProcGenInference:
             gc.collect()
             jax.clear_caches()
             print(f"Processed {counter} episodes, cleared memory")
-
-    @staticmethod
-    def get_exact_match_rate(predicted_actions: np.ndarray, gt_actions: np.ndarray) -> np.ndarray:
-        """Get the exact match rate of the actions"""
-        # Ensure inputs are numpy arrays and squeeze extra dimensions
-        predicted_actions = np.asarray(predicted_actions).squeeze() # from (5, 1, 1) to (5,)
-        gt_actions = np.asarray(gt_actions).squeeze() # from (5, 1, 1) to (5,)
-        
-        if predicted_actions.shape != gt_actions.shape or predicted_actions.size == 0:
-            raise ValueError("Unmatched action shapes or empty action arrays")
-
-        exact_match_rate = np.mean(predicted_actions == gt_actions)
-        return float(exact_match_rate)
-
-    @staticmethod
-    def _calculate_metrics_counts(predicted_actions: np.ndarray, gt_actions: np.ndarray, all_labels: list) -> tuple[int, int, int]:
-        """
-        Helper function to calculate true positives, false positives, and false negatives.
-        
-        Args:
-            predicted_actions: Array of predicted action labels.
-            gt_actions: Array of ground truth action labels.
-            all_labels: List of all possible valid action labels.
-            
-        Returns:
-            Tuple of (total_tp, total_fp, total_fn)
-        """
-        # Ensure inputs are numpy arrays
-        predicted_actions = np.asarray(predicted_actions).squeeze() # from (5, 1, 1) to (5,)
-        gt_actions = np.asarray(gt_actions).squeeze() # from (5, 1, 1) to (5,)
-
-        if predicted_actions.shape != gt_actions.shape:
-            raise ValueError("Predicted and ground truth actions must have the same shape.")
-            
-        if len(all_labels) == 0 or predicted_actions.size == 0:
-            raise ValueError("No valid action labels or empty action arrays")
-
-        # Initialize total counts
-        total_tp = 0
-        total_fp = 0
-        total_fn = 0
-
-        # Accumulate counts across all labels
-        for label in all_labels:
-            # Boolean arrays for the current label
-            pred_is_label = (predicted_actions == label)
-            gt_is_label = (gt_actions == label)
-
-            # Add to total counts
-            total_tp += np.sum(pred_is_label & gt_is_label)
-            total_fp += np.sum(pred_is_label & ~gt_is_label)
-            total_fn += np.sum(~pred_is_label & gt_is_label)
-
-        return total_tp, total_fp, total_fn
-
-    @staticmethod
-    def get_micro_precision_from_counts(total_tp: int, total_fp: int) -> float:
-        """Calculate precision from precomputed counts."""
-        if total_tp + total_fp == 0:  # No positive predictions
-            return 0.0
-        return float(total_tp / (total_tp + total_fp))
-
-    @staticmethod
-    def get_micro_recall_from_counts(total_tp: int, total_fn: int) -> float:
-        """Calculate recall from precomputed counts."""
-        if total_tp + total_fn == 0:  # No positive ground truth
-            return 0.0
-        return float(total_tp / (total_tp + total_fn))
-
-    @staticmethod
-    def get_micro_f1(precision: int, recall: int) -> float:
-        """Calculate micro F1 score from precomputed counts."""
-        if precision + recall == 0:
-            return 0.0
-        return float(2 * (precision * recall) / (precision + recall))
 
 def parse_args() -> argparse.Namespace:
     """Parse and validate command line arguments.
