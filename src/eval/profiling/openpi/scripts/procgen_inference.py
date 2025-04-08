@@ -26,12 +26,42 @@ from src.eval_utils import (get_exact_match_rate,
                             get_micro_precision_from_counts, 
                             get_micro_recall_from_counts, 
                             get_micro_f1)
+from dataclasses import dataclass, fields
 
 
+#Restrict tf to CPU
+tf.config.set_visible_devices([], "GPU")
 # Configure JAX memory settings
 os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.8'
 os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
+
+
+@dataclass
+class DatasetResults:
+    total_batches: int = 0
+    total_emr: float = 0
+    total_micro_precision: float = 0
+    total_micro_recall: float = 0
+    total_micro_f1: float = 0
+    avg_emr: float = 0
+    avg_micro_precision: float = 0
+    avg_micro_recall: float = 0
+    avg_micro_f1: float = 0
+    total_clipped_emr: float = 0
+    total_clipped_micro_precision: float = 0
+    total_clipped_micro_recall: float = 0
+    total_clipped_micro_f1: float = 0
+    avg_clipped_emr: float = 0
+    avg_clipped_micro_precision: float = 0
+    avg_clipped_micro_recall: float = 0
+    avg_clipped_micro_f1: float = 0
+
+    def to_dict(self) -> dict:
+        return {
+            field.name: getattr(self, field.name)
+            for field in fields(self)
+        }
 
 class ProcGenInference:
     def __init__(self, model, tokenizer: PaligemmaTokenizer, config: pi0.Pi0Config):
@@ -123,7 +153,7 @@ class ProcGenInference:
             del dataset
             import gc
             gc.collect()
-    
+
         # Get final statistics
         stats = running_stats.get_statistics()
         # Convert NormStats to dictionary format
@@ -166,17 +196,18 @@ class ProcGenInference:
         
         return unnormalized_actions
 
-    def evaluate_model(self, model, key, config, dataset_stats: dict, dataloader: tf.data.Dataset, dataset: str, output_dir: str):
+    def evaluate_model(self, model, key, config, dataset_stats: dict, dataloader: tf.data.Dataset, dataset: str) -> dict[any]:
         """Evaluate the model on the dataset"""
         counter = 0
-        results_file = os.path.join(output_dir, f'{dataset}_results.json')
+        dataset_results = DatasetResults()
+        
         for batch in dataloader:
             # Process entire batch at once
             obs = {
                 'image_observation': batch['image_observation'],  # Full batch
                 'text_observation': batch['text_observation']     # Full batch
             }
-            
+
             # Transform observation
             transformed_dict = self.prepare_observation(obs, max_token_length=config.max_token_len)
             observation = Observation.from_dict(transformed_dict)
@@ -228,48 +259,39 @@ class ProcGenInference:
 
 
             # Store results for this batch
-            batch_results = {
-                "dataset": dataset,
-                "batch_id": counter,
-                "metrics": {
-                    "exact_match_rate": float(emr),
-                    "micro_precision": float(micro_precision),
-                    "micro_recall": float(micro_recall),
-                    "micro_f1_score": float(micro_f1),
-                    "clipped_exact_match_rate": float(clipped_emr),
-                    "clipped_micro_precision": float(clipped_micro_precision),
-                    "clipped_micro_recall": float(clipped_micro_recall),
-                    "clipped_micro_f1_score": float(clipped_micro_f1)
-                },
-                "predictions": {
-                    "ground_truth": gt_actions.tolist(),
-                    "predicted": unnormalized_discrete_actions.tolist(),
-                    "clipped_predicted": clipped_predictions.tolist()
-                }
-            }
-            
-            # Load existing results if file exists, otherwise create new
-            if os.path.exists(results_file):
-                with open(results_file, 'r') as f:
-                    dataset_results = json.load(f)
-            else:
-                dataset_results = {
-                    "dataset": dataset,
-                    "batches": []
-                }
-            
-            # Add new batch results
-            dataset_results["batches"].append(batch_results)
-            
-            # Save updated results
-            with open(results_file, 'w') as f:
-                json.dump(dataset_results, f, indent=4)
-            
+            dataset_results.total_batches = counter
+            dataset_results.total_emr += emr
+            dataset_results.total_micro_precision += micro_precision
+            dataset_results.total_micro_recall += micro_recall
+            dataset_results.total_micro_f1 += micro_f1
+
+            dataset_results.total_clipped_emr += clipped_emr
+            dataset_results.total_clipped_micro_precision += clipped_micro_precision
+            dataset_results.total_clipped_micro_recall += clipped_micro_recall
+            dataset_results.total_clipped_micro_f1 += clipped_micro_f1
+
             # Memory management
-            del transformed_dict, observation, actions, unnormalized_discrete_actions
+            del transformed_dict, observation, actions, unnormalized_discrete_actions, \
+                gt_actions, total_tp, total_fp, total_fn, clipped_predictions, \
+                clipped_total_tp, clipped_total_fp, clipped_total_fn, \
+                micro_precision, micro_recall, micro_f1, clipped_micro_precision, \
+                clipped_micro_recall, clipped_micro_f1, emr, clipped_emr
             gc.collect()
             jax.clear_caches()
             print(f"Processed {counter} episodes, cleared memory")
+            if counter == 2:
+                break
+
+        dataset_results.avg_emr = dataset_results.total_emr / counter
+        dataset_results.avg_micro_precision = dataset_results.total_micro_precision / counter
+        dataset_results.avg_micro_recall = dataset_results.total_micro_recall / counter
+        dataset_results.avg_micro_f1 = dataset_results.total_micro_f1 / counter
+        dataset_results.avg_clipped_emr = dataset_results.total_clipped_emr / counter
+        dataset_results.avg_clipped_micro_precision = dataset_results.total_clipped_micro_precision / counter
+        dataset_results.avg_clipped_micro_recall = dataset_results.total_clipped_micro_recall / counter
+        dataset_results.avg_clipped_micro_f1 = dataset_results.total_clipped_micro_f1 / counter
+
+        return dataset_results.to_dict()
 
 def parse_args() -> argparse.Namespace:
     """Parse and validate command line arguments.
@@ -318,7 +340,8 @@ def main():
     model = config.load(_model.restore_params(download.maybe_download("s3://openpi-assets/checkpoints/pi0_droid/params")))
     print('Model loaded')
     procgen_inference = ProcGenInference(model, tokenizer, config)
-   
+
+    results_file = os.path.join(args.output_dir, 'pi0_base_procgen_results.json')
 
     # Get dataset shards
     procgen_dataset_list = os.listdir(args.dataset_dir) # Update path as needed
@@ -349,9 +372,20 @@ def main():
         # Create dataloader
         dataset_obj, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=5)
 
-        procgen_inference.evaluate_model(model, key, config, dataset_stats, dataloader, dataset, args.output_dir)
+        results = procgen_inference.evaluate_model(model, key, config, dataset_stats, dataloader, dataset)
     
-    
+        # Load existing results if file exists, otherwise create new
+        if os.path.exists(results_file):
+            with open(results_file, 'r') as f:
+                dataset_results = json.load(f)
+        else:
+            dataset_results = {}
+
+        dataset_results[dataset] = results
+        
+        # Save updated results
+        with open(results_file, 'w') as f:
+            json.dump(dataset_results, f, indent=4)
 
 if __name__ == "__main__":
     main()
