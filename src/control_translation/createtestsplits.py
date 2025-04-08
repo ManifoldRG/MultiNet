@@ -127,25 +127,38 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
 
             print(dir_path)
 
-            #First sort the files based on naming. Example of a file name in a subdataset of procgen - 20230329T100909_5858_450_91_6.00
-            sorted_files = sorted(os.listdir(dir_path))
+            # First sort the files based on naming. Example of a file name in a subdataset of procgen - 20230329T100909_5858_450_91_6.00
+            #sorted_files = sorted(os.listdir(dir_path))
 
-            #Each file is an episode. We can split 20% of the episodes as test set.
-            num_test_episodes = int(len(sorted_files) * 0.2)
-            test_episodes = sorted_files[:num_test_episodes]
-            train_episodes = sorted_files[num_test_episodes:]
+            # Each file is an episode. We can split 20% of the episodes as test set.
+            #num_test_episodes = int(len(sorted_files) * 0.2)
+            #test_episodes = sorted_files[:num_test_episodes]
+            #train_episodes = sorted_files[num_test_episodes:]
 
-            #Create a test directory
-            test_dir = os.path.join(output_base, dirs, 'test')
+            # Get all episode files
+            all_files = os.listdir(dir_path)
+
+            # Calculate number of test episodes (20%)
+            #num_test_episodes = min(int(len(all_files) * 0.2), 1000)
+            num_test_episodes = int(len(all_files) * 0.2)
+
+            # Randomly sample test episodes
+            test_episodes = np.random.choice(all_files, num_test_episodes, replace=False)
+
+            # Create test directory
+            test_dir = os.path.join(output_base, dirs, 'test_final')
             os.makedirs(test_dir, exist_ok=True)
 
+            # Save list of test episodes to file
+            test_episodes_file = os.path.join(output_base, dirs, 'test_episodes.txt')
+            with open(test_episodes_file, 'w') as f:
+                for episode in test_episodes:
+                    f.write(f'{episode}\n')
+            print(f'Saved list of {len(test_episodes)} test episodes to {test_episodes_file}')
 
-
-            #Copy the test episodes to the test directory
+            # Copy the test episodes to the test directory
             for episode in test_episodes:
-                #print(episode)
                 src_file = os.path.join(dir_path, episode)
-                #print(src_file)
                 os.system(f'cp -r {src_file} {test_dir}')
                 print(f'Copied {src_file} to {test_dir}')
         
