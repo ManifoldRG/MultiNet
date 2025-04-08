@@ -19,8 +19,13 @@ import gc
 from src.eval.profiling.openpi.src.openpi.shared import normalize
 from src.eval.profiling.openpi.src.openpi.transforms import Unnormalize
 from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
-from src.eval.profiling.openpi.scripts.procgen_utils import ActionUtils, MetricUtils
+from src.eval.profiling.openpi.scripts.procgen_utils import ActionUtils
 from definitions.procgen import ProcGenDefinitions
+from src.eval_utils import (get_exact_match_rate,
+                            calculate_tp_fp_fn_counts,
+                            get_micro_precision_from_counts, 
+                            get_micro_recall_from_counts, 
+                            get_micro_f1)
 
 
 # Configure JAX memory settings
@@ -191,11 +196,11 @@ class ProcGenInference:
             print('Predicted actions: ', unnormalized_discrete_actions)
             
             # Calculate metrics
-            emr = MetricUtils.get_exact_match_rate(unnormalized_discrete_actions, gt_actions)
+            emr = get_exact_match_rate(unnormalized_discrete_actions, gt_actions)
             action_space = ProcGenDefinitions.get_valid_action_space(dataset)
             
             # Calculate metrics counts once and reuse
-            total_tp, total_fp, total_fn = MetricUtils._calculate_metrics_counts(
+            total_tp, total_fp, total_fn = calculate_tp_fp_fn_counts(
                 unnormalized_discrete_actions, gt_actions, action_space
             )
             
@@ -204,9 +209,9 @@ class ProcGenInference:
             using micro to avoid minority class distortion since we expect the action predictions to be imbalanced.
             e.g. in one episode, the agent might take the same action consecutively to reach a goal in a straight line.
             """
-            micro_precision = MetricUtils.get_micro_precision_from_counts(total_tp, total_fp)
-            micro_recall = MetricUtils.get_micro_recall_from_counts(total_tp, total_fn)
-            micro_f1 = MetricUtils.get_micro_f1(micro_precision, micro_recall)
+            micro_precision = get_micro_precision_from_counts(total_tp, total_fp)
+            micro_recall = get_micro_recall_from_counts(total_tp, total_fn)
+            micro_f1 = get_micro_f1(micro_precision, micro_recall)
             
             print(f"Micro Precision: {micro_precision}, Micro Recall: {micro_recall}, Micro F1: {micro_f1}")
             
