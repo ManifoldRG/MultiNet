@@ -142,6 +142,7 @@ class DatasetActionStatisticsCalculator:
         
         mask, discrete = self._define_unnorm_mask_and_discrete_mask(action_dim)
         
+
         action_stats = {
             "mean": np.mean(self.action_tensors, axis=0).tolist(),
             "std": np.std(self.action_tensors, axis=0).tolist(),
@@ -152,6 +153,12 @@ class DatasetActionStatisticsCalculator:
             "mask": mask,
             "discrete": discrete
         }
+
+        if self.dataset_name in ProcGenDefinitions.DESCRIPTIONS.keys():
+            valid_actions = sorted(ProcGenDefinitions.get_valid_action_space(
+                self.dataset_name, 'default'))
+            if action_stats['max'][0] - action_stats['min'][0] + 1 != len(valid_actions):
+                raise ValueError(f"Dataset '{self.dataset_name}' contains invalid actions: {sorted(valid_actions)}")
 
         return action_stats
     
@@ -298,7 +305,7 @@ if __name__ == "__main__":
     added_dataset_stats_counter = 0
 
     for dataset in PROFILING_DATASETS:
-        if dataset in dataset_statistics:
+        if dataset in dataset_statistics and dataset_statistics[dataset] is not None:
             logger.info(f"Skipping {dataset} as it's already in the dataset statistics.")
             continue
 
