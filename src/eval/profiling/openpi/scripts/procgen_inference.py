@@ -197,7 +197,7 @@ class ProcGenInference:
             
             # Calculate metrics
             emr = get_exact_match_rate(unnormalized_discrete_actions, gt_actions)
-            action_space = ProcGenDefinitions.get_valid_action_space(dataset)
+            action_space = sorted(ProcGenDefinitions.get_valid_action_space(dataset, 'default'))
             
             # Calculate metrics counts once and reuse
             total_tp, total_fp, total_fn = calculate_tp_fp_fn_counts(
@@ -213,8 +213,20 @@ class ProcGenInference:
             micro_recall = get_micro_recall_from_counts(total_tp, total_fn)
             micro_f1 = get_micro_f1(micro_precision, micro_recall)
             
-            print(f"Micro Precision: {micro_precision}, Micro Recall: {micro_recall}, Micro F1: {micro_f1}")
+            print(f"Unclipped Micro Precision: {micro_precision}, Micro Recall: {micro_recall}, Micro F1: {micro_f1}")
             
+            clipped_predictions = np.clip(unnormalized_discrete_actions, action_space[0], action_space[-1])
+            clipped_emr = get_exact_match_rate(clipped_predictions, gt_actions)
+            clipped_total_tp, clipped_total_fp, clipped_total_fn = calculate_tp_fp_fn_counts(
+                clipped_predictions, gt_actions, action_space
+            )
+            clipped_micro_precision = get_micro_precision_from_counts(clipped_total_tp, clipped_total_fp)
+            clipped_micro_recall = get_micro_recall_from_counts(clipped_total_tp, clipped_total_fn)
+            clipped_micro_f1 = get_micro_f1(clipped_micro_precision, clipped_micro_recall)
+
+            print(f"Clipped Micro Precision: {clipped_micro_precision}, Clipped Micro Recall: {clipped_micro_recall}, Clipped Micro F1: {clipped_micro_f1}")
+
+
             # Store results for this batch
             batch_results = {
                 "dataset": dataset,
@@ -223,11 +235,16 @@ class ProcGenInference:
                     "exact_match_rate": float(emr),
                     "micro_precision": float(micro_precision),
                     "micro_recall": float(micro_recall),
-                    "micro_f1_score": float(micro_f1)
+                    "micro_f1_score": float(micro_f1),
+                    "clipped_exact_match_rate": float(clipped_emr),
+                    "clipped_micro_precision": float(clipped_micro_precision),
+                    "clipped_micro_recall": float(clipped_micro_recall),
+                    "clipped_micro_f1_score": float(clipped_micro_f1)
                 },
                 "predictions": {
                     "ground_truth": gt_actions.tolist(),
-                    "predicted": unnormalized_discrete_actions.tolist()
+                    "predicted": unnormalized_discrete_actions.tolist(),
+                    "clipped_predicted": clipped_predictions.tolist()
                 }
             }
             

@@ -1,4 +1,7 @@
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def get_exact_match_rate(predicted_actions: np.ndarray, gt_actions: np.ndarray) -> np.ndarray:
@@ -86,11 +89,7 @@ def get_micro_f1(precision: float, recall: float) -> float:
     if precision + recall == 0:
         return 0.0
     return float(2 * (precision * recall) / (precision + recall))
-=======
-import numpy as np
-import logging
 
-logger = logging.getLogger(__name__)
 
 def calculate_mae(predicted_action, actual_action) -> float:
     """Calculate mean absolute error from absolute errors"""
