@@ -161,7 +161,7 @@ class OpenXBatchModule(DatasetBatchModule):
     def _find_shards(self, dataset: str) -> list[str]:
         return _find_shards(self, dataset, self.disk_root_dir)
     
-    def _run_eval_dataset(self, dataset_batch_info_folder):
+    def _run_eval_dataset(self, dataset_batch_info_paths: Union[str, list[str]]):
         result = {}
         
         #avg_mse_list = []
@@ -172,7 +172,14 @@ class OpenXBatchModule(DatasetBatchModule):
         start_time = time.time()
         total_invalid_preds = 0
         
-        paths = Path(dataset_batch_info_folder).iterdir()
+        # If it's a folder path, iterate over all files in the folder
+        if isinstance(dataset_batch_info_paths, str):
+            paths = Path(dataset_batch_info_paths).iterdir()
+        elif isinstance(dataset_batch_info_paths, list):
+            paths = dataset_batch_info_paths
+        else:
+            raise ValueError(f"data_batch_info_paths should be a path to a folder or a list of filepaths")
+            
         for fp in paths:
             if not Path(fp).exists():
                 raise FileNotFoundError(f'Could not find file at path {fp}') 
@@ -193,7 +200,7 @@ class OpenXBatchModule(DatasetBatchModule):
                 outputs = self.modality_module.retrieve_batch_results(batch_id, output_types)
             else:
                 raise Exception(f'Batch not completed for batch {ds} batch num {batch_num} '
-                                f'with batch id {batch_id}. Status: {status}. Skipping...')
+                                f'with batch id {batch_id}. Status: {status}. Stopping eval.')
             
             mses = []
             for i, output in enumerate(outputs):

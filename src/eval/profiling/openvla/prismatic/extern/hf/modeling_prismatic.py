@@ -21,7 +21,10 @@ import numpy as np
 import timm
 import tokenizers
 import torch
-import torch.nn as nn
+
+from torch import nn, pi
+import torch.nn.functional as F
+from einops import rearrange, repeat
 import transformers
 from timm.models.vision_transformer import LayerScale
 from transformers import AutoModelForCausalLM, PretrainedConfig, PreTrainedModel
@@ -31,7 +34,6 @@ from .configuration_prismatic import OpenVLAConfig, PrismaticConfig
 
 # Get Logger
 logger = logging.getLogger(__name__)
-
 
 # === PyTorch/HuggingFace Default IGNORE_INDEX (for CrossEntropyLoss labels)
 IGNORE_INDEX = -100
@@ -495,45 +497,244 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
     def __init__(self, config: OpenVLAConfig) -> None:
         super().__init__(config)
         self.norm_stats = config.norm_stats
+        self.default_action_decoding_strategy = config.default_action_decoding_strategy
 
         # Compute action bins
-        self.bins = np.linspace(-1, 1, config.n_action_bins)
-        self.bin_centers = (self.bins[:-1] + self.bins[1:]) / 2.0
+        self.bins = np.linspace(-1, 1, config.n_action_bins)  # 256  [-1, -1 + 2/256, -1 + 4/256, ..., 1]
+        self.bin_centers = (self.bins[:-1] + self.bins[1:]) / 2.0  # 255  [-1 + 1/256, -1 + 3/256, ..., 1 - 1/256]
 
         # Compute vocab size for de-tokenization -- revert added "multiple of"
         self.vocab_size = self.config.text_config.vocab_size - self.config.pad_to_multiple_of
 
     def predict_action(
-        self, input_ids: Optional[torch.LongTensor] = None, unnorm_key: Optional[str] = None, **kwargs: str
-    ) -> np.ndarray:
-        """Thin wrapper around .generate() that decodes predicted actions and unnormalizes them."""
+        self, input_ids: Optional[torch.LongTensor] = None, unnorm_key: Optional[str] = None, 
+        return_logits: bool = False, **kwargs: str
+    ) -> dict[str, np.ndarray]:
+        """Thin wrapper around .generate() that decodes predicted actions and unnormalizes them.
+
+        Args:
+            input_ids: Input token IDs
+            unnorm_key: Key for unnormalization statistics
+            return_logits: Whether to return logits and probabilities
+            **kwargs: Additional arguments for model forward pass
+            
+        Returns:
+            Dictionary containing:
+                - 'actions': Unnormalized actions (numpy array)
+                - If return_logits=True, also includes:
+                    - 'action_probs': Full probability distributions for all tokens for all action dimensions
+        """
+        # Ensure input has the special token
+        input_ids = self._ensure_special_token(input_ids)
+
+        action_decoding_strategy = self.get_action_decoding_strategy(unnorm_key)
+        action_dim = self.get_action_dim(unnorm_key, action_decoding_strategy)
+
+        # Run model inference
+        if return_logits:
+            # Add the necessary parameters to get scores during generation
+            generate_kwargs = {
+                **kwargs,
+                "return_dict_in_generate": True,
+                "output_scores": True,
+                "max_new_tokens": action_dim
+            }
+            
+            # Run inference with logits
+            generation_output = self.generate(input_ids, **generate_kwargs)
+            generated_ids = generation_output.sequences
+            all_token_scores = generation_output.scores
+            
+            probs_over_bin_centers_list = self._get_action_probs_from_logits(all_token_scores)
+            logger.debug(f"probs_over_bin_centers: {probs_over_bin_centers_list}")
+
+            # Unnormalize action probabilities to dataset action space
+            unnormalized_probs_by_dimension = self._unnormalize_action_probs(probs_over_bin_centers_list, unnorm_key)
+            logger.debug(f"unnormalized_action_probs: {unnormalized_probs_by_dimension}")
+        else:
+            generated_ids = self.generate(input_ids, max_new_tokens=action_dim, **kwargs)
+
+        # Extract predicted action tokens and translate into (normalized) continuous actions (OpenVLA standard)
+        openvla_normalized_actions = self._tokens_to_normalized_actions(
+            generated_ids, action_dim
+        )
+
+        # Unnormalize and discretize (if needed) actions
+        actions = self._unnormalize_actions(
+            normalized_actions=openvla_normalized_actions,
+            unnorm_key=unnorm_key,
+            action_decoding_strategy=action_decoding_strategy
+        )
+
+        result = {'actions': actions}
+
+        if return_logits:
+            result.update({
+                'action_probs_by_dimension': unnormalized_probs_by_dimension
+            })
+
+        return result
+    
+    def _ensure_special_token(self, input_ids: torch.LongTensor) -> torch.LongTensor:
+        """Ensure input_ids has the special empty token."""
         # If the special empty token ('') does not already appear after the colon (':') token in the prompt
         # (after "OUT:" or "ASSISTANT:"), insert it to match the inputs seen at training time
         if not torch.all(input_ids[:, -1] == 29871):
             input_ids = torch.cat(
                 (input_ids, torch.unsqueeze(torch.Tensor([29871]).long(), dim=0).to(input_ids.device)), dim=1
             )
+        return input_ids
 
-        # Run VLA inference
-        generated_ids = self.generate(input_ids, max_new_tokens=self.get_action_dim(unnorm_key), **kwargs)
-
-        # Extract predicted action tokens and translate into (normalized) continuous actions
-        predicted_action_token_ids = generated_ids[0, -self.get_action_dim(unnorm_key) :].cpu().numpy()
-        discretized_actions = self.vocab_size - predicted_action_token_ids
-        discretized_actions = np.clip(discretized_actions - 1, a_min=0, a_max=self.bin_centers.shape[0] - 1)
+    def _tokens_to_normalized_actions(
+        self, generated_ids: torch.Tensor, action_dim: int
+    ) -> np.ndarray:
+        """Convert token IDs to normalized actions in [-1, 1] range."""
+        predicted_tokens = generated_ids[0, -action_dim:].cpu().numpy()
+        discretized_actions = np.clip(self.vocab_size - predicted_tokens - 1, a_min=0, a_max=self.bin_centers.shape[0] - 1)
         normalized_actions = self.bin_centers[discretized_actions]
+        return normalized_actions
+    
+    def _get_action_probs_from_logits(self, logits: torch.Tensor) -> list[np.ndarray]:
+        """Get the full probability distribution for all action tokens for each action dimension.
 
-        # Unnormalize actions
-        action_norm_stats = self.get_action_stats(unnorm_key)
-        mask = action_norm_stats.get("mask", np.ones_like(action_norm_stats["q01"], dtype=bool))
-        action_high, action_low = np.array(action_norm_stats["q99"]), np.array(action_norm_stats["q01"])
-        actions = np.where(
-            mask,
-            0.5 * (normalized_actions + 1) * (action_high - action_low) + action_low,
-            normalized_actions,
+        This function maps logits to action probabilities following OpenVLA's action token mapping:
+
+        1. The vocabulary consists of:
+           - Non-action tokens: indices [0, 31743]
+           - Action tokens: indices [31744, 31999] (256 tokens)
+           - Padding tokens: indices [32000, 32063]
+
+        2. Action token mapping:
+           - All non-action tokens (< 31744) map to first bin center (0)
+           - Action tokens map sequentially to bin centers 0-253
+           - Last two action tokens (254,255) map to last bin center (254)
+           - Any padding tokens map to last bin center (254)
+
+        3. Final probabilities are reversed to match action decoding logic:
+           self.vocab_size - predicted_tokens - 1
+
+        Args:
+            logits: Logits tensor for each action dimension [batch_size, n_dims, vocab_size]
+
+        Returns:
+            List of probability arrays, one per action dimension
+        """
+        # Constants for token/bin indexing
+        n_action_tokens = self.config.n_action_bins  # 256 tokens
+        n_bin_centers = self.bin_centers.shape[0]    # 255 centers
+        first_action_idx = self.vocab_size - n_action_tokens
+
+        action_probs_list = []
+        
+        # Process each action dimension separately
+        for dim_logits in logits[0]:
+            # Initialize array for bin center probabilities
+            bin_probs = torch.zeros(n_bin_centers,
+                                  device=dim_logits.device,
+                                  dtype=dim_logits.dtype)
+            
+            # Convert logits to probabilities over full vocabulary
+            vocab_probs = torch.softmax(dim_logits, dim=-1)
+            
+            # 1. Sum probabilities for all non-action tokens to first bin
+            bin_probs[0] = torch.sum(vocab_probs[:first_action_idx])
+            
+            # 2. Map action tokens to corresponding bins
+            for offset in range(n_bin_centers - 1):  # 0 to 253
+                token_idx = first_action_idx + offset
+                bin_probs[offset] += vocab_probs[token_idx]
+            
+            # 3. Map final action tokens and any padding to last bin (254)
+            last_tokens_prob = torch.sum(vocab_probs[first_action_idx + n_bin_centers:])
+            bin_probs[-1] += last_tokens_prob
+            
+            # Convert to numpy and store
+            action_probs = bin_probs.detach().cpu().numpy()
+            
+            # Reverse probabilities to match action decoding
+            action_probs = action_probs[::-1]
+            action_probs_list.append(action_probs)
+    
+        return action_probs_list
+    
+    def _unnormalize_actions(
+        self, normalized_actions: np.ndarray, unnorm_key: Optional[str], action_decoding_strategy: str
+    ) -> np.ndarray:
+        """Unnormalize actions based on the decoding strategy."""
+        if action_decoding_strategy in ["naive_dim_extension", "simple_mapping"]:
+            # Get action statistics
+            action_stats = self.get_action_stats(unnorm_key)
+            action_high = np.array(action_stats["q99"])
+            action_low = np.array(action_stats["q01"])
+            mask = action_stats.get("mask", np.ones_like(action_low, dtype=bool))
+            discrete = np.array(action_stats.get("discrete", np.zeros_like(mask, dtype=bool)))
+            
+            # Scale from [-1,1] to [0,1] to [low,high]
+            actions = 0.5 * (normalized_actions + 1) * (action_high - action_low) + action_low
+            
+            # Round discrete dimensions
+            if np.any(discrete):
+                actions[discrete] = np.round(actions[discrete], decimals=0)
+            
+            # Apply mask
+            actions = np.where(mask, actions, normalized_actions)
+        elif action_decoding_strategy == "manual_rule_mapping":
+            actions = normalized_actions
+        else:
+            raise ValueError(f"Unknown action decoding strategy: {action_decoding_strategy} for {unnorm_key}")
+        
+        return actions
+
+    def _unnormalize_action_probs(
+        self, action_probs_by_dimension: list[np.ndarray], unnorm_key: Optional[str]
+    ) -> list[np.ndarray]:
+        """Unnormalize action probabilities based on the decoding strategy."""
+        action_stats = self.get_action_stats(unnorm_key)
+        action_upper_bound = np.array(action_stats["q99"]) 
+        action_lower_bound = np.array(action_stats["q01"])
+
+        assert len(action_probs_by_dimension) == len(action_upper_bound) == len(action_lower_bound), (
+            f"Inconsistent number of action dimensions in action_probs_by_dimension, action_upper_bound, and action_lower_bound. "
+            f"Got: {len(action_probs_by_dimension)}, the dataset action dim is {len(action_upper_bound)}"
         )
 
-        return actions
+        # Create a list to store unnormalized probability distributions for each action dimension
+        unnormalized_probs_by_dimension = []
+        
+        # Process each action dimension separately
+        for dimension_index, dimension_probs in enumerate(action_probs_by_dimension):
+            dimension_upper = action_upper_bound[dimension_index]
+            dimension_lower = action_lower_bound[dimension_index]
+            # same unnorm logic as actions
+            unnormalized_bin_centers = 0.5 * (self.bin_centers + 1) * (dimension_upper - dimension_lower) + dimension_lower
+            
+            # Determine the range of possible discrete actions for this dimension
+            min_discrete_action = int(np.floor(dimension_lower))
+            max_discrete_action = int(np.ceil(dimension_upper))
+            discrete_action_range = max_discrete_action - min_discrete_action + 1
+            
+            # Initialize array for unnormalized probabilities for this dimension
+            dimension_unnormalized_probs = np.zeros(discrete_action_range)
+            
+            # Map probabilities from (255) bin centers to (e.g, 9 for bigfish dataset) discrete actions
+            for bin_center, probability in zip(unnormalized_bin_centers, dimension_probs):
+                # Round to nearest integer and convert to array index
+                discrete_action = int(np.round(bin_center))
+                array_index = discrete_action - min_discrete_action  # shift to 0-indexed
+                
+                # Ensure index is within bounds
+                if 0 <= array_index < discrete_action_range:
+                    dimension_unnormalized_probs[array_index] += probability
+                else:
+                    # Handle out-of-bounds indices by clipping to the nearest valid index
+                    clipped_index = np.clip(array_index, 0, discrete_action_range - 1)
+                    dimension_unnormalized_probs[clipped_index] += probability
+                
+            # Normalize the probabilities to sum to 1
+            dimension_unnormalized_probs = dimension_unnormalized_probs / np.sum(dimension_unnormalized_probs)
+            unnormalized_probs_by_dimension.append(dimension_unnormalized_probs)
+        
+        return unnormalized_probs_by_dimension
 
     @staticmethod
     def _check_unnorm_key(norm_stats: Dict[str, Dict[str, Any]], unnorm_key: Optional[str]) -> str:
@@ -541,22 +742,35 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
             assert len(norm_stats) == 1, (
                 f"Your model was trained on more than one dataset, "
                 f"please pass a `unnorm_key` from the following options to choose the statistics "
-                f"used for un-normalizing actions: {norm_stats.keys()}"
+                f"used for un-normalizing actions: {', '.join(norm_stats.keys())}"
             )
             unnorm_key = next(iter(norm_stats.keys()))
 
-        assert unnorm_key in norm_stats, (
-            f"The `unnorm_key` you chose is not in the set of available dataset statistics, "
-            f"please choose from: {norm_stats.keys()}"
-        )
+        if unnorm_key not in norm_stats:
+            raise ValueError(
+                f"The unnorm_key {unnorm_key} is missing in dataset statistics, "
+                f"Existing dataset statistics: {', '.join(norm_stats.keys())}"
+            )
         return unnorm_key
 
-    def get_action_dim(self, unnorm_key: Optional[str] = None) -> int:
+    def get_action_dim(self, unnorm_key: Optional[str] = None, decoding_strategy: Optional[str] = None) -> int:
         """Get the dimensionality of the policy's action space."""
         unnorm_key = self._check_unnorm_key(self.norm_stats, unnorm_key)
-        return len(self.norm_stats[unnorm_key]["action"]["q01"])
+        decoding_strategy = decoding_strategy or self.get_action_decoding_strategy(unnorm_key)
+
+        if decoding_strategy == "manual_rule_mapping":  # use OpenVLA standard ACTION_DIM=7
+            return 7 # OpenVLA standard action dimension
+        elif decoding_strategy == "naive_dim_extension" or decoding_strategy == "simple_mapping":  # use dataset-specific action dimension
+            return len(self.norm_stats[unnorm_key]["action"]["q01"])
+        else:
+            raise ValueError(f"Unknown action decoding strategy: {decoding_strategy}")
 
     def get_action_stats(self, unnorm_key: Optional[str] = None) -> Dict[str, Any]:
         """Get all the logged statistics for the given dataset."""
         unnorm_key = self._check_unnorm_key(self.norm_stats, unnorm_key)
         return self.norm_stats[unnorm_key]["action"]
+
+    def get_action_decoding_strategy(self, unnorm_key: Optional[str] = None) -> str:
+        """Get the decoding strategy used for actions."""
+        unnorm_key = self._check_unnorm_key(self.norm_stats, unnorm_key)
+        return self.norm_stats[unnorm_key].get("action_decoding_strategy", self.default_action_decoding_strategy)

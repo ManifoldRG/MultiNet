@@ -805,3 +805,8 @@ class OpenXDefinitions:
             ]
         }
     }
+
+    ACTION_DECODE_STRATEGIES = {
+        "default": "simple_mapping",
+        "utokyo_xarm_bimanual_converted_externally_to_rlds": "naive_dim_extension"
+    }

@@ -215,7 +215,7 @@ class ProcGenDefinitions:
     }
 
     @staticmethod
-    def get_valid_action_space(dataset_name: str) -> dict[str, any]:
+    def get_valid_action_space(dataset_name: str, action_space_name: str) -> dict[str, any]:
         """
         Get the action space for a procgen dataset
         """
