@@ -76,7 +76,7 @@ def standardize_predicted_action(predicted_action, action_decoding_strategy, dat
 
 def calculate_brier_mae(predicted_probabilities, one_hot_label) -> float:
     """Calculate mean absolute error from absolute errors"""
-    return np.sum(np.abs(np.array(predicted_probabilities) - np.array(one_hot_label)))
+    return np.sum(np.abs(np.array(predicted_probabilities) - np.array(one_hot_label)) ** 2)
 
 
 def calculate_mae(predicted_action, actual_action) -> float:
