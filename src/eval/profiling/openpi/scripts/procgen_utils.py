@@ -15,6 +15,7 @@ class ActionUtils:
         Returns:
             np.ndarray: The modified action array with invalid actions replaced with stand still (4).
         """
+        actions = np.atleast_1d(np.asarray(actions))
         valid_action_space = ProcGenDefinitions.get_valid_action_space(dataset_name)
         
         # Create a boolean mask for invalid actions
@@ -64,22 +65,34 @@ class MetricUtils:
         if len(all_labels) == 0 or predicted_actions.size == 0:
             raise ValueError("No valid action labels or empty action arrays")
 
-        # Initialize total counts
+        # Step 1: Handle invalid predictions
+        # Each invalid prediction counts as one false positive
+        invalid_predictions = ~np.isin(predicted_actions, all_labels)
+        invalid_fp = np.sum(invalid_predictions)
+        
+        # Step 2: Handle valid predictions
+        valid_fp = 0
         total_tp = 0
-        total_fp = 0
-        total_fn = 0
-
-        # Accumulate counts across all labels
+        
+        # Count true positives and false positives for valid predictions
         for label in all_labels:
-            # Boolean arrays for the current label
-            pred_is_label = (predicted_actions == label)
-            gt_is_label = (gt_actions == label)
-
-            # Add to total counts
-            total_tp += np.sum(pred_is_label & gt_is_label)
-            total_fp += np.sum(pred_is_label & ~gt_is_label)
-            total_fn += np.sum(~pred_is_label & gt_is_label)
-
+            pred_matches = (predicted_actions == label)
+            gt_matches = (gt_actions == label)
+            
+            total_tp += np.sum(pred_matches & gt_matches)
+            valid_fp += np.sum(pred_matches & ~gt_matches)
+        
+        # Step 3: Calculate total false negatives
+        # For each ground truth label, count how many times we missed it
+        total_fn = 0
+        for label in all_labels:
+            gt_matches = (gt_actions == label)
+            pred_matches = (predicted_actions == label)
+            total_fn += np.sum(gt_matches & ~pred_matches)
+        
+        # Step 4: Combine metrics
+        total_fp = invalid_fp + valid_fp
+        
         return total_tp, total_fp, total_fn
 
     @staticmethod
@@ -97,8 +110,8 @@ class MetricUtils:
         return float(total_tp / (total_tp + total_fn))
 
     @staticmethod
-    def get_micro_f1(precision: int, recall: int) -> float:
-        """Calculate micro F1 score from precomputed counts."""
+    def get_micro_f1(precision: float, recall: float) -> float:
+        """Calculate micro F1 score from precision and recall values."""
         if precision + recall == 0:
             return 0.0
         return float(2 * (precision * recall) / (precision + recall))
