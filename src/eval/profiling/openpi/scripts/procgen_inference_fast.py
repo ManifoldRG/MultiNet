@@ -397,7 +397,7 @@ def main():
     gc.collect()
     jax.clear_caches()
     print('Pi0-FAST Model loaded')
-    procgen_inference = ProcGenInferenceFast(model,tokenizer, config, max_decoding_steps=10)
+    procgen_inference = ProcGenInferenceFast(model,tokenizer, config, max_decoding_steps=4)  # 4 becasue of "Action", ":", and " " before action tokens
 
 
     # Get dataset shards
