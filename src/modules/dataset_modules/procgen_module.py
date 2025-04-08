@@ -3,8 +3,8 @@ from definitions.procgen import ProcGenDefinitions
 from src.data_utils.procgen_dataloader import get_procgen_dataloader
 from src.eval_utils import quantile_filter, calculate_brier_mae, min_max_normalize, calculate_brier_mse, calculate_mean
 from src.eval_utils import calculate_max_relative_mae, calculate_proportion_beyond_mae_threshold
+from src.eval_utils import get_micro_precision_from_counts, get_micro_recall_from_counts, get_micro_f1, calculate_tp_fp_fn_counts
 from definitions.procgen_prompt import format_instruction_prompt
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 from pathlib import Path
 from typing import Union
@@ -76,7 +76,7 @@ def _validate_outputs_and_calculate_metrics(outputs, one_hot_labels, num_actions
             preds.append(-1)
     return brier_mses, brier_maes, total_invalid_preds, preds
 
-def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues):
+def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_actions):
     result = {}
     
     # Calculate MAE metrics
@@ -92,11 +92,12 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues):
     max_rel_mae = calculate_max_relative_mae(timestep_maes)
     prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(timestep_maes)
     
-    # Calculate classification metrics
-    accuracy = accuracy_score(trues, preds)
-    precision = precision_score(trues, preds, average='micro', zero_division=0)
-    recall = recall_score(trues, preds, average='micro', zero_division=0)
-    f1 = f1_score(trues, preds, average='micro', zero_division=0)
+    # Calculate f1   
+    possible_actions = list(range(num_actions))
+    tp, fp, fn = calculate_tp_fp_fn_counts(preds, trues, possible_actions)
+    precision = get_micro_precision_from_counts(tp, fp)
+    recall = get_micro_recall_from_counts(tp, fn)
+    f1 = get_micro_f1(precision, recall)
     
     # Calculate MSE metrics
     total_dataset_amse = sum(timestep_mses)
@@ -116,7 +117,6 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues):
     result['normalized_quantile_filtered_amae'] = average_normalized_quantile_filtered_mae
     result['max_relative_mae'] = max_rel_mae
     result['proportion_beyond_threshold_mae'] = prop_beyond_threshold_mae
-    result['accuracy'] = accuracy
     result['recall'] = recall
     result['precision'] = precision
     result['f1'] = f1
@@ -152,6 +152,12 @@ class ProcGenModule(DatasetModule):
             timestep_mses, timestep_maes, timestep_preds, timestep_trues = [], [], [], []
             total_invalid_preds = 0
             start_time = time.time()
+            
+            action_space = self._get_action_space(dataset, 'default')
+            num_actions  = 0
+            for action_idx, (_, action_dict) in action_space.items():
+                num_actions += len(action_dict)
+                
             for batch in dataloader:
                 # Action stats need to be retrieved only once for each dataset, after they have been populated.
                 if self.action_stats is None:
@@ -161,12 +167,7 @@ class ProcGenModule(DatasetModule):
                 for cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts in self._process_batch(batch, dataset):
                        
                     outputs = self.modality_module.infer_step(cur_inputs, k_shots_examples, instructions, output_types)  # (B)
-                    
-                    action_space = self._get_action_space(dataset, 'default')
-                    num_actions  = 0
-                    for action_idx, (_, action_dict) in action_space.items():
-                        num_actions += len(action_dict)
-                        
+
                     # Check if labels are within the action space, otherwise set to NoOp action
                     labels = np.array([label[0] if label[0] < num_actions else NOOP_ACTION for label in labels])
                     one_hot_labels = self._get_one_hot(labels, num_actions)
@@ -181,7 +182,7 @@ class ProcGenModule(DatasetModule):
                     timestep_preds.extend(preds)
                     timestep_trues.extend(labels)
                     
-            result = _calculate_final_metrics(timestep_mses, timestep_maes, timestep_preds, timestep_trues)
+            result = _calculate_final_metrics(timestep_mses, timestep_maes, timestep_preds, timestep_trues, num_actions)
             result['eval_time'] = time.time() - start_time
             result['total_invalid_preds'] = total_invalid_preds
 
@@ -259,7 +260,7 @@ class ProcGenBatchModule(DatasetBatchModule):
             timestep_preds.extend(preds)
             timestep_trues.extend(labels)
             
-        result = _calculate_final_metrics(timestep_mses, timestep_maes, timestep_preds, timestep_trues)
+        result = _calculate_final_metrics(timestep_mses, timestep_maes, timestep_preds, timestep_trues, num_actions)
         result['eval_time'] = time.time() - start_time
         result['total_invalid_preds'] = total_invalid_preds
             
