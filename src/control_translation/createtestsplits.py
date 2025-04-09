@@ -3,6 +3,7 @@ import os
 import sys
 import argparse
 import tensorflow as tf
+import numpy as np
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Create test splits for datasets')
@@ -138,9 +139,9 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
             # Get all episode files
             all_files = os.listdir(dir_path)
 
-            # Calculate number of test episodes (20%)
+            # Calculate number of test episodes (10% from each subdataset)
             #num_test_episodes = min(int(len(all_files) * 0.2), 1000)
-            num_test_episodes = int(len(all_files) * 0.2)
+            num_test_episodes = int(len(all_files) * 0.1)
 
             # Randomly sample test episodes
             test_episodes = np.random.choice(all_files, num_test_episodes, replace=False)
