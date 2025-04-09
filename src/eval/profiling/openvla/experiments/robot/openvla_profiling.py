@@ -103,9 +103,13 @@ def sort_files_in_folder_by_name(dataset_path: str) -> list[str]:
 
     if os.path.basename(dataset_path) in PROCGEN_DATASET_NAMES:
         # Sort the procgen files by the timestamp in the filename before the first underscore _ in ascending order
-        return sorted(
+       return sorted(
             shard_files,
-            key=lambda x: datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S")
+            key=lambda x: (
+                datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"),  # primary sort by timestamp
+                *(int(n) for n in x.split('_')[1:-1]),  # middle numbers as integers
+                float(x.split('_')[-1])  # last number as float
+            )
         )
     elif os.path.basename(dataset_path) in OPENX_DATASET_NAMES:
         return sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
