@@ -134,7 +134,7 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_act
     result['f1'] = f1
     result['f1_without_invalid'] = f1_without_invalid
     result['total_invalids'] = total_invalids
-    result['percentage_invalids'] = total_invalids / len(preds)
+    result['percentage_invalids'] = (total_invalids / len(preds)) * 100
     return result
             
         
