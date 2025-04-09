@@ -40,6 +40,9 @@ os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
 @dataclass
 class DatasetResults:
     total_batches: int = 0
+    total_timesteps: int = 0
+    total_invalid_predictions: int = 0
+    invalid_predictions_percentage: float = 0
     total_emr: float = 0
     total_micro_precision: float = 0
     total_micro_recall: float = 0
@@ -56,6 +59,10 @@ class DatasetResults:
     avg_clipped_micro_precision: float = 0
     avg_clipped_micro_recall: float = 0
     avg_clipped_micro_f1: float = 0
+    total_micro_precision_with_invalid_predictions_as_both_fp_fn: float = 0
+    total_micro_f1_with_invalid_predictions_as_both_fp_fn: float = 0
+    avg_micro_precision_with_invalid_predictions_as_both_fp_fn: float = 0
+    avg_micro_f1_with_invalid_predictions_as_both_fp_fn: float = 0
 
     def to_dict(self) -> dict:
         return {
@@ -200,14 +207,14 @@ class ProcGenInference:
         """Evaluate the model on the dataset"""
         counter = 0
         dataset_results = DatasetResults()
-        
+
         for batch in dataloader:
             # Process entire batch at once
             obs = {
                 'image_observation': batch['image_observation'],  # Full batch
                 'text_observation': batch['text_observation']     # Full batch
             }
-
+            print(f"Batch {counter} obs size: {len(obs['image_observation'])}")
             # Transform observation
             transformed_dict = self.prepare_observation(obs, max_token_length=config.max_token_len)
             observation = Observation.from_dict(transformed_dict)
@@ -231,10 +238,10 @@ class ProcGenInference:
             action_space = sorted(ProcGenDefinitions.get_valid_action_space(dataset, 'default'))
             
             # Calculate metrics counts once and reuse
-            total_tp, total_fp, total_fn = calculate_tp_fp_fn_counts(
-                unnormalized_discrete_actions, gt_actions, action_space
+            total_tp, total_fp, total_fn, invalid_predictions_count = calculate_tp_fp_fn_counts(
+                unnormalized_discrete_actions, gt_actions, action_space, count_invalid_actions_as_both_fp_fn=False
             )
-            
+
             # Calculate all metrics using the same counts
             """
             using micro to avoid minority class distortion since we expect the action predictions to be imbalanced.
@@ -246,10 +253,21 @@ class ProcGenInference:
             
             print(f"Unclipped Micro Precision: {micro_precision}, Micro Recall: {micro_recall}, Micro F1: {micro_f1}")
             
+            # Calculate metrics that count invalid predictions as both false positives and false negatives
+            total_tp, total_fp, total_fn, _ = calculate_tp_fp_fn_counts(
+                unnormalized_discrete_actions, gt_actions, action_space, count_invalid_actions_as_both_fp_fn=True
+            )
+
+            micro_precision_with_invalid_predictions_as_both_fp_fn = get_micro_precision_from_counts(total_tp, total_fp)
+            micro_f1_with_invalid_predictions_as_both_fp_fn = get_micro_f1(micro_precision_with_invalid_predictions_as_both_fp_fn, micro_recall) # micro_recall is not affected
+
+            print(f"Unclipped Micro Precision with Invalid Predictions as both fp and fn: {micro_precision_with_invalid_predictions_as_both_fp_fn}, \
+                  Micro F1 with Invalid Predictions as both fp and fn: {micro_f1_with_invalid_predictions_as_both_fp_fn}")
+
             clipped_predictions = np.clip(unnormalized_discrete_actions, action_space[0], action_space[-1])
             clipped_emr = get_exact_match_rate(clipped_predictions, gt_actions)
-            clipped_total_tp, clipped_total_fp, clipped_total_fn = calculate_tp_fp_fn_counts(
-                clipped_predictions, gt_actions, action_space
+            clipped_total_tp, clipped_total_fp, clipped_total_fn, _ = calculate_tp_fp_fn_counts(
+                clipped_predictions, gt_actions, action_space, count_invalid_actions_as_both_fp_fn=False
             )
             clipped_micro_precision = get_micro_precision_from_counts(clipped_total_tp, clipped_total_fp)
             clipped_micro_recall = get_micro_recall_from_counts(clipped_total_tp, clipped_total_fn)
@@ -257,9 +275,10 @@ class ProcGenInference:
 
             print(f"Clipped Micro Precision: {clipped_micro_precision}, Clipped Micro Recall: {clipped_micro_recall}, Clipped Micro F1: {clipped_micro_f1}")
 
-
             # Store results for this batch
+            dataset_results.total_invalid_predictions += invalid_predictions_count
             dataset_results.total_batches = counter
+            dataset_results.total_timesteps += len(actions)
             dataset_results.total_emr += emr
             dataset_results.total_micro_precision += micro_precision
             dataset_results.total_micro_recall += micro_recall
@@ -270,26 +289,36 @@ class ProcGenInference:
             dataset_results.total_clipped_micro_recall += clipped_micro_recall
             dataset_results.total_clipped_micro_f1 += clipped_micro_f1
 
+            dataset_results.total_micro_precision_with_invalid_predictions_as_both_fp_fn += micro_precision_with_invalid_predictions_as_both_fp_fn
+            dataset_results.total_micro_f1_with_invalid_predictions_as_both_fp_fn += micro_f1_with_invalid_predictions_as_both_fp_fn
+
             # Memory management
             del transformed_dict, observation, actions, unnormalized_discrete_actions, \
                 gt_actions, total_tp, total_fp, total_fn, clipped_predictions, \
                 clipped_total_tp, clipped_total_fp, clipped_total_fn, \
                 micro_precision, micro_recall, micro_f1, clipped_micro_precision, \
-                clipped_micro_recall, clipped_micro_f1, emr, clipped_emr
+                clipped_micro_recall, clipped_micro_f1, emr, clipped_emr, \
+                micro_precision_with_invalid_predictions_as_both_fp_fn, \
+                micro_f1_with_invalid_predictions_as_both_fp_fn
             gc.collect()
             jax.clear_caches()
             print(f"Processed {counter} episodes, cleared memory")
-            if counter == 2:
-                break
 
-        dataset_results.avg_emr = dataset_results.total_emr / counter
-        dataset_results.avg_micro_precision = dataset_results.total_micro_precision / counter
-        dataset_results.avg_micro_recall = dataset_results.total_micro_recall / counter
-        dataset_results.avg_micro_f1 = dataset_results.total_micro_f1 / counter
-        dataset_results.avg_clipped_emr = dataset_results.total_clipped_emr / counter
-        dataset_results.avg_clipped_micro_precision = dataset_results.total_clipped_micro_precision / counter
-        dataset_results.avg_clipped_micro_recall = dataset_results.total_clipped_micro_recall / counter
-        dataset_results.avg_clipped_micro_f1 = dataset_results.total_clipped_micro_f1 / counter
+            # Uncomment to stop after 2 batches
+            # if counter == 2:
+            #     break
+
+        dataset_results.avg_emr = dataset_results.total_emr / dataset_results.total_timesteps
+        dataset_results.invalid_predictions_percentage = dataset_results.total_invalid_predictions / dataset_results.total_timesteps
+        dataset_results.avg_micro_precision = dataset_results.total_micro_precision / dataset_results.total_timesteps
+        dataset_results.avg_micro_recall = dataset_results.total_micro_recall / dataset_results.total_timesteps
+        dataset_results.avg_micro_f1 = dataset_results.total_micro_f1 / dataset_results.total_timesteps
+        dataset_results.avg_clipped_emr = dataset_results.total_clipped_emr / dataset_results.total_timesteps
+        dataset_results.avg_clipped_micro_precision = dataset_results.total_clipped_micro_precision / dataset_results.total_timesteps
+        dataset_results.avg_clipped_micro_recall = dataset_results.total_clipped_micro_recall / dataset_results.total_timesteps
+        dataset_results.avg_clipped_micro_f1 = dataset_results.total_clipped_micro_f1 / dataset_results.total_timesteps
+        dataset_results.avg_micro_precision_with_invalid_predictions_as_both_fp_fn = dataset_results.total_micro_precision_with_invalid_predictions_as_both_fp_fn / dataset_results.total_timesteps
+        dataset_results.avg_micro_f1_with_invalid_predictions_as_both_fp_fn = dataset_results.total_micro_f1_with_invalid_predictions_as_both_fp_fn / dataset_results.total_timesteps
 
         return dataset_results.to_dict()
 
@@ -337,7 +366,7 @@ def main():
     config = pi0.Pi0Config(action_horizon=1) #We want to predict only for the next timestep
     tokenizer = PaligemmaTokenizer()
     key = jax.random.key(0)
-    model = config.load(_model.restore_params(download.maybe_download("s3://openpi-assets/checkpoints/pi0_droid/params")))
+    model = config.load(_model.restore_params(download.maybe_download("s3://openpi-assets/checkpoints/pi0_base/params")))
     print('Model loaded')
     procgen_inference = ProcGenInference(model, tokenizer, config)
 
@@ -376,8 +405,11 @@ def main():
     
         # Load existing results if file exists, otherwise create new
         if os.path.exists(results_file):
-            with open(results_file, 'r') as f:
-                dataset_results = json.load(f)
+            try:
+                with open(results_file, 'r') as f:
+                    dataset_results = json.load(f)
+            except Exception as e:
+                raise Exception(f"Result file might be corrupted. Please delete it and run the script again. {e}")
         else:
             dataset_results = {}
 
