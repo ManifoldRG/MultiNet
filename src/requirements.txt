@@ -101,7 +101,7 @@ mushroom-rl==1.10.1
 mypy-extensions==1.0.0
 namex==0.0.8
 networkx==3.3
-nltk==3.8.2
+nltk<=3.8.2
 numpy==1.26.4
 nvidia-cublas-cu12==12.1.3.1
 nvidia-cuda-cupti-cu12==12.1.105
