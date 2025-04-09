@@ -90,7 +90,12 @@ class TestTorchToTFDS(unittest.TestCase):
                         if isinstance(pt_example, (np.ndarray, list)):
                             np.testing.assert_array_equal(pt_example, tfds_example)
                         else:
-                            self.assertEqual(pt_example, tfds_example)
+                            if hasattr(pt_example, '__class__') and pt_example.__class__.__name__ == 'TensorDict':
+                                # Compare TensorDict contents instead of the object itself
+                                pt_dict = pt_example.to_dict()
+                                self.assertDictEqual(pt_dict, tfds_example)
+                            else:
+                                self.assertEqual(pt_example, tfds_example)
 
                 else:
                     pt_example = self.torch_dataset[key][idx]
@@ -104,7 +109,12 @@ class TestTorchToTFDS(unittest.TestCase):
                     if isinstance(pt_example, (np.ndarray, list)):
                         np.testing.assert_array_equal(pt_example, tfds_example)
                     else:
-                        self.assertEqual(pt_example, tfds_example)
+                        if hasattr(pt_example, '__class__') and pt_example.__class__.__name__ == 'TensorDict':
+                            # Compare TensorDict contents instead of the object itself
+                            pt_dict = pt_example.to_dict()
+                            self.assertDictEqual(pt_dict, tfds_example)
+                        else:
+                            self.assertEqual(pt_example, tfds_example)
     
         print(f'Time taken for data values test: {time.time() - start_time} seconds')
 
@@ -116,72 +126,65 @@ class TestTorchToTFDS(unittest.TestCase):
         tf_element = next(iter(self.tfds_dataset))
         
         for key, torch_value in self.torch_dataset.items():
-            for i in torch_value:
-                if isinstance(i, torch.Tensor):
-                    torch_dtype = i.dtype
-                    tfds_dtype = tf_element[key].dtype
-                    
-                    # Map PyTorch dtypes to TF dtypes
-                    if torch_dtype == torch.float32:
-                        torch_dtype = tf.float32
-                    elif torch_dtype == torch.float64:
-                        torch_dtype = tf.float64
-                    elif torch_dtype == torch.int32:
-                        torch_dtype = tf.int32
-                    elif torch_dtype == torch.int64:
-                        torch_dtype = tf.int64
-                    elif torch_dtype == torch.bool:
-                        torch_dtype = tf.bool
-                        
-                    self.assertEqual(torch_dtype, tfds_dtype)
-                    
-                elif isinstance(i, dict) or ((hasattr(i, '__class__') and i.__class__.__name__ == 'TensorDict')):
-                    if hasattr(i, '__class__') and i.__class__.__name__ == 'TensorDict':
-                        torch_value = torch_value.to_dict()
-                    for k, v in i.items():
-                        for j in v:
-                            #print(v)
-                            #print(j)
-                            if isinstance(j, torch.Tensor):
-                                torch_dtype = j.dtype
-                                tfds_dtype = tf_element[key][k].dtype
-                                
-                                if torch_dtype == torch.float32:
-                                    torch_dtype = tf.float32
-                                elif torch_dtype == torch.float64:
-                                    torch_dtype = tf.float64
-                                elif torch_dtype == torch.int32:
-                                    torch_dtype = tf.int32
-                                elif torch_dtype == torch.int64:
-                                    torch_dtype = tf.int64
-                                elif torch_dtype == torch.bool:
-                                    torch_dtype = tf.bool
-
-
-                                
-                            self.assertEqual(torch_dtype, tfds_dtype)
-                            break
-                else:
-                    torch_dtype = type(i)
-                    tfds_dtype = tf.convert_to_tensor(tf_element[key]).dtype
-
-                    if torch_dtype == torch.float32:
-                        torch_dtype = tf.float32
-                    elif torch_dtype == torch.float64:
-                        torch_dtype = tf.float64
-                    elif torch_dtype == torch.int32:
-                        torch_dtype = tf.int32
-                    elif torch_dtype == torch.int64:
-                        torch_dtype = tf.int64
-                    elif torch_dtype == torch.bool:
-                        torch_dtype = tf.bool
-                    elif tfds_dtype == tf.string:
-                        torch_dtype = type(torch_value.decode('utf-8'))
-                        tfds_dtype = type(tf_element[key].numpy().decode('utf-8'))
-                        
-                    self.assertEqual(torch_dtype, tfds_dtype)
+            if isinstance(torch_value, torch.Tensor):
+                torch_dtype = torch_value.dtype
+                tfds_dtype = tf_element[key].dtype
                 
-                break
+                # Map PyTorch dtypes to TF dtypes
+                if torch_dtype == torch.float32:
+                    torch_dtype = tf.float32
+                elif torch_dtype == torch.float64:
+                    torch_dtype = tf.float64
+                elif torch_dtype == torch.int32:
+                    torch_dtype = tf.int32
+                elif torch_dtype == torch.int64:
+                    torch_dtype = tf.int64
+                elif torch_dtype == torch.bool:
+                    torch_dtype = tf.bool
+                    
+                self.assertEqual(torch_dtype, tfds_dtype)
+                
+            elif isinstance(torch_value, dict) or ((hasattr(torch_value, '__class__') and torch_value.__class__.__name__ == 'TensorDict')):
+                if hasattr(torch_value, '__class__') and torch_value.__class__.__name__ == 'TensorDict':
+                    torch_value = torch_value.to_dict()
+                for k, v in torch_value.items():
+                    if isinstance(v, torch.Tensor):
+                        torch_dtype = v.dtype
+                        tfds_dtype = tf_element[key][k].dtype
+                        
+                        if torch_dtype == torch.float32:
+                            torch_dtype = tf.float32
+                        elif torch_dtype == torch.float64:
+                            torch_dtype = tf.float64
+                        elif torch_dtype == torch.int32:
+                            torch_dtype = tf.int32
+                        elif torch_dtype == torch.int64:
+                            torch_dtype = tf.int64
+                        elif torch_dtype == torch.bool:
+                            torch_dtype = tf.bool
+
+                        self.assertEqual(torch_dtype, tfds_dtype)
+            else:
+                torch_dtype = type(torch_value)
+                tfds_dtype = tf.convert_to_tensor(tf_element[key]).dtype
+
+                if torch_dtype == torch.float32:
+                    torch_dtype = tf.float32
+                elif torch_dtype == torch.float64:
+                    torch_dtype = tf.float64
+                elif torch_dtype == torch.int32:
+                    torch_dtype = tf.int32
+                elif torch_dtype == torch.int64:
+                    torch_dtype = tf.int64
+                elif torch_dtype == torch.bool:
+                    torch_dtype = tf.bool
+                elif tfds_dtype == tf.string:
+                    torch_dtype = type(torch_value.decode('utf-8'))
+                    tfds_dtype = type(tf_element[key].numpy().decode('utf-8'))
+                    
+                self.assertEqual(torch_dtype, tfds_dtype)
+            
+            break
                         
         print(f'Time taken for data types test: {time.time() - start_time} seconds')
 

@@ -3,7 +3,7 @@ from pathlib import Path
 import sys
 import os
 import numpy as np
-from typing import Optional
+from typing import Dict, Any, Optional
 
 current_file = Path(__file__).resolve()
 project_root = next(
@@ -12,44 +12,45 @@ project_root = next(
 )
 sys.path.append(str(project_root))
 
-from src.eval.profiling.openvla.experiments.robot.openvla_openx_dataloader import get_openx_dataloader
+from src.data_utils.procgen_dataloader import get_procgen_dataloader
 from src.eval.profiling.openvla.experiments.robot.openvla_eval_base import OpenVLABaseEvaluator
 from src.eval.profiling.openvla.experiments.robot.robot_utils import get_action
 from src.eval.profiling.openvla.experiments.robot.eval_utils import (
-    calculate_mae,
-    calculate_mean,
     calculate_success_rate,
-    quantile_filter,
-    calculate_max_relative_mae,
-    calculate_proportion_beyond_mae_threshold,
+    calculate_brier_mae,
     min_max_normalize,
     standardize_predicted_action,
-    preprocess_expert_actions
+    preprocess_expert_actions,
+    quantile_filter,
+    calculate_mean,
+    calculate_max_relative_mae,
+    calculate_proportion_beyond_mae_threshold
 )
+from definitions.procgen import ProcGenDefinitions
 
 
 logger = logging.getLogger(__name__)
 if os.environ.get('ENVIRONMENT', 'prod') == 'dev':
     logger.setLevel(logging.DEBUG)
 
-
-class OpenXEvaluator(OpenVLABaseEvaluator):
-    """OpenVLA evaluator for OpenX datasets."""
+class ProcGenEvaluator(OpenVLABaseEvaluator):
+    """OpenVLA evaluator for ProcGen datasets."""
     
     def get_dataloader(self, tfds_shards: list[str]) -> any:
-        """Get OpenX dataloader.
+        """Get ProcGen dataloader.
         
         Args:
             tfds_shards: List of TensorFlow dataset shard paths
             
         Returns:
-            OpenX dataloader
+            ProcGen dataloader
         """
-        return get_openx_dataloader(tfds_shards, batch_size=1)
+        _, dataloader = get_procgen_dataloader(tfds_shards, batch_size=1, by_episode=True)
+        return dataloader
     
     def process_observation(self, batch: dict[str, any], obs: dict[str, any], 
                            timestep_idx: int) -> Optional[tuple[dict[str, any], any]]:
-        """Process OpenX observation for the current timestep.
+        """Process ProcGen observation for the current timestep.
         
         Args:
             batch: Batch of data from the dataloader
@@ -59,12 +60,11 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
         Returns:
             Tuple of (updated obs, text_obs) or None if processing failed
         """
-        # batch_idx is 0 for OpenX dataset
         obs['full_image'] = batch['image_observation'][0][timestep_idx]
         if obs['full_image'] is None:
             raise ValueError(f"Observation is None for dataset {self.dataset_name}")
 
-        text_obs = batch['text_observation'][0][timestep_idx]
+        text_obs = batch['text_observation'][0][0]  # ProcGen has the same text for all timesteps
         if text_obs is None:
             raise ValueError(f"Text observation is None for dataset {self.dataset_name}")
         
@@ -73,16 +73,25 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
         
         return obs, text_obs
     
-    def get_actual_action(self, batch: dict[str, any], episode_idx: int, timestep_idx: int) -> any:
+    def get_actual_action(self, batch: Dict[str, Any], episode_idx: int, timestep_idx: int) -> any:
         return preprocess_expert_actions(
             batch, 
             self.dataset_name, 
-            0,  # batch_idx is 0 for OpenX dataset
+            0,  # batch_idx is 0 for ProcGen dataset
             timestep_idx
         )
-    
+
     def process_batch(self, batch: dict[str, any], episode_idx: int) -> tuple[list[float], list[int]]:
-        timestep_maes = []
+        """Process a single batch (episode) of data.
+        
+        Args:
+            batch: Batch of data from the dataloader
+            episode_idx: Index of the current episode
+            
+        Returns:
+            Tuple of (timestep_brier_maes, action_success)
+        """
+        timestep_brier_maes = []
         action_success = []
         obs = {}
         
@@ -90,6 +99,10 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
             obs_len = len(batch['image_observation'][0])
         except (KeyError, IndexError, TypeError) as e:
             raise ValueError(f"Error accessing image_observation: {e}")
+        
+        # Get action space information
+        action_space = ProcGenDefinitions.get_valid_action_space(self.dataset_name, 'default')
+        num_actions = len(action_space)
         
         for timestep_idx in range(obs_len):
             logger.debug("================================")
@@ -104,9 +117,17 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
                     continue
 
                 # Get and process action
-                predicted_action = get_action(self.cfg, self.model, obs, text_obs, self.processor)
+                predictions = get_action(
+                    self.cfg,
+                    self.model,
+                    obs,
+                    text_obs,
+                    self.processor,
+                    return_logits=True
+                )
+                predicted_action = predictions['actions']
                 logger.debug(f"Predicted action: {predicted_action}")
-                
+
                 # Standardize predicted action
                 standardized_predicted_action = standardize_predicted_action(
                     predicted_action,
@@ -121,11 +142,19 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
                 
                 logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
                 logger.debug(f"Actual action: {actual_action}")
+
+                action_probs = predictions['action_probs_by_dimension'][0]  # Procgen only has 1 action dim
+
+                one_hot_actual = [0.0] * num_actions
+                one_hot_actual[int(actual_action[0])] = 1.0
                 
-                # Calculate MAE
-                mae = calculate_mae(standardized_predicted_action, actual_action)
-                timestep_maes.append(mae)
-                
+                brier_mae = calculate_brier_mae(action_probs, one_hot_actual)
+                timestep_brier_maes.append(brier_mae)
+
+                logger.debug(f"Predicted probs: {action_probs}")
+                logger.debug(f"Actual one-hot: {one_hot_actual}")
+                logger.debug(f"Brier MAE: {brier_mae}")
+                    
                 # Check if this is the last timestep
                 is_last = self.is_last_timestep(batch, timestep_idx)
                 if is_last:
@@ -139,13 +168,14 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
                         
             except (IndexError, KeyError) as e:
                 raise f"Error processing dataset at timestep {timestep_idx}: {e}"
-
-        return timestep_maes, action_success
-
+                
+        return timestep_brier_maes, action_success
+        
+    
     def is_last_timestep(self, batch: dict[str, any], timestep_idx: int) -> bool:
-        """Check if the current timestep is the last one in the OpenX episode"""
+        """Check if the current timestep is the last one in the ProcGen episode"""
         logger.debug(f"is_last: {batch['is_last'][0][timestep_idx]}")
-        return batch['is_last'][0][timestep_idx] == True  # batch_idx is 0 for OpenX dataset
+        return batch['is_last'][0][timestep_idx] == True
 
     def evaluate(self, tfds_shards: list[str]) -> tuple[float, float, float, int, float]:
         """Evaluate the model on the dataset.
@@ -168,15 +198,15 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
         """
         dataloader = self.get_dataloader(tfds_shards)
         
-        all_timestep_maes, all_action_success = [], []
+        all_brier_maes, all_action_successes = [], []
         
         episode_idx = 0
         
         for batch in dataloader:
-            batch_timestep_maes, batch_action_success = self.process_batch(batch, episode_idx)
+            batch_brier_maes, batch_action_successes = self.process_batch(batch, episode_idx)
             
-            all_timestep_maes.extend(batch_timestep_maes)
-            all_action_success.extend(batch_action_success)
+            all_brier_maes.extend(batch_brier_maes)
+            all_action_successes.extend(batch_action_successes)
             
             episode_idx += 1
 
@@ -185,49 +215,40 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
             #     break
 
         # Calculate quantile filtered MAE metrics
-        quantile_filtered_maes = quantile_filter(all_timestep_maes)
-        total_quantile_filtered_mae = sum(quantile_filtered_maes)
-        normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
-        average_quantile_filtered_normalized_mae = calculate_mean(normalized_quantile_filtered_maes)
+        quantile_filtered_brier_maes = quantile_filter(all_brier_maes)
+        total_quantile_filtered_brier_mae = sum(quantile_filtered_brier_maes)
+        normalized_quantile_filtered_brier_maes = min_max_normalize(quantile_filtered_brier_maes)
+        average_quantile_filtered_normalized_brier_mae = calculate_mean(normalized_quantile_filtered_brier_maes)
 
-        max_rel_mae = calculate_max_relative_mae(all_timestep_maes)
-        prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(all_timestep_maes)
+        max_rel_brier_mae = calculate_max_relative_mae(all_brier_maes)
+        prop_beyond_threshold_brier_mae = calculate_proportion_beyond_mae_threshold(all_brier_maes)
 
-        action_success_rate = calculate_success_rate(all_action_success)
-        num_timesteps = len(all_timestep_maes)
+        action_success_rate = calculate_success_rate(all_action_successes)
+        num_timesteps = len(all_brier_maes)
 
-        total_dataset_amae = sum(all_timestep_maes)
-        avg_dataset_amae = calculate_mean(all_timestep_maes)
+        total_dataset_brier_mae = sum(all_brier_maes)
+        avg_dataset_brier_mae = calculate_mean(all_brier_maes)
 
-        normalized_maes = min_max_normalize(all_timestep_maes)
-        average_normalized_mae = calculate_mean(normalized_maes)
+        normalized_brier_maes = min_max_normalize(all_brier_maes)
+        average_normalized_brier_mae = calculate_mean(normalized_brier_maes)
 
-        logger.debug(f"num_timesteps: {num_timesteps}")
-        logger.debug(f"action_success_rate: {action_success_rate}")
-        logger.debug(f"total_dataset_amae: {total_dataset_amae}")
-        logger.debug(f"avg_dataset_amae: {avg_dataset_amae}")
-        logger.debug(f"average_normalized_mae: {average_normalized_mae}")
-        logger.debug(f"total_quantile_filtered_mae: {total_quantile_filtered_mae}")
-        logger.debug(f"average_quantile_filtered_normalized_mae: {average_quantile_filtered_normalized_mae}")
-        logger.debug(f"max_rel_mae: {max_rel_mae}")
-        logger.debug(f"prop_beyond_threshold_mae: {prop_beyond_threshold_mae}")
 
         return (
             num_timesteps,
             action_success_rate,
-            total_dataset_amae,
-            avg_dataset_amae,
-            average_normalized_mae,
-            total_quantile_filtered_mae,
-            average_quantile_filtered_normalized_mae,
-            max_rel_mae,
-            prop_beyond_threshold_mae
+            total_dataset_brier_mae,
+            avg_dataset_brier_mae,
+            average_normalized_brier_mae,
+            total_quantile_filtered_brier_mae,
+            average_quantile_filtered_normalized_brier_mae,
+            max_rel_brier_mae,
+            prop_beyond_threshold_brier_mae
         )
 
 
-def evaluate_openvla_on_openx(cfg: any, model: any, processor: any, 
-                             tfds_shards: list[str], dataset_name: str) -> tuple[float, float, float, int, float]:
-    """Evaluate OpenVLA model on OpenX dataset.
+def evaluate_openvla_on_procgen(cfg: any, model: any, processor: any, 
+                               tfds_shards: list[str], dataset_name: str) -> tuple[float, float, float, int, float]:
+    """Evaluate OpenVLA model on ProcGen dataset.
     
     Args:
         cfg: Configuration object
@@ -240,5 +261,5 @@ def evaluate_openvla_on_openx(cfg: any, model: any, processor: any,
         Tuple of (action_success_rate, total_dataset_amse, avg_dataset_amse,
                  num_timesteps, normalized_amse)
     """
-    evaluator = OpenXEvaluator(cfg, model, processor, dataset_name)
+    evaluator = ProcGenEvaluator(cfg, model, processor, dataset_name)
     return evaluator.evaluate(tfds_shards)
