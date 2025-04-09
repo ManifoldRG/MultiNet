@@ -41,7 +41,7 @@ def _validate_text_output(output, num_actions) -> bool:
 # Finding the translated TFDS shards.
 def _find_shards(dataset: str, disk_root_dir: str) -> list[str]:
     try:
-        dataset_dir = glob(f"{disk_root_dir}/mount_dir*/procgen_*/{dataset}")[0]
+        dataset_dir = glob(f"{disk_root_dir}/procgen_*/{dataset}")[0]
         shard_files = os.listdir(dataset_dir)
         return sorted(
             shard_files,
