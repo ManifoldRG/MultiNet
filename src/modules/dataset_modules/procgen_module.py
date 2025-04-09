@@ -102,10 +102,13 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_act
     
     # Calculate f1   
     possible_actions = list(range(num_actions))
-    tp, fp, fn = calculate_tp_fp_fn_counts(preds, trues, possible_actions)
+    tp, fp, fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(preds, trues, possible_actions)
     precision = get_micro_precision_from_counts(tp, fp)
+    precision_without_invalid = get_micro_precision_from_counts(tp, valid_fp)
     recall = get_micro_recall_from_counts(tp, fn)
     f1 = get_micro_f1(precision, recall)
+    f1_without_invalid = get_micro_f1(precision_without_invalid, recall)
+    total_invalids = len(invalid_fp)
     
     # Calculate MSE metrics
     total_dataset_amse = sum(timestep_mses)
@@ -127,7 +130,11 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_act
     result['proportion_beyond_threshold_mae'] = prop_beyond_threshold_mae
     result['recall'] = recall
     result['precision'] = precision
+    result['precision_without_invalid'] = precision_without_invalid
     result['f1'] = f1
+    result['f1_without_invalid'] = f1_without_invalid
+    result['total_invalids'] = total_invalids
+    result['percentage_invalids'] = (total_invalids / len(preds)) * 100
     return result
             
         
