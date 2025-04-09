@@ -8,9 +8,12 @@ from definitions.procgen_prompt import format_instruction_prompt
 
 from pathlib import Path
 from typing import Union
+from glob import glob
+from datetime import datetime
+
 import numpy as np
 import time
-from glob import glob
+import os
 
 MAX_BRIER_MAE_ERROR = 2.0
 MAX_BRIER_MSE_ERROR = 2.0
@@ -38,11 +41,16 @@ def _validate_text_output(output, num_actions) -> bool:
 # Finding the translated TFDS shards.
 def _find_shards(dataset: str, disk_root_dir: str) -> list[str]:
     try:
-        #FIXME: this needs to change when doing final evals depending on the files' naming scheme
         dataset_dir = glob(f"{disk_root_dir}/mount_dir*/procgen_*/{dataset}")[0]
-        shard_files = glob(f"{dataset_dir}/translated_shard_*")
-        tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
-        return tfds_shards
+        shard_files = os.listdir(dataset_dir)
+        return sorted(
+            shard_files,
+            key=lambda x: (
+                datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"),  # primary sort by timestamp
+                *(int(n) for n in x.split('_')[1:-1]),  # middle numbers as integers
+                float(x.split('_')[-1])  # last number as float
+            )
+        )
     except IndexError:
         print(f"Cannot identify the directory to the dataset {dataset}. Skipping this dataset.")
         return []
