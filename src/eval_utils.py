@@ -67,7 +67,7 @@ def calculate_tp_fp_fn_counts(predicted_actions: np.ndarray, gt_actions: np.ndar
     # Step 4: Combine metrics
     total_fp = invalid_fp + valid_fp
     
-    return total_tp, total_fp, total_fn
+    return total_tp, total_fp, total_fn, valid_fp, invalid_fp
 
 
 def get_micro_precision_from_counts(total_tp: int, total_fp: int) -> float:
