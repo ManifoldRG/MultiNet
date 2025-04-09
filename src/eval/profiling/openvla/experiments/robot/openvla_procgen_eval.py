@@ -16,17 +16,23 @@ from src.data_utils.procgen_dataloader import get_procgen_dataloader
 from src.eval.profiling.openvla.experiments.robot.openvla_eval_base import OpenVLABaseEvaluator
 from src.eval.profiling.openvla.experiments.robot.robot_utils import get_action
 from src.eval.profiling.openvla.experiments.robot.eval_utils import (
+    standardize_predicted_action,
+    preprocess_expert_actions,
+)
+from definitions.procgen import ProcGenDefinitions
+from src.eval_utils import (
+    calculate_tp_fp_fn_counts,
+    get_micro_precision_from_counts,
+    get_micro_recall_from_counts,
+    get_micro_f1,
     calculate_success_rate,
     calculate_brier_mae,
     min_max_normalize,
-    standardize_predicted_action,
-    preprocess_expert_actions,
     quantile_filter,
     calculate_mean,
     calculate_max_relative_mae,
     calculate_proportion_beyond_mae_threshold
 )
-from definitions.procgen import ProcGenDefinitions
 
 
 logger = logging.getLogger(__name__)
@@ -81,7 +87,7 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
             timestep_idx
         )
 
-    def process_batch(self, batch: dict[str, any], episode_idx: int) -> tuple[list[float], list[int]]:
+    def process_batch(self, batch: dict[str, any], episode_idx: int, action_space: list[int]) -> tuple[list[float], list[int]]:
         """Process a single batch (episode) of data.
         
         Args:
@@ -89,7 +95,7 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
             episode_idx: Index of the current episode
             
         Returns:
-            Tuple of (timestep_brier_maes, action_success)
+            Tuple of (timestep_brier_maes, action_success, batch_preds, batch_actuals)
         """
         timestep_brier_maes = []
         action_success = []
@@ -101,9 +107,10 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
             raise ValueError(f"Error accessing image_observation: {e}")
         
         # Get action space information
-        action_space = ProcGenDefinitions.get_valid_action_space(self.dataset_name, 'default')
         num_actions = len(action_space)
-        
+        batch_preds = []
+        batch_actuals = []
+
         for timestep_idx in range(obs_len):
             logger.debug("================================")
             logger.debug(f"{self.dataset_name}")
@@ -139,7 +146,10 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
                 actual_action = self.get_actual_action(batch, episode_idx, timestep_idx)
                 if actual_action is None:
                     raise ValueError(f"Actual action is None for dataset {self.dataset_name}")
-                
+
+                batch_preds.append(standardized_predicted_action)
+                batch_actuals.append(actual_action)
+
                 logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
                 logger.debug(f"Actual action: {actual_action}")
 
@@ -165,12 +175,16 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
                         action_success.append(1)
                     else:
                         action_success.append(0)
-                        
+
             except (IndexError, KeyError) as e:
                 raise f"Error processing dataset at timestep {timestep_idx}: {e}"
-                
-        return timestep_brier_maes, action_success
-        
+
+        return (
+            timestep_brier_maes, 
+            action_success,
+            batch_preds,
+            batch_actuals
+        )
     
     def is_last_timestep(self, batch: dict[str, any], timestep_idx: int) -> bool:
         """Check if the current timestep is the last one in the ProcGen episode"""
@@ -193,26 +207,31 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
                 total_quantile_filtered_mae,
                 average_quantile_filtered_normalized_mae,
                 max_rel_mae,
-                prop_beyond_threshold_mae
+                prop_beyond_threshold_mae,
+                total_micro_precision,
+                total_micro_recall,
+                total_micro_f1
             )
         """
         dataloader = self.get_dataloader(tfds_shards)
-        
+        action_space = sorted(ProcGenDefinitions.get_valid_action_space(self.dataset_name, 'default'))
         all_brier_maes, all_action_successes = [], []
-        
+        all_preds, all_actuals = [], []
         episode_idx = 0
         
         for batch in dataloader:
-            batch_brier_maes, batch_action_successes = self.process_batch(batch, episode_idx)
+            (batch_brier_maes, batch_action_successes, batch_preds, batch_actuals) = self.process_batch(batch, episode_idx, action_space)
             
             all_brier_maes.extend(batch_brier_maes)
             all_action_successes.extend(batch_action_successes)
+            all_preds.extend(batch_preds)
+            all_actuals.extend(batch_actuals)
             
             episode_idx += 1
 
             # Uncomment to limit evaluation to 2 episodes
-            # if episode_idx == 2:
-            #     break
+            if episode_idx == 1:
+                break
 
         # Calculate quantile filtered MAE metrics
         quantile_filtered_brier_maes = quantile_filter(all_brier_maes)
@@ -232,6 +251,16 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
         normalized_brier_maes = min_max_normalize(all_brier_maes)
         average_normalized_brier_mae = calculate_mean(normalized_brier_maes)
 
+        tp, fp, fn, _, _ = calculate_tp_fp_fn_counts(
+            np.array(all_preds), np.array(all_actuals), action_space
+        )
+
+        total_micro_precision = get_micro_precision_from_counts(tp, fp)
+        total_micro_recall = get_micro_recall_from_counts(tp, fn)
+        total_micro_f1 = get_micro_f1(total_micro_precision, total_micro_recall)
+        average_micro_precision = total_micro_precision / num_timesteps
+        average_micro_recall = total_micro_recall / num_timesteps
+        average_micro_f1 = total_micro_f1 / num_timesteps
 
         return (
             num_timesteps,
@@ -242,7 +271,13 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
             total_quantile_filtered_brier_mae,
             average_quantile_filtered_normalized_brier_mae,
             max_rel_brier_mae,
-            prop_beyond_threshold_brier_mae
+            prop_beyond_threshold_brier_mae,
+            total_micro_precision,
+            total_micro_recall,
+            total_micro_f1,
+            average_micro_precision,
+            average_micro_recall,
+            average_micro_f1
         )
 
 
