@@ -26,10 +26,16 @@ def _validate_text_output(output, num_actions) -> bool:
     keys, vals = set(), []
     for d in output:
         for k, v in d.items():
-            # Check if the key is a digit and within the action space and if it is not a duplicate
-            if not str(k).isdigit() or not 0 <= int(k) < num_actions or k in keys:
+            try:
+                k = float(k)
+                k = int(np.round(k))
+            except ValueError:
                 return False
-            keys.add(int(k))
+                
+            # Check if the key is a digit and within the action space and if it is not a duplicate
+            if not 0 <= k < num_actions or k in keys:
+                return False
+            keys.add(k)
             vals.append(float(v))
     
     # Check if the sum of the probabilities is 1, avoiding floating point errors
