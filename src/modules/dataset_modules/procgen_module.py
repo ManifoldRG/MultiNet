@@ -28,6 +28,7 @@ def _validate_text_output(output, num_actions) -> bool:
         for k, v in d.items():
             try:
                 k = float(k)
+                v = float(v)
                 k = int(np.round(k))
             except ValueError:
                 return False
@@ -36,7 +37,7 @@ def _validate_text_output(output, num_actions) -> bool:
             if not 0 <= k < num_actions or k in keys:
                 return False
             keys.add(k)
-            vals.append(float(v))
+            vals.append(v)
     
     # Check if the sum of the probabilities is 1, avoiding floating point errors
     if sum(vals) < 0.999:
