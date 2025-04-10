@@ -148,6 +148,8 @@ def process_single_dataset(
         (
             all_preds,
             all_actuals,
+            invalids,
+            invalid_percentage,
             num_timesteps,
             action_success_rate,
             total_dataset_brier_mae,
@@ -177,6 +179,8 @@ def process_single_dataset(
         eval_time = end_time - start_time
         logger.info("================================================")
         logger.info(f'Evaluation time for {dataset_name}: {eval_time:.2f} seconds')
+        logger.info(f'Invalids: {invalids}')
+        logger.info(f'Invalid Percentage: {invalid_percentage:.4f}%')
         logger.info(f'Action Success Rate: {action_success_rate:.4f}')
         logger.info(f'Total Dataset Brier MAE: {total_dataset_brier_mae:.4f}')
         logger.info(f'Average Dataset Brier MAE: {avg_dataset_brier_mae:.4f}')
@@ -195,6 +199,8 @@ def process_single_dataset(
         return {
             'all_preds': all_preds,
             'all_gt': all_actuals,
+            'invalids': invalids,
+            'invalid_percentage': invalid_percentage,
             'num_timesteps': num_timesteps,
             'action_success_rate': action_success_rate,
             'total_dataset_brier_mae': total_dataset_brier_mae,

@@ -52,7 +52,7 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
         Returns:
             ProcGen dataloader
         """
-        _, dataloader = get_procgen_dataloader(tfds_shards, batch_size=1, by_episode=True)
+        _, dataloader = get_procgen_dataloader(tfds_shards, batch_size=1, dataset_name=self.dataset_name, by_episode=True)
         return dataloader
     
     def process_observation(self, batch: dict[str, any], obs: dict[str, any], 
@@ -202,15 +202,17 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
             Tuple of metrics (
                 all_preds,
                 all_actuals,
+                invalids,
+                invalid_percentage,
                 num_timesteps,
                 action_success_rate,
-                total_dataset_amae,
-                avg_dataset_amae,
-                average_normalized_mae,
-                total_quantile_filtered_mae,
-                average_quantile_filtered_normalized_mae,
-                max_rel_mae,
-                prop_beyond_threshold_mae,
+                total_dataset_brier_mae,
+                avg_dataset_brier_mae,
+                average_normalized_brier_mae,
+                total_quantile_filtered_brier_mae,
+                average_quantile_filtered_normalized_brier_mae,
+                max_rel_brier_mae,
+                prop_beyond_threshold_brier_mae,
                 total_micro_precision,
                 total_micro_recall,
                 total_micro_f1
@@ -256,10 +258,11 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
 
         exact_match_rate = get_exact_match_rate(np.array(all_preds), np.array(all_actuals))
 
-        tp, fp, fn, _, _ = calculate_tp_fp_fn_counts(
+        tp, fp, fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
             np.array(all_preds), np.array(all_actuals), action_space
         )
 
+        invalid_percentage = int(invalid_fp) / len(all_preds) * 100
         total_micro_precision = get_micro_precision_from_counts(tp, fp)
         total_micro_recall = get_micro_recall_from_counts(tp, fn)
         total_micro_f1 = get_micro_f1(total_micro_precision, total_micro_recall)
@@ -270,6 +273,8 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
         return (
             all_preds,
             all_actuals,
+            int(invalid_fp),
+            invalid_percentage,
             num_timesteps,
             action_success_rate,
             total_dataset_brier_mae,
