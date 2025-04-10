@@ -381,7 +381,14 @@ def main():
     for dataset in procgen_dataset_list:
         print(f'\n ---- EVALUATING {dataset} ---- \n')
         tfds_shards = os.listdir(f'{args.dataset_dir}/{dataset}') # Update path as needed
-        tfds_sorted_shards = sorted(tfds_shards, key=lambda x: datetime.datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"))
+        tfds_sorted_shards = sorted(
+            tfds_shards,
+            key=lambda x: (
+                datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"),  # primary sort by timestamp
+                *(int(n) for n in x.split('_')[1:-1]),  # middle numbers as integers
+                float(x.split('_')[-1])  # last number as float
+            )
+        )
         # Add path to shards
         tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}', shard) for shard in tfds_sorted_shards]
 
