@@ -147,6 +147,7 @@ def process_single_dataset(
         logger.debug(f"Evaluating {dataset_name} on procgen...")
         (
             all_preds,
+            all_actuals,
             num_timesteps,
             action_success_rate,
             total_dataset_brier_mae,
@@ -193,6 +194,7 @@ def process_single_dataset(
         logger.info(f'Exact Match Rate: {exact_match_rate:.4f}')
         return {
             'all_preds': all_preds,
+            'all_gt': all_actuals,
             'num_timesteps': num_timesteps,
             'action_success_rate': action_success_rate,
             'total_dataset_brier_mae': total_dataset_brier_mae,

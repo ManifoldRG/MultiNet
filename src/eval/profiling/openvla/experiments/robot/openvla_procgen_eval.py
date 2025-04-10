@@ -200,6 +200,8 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
             
         Returns:
             Tuple of metrics (
+                all_preds,
+                all_actuals,
                 num_timesteps,
                 action_success_rate,
                 total_dataset_amae,
@@ -267,6 +269,7 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
 
         return (
             all_preds,
+            all_actuals,
             num_timesteps,
             action_success_rate,
             total_dataset_brier_mae,
