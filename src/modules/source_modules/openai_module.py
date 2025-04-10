@@ -44,7 +44,7 @@ BATCH_QUEUE_TOKEN_DAY_LIMIT = {
 }
 
 class OpenAIModule:
-    def __init__(self, model: str, max_concurrent_prompts: int = None, max_output_tokens_per_query=128) -> None:
+    def __init__(self, model: str, max_concurrent_prompts: int = None, max_output_tokens_per_query=256) -> None:
         if model not in CONTEXT_SIZE_MAP:
             raise KeyError(f"The model {model} is not currenly supported.")
         
@@ -158,7 +158,7 @@ class OpenAIModule:
 
     # Calling the chat completion API.
     def _get_response_from_api(self, system_prompt: str=None) -> str:
-        start_idx = self._find_starting_point(system_prompt)
+        start_idx = self._find_starting_point(system_prompt, self.max_output_tokens_per_query)
         system_message = []
         if system_prompt is not None:
             system_message.append({'role': 'system', 'content': system_prompt})
@@ -193,7 +193,7 @@ class OpenAIModule:
                            retrieve_and_return_results: bool) -> tuple[list[str], str]:
         start_idxs = []
         for s, system_prompt in enumerate(system_prompts):
-            start_idx = self._find_starting_point(system_prompt, idx=s)
+            start_idx = self._find_starting_point(system_prompt, self.max_output_tokens_per_query, idx=s)
             start_idxs.append(start_idx)
             
         system_messages = []

@@ -279,22 +279,25 @@ class BatchInfo:
     model: str
     
     def save_to_file(self) -> str:
-        save_dir = f"{self.save_root}/batch_info/{self.dataset_family}/{self.dataset_name}"    
+        save_dir = f"{self.save_root}/batch_info/{self.dataset_family}/{self.dataset_name}/{self.batch_id}"
+        # Create the directories if they don't exist
+        Path(save_dir).mkdir(parents=True, exist_ok=True)
         
-        file_name = f"batch_{self.batch_num}.npz"
-        run = 0
-        while Path(f'{save_dir}/run_{run}/{file_name}').exists():
+        run = 1
+        file_name = f"batch_{self.batch_num}_run_{run}.npz"
+        file_path = f"{save_dir}/{file_name}"
+        
+        if Path(file_path).exists():
             run += 1
+            file_name = f"batch_{self.batch_num}_run_{run}.npz"
+            file_path = f"{save_dir}/{file_name}"
             
-        # Create the directories if they doesn't exist
-        Path(f'{save_dir}/run_{run}').mkdir(parents=True, exist_ok=True)
-                    
-        np.savez(f'{save_dir}/run_{run}/{file_name}', dataset_family=self.dataset_family,
+        np.savez(file_path, dataset_family=self.dataset_family,
                  dataset_name=self.dataset_name, batch_num=self.batch_num, batch_id=self.batch_id, 
                  output_types=self.output_types, token_count=self.token_count, is_lasts=self.is_lasts, 
                  labels=self.labels, num_inputs=self.num_inputs, model=self.model)
                 
-        return Path(f'{save_dir}/run_{run}/{file_name}').absolute()
+        return Path(file_path).absolute()
  
 
 class DatasetBatchModule(DatasetModule, ABC):
