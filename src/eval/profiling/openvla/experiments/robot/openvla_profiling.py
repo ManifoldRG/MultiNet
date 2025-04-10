@@ -160,7 +160,8 @@ def process_single_dataset(
             total_micro_f1,
             average_micro_precision,
             average_micro_recall,
-            average_micro_f1
+            average_micro_f1,
+            exact_match_rate
         ) = evaluate_openvla_on_procgen(
             eval_cfg,
             model,
@@ -188,7 +189,7 @@ def process_single_dataset(
         logger.info(f'Average Micro Precision: {average_micro_precision:.4f}')
         logger.info(f'Average Micro Recall: {average_micro_recall:.4f}')
         logger.info(f'Average Micro F1: {average_micro_f1:.4f}')
-
+        logger.info(f'Exact Match Rate: {exact_match_rate:.4f}')
         return {
             'num_timesteps': num_timesteps,
             'action_success_rate': action_success_rate,
@@ -205,6 +206,7 @@ def process_single_dataset(
             'average_micro_precision': average_micro_precision,
             'average_micro_recall': average_micro_recall,
             'average_micro_f1': average_micro_f1,
+            'exact_match_rate': exact_match_rate,
             'eval_time': eval_time
         }
     elif dataset_name in OPENX_DATASET_NAMES:

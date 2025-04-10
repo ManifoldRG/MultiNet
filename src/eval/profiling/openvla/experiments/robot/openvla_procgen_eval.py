@@ -31,7 +31,8 @@ from src.eval_utils import (
     quantile_filter,
     calculate_mean,
     calculate_max_relative_mae,
-    calculate_proportion_beyond_mae_threshold
+    calculate_proportion_beyond_mae_threshold,
+    get_exact_match_rate
 )
 
 
@@ -251,6 +252,8 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
         normalized_brier_maes = min_max_normalize(all_brier_maes)
         average_normalized_brier_mae = calculate_mean(normalized_brier_maes)
 
+        exact_match_rate = get_exact_match_rate(np.array(all_preds), np.array(all_actuals))
+
         tp, fp, fn, _, _ = calculate_tp_fp_fn_counts(
             np.array(all_preds), np.array(all_actuals), action_space
         )
@@ -277,7 +280,8 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
             total_micro_f1,
             average_micro_precision,
             average_micro_recall,
-            average_micro_f1
+            average_micro_f1,
+            exact_match_rate
         )
 
 
