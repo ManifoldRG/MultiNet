@@ -26,7 +26,7 @@ from src.eval_utils import (get_exact_match_rate,
                             get_micro_precision_from_counts, 
                             get_micro_recall_from_counts, 
                             get_micro_f1)
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 
 
 #Restrict tf to CPU
@@ -39,6 +39,9 @@ os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
 
 @dataclass
 class DatasetResults:
+    all_preds: list[list[float]] = field(default_factory=list)
+    all_gt: list[list[float]] = field(default_factory=list)
+    
     total_batches: int = 0
     total_timesteps: int = 0
     total_invalid_predictions: int = 0
@@ -276,6 +279,8 @@ class ProcGenInference:
             print(f"Clipped Micro Precision: {clipped_micro_precision}, Clipped Micro Recall: {clipped_micro_recall}, Clipped Micro F1: {clipped_micro_f1}")
 
             # Store results for this batch
+            dataset_results.all_preds.extend(unnormalized_discrete_actions.tolist())
+            dataset_results.all_gt.extend(gt_actions.tolist())
             dataset_results.total_invalid_predictions += int(invalid_fp)  # invalid_fp is the same as the number of invalid predictions
             dataset_results.total_batches = counter
             dataset_results.total_timesteps += len(actions)
