@@ -276,7 +276,7 @@ def main(dataset_name: str, output_dir: str, base_dir: str):
                 
                 # Get all shard files and sort them by shard number
                 shard_files = [f for f in os.listdir(train_dir) if not f.endswith('.pkl')]
-                shard_files.sort(key=lambda x: int(x.split('_')[1]))  # Sort by number after shard_
+                shard_files.sort(key=lambda x: int(x.split('_')[-1]))  # Sort by number after shard_
                 
                 # Calculate number of test shards (20%)
                 num_test_shards = int(len(shard_files) * 0.2)

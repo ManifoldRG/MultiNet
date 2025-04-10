@@ -17,7 +17,8 @@ def get_exact_match_rate(predicted_actions: np.ndarray, gt_actions: np.ndarray) 
     return float(exact_match_rate)
 
 
-def calculate_tp_fp_fn_counts(predicted_actions: np.ndarray, gt_actions: np.ndarray, all_labels: list) -> tuple[int, int, int]:
+def calculate_tp_fp_fn_counts(
+        predicted_actions: np.ndarray, gt_actions: np.ndarray, all_labels: list) -> tuple[int, int, int, int, int]:
     """
     Helper function to calculate true positives, false positives, and false negatives.
     
@@ -27,7 +28,7 @@ def calculate_tp_fp_fn_counts(predicted_actions: np.ndarray, gt_actions: np.ndar
         all_labels: List of all possible valid action labels.
         
     Returns:
-        Tuple of (total_tp, total_fp, total_fn)
+        Tuple of (total_tp, total_fp, total_fn, valid_fp, invalid_fp)
     """
     # Ensure inputs are numpy arrays
     predicted_actions = np.asarray(predicted_actions).squeeze() # from (5, 1, 1) to (5,)
@@ -43,7 +44,7 @@ def calculate_tp_fp_fn_counts(predicted_actions: np.ndarray, gt_actions: np.ndar
     # Each invalid prediction counts as one false positive
     invalid_predictions = ~np.isin(predicted_actions, all_labels)
     invalid_fp = np.sum(invalid_predictions)
-    
+
     # Step 2: Handle valid predictions
     valid_fp = 0
     total_tp = 0
@@ -66,7 +67,7 @@ def calculate_tp_fp_fn_counts(predicted_actions: np.ndarray, gt_actions: np.ndar
     
     # Step 4: Combine metrics
     total_fp = invalid_fp + valid_fp
-    
+
     return total_tp, total_fp, total_fn, valid_fp, invalid_fp
 
 
