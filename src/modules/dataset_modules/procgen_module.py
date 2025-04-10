@@ -41,7 +41,7 @@ def _validate_text_output(output, num_actions) -> bool:
 # Finding the translated TFDS shards.
 def _find_shards(dataset: str, disk_root_dir: str) -> list[str]:
     try:
-        dataset_dir = glob(f"{disk_root_dir}/procgen_*/{dataset}")[0]
+        dataset_dir = glob(f"{disk_root_dir}/procgen_*/{dataset}/test_final")[0]
         shard_files = os.listdir(dataset_dir)
         return sorted(
             shard_files,
@@ -154,7 +154,7 @@ class ProcGenModule(DatasetModule):
             start_time = time.time()
 
             # Creating the dataloader.
-            dataloader_obj, dataloader = self.get_dataloader_fn(tfds_shards, batch_size=self.batch_size, by_episode=True)
+            dataloader_obj, dataloader = self.get_dataloader_fn(tfds_shards, batch_size=self.batch_size, dataset_name=dataset, by_episode=True)
             result = {}
         
             timestep_mses, timestep_maes, timestep_preds, timestep_trues = [], [], [], []
