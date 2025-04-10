@@ -146,6 +146,8 @@ def process_single_dataset(
     if dataset_name in PROCGEN_DATASET_NAMES:
         logger.debug(f"Evaluating {dataset_name} on procgen...")
         (
+            all_preds,
+            all_actuals,
             num_timesteps,
             action_success_rate,
             total_dataset_brier_mae,
@@ -154,7 +156,14 @@ def process_single_dataset(
             total_quantile_filtered_brier_mae,
             average_quantile_filtered_normalized_brier_mae,
             max_rel_brier_mae,
-            prop_beyond_threshold_brier_mae
+            prop_beyond_threshold_brier_mae,
+            total_micro_precision,
+            total_micro_recall,
+            total_micro_f1,
+            average_micro_precision,
+            average_micro_recall,
+            average_micro_f1,
+            exact_match_rate
         ) = evaluate_openvla_on_procgen(
             eval_cfg,
             model,
@@ -176,8 +185,16 @@ def process_single_dataset(
         logger.info(f'Average Quantile Filtered Normalized Brier MAE: {average_quantile_filtered_normalized_brier_mae:.4f}')
         logger.info(f'Max Relative Brier MAE: {max_rel_brier_mae:.4f}')
         logger.info(f'Prop Beyond Threshold Brier MAE: {prop_beyond_threshold_brier_mae:.4f}')
-
+        logger.info(f'Total Micro Precision: {total_micro_precision:.4f}')
+        logger.info(f'Total Micro Recall: {total_micro_recall:.4f}')
+        logger.info(f'Total Micro F1: {total_micro_f1:.4f}')
+        logger.info(f'Average Micro Precision: {average_micro_precision:.4f}')
+        logger.info(f'Average Micro Recall: {average_micro_recall:.4f}')
+        logger.info(f'Average Micro F1: {average_micro_f1:.4f}')
+        logger.info(f'Exact Match Rate: {exact_match_rate:.4f}')
         return {
+            'all_preds': all_preds,
+            'all_gt': all_actuals,
             'num_timesteps': num_timesteps,
             'action_success_rate': action_success_rate,
             'total_dataset_brier_mae': total_dataset_brier_mae,
@@ -187,6 +204,13 @@ def process_single_dataset(
             'average_quantile_filtered_normalized_brier_mae': average_quantile_filtered_normalized_brier_mae,
             'max_rel_brier_mae': max_rel_brier_mae,
             'prop_beyond_threshold_brier_mae': prop_beyond_threshold_brier_mae,
+            'total_micro_precision': total_micro_precision,
+            'total_micro_recall': total_micro_recall,
+            'total_micro_f1': total_micro_f1,
+            'average_micro_precision': average_micro_precision,
+            'average_micro_recall': average_micro_recall,
+            'average_micro_f1': average_micro_f1,
+            'exact_match_rate': exact_match_rate,
             'eval_time': eval_time
         }
     elif dataset_name in OPENX_DATASET_NAMES:

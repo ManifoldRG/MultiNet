@@ -16,6 +16,10 @@ from src.eval.profiling.openvla.experiments.robot.openvla_openx_dataloader impor
 from src.eval.profiling.openvla.experiments.robot.openvla_eval_base import OpenVLABaseEvaluator
 from src.eval.profiling.openvla.experiments.robot.robot_utils import get_action
 from src.eval.profiling.openvla.experiments.robot.eval_utils import (
+    standardize_predicted_action,
+    preprocess_expert_actions
+)
+from src.eval_utils import (
     calculate_mae,
     calculate_mean,
     calculate_success_rate,
@@ -23,10 +27,7 @@ from src.eval.profiling.openvla.experiments.robot.eval_utils import (
     calculate_max_relative_mae,
     calculate_proportion_beyond_mae_threshold,
     min_max_normalize,
-    standardize_predicted_action,
-    preprocess_expert_actions
 )
-
 
 logger = logging.getLogger(__name__)
 if os.environ.get('ENVIRONMENT', 'prod') == 'dev':
@@ -105,11 +106,11 @@ class OpenXEvaluator(OpenVLABaseEvaluator):
 
                 # Get and process action
                 predicted_action = get_action(self.cfg, self.model, obs, text_obs, self.processor)
-                logger.debug(f"Predicted action: {predicted_action}")
+                logger.debug(f"Predicted action: {predicted_action['actions']}")
                 
                 # Standardize predicted action
                 standardized_predicted_action = standardize_predicted_action(
-                    predicted_action,
+                    predicted_action['actions'],
                     self.action_decoding_strategy,
                     self.dataset_name
                 )
