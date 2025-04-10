@@ -60,7 +60,7 @@ if __name__=="__main__":
     # batch_list = dataset_module.send_batch_jobs_for_all_datasets()
     batch_list = dataset_module._send_batch_jobs_for_dataset(args.dataset_name)
     batch_list = {args.dataset_name: batch_list}
-    with open(f"{args.dataset_family}_batch_list_{datetime.datetime.now()}.json", 'w') as f:
+    with open(f"{args.dataset_family}_{args.dataset_name}_{datetime.datetime.now()}.json", 'w') as f:
         json.dump(batch_list, f)
 
     
