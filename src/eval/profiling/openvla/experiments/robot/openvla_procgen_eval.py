@@ -231,8 +231,8 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
             episode_idx += 1
 
             # Uncomment to limit evaluation to 2 episodes
-            if episode_idx == 1:
-                break
+            # if episode_idx == 1:
+            #     break
 
         # Calculate quantile filtered MAE metrics
         quantile_filtered_brier_maes = quantile_filter(all_brier_maes)
@@ -266,6 +266,7 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
         average_micro_f1 = total_micro_f1 / num_timesteps
 
         return (
+            all_preds,
             num_timesteps,
             action_success_rate,
             total_dataset_brier_mae,

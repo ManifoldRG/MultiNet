@@ -146,6 +146,7 @@ def process_single_dataset(
     if dataset_name in PROCGEN_DATASET_NAMES:
         logger.debug(f"Evaluating {dataset_name} on procgen...")
         (
+            all_preds,
             num_timesteps,
             action_success_rate,
             total_dataset_brier_mae,
@@ -191,6 +192,7 @@ def process_single_dataset(
         logger.info(f'Average Micro F1: {average_micro_f1:.4f}')
         logger.info(f'Exact Match Rate: {exact_match_rate:.4f}')
         return {
+            'all_preds': all_preds,
             'num_timesteps': num_timesteps,
             'action_success_rate': action_success_rate,
             'total_dataset_brier_mae': total_dataset_brier_mae,
