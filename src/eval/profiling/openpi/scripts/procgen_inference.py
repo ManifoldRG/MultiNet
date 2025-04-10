@@ -27,6 +27,7 @@ from src.eval_utils import (get_exact_match_rate,
                             get_micro_recall_from_counts, 
                             get_micro_f1)
 from dataclasses import dataclass, field, fields
+from datetime import datetime
 
 
 #Restrict tf to CPU
@@ -410,7 +411,7 @@ def main():
                 json.dump(dataset_stats_dict, f, indent=4)
 
         # Create dataloader
-        dataset_obj, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=5)
+        dataset_obj, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, dataset_name=dataset, batch_size=5)
 
         results = procgen_inference.evaluate_model(model, key, config, dataset_stats, dataloader, dataset)
     
