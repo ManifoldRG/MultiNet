@@ -331,7 +331,7 @@ class DatasetBatchModule(DatasetModule, ABC):
             return {}
 
         # Creating the dataloader.
-        dataloader_obj, dataloader = self.get_dataloader_fn(tfds_shards, batch_size=self.batch_size, by_episode=False)
+        dataloader_obj, dataloader = self.get_dataloader_fn(tfds_shards, batch_size=self.batch_size, dataset_name=dataset, by_episode=False)
 
         for i, batch in enumerate(dataloader):
             # Action stats need to be retrieved only once for each dataset, after they have been populated.

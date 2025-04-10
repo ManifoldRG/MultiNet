@@ -29,7 +29,7 @@ class OpenXModule(DatasetModule):
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0) -> None:
         super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
         self._definitions_class = OpenXDefinitions
-        self._dataloader_fn = get_openx_dataloader
+        self.get_dataloader_fn = get_openx_dataloader
         self.dataset_family = 'openx'
         self.format_instruction_prompt_fn = format_instruction_prompt  
     
@@ -48,7 +48,7 @@ class OpenXModule(DatasetModule):
             start_time = time.time()
 
             # Creating the dataloader.
-            dataloader_obj, dataloader = self.dataloader_fn(tfds_shards, batch_size=self.batch_size, by_episode=True)
+            dataloader_obj, dataloader = self.get_dataloader_fn(tfds_shards, batch_size=self.batch_size, dataset_name=dataset, by_episode=True)
 
             #avg_mse_list = []
             total_dataset_mse = 0.0
@@ -154,7 +154,7 @@ class OpenXBatchModule(DatasetBatchModule):
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0):
         super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
         self._definitions_class = OpenXDefinitions
-        self._dataloader_fn = get_openx_dataloader
+        self.get_dataloader_fn = get_openx_dataloader
         self.dataset_family = 'openx'
         self.format_instruction_prompt_fn = format_instruction_prompt
     

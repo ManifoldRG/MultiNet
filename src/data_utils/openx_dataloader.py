@@ -8,13 +8,14 @@ import numpy as np
 
 
 class OpenXDataset(Dataset):
-    def __init__(self, tfds_shards: List[str], by_episode: bool = False):
+    def __init__(self, tfds_shards: List[str], dataset_name: str, by_episode: bool = False):
         self.tfds_shards = tfds_shards
         self.action_tensor_size = None
         self._action_stats = None
         self.cur_shard = None
         self.cur_shard_idx = None
         self.by_episode = by_episode
+        self.dataset_name = dataset_name
         
         self.samples_per_shard = []
         for shard in self.tfds_shards:
@@ -245,8 +246,8 @@ def custom_collate(batch):
             result[key].append(value)
     return result
 
-def get_openx_dataloader(tfds_shards: List[str], batch_size: int, num_workers: int = 0, by_episode=False) -> DataLoader:
-    dataset = OpenXDataset(tfds_shards, by_episode=by_episode)
+def get_openx_dataloader(tfds_shards: List[str], batch_size: int, dataset_name: str, num_workers: int = 0, by_episode=False) -> DataLoader:
+    dataset = OpenXDataset(tfds_shards, dataset_name, by_episode=by_episode)
     return dataset, DataLoader(
         dataset,
         batch_size=batch_size,

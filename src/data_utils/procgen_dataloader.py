@@ -9,13 +9,14 @@ import numpy as np
 
 
 class ProcGenDataset(Dataset):
-    def __init__(self, tfds_shards: List[str], by_episode: bool = False):
+    def __init__(self, tfds_shards: List[str], dataset_name: str, by_episode: bool = False):
         self.tfds_shards = tfds_shards
         self.action_tensor_size = None
         self._action_stats = None
         self.cur_shard = None
         self.cur_shard_idx = None
         self.by_episode = by_episode
+        self.dataset_name = dataset_name
         
         self.samples_per_shard = []
         for shard in self.tfds_shards:
@@ -27,7 +28,7 @@ class ProcGenDataset(Dataset):
 
         shard  = self.tfds_shards[shard_idx]
         dataset = tf.data.Dataset.load(shard)
-        dataset_name = Path(shard).parts[-2]
+        # dataset_name = Path(shard).parts[-2]
         #Process the input data for each element in the shard
         
         
@@ -47,7 +48,7 @@ class ProcGenDataset(Dataset):
             
             # Extract relevant features from the example
             step_data = {
-                'text_observation': list(ProcGenDefinitions.DESCRIPTIONS[dataset_name].keys())[0],
+                'text_observation': list(ProcGenDefinitions.DESCRIPTIONS[self.dataset_name].keys())[0],
                 'image_observation': image_observation,
                 'action': action,
                 'reward': elem['rewards'].numpy(),
@@ -156,8 +157,8 @@ def custom_collate(batch):
             result[key].append(value)
     return result
 
-def get_procgen_dataloader(tfds_shards: List[str], batch_size: int, num_workers: int = 0, by_episode=False) -> DataLoader:
-    dataset = ProcGenDataset(tfds_shards, by_episode=by_episode)
+def get_procgen_dataloader(tfds_shards: List[str], batch_size: int, dataset_name: str, num_workers: int = 0, by_episode=False) -> DataLoader:
+    dataset = ProcGenDataset(tfds_shards, dataset_name, by_episode=by_episode)
     return dataset, DataLoader(
         dataset,
         batch_size=batch_size,
