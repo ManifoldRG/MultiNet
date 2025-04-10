@@ -26,10 +26,16 @@ def _validate_text_output(output, num_actions) -> bool:
     keys, vals = set(), []
     for d in output:
         for k, v in d.items():
-            # Check if the key is a digit and within the action space and if it is not a duplicate
-            if not str(k).isdigit() or not 0 <= int(k) < num_actions or k in keys:
+            try:
+                k = float(k)
+                k = int(np.round(k))
+            except ValueError:
                 return False
-            keys.add(int(k))
+                
+            # Check if the key is a digit and within the action space and if it is not a duplicate
+            if not 0 <= k < num_actions or k in keys:
+                return False
+            keys.add(k)
             vals.append(float(v))
     
     # Check if the sum of the probabilities is 1, avoiding floating point errors
@@ -111,7 +117,6 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_act
     recall = get_micro_recall_from_counts(tp, fn)
     f1 = get_micro_f1(precision, recall)
     f1_without_invalid = get_micro_f1(precision_without_invalid, recall)
-    total_invalids = len(invalid_fp)
     
     # Calculate MSE metrics
     total_dataset_amse = sum(timestep_mses)
@@ -136,10 +141,10 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_act
     result['precision_without_invalid'] = precision_without_invalid
     result['f1'] = f1
     result['f1_without_invalid'] = f1_without_invalid
-    result['total_invalids'] = total_invalids
-    result['percentage_invalids'] = (total_invalids / len(preds)) * 100
-    result['preds'] = preds
-    result['gt_actions'] = trues
+    result['total_invalids'] = int(invalid_fp)
+    result['percentage_invalids'] = (invalid_fp / len(preds)) * 100
+    result['preds'] = [int(pred) for pred in preds]
+    result['gt_actions'] = [int(true) for true in trues]
     return result
             
         
