@@ -234,7 +234,7 @@ class Pi0FAST(_model.BaseModel):
         *,
         max_decoding_steps: int | at.Int[at.Array, ""] = 256,
         temperature: float = 0.0,
-    ) -> _model.Actions:
+    ) -> tuple[_model.Actions, at.Float[at.Array, "b s v"]]:
         
         # Preprocess observation
         observation = _model.preprocess_observation(
@@ -266,14 +266,15 @@ class Pi0FAST(_model.BaseModel):
         )
 
         # Prepare for decoding
-        last_logit = prefix_logits[:, -1:]
+        last_logit = prefix_logits[:, -1:]  # shape: (batch_size, 1, vocab_size)
         output_tokens = jnp.zeros((last_logit.shape[0], max_decoding_steps))
+        output_logits = jnp.zeros((last_logit.shape[0], max_decoding_steps, last_logit.shape[-1]))
 
         # Pass the main rng key into the loop state
-        initial_carry = (last_logit, output_tokens, kv_cache, False, 0, rng)
+        initial_carry = (last_logit, output_tokens, output_logits, kv_cache, False, 0, rng)
 
         def step(carry):
-            last_logit, output_tokens, cache, _, step, loop_rng = carry # Unpack rng
+            last_logit, output_tokens, output_logits, cache, _, step, loop_rng = carry # Unpack rng
 
             # Split RNG key for this step
             step_rng, next_loop_rng = jax.random.split(loop_rng)
@@ -285,18 +286,16 @@ class Pi0FAST(_model.BaseModel):
             else:
                 token = jnp.argmax(last_logit, axis=-1)
 
-            # Use jax.debug.print for reliable printing inside loops/jit
-            #jax.debug.print("Step {s}: Sampled token = {t}", s=step, t=token)
-
-            # Update output tokens
+            # Update output tokens and logits
             indices = jnp.broadcast_to(step, (token.shape[0], 1))
             updated_output_tokens = put_along_last_axis(
                 output_tokens,
                 indices,
                 token.astype(output_tokens.dtype) # Ensure dtype match
             )
-            #jax.debug.print("Step {s}: Updated output_tokens = {o}", s=step, o=updated_output_tokens)
 
+            # Update output logits - we need to handle the extra dimension correctly
+            updated_output_logits = output_logits.at[:, step].set(last_logit[:, 0])
 
             # Check for early stopping
             has_eos = jnp.any(token == PALIGEMMA_EOS_TOKEN, axis=-1)
@@ -321,10 +320,10 @@ class Pi0FAST(_model.BaseModel):
                 decode=True, 
                 kv_cache=cache
             )
-            return last_logit_next, updated_output_tokens, kv_cache_next, all_eos, step + 1, next_loop_rng # Pass next_loop_rng
+            return last_logit_next, updated_output_tokens, updated_output_logits, kv_cache_next, all_eos, step + 1, next_loop_rng
 
         def cond(carry):
-            _, _, _, all_eos, step, _ = carry # Unpack rng state but don't use it in condition
+            _, _, _, _, all_eos, step, _ = carry # Unpack rng state but don't use it in condition
             return (~all_eos) & (step < max_decoding_steps)
 
         # Run the decoding loop with the initial carry including rng
@@ -334,8 +333,10 @@ class Pi0FAST(_model.BaseModel):
             initial_carry # Pass initial carry including rng
         )
 
-        # Unpack the final state (ignore the final rng state)
-        _, final_output_tokens, _, _, _, _ = final_state
+        # Unpack the final state
+        _, final_output_tokens, final_output_logits, _, _, _, _ = final_state
 
-        # Return the tokens part of the final state
-        return final_output_tokens
+        final_output_probs = jax.nn.softmax(final_output_logits, axis=-1)
+
+        # Return both tokens and logits
+        return final_output_tokens, final_output_probs
