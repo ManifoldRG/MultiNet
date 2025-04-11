@@ -21,9 +21,11 @@ import gc
 # Update imports to be relative to the project root (prefix with 'src.')
 from src.eval.profiling.openpi.src.openpi.shared import normalize
 from src.eval.profiling.openpi.src.openpi.transforms import Unnormalize, ExtractFASTActions, pad_to_dim
-from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
+from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats, NormStats
 from src.eval.profiling.openpi.scripts.procgen_utils import ActionUtils, MetricUtils
 from definitions.procgen import ProcGenDefinitions
+# from src.eval_utils import MetricUtils
+
 import jax.numpy as jnp
 import jax.tree_util as jtu
 
@@ -40,6 +42,8 @@ class ProcGenInferenceFast:
         self.tokenizer = tokenizer
         self.config = config
         self.max_decoding_steps = max_decoding_steps
+        with open("src/eval/profiling/openpi/scripts/bpe_token_to_action_value_mappings.json", "r") as f:
+            self.bpe_to_action_value_mappings = json.load(f)
 
     def prepare_observation(self, obs_dict: dict, action_dim: int = 1, max_token_length: int = 48) -> dict:
         # Prepare observation dictionary for pi0 model inference
@@ -255,7 +259,7 @@ class ProcGenInferenceFast:
 
             # Transfer necessary data to accelerator only for model inference
             # The model's sample_actions will handle the device transfer internally
-            action_tokens = self.model.sample_actions(key, observation, max_decoding_steps = self.max_decoding_steps, temperature=0.0)
+            action_tokens, action_probs = self.model.sample_actions(key, observation, max_decoding_steps = self.max_decoding_steps, temperature=0.0)
             #print('\nAction tokens before decoding: ', action_tokens)
             decoder = ExtractFASTActions(tokenizer=self.tokenizer, action_horizon=config.action_horizon, action_dim=config.action_dim)
             
@@ -267,6 +271,7 @@ class ProcGenInferenceFast:
 
             # Process each action to ensure consistent shape and size
             processed_actions = []
+            processed_actions_to_paligemma_probs = []
             for action in decoded_actions:
                 # Convert to numpy and squeeze any extra dimensions
                 action = np.array(action)
@@ -286,13 +291,24 @@ class ProcGenInferenceFast:
                     print('\n Scalar action detected: ', action)
                 
                 processed_actions.append(action)
-            
+
             # Stack the actions into a single array
             actions = np.stack(processed_actions)
             #print('\nDecoded Actions: ', actions)
+            
+            action_value_to_paligemma_probs_mappings = self.get_final_action_value_to_paligemma_probs_mapping(np.array(action_probs[0][-1]))  # only the last token is action token
 
             # Process outputs back on CPU
             with jax.default_device(cpu_device):
+                action_space = ProcGenDefinitions.get_valid_action_space(dataset)
+
+                unnormalizer = Unnormalize(norm_stats={'action': dataset_stats['action']}, use_quantiles=True)
+                unnormalized_action_values_to_probs = np.zeros((len(action_space),))
+                for action_value, paligemma_probs in action_value_to_paligemma_probs_mappings.items():
+                    unnormalized_action_value = unnormalizer({'action': action_value})['action']
+                    unnormalized_discrete_action_value = np.round(unnormalized_action_value).astype(int)
+                    unnormalized_action_values_to_probs[unnormalized_discrete_action_value] += paligemma_probs
+                
                 unnormalized_discrete_actions = self.process_output(actions, dataset_stats)
                 counter += 1
                 
@@ -300,8 +316,20 @@ class ProcGenInferenceFast:
                 gt_actions = np.array(batch['action'])
                 gt_actions = ActionUtils.set_procgen_unused_special_action_to_stand_still(gt_actions, dataset)
 
-                action_space = ProcGenDefinitions.get_valid_action_space(dataset)
-                total_tp, total_fp, total_fn = MetricUtils._calculate_metrics_counts(gt_actions, unnormalized_discrete_actions, action_space)
+                
+                predicted_action_space = unnormalized_action_values_to_probs.keys()
+                assert len(predicted_action_space) == len(action_space), f"Predicted action space {predicted_action_space} does not match ground truth action space {action_space}"
+                
+                # get one hot encoded gt action
+                gt_actions_one_hot = np.zeros((len(gt_actions), len(action_space)))
+                for i, action in enumerate(gt_actions):
+                    gt_actions_one_hot[i, action] = 1
+
+                # get probs over action space for predicted actions
+                
+
+
+                total_tp, total_fp, total_fn = MetricUtils._calculate_metrics_counts(gt_actions_one_hot, unnormalized_discrete_actions, action_space)
                 micro_precision = MetricUtils.get_micro_precision_from_counts(total_tp, total_fp)
                 micro_recall = MetricUtils.get_micro_recall_from_counts(total_tp, total_fn)
                 micro_f1 = MetricUtils.get_micro_f1(micro_precision, micro_recall)
@@ -336,6 +364,20 @@ class ProcGenInferenceFast:
             
             print(f"Dataset: {dataset}, Batch {counter} metrics - Micro Precision: {micro_precision:.4f}, Micro Recall: {micro_recall:.4f}, Micro F1: {micro_f1:.4f}")
             
+
+    def get_final_action_value_to_paligemma_probs_mapping(
+            self, action_probs: np.ndarray
+        ) -> dict[float, float]:
+        try:
+            action_value_to_paligemma_probs_mappings = {}
+            for i in range(action_probs.shape[0]):
+                if str(i) in self.bpe_to_action_value_mappings["mappings"]:
+                    action_value_to_paligemma_probs_mappings[self.bpe_to_action_value_mappings["mappings"][str(i)]] = action_probs[i]
+            return action_value_to_paligemma_probs_mappings
+        except Exception as e:
+            print(f"Error getting final action value to PaliGemma token mapping: {e}")
+            raise e
+
 
 def parse_args() -> argparse.Namespace:
     """Parse and validate command line arguments.

@@ -1,4328 +1,1507 @@
 {
   "mappings": {
-    "254980": {
-      "paligemma_token": 254980,
-      "action_value": -1.1
-    },
-    "254982": {
-      "paligemma_token": 254982,
-      "action_value": 0.1
-    },
-    "254987": {
-      "paligemma_token": 254987,
-      "action_value": -0.2
-    },
-    "254988": {
-      "paligemma_token": 254988,
-      "action_value": 0.3
-    },
-    "254991": {
-      "paligemma_token": 254991,
-      "action_value": -0.1
-    },
-    "254993": {
-      "paligemma_token": 254993,
-      "action_value": -1.1
-    },
-    "255002": {
-      "paligemma_token": 255002,
-      "action_value": 0.4
-    },
-    "255006": {
-      "paligemma_token": 255006,
-      "action_value": -1.2
-    },
-    "255007": {
-      "paligemma_token": 255007,
-      "action_value": -0.3
-    },
-    "255008": {
-      "paligemma_token": 255008,
-      "action_value": 15.3
-    },
-    "255011": {
-      "paligemma_token": 255011,
-      "action_value": -14.7
-    },
-    "255015": {
-      "paligemma_token": 255015,
-      "action_value": -0.1
-    },
-    "255017": {
-      "paligemma_token": 255017,
-      "action_value": 0.6
-    },
-    "255022": {
-      "paligemma_token": 255022,
-      "action_value": -0.1
-    },
-    "255033": {
-      "paligemma_token": 255033,
-      "action_value": 1.2
-    },
-    "255036": {
-      "paligemma_token": 255036,
-      "action_value": -1.3
-    },
-    "255037": {
-      "paligemma_token": 255037,
-      "action_value": 1.1
-    },
-    "255038": {
-      "paligemma_token": 255038,
-      "action_value": -14.6
-    },
-    "255040": {
-      "paligemma_token": 255040,
-      "action_value": 1.1
-    },
-    "255047": {
-      "paligemma_token": 255047,
-      "action_value": -0.5
-    },
-    "255049": {
-      "paligemma_token": 255049,
-      "action_value": 1.6
-    },
-    "255050": {
-      "paligemma_token": 255050,
-      "action_value": 1.3
-    },
-    "255053": {
-      "paligemma_token": 255053,
-      "action_value": -1.7
-    },
-    "255057": {
-      "paligemma_token": 255057,
-      "action_value": -0.2
-    },
-    "255058": {
-      "paligemma_token": 255058,
-      "action_value": 1.0
-    },
-    "255059": {
-      "paligemma_token": 255059,
-      "action_value": -1.5
-    },
-    "255069": {
-      "paligemma_token": 255069,
-      "action_value": 0.2
-    },
-    "255071": {
-      "paligemma_token": 255071,
-      "action_value": 0.6
-    },
-    "255072": {
-      "paligemma_token": 255072,
-      "action_value": -14.5
-    },
-    "255073": {
-      "paligemma_token": 255073,
-      "action_value": -1.1
-    },
-    "255074": {
-      "paligemma_token": 255074,
-      "action_value": 1.2
-    },
-    "255078": {
-      "paligemma_token": 255078,
-      "action_value": -0.1
-    },
-    "255079": {
-      "paligemma_token": 255079,
-      "action_value": 0.2
-    },
-    "255082": {
-      "paligemma_token": 255082,
-      "action_value": 1.3
-    },
-    "255083": {
-      "paligemma_token": 255083,
-      "action_value": 1.5
-    },
-    "255086": {
-      "paligemma_token": 255086,
-      "action_value": -0.1
-    },
-    "255087": {
-      "paligemma_token": 255087,
-      "action_value": -1.4
-    },
-    "255094": {
-      "paligemma_token": 255094,
-      "action_value": -0.7
-    },
-    "255099": {
-      "paligemma_token": 255099,
-      "action_value": -1.0
-    },
-    "255100": {
-      "paligemma_token": 255100,
-      "action_value": 1.4
-    },
-    "255101": {
-      "paligemma_token": 255101,
-      "action_value": 1.0
-    },
-    "255102": {
-      "paligemma_token": 255102,
-      "action_value": 15.2
-    },
-    "255105": {
-      "paligemma_token": 255105,
-      "action_value": 0.3
-    },
-    "255106": {
-      "paligemma_token": 255106,
-      "action_value": -14.4
-    },
-    "255107": {
-      "paligemma_token": 255107,
-      "action_value": 0.5
-    },
-    "255112": {
-      "paligemma_token": 255112,
-      "action_value": -1.6
-    },
-    "255113": {
-      "paligemma_token": 255113,
-      "action_value": 1.7
-    },
-    "255116": {
-      "paligemma_token": 255116,
-      "action_value": -0.2
-    },
-    "255118": {
-      "paligemma_token": 255118,
-      "action_value": -1.2
-    },
-    "255121": {
-      "paligemma_token": 255121,
-      "action_value": -0.1
-    },
-    "255130": {
-      "paligemma_token": 255130,
-      "action_value": -0.8
-    },
-    "255134": {
-      "paligemma_token": 255134,
-      "action_value": 0.9
-    },
-    "255135": {
-      "paligemma_token": 255135,
-      "action_value": 0.3
-    },
-    "255136": {
-      "paligemma_token": 255136,
-      "action_value": 15.1
-    },
-    "255138": {
-      "paligemma_token": 255138,
-      "action_value": -0.2
-    },
-    "255140": {
-      "paligemma_token": 255140,
-      "action_value": -0.1
-    },
-    "255143": {
-      "paligemma_token": 255143,
-      "action_value": -0.1
-    },
-    "255149": {
-      "paligemma_token": 255149,
-      "action_value": -0.1
-    },
-    "255150": {
-      "paligemma_token": 255150,
-      "action_value": 1.0
-    },
-    "255152": {
-      "paligemma_token": 255152,
-      "action_value": 0.2
-    },
-    "255155": {
-      "paligemma_token": 255155,
-      "action_value": -1.0
-    },
-    "255156": {
-      "paligemma_token": 255156,
-      "action_value": -14.3
-    },
-    "255157": {
-      "paligemma_token": 255157,
-      "action_value": 15.0
-    },
-    "255158": {
-      "paligemma_token": 255158,
-      "action_value": 0.2
-    },
-    "255160": {
-      "paligemma_token": 255160,
-      "action_value": 14.9
-    },
-    "255161": {
-      "paligemma_token": 255161,
-      "action_value": 1.0
-    },
-    "255167": {
-      "paligemma_token": 255167,
-      "action_value": 0.2
-    },
-    "255174": {
-      "paligemma_token": 255174,
-      "action_value": -14.2
-    },
-    "255176": {
-      "paligemma_token": 255176,
-      "action_value": 8.5
-    },
-    "255177": {
-      "paligemma_token": 255177,
-      "action_value": 1.2
-    },
-    "255178": {
-      "paligemma_token": 255178,
-      "action_value": 0.7
-    },
-    "255181": {
-      "paligemma_token": 255181,
-      "action_value": -1.2
-    },
-    "255182": {
-      "paligemma_token": 255182,
-      "action_value": 1.1
-    },
-    "255184": {
-      "paligemma_token": 255184,
-      "action_value": -0.6
-    },
-    "255187": {
-      "paligemma_token": 255187,
-      "action_value": -0.6
-    },
-    "255188": {
-      "paligemma_token": 255188,
-      "action_value": 0.7
-    },
-    "255189": {
-      "paligemma_token": 255189,
-      "action_value": 0.2
-    },
-    "255192": {
-      "paligemma_token": 255192,
-      "action_value": -0.2
-    },
-    "255196": {
-      "paligemma_token": 255196,
-      "action_value": -1.0
-    },
-    "255197": {
-      "paligemma_token": 255197,
-      "action_value": -1.2
-    },
-    "255199": {
-      "paligemma_token": 255199,
-      "action_value": 0.3
-    },
-    "255200": {
-      "paligemma_token": 255200,
-      "action_value": -14.1
-    },
-    "255202": {
-      "paligemma_token": 255202,
-      "action_value": 1.1
-    },
-    "255203": {
-      "paligemma_token": 255203,
-      "action_value": -0.7
-    },
-    "255206": {
-      "paligemma_token": 255206,
-      "action_value": -1.1
-    },
-    "255207": {
-      "paligemma_token": 255207,
-      "action_value": 14.8
-    },
-    "255211": {
-      "paligemma_token": 255211,
-      "action_value": 1.0
-    },
-    "255214": {
-      "paligemma_token": 255214,
-      "action_value": 1.6
-    },
-    "255215": {
-      "paligemma_token": 255215,
-      "action_value": -14.0
-    },
-    "255216": {
-      "paligemma_token": 255216,
-      "action_value": -0.3
-    },
-    "255217": {
-      "paligemma_token": 255217,
-      "action_value": -1.0
-    },
-    "255219": {
-      "paligemma_token": 255219,
-      "action_value": 0.4
-    },
-    "255220": {
-      "paligemma_token": 255220,
-      "action_value": -1.6
-    },
-    "255222": {
-      "paligemma_token": 255222,
-      "action_value": -0.9
-    },
-    "255225": {
-      "paligemma_token": 255225,
-      "action_value": -0.4
-    },
-    "255226": {
-      "paligemma_token": 255226,
-      "action_value": 0.8
-    },
-    "255227": {
-      "paligemma_token": 255227,
-      "action_value": 0.2
-    },
-    "255228": {
-      "paligemma_token": 255228,
-      "action_value": -0.4
-    },
-    "255231": {
-      "paligemma_token": 255231,
-      "action_value": -0.2
-    },
-    "255233": {
-      "paligemma_token": 255233,
-      "action_value": -1.0
-    },
-    "255234": {
-      "paligemma_token": 255234,
-      "action_value": -1.2
-    },
-    "255235": {
-      "paligemma_token": 255235,
-      "action_value": 1.1
-    },
-    "255239": {
-      "paligemma_token": 255239,
-      "action_value": -1.3
-    },
-    "255240": {
-      "paligemma_token": 255240,
-      "action_value": -13.9
-    },
-    "255241": {
-      "paligemma_token": 255241,
-      "action_value": -1.0
-    },
-    "255244": {
-      "paligemma_token": 255244,
-      "action_value": -0.3
-    },
-    "255247": {
-      "paligemma_token": 255247,
-      "action_value": 0.4
-    },
-    "255249": {
-      "paligemma_token": 255249,
-      "action_value": -0.6
-    },
-    "255250": {
-      "paligemma_token": 255250,
-      "action_value": -0.2
-    },
-    "255252": {
-      "paligemma_token": 255252,
-      "action_value": 14.7
-    },
-    "255256": {
-      "paligemma_token": 255256,
-      "action_value": 0.2
-    },
-    "255257": {
-      "paligemma_token": 255257,
-      "action_value": -1.1
-    },
-    "255263": {
-      "paligemma_token": 255263,
-      "action_value": -1.4
-    },
-    "255264": {
-      "paligemma_token": 255264,
-      "action_value": 1.0
-    },
-    "255270": {
-      "paligemma_token": 255270,
-      "action_value": 1.5
-    },
-    "255274": {
-      "paligemma_token": 255274,
-      "action_value": -0.2
-    },
-    "255275": {
-      "paligemma_token": 255275,
-      "action_value": -1.3
-    },
-    "255276": {
-      "paligemma_token": 255276,
-      "action_value": -1.5
-    },
-    "255278": {
-      "paligemma_token": 255278,
-      "action_value": 1.4
-    },
-    "255281": {
-      "paligemma_token": 255281,
-      "action_value": 0.9
-    },
-    "255282": {
-      "paligemma_token": 255282,
-      "action_value": 1.0
-    },
-    "255288": {
-      "paligemma_token": 255288,
-      "action_value": 1.3
-    },
-    "255295": {
-      "paligemma_token": 255295,
-      "action_value": -0.2
-    },
-    "255297": {
-      "paligemma_token": 255297,
-      "action_value": -0.4
-    },
-    "255298": {
-      "paligemma_token": 255298,
-      "action_value": -1.1
-    },
-    "255299": {
-      "paligemma_token": 255299,
-      "action_value": 1.2
-    },
-    "255300": {
-      "paligemma_token": 255300,
-      "action_value": -0.1
-    },
-    "255302": {
-      "paligemma_token": 255302,
-      "action_value": 1.0
-    },
-    "255303": {
-      "paligemma_token": 255303,
-      "action_value": 1.1
-    },
-    "255304": {
-      "paligemma_token": 255304,
-      "action_value": 0.6
-    },
-    "255306": {
-      "paligemma_token": 255306,
-      "action_value": -0.8
-    },
-    "255307": {
-      "paligemma_token": 255307,
-      "action_value": 1.2
-    },
-    "255310": {
-      "paligemma_token": 255310,
-      "action_value": -13.8
-    },
-    "255315": {
-      "paligemma_token": 255315,
-      "action_value": 1.1
-    },
-    "255318": {
-      "paligemma_token": 255318,
-      "action_value": 14.6
-    },
-    "255321": {
-      "paligemma_token": 255321,
-      "action_value": -13.7
-    },
-    "255322": {
-      "paligemma_token": 255322,
-      "action_value": 14.4
-    },
-    "255325": {
-      "paligemma_token": 255325,
-      "action_value": 0.2
-    },
-    "255326": {
-      "paligemma_token": 255326,
-      "action_value": -1.0
-    },
-    "255327": {
-      "paligemma_token": 255327,
-      "action_value": 0.1
-    },
-    "255329": {
-      "paligemma_token": 255329,
-      "action_value": -0.9
-    },
-    "255331": {
-      "paligemma_token": 255331,
-      "action_value": -1.1
-    },
-    "255333": {
-      "paligemma_token": 255333,
-      "action_value": -0.9
-    },
-    "255335": {
-      "paligemma_token": 255335,
-      "action_value": -1.1
-    },
-    "255337": {
-      "paligemma_token": 255337,
-      "action_value": -0.5
-    },
-    "255340": {
-      "paligemma_token": 255340,
-      "action_value": -0.1
-    },
-    "255343": {
-      "paligemma_token": 255343,
-      "action_value": 0.5
-    },
-    "255348": {
-      "paligemma_token": 255348,
-      "action_value": -13.6
-    },
-    "255350": {
-      "paligemma_token": 255350,
-      "action_value": -1.2
-    },
-    "255351": {
-      "paligemma_token": 255351,
-      "action_value": -1.5
-    },
-    "255354": {
-      "paligemma_token": 255354,
-      "action_value": -1.1
-    },
-    "255355": {
-      "paligemma_token": 255355,
-      "action_value": -0.4
-    },
-    "255356": {
-      "paligemma_token": 255356,
-      "action_value": 14.2
-    },
-    "255357": {
-      "paligemma_token": 255357,
-      "action_value": 14.3
-    },
-    "255359": {
-      "paligemma_token": 255359,
-      "action_value": 1.5
-    },
-    "255360": {
-      "paligemma_token": 255360,
-      "action_value": 0.9
-    },
-    "255363": {
-      "paligemma_token": 255363,
-      "action_value": -0.2
-    },
-    "255370": {
-      "paligemma_token": 255370,
-      "action_value": -13.5
-    },
-    "255373": {
-      "paligemma_token": 255373,
-      "action_value": 0.4
-    },
-    "255374": {
-      "paligemma_token": 255374,
-      "action_value": 14.5
-    },
-    "255376": {
-      "paligemma_token": 255376,
-      "action_value": 0.4
-    },
-    "255380": {
-      "paligemma_token": 255380,
-      "action_value": 1.3
-    },
-    "255385": {
-      "paligemma_token": 255385,
-      "action_value": 0.2
-    },
-    "255386": {
-      "paligemma_token": 255386,
-      "action_value": -0.3
-    },
-    "255387": {
-      "paligemma_token": 255387,
-      "action_value": 1.1
-    },
-    "255392": {
-      "paligemma_token": 255392,
-      "action_value": 1.0
-    },
-    "255393": {
-      "paligemma_token": 255393,
-      "action_value": 1.0
-    },
-    "255394": {
-      "paligemma_token": 255394,
-      "action_value": 0.1
-    },
-    "255399": {
-      "paligemma_token": 255399,
-      "action_value": 0.2
-    },
-    "255401": {
-      "paligemma_token": 255401,
-      "action_value": 14.1
-    },
-    "255402": {
-      "paligemma_token": 255402,
-      "action_value": 0.8
-    },
-    "255404": {
-      "paligemma_token": 255404,
-      "action_value": -0.7
-    },
-    "255405": {
-      "paligemma_token": 255405,
-      "action_value": -13.3
-    },
-    "255406": {
-      "paligemma_token": 255406,
-      "action_value": -0.1
-    },
-    "255409": {
-      "paligemma_token": 255409,
-      "action_value": 0.9
-    },
-    "255411": {
-      "paligemma_token": 255411,
-      "action_value": -0.2
-    },
-    "255416": {
-      "paligemma_token": 255416,
-      "action_value": 0.1
-    },
-    "255418": {
-      "paligemma_token": 255418,
-      "action_value": -1.2
-    },
-    "255420": {
-      "paligemma_token": 255420,
-      "action_value": 0.2
-    },
-    "255423": {
-      "paligemma_token": 255423,
-      "action_value": -13.4
-    },
-    "255428": {
-      "paligemma_token": 255428,
-      "action_value": 1.4
-    },
-    "255429": {
-      "paligemma_token": 255429,
-      "action_value": 14.0
-    },
-    "255435": {
-      "paligemma_token": 255435,
-      "action_value": 0.9
-    },
-    "255437": {
-      "paligemma_token": 255437,
-      "action_value": -1.4
-    },
-    "255438": {
-      "paligemma_token": 255438,
-      "action_value": 0.6
-    },
-    "255442": {
-      "paligemma_token": 255442,
-      "action_value": 0.1
-    },
-    "255445": {
-      "paligemma_token": 255445,
-      "action_value": -1.3
-    },
-    "255447": {
-      "paligemma_token": 255447,
-      "action_value": 0.9
-    },
-    "255449": {
-      "paligemma_token": 255449,
-      "action_value": 0.5
-    },
-    "255451": {
-      "paligemma_token": 255451,
-      "action_value": 1.2
-    },
-    "255453": {
-      "paligemma_token": 255453,
-      "action_value": -13.2
-    },
-    "255454": {
-      "paligemma_token": 255454,
-      "action_value": -0.9
-    },
-    "255455": {
-      "paligemma_token": 255455,
-      "action_value": -1.0
-    },
-    "255456": {
-      "paligemma_token": 255456,
-      "action_value": 13.8
-    },
-    "255457": {
-      "paligemma_token": 255457,
-      "action_value": -0.9
-    },
-    "255458": {
-      "paligemma_token": 255458,
-      "action_value": 0.9
-    },
-    "255461": {
-      "paligemma_token": 255461,
-      "action_value": 1.1
-    },
-    "255463": {
-      "paligemma_token": 255463,
-      "action_value": 13.9
-    },
-    "255465": {
-      "paligemma_token": 255465,
-      "action_value": -0.1
-    },
-    "255468": {
-      "paligemma_token": 255468,
-      "action_value": -1.1
-    },
-    "255473": {
-      "paligemma_token": 255473,
-      "action_value": -0.2
-    },
-    "255474": {
-      "paligemma_token": 255474,
-      "action_value": 1.0
-    },
-    "255475": {
-      "paligemma_token": 255475,
-      "action_value": -0.5
-    },
-    "255478": {
-      "paligemma_token": 255478,
-      "action_value": -0.3
-    },
-    "255480": {
-      "paligemma_token": 255480,
-      "action_value": 0.2
-    },
-    "255483": {
-      "paligemma_token": 255483,
-      "action_value": 13.7
-    },
-    "255484": {
-      "paligemma_token": 255484,
-      "action_value": -6.7
-    },
-    "255487": {
-      "paligemma_token": 255487,
-      "action_value": 0.7
-    },
-    "255489": {
-      "paligemma_token": 255489,
-      "action_value": 0.3
-    },
-    "255491": {
-      "paligemma_token": 255491,
-      "action_value": -0.9
-    },
-    "255493": {
-      "paligemma_token": 255493,
-      "action_value": -1.0
-    },
-    "255496": {
-      "paligemma_token": 255496,
-      "action_value": 1.0
-    },
-    "255498": {
-      "paligemma_token": 255498,
-      "action_value": -13.0
-    },
-    "255499": {
-      "paligemma_token": 255499,
-      "action_value": -13.1
-    },
-    "255500": {
-      "paligemma_token": 255500,
-      "action_value": 0.3
-    },
-    "255504": {
-      "paligemma_token": 255504,
-      "action_value": -0.1
-    },
-    "255505": {
-      "paligemma_token": 255505,
-      "action_value": -0.6
-    },
-    "255508": {
-      "paligemma_token": 255508,
-      "action_value": 0.1
-    },
-    "255509": {
-      "paligemma_token": 255509,
-      "action_value": -0.9
-    },
-    "255510": {
-      "paligemma_token": 255510,
-      "action_value": -0.3
-    },
-    "255514": {
-      "paligemma_token": 255514,
-      "action_value": -0.1
-    },
-    "255516": {
-      "paligemma_token": 255516,
-      "action_value": -12.8
-    },
-    "255520": {
-      "paligemma_token": 255520,
-      "action_value": 0.9
-    },
-    "255523": {
-      "paligemma_token": 255523,
-      "action_value": -0.1
-    },
-    "255524": {
-      "paligemma_token": 255524,
-      "action_value": -0.3
-    },
-    "255527": {
-      "paligemma_token": 255527,
-      "action_value": -0.2
-    },
-    "255529": {
-      "paligemma_token": 255529,
-      "action_value": -0.6
-    },
-    "255530": {
-      "paligemma_token": 255530,
-      "action_value": 0.9
-    },
-    "255531": {
-      "paligemma_token": 255531,
-      "action_value": 13.6
-    },
-    "255536": {
-      "paligemma_token": 255536,
-      "action_value": -1.0
-    },
-    "255537": {
-      "paligemma_token": 255537,
-      "action_value": -1.3
-    },
-    "255538": {
-      "paligemma_token": 255538,
-      "action_value": 0.7
-    },
-    "255539": {
-      "paligemma_token": 255539,
-      "action_value": 13.5
-    },
-    "255544": {
-      "paligemma_token": 255544,
-      "action_value": 1.3
-    },
-    "255547": {
-      "paligemma_token": 255547,
-      "action_value": -12.9
-    },
-    "255548": {
-      "paligemma_token": 255548,
-      "action_value": 0.3
-    },
-    "255549": {
-      "paligemma_token": 255549,
-      "action_value": -1.0
-    },
-    "255551": {
-      "paligemma_token": 255551,
-      "action_value": 1.2
-    },
-    "255554": {
-      "paligemma_token": 255554,
-      "action_value": 1.4
-    },
-    "255556": {
-      "paligemma_token": 255556,
-      "action_value": -12.7
-    },
-    "255557": {
-      "paligemma_token": 255557,
-      "action_value": 0.3
-    },
-    "255558": {
-      "paligemma_token": 255558,
-      "action_value": -0.8
-    },
-    "255561": {
-      "paligemma_token": 255561,
-      "action_value": -6.8
-    },
-    "255562": {
-      "paligemma_token": 255562,
-      "action_value": 0.1
-    },
-    "255563": {
-      "paligemma_token": 255563,
-      "action_value": -1.4
-    },
-    "255564": {
-      "paligemma_token": 255564,
-      "action_value": 0.7
-    },
-    "255566": {
-      "paligemma_token": 255566,
-      "action_value": -0.5
-    },
-    "255568": {
-      "paligemma_token": 255568,
-      "action_value": -0.2
-    },
-    "255569": {
-      "paligemma_token": 255569,
-      "action_value": 13.4
-    },
-    "255573": {
-      "paligemma_token": 255573,
-      "action_value": 13.3
-    },
-    "255575": {
-      "paligemma_token": 255575,
-      "action_value": 13.2
-    },
-    "255577": {
-      "paligemma_token": 255577,
-      "action_value": -1.0
-    },
-    "255580": {
-      "paligemma_token": 255580,
-      "action_value": -0.3
-    },
-    "255581": {
-      "paligemma_token": 255581,
-      "action_value": 0.9
-    },
-    "255584": {
-      "paligemma_token": 255584,
-      "action_value": 0.8
-    },
-    "255590": {
-      "paligemma_token": 255590,
-      "action_value": 1.0
-    },
-    "255592": {
-      "paligemma_token": 255592,
-      "action_value": 0.8
-    },
-    "255598": {
-      "paligemma_token": 255598,
-      "action_value": -1.2
-    },
-    "255599": {
-      "paligemma_token": 255599,
-      "action_value": -1.1
-    },
-    "255600": {
-      "paligemma_token": 255600,
-      "action_value": -0.7
-    },
-    "255601": {
-      "paligemma_token": 255601,
-      "action_value": -0.1
-    },
-    "255602": {
-      "paligemma_token": 255602,
-      "action_value": 0.2
-    },
-    "255604": {
-      "paligemma_token": 255604,
-      "action_value": -12.5
-    },
-    "255607": {
-      "paligemma_token": 255607,
-      "action_value": -0.2
-    },
-    "255608": {
-      "paligemma_token": 255608,
-      "action_value": 0.1
-    },
-    "255613": {
-      "paligemma_token": 255613,
-      "action_value": -12.6
-    },
-    "255615": {
-      "paligemma_token": 255615,
-      "action_value": -1.0
-    },
-    "255618": {
-      "paligemma_token": 255618,
-      "action_value": 13.1
-    },
-    "255620": {
-      "paligemma_token": 255620,
-      "action_value": 1.0
-    },
-    "255622": {
-      "paligemma_token": 255622,
-      "action_value": 0.9
-    },
-    "255623": {
-      "paligemma_token": 255623,
-      "action_value": -0.1
-    },
-    "255624": {
-      "paligemma_token": 255624,
-      "action_value": -0.9
-    },
-    "255625": {
-      "paligemma_token": 255625,
-      "action_value": -0.1
-    },
-    "255626": {
-      "paligemma_token": 255626,
-      "action_value": 13.0
-    },
-    "255627": {
-      "paligemma_token": 255627,
-      "action_value": 0.1
-    },
-    "255628": {
-      "paligemma_token": 255628,
-      "action_value": 0.9
-    },
-    "255629": {
-      "paligemma_token": 255629,
-      "action_value": 12.9
-    },
-    "255630": {
-      "paligemma_token": 255630,
-      "action_value": -0.9
-    },
-    "255631": {
-      "paligemma_token": 255631,
-      "action_value": 0.2
-    },
-    "255633": {
-      "paligemma_token": 255633,
-      "action_value": -0.2
-    },
-    "255635": {
-      "paligemma_token": 255635,
-      "action_value": 0.6
-    },
-    "255638": {
-      "paligemma_token": 255638,
-      "action_value": 1.1
-    },
-    "255639": {
-      "paligemma_token": 255639,
-      "action_value": 0.2
-    },
-    "255641": {
-      "paligemma_token": 255641,
-      "action_value": 0.2
-    },
-    "255643": {
-      "paligemma_token": 255643,
-      "action_value": 0.2
-    },
-    "255645": {
-      "paligemma_token": 255645,
-      "action_value": 12.8
-    },
-    "255651": {
-      "paligemma_token": 255651,
-      "action_value": -0.1
-    },
-    "255652": {
-      "paligemma_token": 255652,
-      "action_value": -0.8
-    },
-    "255653": {
-      "paligemma_token": 255653,
-      "action_value": -0.2
-    },
-    "255658": {
-      "paligemma_token": 255658,
-      "action_value": 0.2
-    },
-    "255660": {
-      "paligemma_token": 255660,
-      "action_value": -0.8
-    },
-    "255667": {
-      "paligemma_token": 255667,
-      "action_value": 0.8
-    },
-    "255668": {
-      "paligemma_token": 255668,
-      "action_value": -0.3
-    },
-    "255669": {
-      "paligemma_token": 255669,
-      "action_value": 1.1
-    },
-    "255670": {
-      "paligemma_token": 255670,
-      "action_value": -1.3
-    },
-    "255671": {
-      "paligemma_token": 255671,
-      "action_value": 0.3
-    },
-    "255673": {
-      "paligemma_token": 255673,
-      "action_value": 0.5
-    },
-    "255674": {
-      "paligemma_token": 255674,
-      "action_value": 1.3
-    },
-    "255675": {
-      "paligemma_token": 255675,
-      "action_value": 12.6
-    },
-    "255680": {
-      "paligemma_token": 255680,
-      "action_value": 12.7
-    },
-    "255681": {
-      "paligemma_token": 255681,
-      "action_value": -1.1
-    },
-    "255682": {
-      "paligemma_token": 255682,
-      "action_value": -0.4
-    },
-    "255685": {
-      "paligemma_token": 255685,
-      "action_value": -12.3
-    },
-    "255686": {
-      "paligemma_token": 255686,
-      "action_value": 0.8
-    },
-    "255687": {
-      "paligemma_token": 255687,
-      "action_value": 0.3
-    },
-    "255688": {
-      "paligemma_token": 255688,
-      "action_value": -0.9
-    },
-    "255695": {
-      "paligemma_token": 255695,
-      "action_value": 0.8
-    },
-    "255698": {
-      "paligemma_token": 255698,
-      "action_value": -8.2
-    },
-    "255699": {
-      "paligemma_token": 255699,
-      "action_value": 1.2
-    },
-    "255706": {
-      "paligemma_token": 255706,
-      "action_value": -0.9
-    },
-    "255707": {
-      "paligemma_token": 255707,
-      "action_value": 0.8
-    },
-    "255711": {
-      "paligemma_token": 255711,
-      "action_value": -12.1
-    },
-    "255712": {
-      "paligemma_token": 255712,
-      "action_value": 0.8
-    },
-    "255713": {
-      "paligemma_token": 255713,
-      "action_value": -1.2
-    },
-    "255715": {
-      "paligemma_token": 255715,
-      "action_value": -0.9
-    },
-    "255717": {
-      "paligemma_token": 255717,
-      "action_value": -1.0
-    },
-    "255719": {
-      "paligemma_token": 255719,
-      "action_value": 0.6
-    },
-    "255720": {
-      "paligemma_token": 255720,
-      "action_value": -12.4
-    },
-    "255725": {
-      "paligemma_token": 255725,
-      "action_value": -11.9
-    },
-    "255726": {
-      "paligemma_token": 255726,
-      "action_value": -0.1
-    },
-    "255727": {
-      "paligemma_token": 255727,
-      "action_value": -12.0
-    },
-    "255729": {
-      "paligemma_token": 255729,
-      "action_value": 0.5
-    },
-    "255731": {
-      "paligemma_token": 255731,
-      "action_value": 0.9
-    },
-    "255732": {
-      "paligemma_token": 255732,
-      "action_value": -0.1
-    },
-    "255734": {
-      "paligemma_token": 255734,
-      "action_value": 12.4
-    },
-    "255736": {
-      "paligemma_token": 255736,
-      "action_value": 12.3
-    },
-    "255737": {
-      "paligemma_token": 255737,
-      "action_value": 0.8
-    },
-    "255741": {
-      "paligemma_token": 255741,
-      "action_value": -12.2
-    },
-    "255742": {
-      "paligemma_token": 255742,
-      "action_value": -0.5
-    },
-    "255746": {
-      "paligemma_token": 255746,
-      "action_value": -0.6
-    },
-    "255750": {
-      "paligemma_token": 255750,
-      "action_value": 0.3
-    },
-    "255759": {
-      "paligemma_token": 255759,
-      "action_value": 12.2
-    },
-    "255760": {
-      "paligemma_token": 255760,
-      "action_value": 0.3
-    },
-    "255764": {
-      "paligemma_token": 255764,
-      "action_value": 12.5
-    },
-    "255768": {
-      "paligemma_token": 255768,
-      "action_value": 0.9
-    },
-    "255769": {
-      "paligemma_token": 255769,
-      "action_value": -0.8
-    },
-    "255770": {
-      "paligemma_token": 255770,
-      "action_value": 0.1
-    },
-    "255771": {
-      "paligemma_token": 255771,
-      "action_value": -11.8
-    },
-    "255772": {
-      "paligemma_token": 255772,
-      "action_value": 0.4
-    },
-    "255774": {
-      "paligemma_token": 255774,
-      "action_value": -1.2
-    },
-    "255775": {
-      "paligemma_token": 255775,
-      "action_value": 12.1
-    },
-    "255776": {
-      "paligemma_token": 255776,
-      "action_value": -0.8
-    },
-    "255777": {
-      "paligemma_token": 255777,
-      "action_value": -0.3
-    },
-    "255781": {
-      "paligemma_token": 255781,
-      "action_value": 0.4
-    },
-    "255782": {
-      "paligemma_token": 255782,
-      "action_value": 1.0
-    },
-    "255783": {
-      "paligemma_token": 255783,
-      "action_value": 12.0
-    },
-    "255784": {
-      "paligemma_token": 255784,
-      "action_value": 0.8
-    },
-    "255785": {
-      "paligemma_token": 255785,
-      "action_value": -0.2
-    },
-    "255786": {
-      "paligemma_token": 255786,
-      "action_value": 0.6
-    },
-    "255787": {
-      "paligemma_token": 255787,
-      "action_value": -0.5
-    },
-    "255788": {
-      "paligemma_token": 255788,
-      "action_value": -0.3
-    },
-    "255790": {
-      "paligemma_token": 255790,
-      "action_value": -0.9
-    },
-    "255791": {
-      "paligemma_token": 255791,
-      "action_value": 1.2
-    },
-    "255792": {
-      "paligemma_token": 255792,
-      "action_value": 11.9
-    },
-    "255796": {
-      "paligemma_token": 255796,
-      "action_value": -0.2
-    },
-    "255797": {
-      "paligemma_token": 255797,
-      "action_value": 1.0
-    },
-    "255799": {
-      "paligemma_token": 255799,
-      "action_value": 11.8
-    },
-    "255801": {
-      "paligemma_token": 255801,
-      "action_value": -11.7
-    },
-    "255802": {
-      "paligemma_token": 255802,
-      "action_value": -0.2
-    },
-    "255803": {
-      "paligemma_token": 255803,
-      "action_value": -0.1
-    },
-    "255805": {
-      "paligemma_token": 255805,
-      "action_value": -0.3
-    },
-    "255808": {
-      "paligemma_token": 255808,
-      "action_value": -0.4
-    },
-    "255811": {
-      "paligemma_token": 255811,
-      "action_value": 1.1
-    },
-    "255812": {
-      "paligemma_token": 255812,
-      "action_value": -0.2
-    },
-    "255813": {
-      "paligemma_token": 255813,
-      "action_value": -11.6
-    },
-    "255814": {
-      "paligemma_token": 255814,
-      "action_value": 0.2
-    },
-    "255820": {
-      "paligemma_token": 255820,
-      "action_value": -0.1
-    },
-    "255824": {
-      "paligemma_token": 255824,
-      "action_value": -0.7
-    },
-    "255825": {
-      "paligemma_token": 255825,
-      "action_value": 11.7
-    },
-    "255826": {
-      "paligemma_token": 255826,
-      "action_value": -1.1
-    },
-    "255827": {
-      "paligemma_token": 255827,
-      "action_value": -0.7
-    },
-    "255831": {
-      "paligemma_token": 255831,
-      "action_value": 0.7
-    },
-    "255834": {
-      "paligemma_token": 255834,
-      "action_value": -0.8
-    },
-    "255837": {
-      "paligemma_token": 255837,
-      "action_value": -1.0
-    },
-    "255838": {
-      "paligemma_token": 255838,
-      "action_value": 0.1
-    },
-    "255840": {
-      "paligemma_token": 255840,
-      "action_value": 11.6
-    },
-    "255844": {
-      "paligemma_token": 255844,
-      "action_value": 0.1
-    },
-    "255850": {
-      "paligemma_token": 255850,
-      "action_value": -11.3
-    },
-    "255851": {
-      "paligemma_token": 255851,
-      "action_value": 0.5
-    },
-    "255853": {
-      "paligemma_token": 255853,
-      "action_value": 0.2
-    },
-    "255857": {
-      "paligemma_token": 255857,
-      "action_value": -11.4
-    },
-    "255858": {
-      "paligemma_token": 255858,
-      "action_value": -11.2
-    },
-    "255863": {
-      "paligemma_token": 255863,
-      "action_value": 11.5
-    },
-    "255867": {
-      "paligemma_token": 255867,
-      "action_value": -11.5
-    },
-    "255873": {
-      "paligemma_token": 255873,
-      "action_value": 0.1
-    },
-    "255874": {
-      "paligemma_token": 255874,
-      "action_value": 0.8
-    },
-    "255875": {
-      "paligemma_token": 255875,
-      "action_value": -0.4
-    },
-    "255876": {
-      "paligemma_token": 255876,
-      "action_value": -0.9
-    },
-    "255877": {
-      "paligemma_token": 255877,
-      "action_value": 0.8
-    },
-    "255883": {
-      "paligemma_token": 255883,
-      "action_value": 0.7
-    },
-    "255889": {
-      "paligemma_token": 255889,
-      "action_value": 0.9
-    },
-    "255890": {
-      "paligemma_token": 255890,
-      "action_value": -0.8
-    },
-    "255892": {
-      "paligemma_token": 255892,
-      "action_value": 0.7
-    },
-    "255896": {
-      "paligemma_token": 255896,
-      "action_value": 0.6
-    },
-    "255901": {
-      "paligemma_token": 255901,
-      "action_value": -0.8
-    },
-    "255902": {
-      "paligemma_token": 255902,
-      "action_value": -11.0
-    },
-    "255904": {
-      "paligemma_token": 255904,
-      "action_value": 0.7
-    },
-    "255906": {
-      "paligemma_token": 255906,
-      "action_value": 11.4
-    },
-    "255908": {
-      "paligemma_token": 255908,
-      "action_value": 0.7
-    },
-    "255909": {
-      "paligemma_token": 255909,
-      "action_value": -11.1
-    },
-    "255913": {
-      "paligemma_token": 255913,
-      "action_value": -0.1
-    },
-    "255915": {
-      "paligemma_token": 255915,
-      "action_value": 1.1
-    },
-    "255916": {
-      "paligemma_token": 255916,
-      "action_value": 11.3
-    },
-    "255920": {
-      "paligemma_token": 255920,
-      "action_value": -0.6
-    },
-    "255921": {
-      "paligemma_token": 255921,
-      "action_value": -0.2
-    },
-    "255922": {
-      "paligemma_token": 255922,
-      "action_value": -1.1
-    },
-    "255931": {
-      "paligemma_token": 255931,
-      "action_value": -0.1
-    },
-    "255933": {
-      "paligemma_token": 255933,
-      "action_value": -0.7
-    },
-    "255937": {
-      "paligemma_token": 255937,
-      "action_value": 1.0
-    },
-    "255941": {
-      "paligemma_token": 255941,
-      "action_value": -1.0
-    },
-    "255942": {
-      "paligemma_token": 255942,
-      "action_value": 0.9
-    },
-    "255944": {
-      "paligemma_token": 255944,
-      "action_value": 0.7
-    },
-    "255946": {
-      "paligemma_token": 255946,
-      "action_value": -10.9
-    },
-    "255947": {
-      "paligemma_token": 255947,
-      "action_value": -0.9
-    },
-    "255952": {
-      "paligemma_token": 255952,
-      "action_value": -0.8
-    },
-    "255958": {
-      "paligemma_token": 255958,
-      "action_value": 0.4
-    },
-    "255963": {
-      "paligemma_token": 255963,
-      "action_value": -0.7
-    },
-    "255964": {
-      "paligemma_token": 255964,
-      "action_value": 0.3
-    },
-    "255966": {
-      "paligemma_token": 255966,
-      "action_value": 0.4
-    },
-    "255967": {
-      "paligemma_token": 255967,
-      "action_value": -10.8
-    },
-    "255999": {
-      "paligemma_token": 255999,
-      "action_value": 10.8
-    },
-    "256000": {
-      "paligemma_token": 256000,
-      "action_value": -1.3
-    },
-    "256002": {
-      "paligemma_token": 256002,
-      "action_value": 0.7
-    },
-    "256003": {
-      "paligemma_token": 256003,
-      "action_value": -0.7
-    },
-    "256008": {
-      "paligemma_token": 256008,
-      "action_value": 0.6
-    },
-    "256009": {
-      "paligemma_token": 256009,
-      "action_value": 10.7
-    },
-    "256011": {
-      "paligemma_token": 256011,
-      "action_value": -0.1
-    },
-    "256013": {
-      "paligemma_token": 256013,
-      "action_value": 0.6
-    },
-    "256015": {
-      "paligemma_token": 256015,
-      "action_value": -0.8
-    },
-    "256016": {
-      "paligemma_token": 256016,
-      "action_value": 0.6
-    },
-    "256018": {
-      "paligemma_token": 256018,
-      "action_value": 0.2
-    },
-    "256019": {
-      "paligemma_token": 256019,
-      "action_value": -0.1
-    },
-    "256021": {
-      "paligemma_token": 256021,
-      "action_value": -10.4
-    },
-    "256022": {
-      "paligemma_token": 256022,
-      "action_value": -0.2
-    },
-    "256024": {
-      "paligemma_token": 256024,
-      "action_value": 0.8
-    },
-    "256025": {
-      "paligemma_token": 256025,
-      "action_value": 0.6
-    },
-    "256027": {
-      "paligemma_token": 256027,
-      "action_value": 0.2
-    },
-    "256028": {
-      "paligemma_token": 256028,
-      "action_value": 10.6
-    },
-    "256029": {
-      "paligemma_token": 256029,
-      "action_value": 1.0
-    },
-    "256032": {
-      "paligemma_token": 256032,
-      "action_value": -0.5
-    },
-    "256034": {
-      "paligemma_token": 256034,
-      "action_value": 10.5
-    },
-    "256035": {
-      "paligemma_token": 256035,
-      "action_value": -1.0
-    },
-    "256037": {
-      "paligemma_token": 256037,
-      "action_value": -10.1
-    },
-    "256042": {
-      "paligemma_token": 256042,
-      "action_value": -0.7
-    },
-    "256043": {
-      "paligemma_token": 256043,
-      "action_value": -0.6
-    },
-    "256044": {
-      "paligemma_token": 256044,
-      "action_value": 0.8
-    },
-    "256046": {
-      "paligemma_token": 256046,
-      "action_value": -0.2
-    },
-    "256048": {
-      "paligemma_token": 256048,
-      "action_value": -0.6
-    },
-    "256049": {
-      "paligemma_token": 256049,
-      "action_value": -0.1
-    },
-    "256050": {
-      "paligemma_token": 256050,
-      "action_value": 0.2
-    },
-    "256051": {
-      "paligemma_token": 256051,
-      "action_value": -0.2
-    },
-    "256052": {
-      "paligemma_token": 256052,
-      "action_value": 0.2
-    },
-    "256054": {
-      "paligemma_token": 256054,
-      "action_value": 0.5
-    },
-    "256056": {
-      "paligemma_token": 256056,
-      "action_value": -10.7
-    },
-    "256062": {
-      "paligemma_token": 256062,
-      "action_value": 0.1
-    },
-    "256064": {
-      "paligemma_token": 256064,
-      "action_value": 0.6
-    },
-    "256065": {
-      "paligemma_token": 256065,
-      "action_value": -0.4
-    },
-    "256066": {
-      "paligemma_token": 256066,
-      "action_value": 0.6
-    },
-    "256067": {
-      "paligemma_token": 256067,
-      "action_value": -0.7
-    },
-    "256071": {
-      "paligemma_token": 256071,
-      "action_value": 0.9
-    },
-    "256073": {
-      "paligemma_token": 256073,
-      "action_value": 10.3
-    },
-    "256075": {
-      "paligemma_token": 256075,
-      "action_value": 0.1
-    },
-    "256077": {
-      "paligemma_token": 256077,
-      "action_value": -0.9
-    },
-    "256081": {
-      "paligemma_token": 256081,
-      "action_value": -10.5
-    },
-    "256083": {
-      "paligemma_token": 256083,
-      "action_value": -10.2
-    },
-    "256091": {
-      "paligemma_token": 256091,
-      "action_value": 0.4
-    },
-    "256094": {
-      "paligemma_token": 256094,
-      "action_value": 10.1
-    },
-    "256095": {
-      "paligemma_token": 256095,
-      "action_value": -9.9
-    },
-    "256096": {
-      "paligemma_token": 256096,
-      "action_value": -9.8
-    },
-    "256098": {
-      "paligemma_token": 256098,
-      "action_value": -0.6
-    },
-    "256101": {
-      "paligemma_token": 256101,
-      "action_value": -0.4
-    },
-    "256102": {
-      "paligemma_token": 256102,
-      "action_value": -7.2
-    },
-    "256103": {
-      "paligemma_token": 256103,
-      "action_value": -10.3
-    },
-    "256104": {
-      "paligemma_token": 256104,
-      "action_value": -0.7
-    },
-    "256105": {
-      "paligemma_token": 256105,
-      "action_value": -0.1
-    },
-    "256107": {
-      "paligemma_token": 256107,
-      "action_value": -10.0
-    },
-    "256109": {
-      "paligemma_token": 256109,
-      "action_value": -0.6
-    },
-    "256114": {
-      "paligemma_token": 256114,
-      "action_value": -0.8
-    },
-    "256118": {
-      "paligemma_token": 256118,
-      "action_value": -0.7
-    },
-    "256119": {
-      "paligemma_token": 256119,
-      "action_value": 0.9
-    },
-    "256121": {
-      "paligemma_token": 256121,
-      "action_value": 9.8
-    },
-    "256122": {
-      "paligemma_token": 256122,
-      "action_value": -0.9
-    },
-    "256126": {
-      "paligemma_token": 256126,
-      "action_value": 0.7
-    },
-    "256127": {
-      "paligemma_token": 256127,
-      "action_value": 0.1
-    },
-    "256128": {
-      "paligemma_token": 256128,
-      "action_value": -9.5
-    },
-    "256130": {
-      "paligemma_token": 256130,
-      "action_value": -9.6
-    },
-    "256131": {
-      "paligemma_token": 256131,
-      "action_value": 9.6
-    },
-    "256132": {
-      "paligemma_token": 256132,
-      "action_value": 9.7
-    },
-    "256136": {
-      "paligemma_token": 256136,
-      "action_value": 0.3
-    },
-    "256137": {
-      "paligemma_token": 256137,
-      "action_value": -9.7
-    },
-    "256139": {
-      "paligemma_token": 256139,
-      "action_value": -9.2
-    },
-    "256140": {
-      "paligemma_token": 256140,
-      "action_value": -0.5
-    },
-    "256141": {
-      "paligemma_token": 256141,
-      "action_value": -0.6
-    },
-    "256143": {
-      "paligemma_token": 256143,
-      "action_value": 0.1
-    },
-    "256144": {
-      "paligemma_token": 256144,
-      "action_value": -9.4
-    },
-    "256145": {
-      "paligemma_token": 256145,
-      "action_value": -0.5
-    },
-    "256146": {
-      "paligemma_token": 256146,
-      "action_value": 9.5
-    },
-    "256149": {
-      "paligemma_token": 256149,
-      "action_value": -0.8
-    },
-    "256151": {
-      "paligemma_token": 256151,
-      "action_value": 9.4
-    },
-    "256152": {
-      "paligemma_token": 256152,
-      "action_value": -9.3
-    },
-    "256158": {
-      "paligemma_token": 256158,
-      "action_value": 0.5
-    },
-    "256162": {
-      "paligemma_token": 256162,
-      "action_value": 0.7
-    },
-    "256163": {
-      "paligemma_token": 256163,
-      "action_value": -0.3
-    },
-    "256166": {
-      "paligemma_token": 256166,
-      "action_value": 9.3
-    },
-    "256169": {
-      "paligemma_token": 256169,
-      "action_value": 0.1
-    },
-    "256171": {
-      "paligemma_token": 256171,
-      "action_value": 10.4
-    },
-    "256172": {
-      "paligemma_token": 256172,
-      "action_value": -0.6
-    },
-    "256173": {
-      "paligemma_token": 256173,
-      "action_value": -0.1
-    },
-    "256175": {
-      "paligemma_token": 256175,
-      "action_value": -10.6
-    },
-    "256176": {
-      "paligemma_token": 256176,
-      "action_value": -0.8
-    },
-    "256178": {
-      "paligemma_token": 256178,
-      "action_value": 10.2
-    },
-    "256180": {
-      "paligemma_token": 256180,
-      "action_value": -0.3
-    },
-    "256181": {
-      "paligemma_token": 256181,
-      "action_value": -0.6
-    },
-    "256182": {
-      "paligemma_token": 256182,
-      "action_value": 9.2
-    },
-    "256184": {
-      "paligemma_token": 256184,
-      "action_value": 9.1
-    },
-    "256185": {
-      "paligemma_token": 256185,
-      "action_value": 0.8
-    },
-    "256186": {
-      "paligemma_token": 256186,
-      "action_value": 0.2
-    },
-    "256195": {
-      "paligemma_token": 256195,
-      "action_value": -9.0
-    },
-    "256197": {
-      "paligemma_token": 256197,
-      "action_value": 0.2
-    },
-    "256202": {
-      "paligemma_token": 256202,
-      "action_value": 9.0
-    },
-    "256205": {
-      "paligemma_token": 256205,
-      "action_value": 9.9
-    },
-    "256207": {
-      "paligemma_token": 256207,
-      "action_value": -0.8
-    },
-    "256208": {
-      "paligemma_token": 256208,
-      "action_value": 8.9
-    },
-    "256209": {
-      "paligemma_token": 256209,
-      "action_value": 0.5
-    },
-    "256210": {
-      "paligemma_token": 256210,
-      "action_value": -9.1
-    },
-    "256211": {
-      "paligemma_token": 256211,
-      "action_value": 0.5
-    },
-    "256213": {
-      "paligemma_token": 256213,
-      "action_value": 0.4
-    },
-    "256214": {
-      "paligemma_token": 256214,
-      "action_value": 10.0
-    },
-    "256216": {
-      "paligemma_token": 256216,
-      "action_value": 0.2
-    },
-    "256218": {
-      "paligemma_token": 256218,
-      "action_value": 0.5
-    },
-    "256219": {
-      "paligemma_token": 256219,
-      "action_value": 0.8
-    },
-    "256223": {
-      "paligemma_token": 256223,
-      "action_value": -8.9
-    },
-    "256227": {
-      "paligemma_token": 256227,
-      "action_value": -0.1
-    },
-    "256230": {
-      "paligemma_token": 256230,
-      "action_value": 0.2
-    },
-    "256231": {
-      "paligemma_token": 256231,
-      "action_value": -0.6
-    },
-    "256232": {
-      "paligemma_token": 256232,
-      "action_value": -8.8
-    },
-    "256240": {
-      "paligemma_token": 256240,
-      "action_value": -0.7
-    },
-    "256241": {
-      "paligemma_token": 256241,
-      "action_value": 0.3
-    },
-    "256245": {
-      "paligemma_token": 256245,
-      "action_value": 0.5
-    },
-    "256247": {
-      "paligemma_token": 256247,
-      "action_value": 0.6
-    },
-    "256249": {
-      "paligemma_token": 256249,
-      "action_value": -8.6
-    },
-    "256253": {
-      "paligemma_token": 256253,
-      "action_value": -0.8
-    },
-    "256256": {
-      "paligemma_token": 256256,
-      "action_value": -0.1
-    },
-    "256259": {
-      "paligemma_token": 256259,
-      "action_value": -0.5
-    },
-    "256266": {
-      "paligemma_token": 256266,
-      "action_value": 8.8
-    },
-    "256268": {
-      "paligemma_token": 256268,
-      "action_value": -0.2
-    },
-    "256269": {
-      "paligemma_token": 256269,
-      "action_value": 0.3
-    },
-    "256270": {
-      "paligemma_token": 256270,
-      "action_value": 0.1
-    },
-    "256272": {
-      "paligemma_token": 256272,
-      "action_value": 0.4
-    },
-    "256273": {
-      "paligemma_token": 256273,
-      "action_value": -0.7
-    },
-    "256274": {
-      "paligemma_token": 256274,
-      "action_value": 0.7
-    },
-    "256275": {
-      "paligemma_token": 256275,
-      "action_value": -1.3
-    },
-    "256278": {
-      "paligemma_token": 256278,
-      "action_value": -0.4
-    },
-    "256280": {
-      "paligemma_token": 256280,
-      "action_value": -8.3
-    },
-    "256281": {
-      "paligemma_token": 256281,
-      "action_value": -0.2
-    },
-    "256282": {
-      "paligemma_token": 256282,
-      "action_value": -0.3
-    },
-    "256283": {
-      "paligemma_token": 256283,
-      "action_value": 0.6
-    },
-    "256284": {
-      "paligemma_token": 256284,
-      "action_value": -0.5
-    },
-    "256285": {
-      "paligemma_token": 256285,
-      "action_value": -0.4
-    },
-    "256287": {
-      "paligemma_token": 256287,
-      "action_value": -0.6
-    },
-    "256290": {
-      "paligemma_token": 256290,
-      "action_value": -0.2
-    },
-    "256293": {
-      "paligemma_token": 256293,
-      "action_value": -0.2
-    },
-    "256299": {
-      "paligemma_token": 256299,
-      "action_value": 0.7
-    },
-    "256301": {
-      "paligemma_token": 256301,
-      "action_value": 8.3
-    },
-    "256306": {
-      "paligemma_token": 256306,
-      "action_value": 8.2
-    },
-    "256309": {
-      "paligemma_token": 256309,
-      "action_value": -8.0
-    },
-    "256310": {
-      "paligemma_token": 256310,
-      "action_value": -0.3
-    },
-    "256311": {
-      "paligemma_token": 256311,
-      "action_value": -0.5
-    },
-    "256312": {
-      "paligemma_token": 256312,
-      "action_value": -0.5
-    },
-    "256313": {
-      "paligemma_token": 256313,
-      "action_value": -0.1
-    },
-    "256314": {
-      "paligemma_token": 256314,
-      "action_value": -0.7
-    },
-    "256315": {
-      "paligemma_token": 256315,
-      "action_value": -7.9
-    },
-    "256318": {
-      "paligemma_token": 256318,
-      "action_value": 8.1
-    },
-    "256319": {
-      "paligemma_token": 256319,
-      "action_value": 8.0
-    },
-    "256320": {
-      "paligemma_token": 256320,
-      "action_value": -8.7
-    },
-    "256322": {
-      "paligemma_token": 256322,
-      "action_value": 0.3
-    },
-    "256324": {
-      "paligemma_token": 256324,
-      "action_value": -8.5
-    },
-    "256325": {
-      "paligemma_token": 256325,
-      "action_value": 8.6
-    },
-    "256326": {
-      "paligemma_token": 256326,
-      "action_value": 8.4
-    },
-    "256340": {
-      "paligemma_token": 256340,
-      "action_value": 7.6
-    },
-    "256342": {
-      "paligemma_token": 256342,
-      "action_value": -0.1
-    },
-    "256345": {
-      "paligemma_token": 256345,
-      "action_value": 7.5
-    },
-    "256347": {
-      "paligemma_token": 256347,
-      "action_value": 7.8
-    },
-    "256348": {
-      "paligemma_token": 256348,
-      "action_value": 7.9
-    },
-    "256349": {
-      "paligemma_token": 256349,
-      "action_value": -0.5
-    },
-    "256350": {
-      "paligemma_token": 256350,
-      "action_value": -0.6
-    },
-    "256351": {
-      "paligemma_token": 256351,
-      "action_value": -7.7
-    },
-    "256352": {
-      "paligemma_token": 256352,
-      "action_value": -8.4
-    },
-    "256353": {
-      "paligemma_token": 256353,
-      "action_value": -0.1
-    },
-    "256354": {
-      "paligemma_token": 256354,
-      "action_value": 0.6
-    },
-    "256355": {
-      "paligemma_token": 256355,
-      "action_value": 7.7
-    },
-    "256356": {
-      "paligemma_token": 256356,
-      "action_value": -0.3
-    },
-    "256359": {
-      "paligemma_token": 256359,
-      "action_value": 0.3
-    },
-    "256360": {
-      "paligemma_token": 256360,
-      "action_value": 8.7
-    },
-    "256361": {
-      "paligemma_token": 256361,
-      "action_value": -7.4
-    },
-    "256362": {
-      "paligemma_token": 256362,
-      "action_value": 0.5
-    },
-    "256363": {
-      "paligemma_token": 256363,
-      "action_value": 7.4
-    },
-    "256364": {
-      "paligemma_token": 256364,
-      "action_value": -0.1
-    },
-    "256365": {
-      "paligemma_token": 256365,
-      "action_value": -7.5
-    },
-    "256366": {
-      "paligemma_token": 256366,
-      "action_value": -0.1
-    },
-    "256367": {
-      "paligemma_token": 256367,
-      "action_value": -7.3
-    },
-    "256368": {
-      "paligemma_token": 256368,
-      "action_value": 7.3
-    },
-    "256370": {
-      "paligemma_token": 256370,
-      "action_value": 7.2
-    },
-    "256371": {
-      "paligemma_token": 256371,
-      "action_value": 0.5
-    },
-    "256372": {
-      "paligemma_token": 256372,
-      "action_value": -0.4
-    },
-    "256374": {
-      "paligemma_token": 256374,
-      "action_value": -7.1
-    },
-    "256381": {
-      "paligemma_token": 256381,
-      "action_value": -0.6
-    },
-    "256382": {
-      "paligemma_token": 256382,
-      "action_value": 0.4
-    },
-    "256384": {
-      "paligemma_token": 256384,
-      "action_value": -0.5
-    },
-    "256386": {
-      "paligemma_token": 256386,
-      "action_value": 0.6
-    },
-    "256388": {
-      "paligemma_token": 256388,
-      "action_value": 7.1
-    },
-    "256394": {
-      "paligemma_token": 256394,
-      "action_value": 6.8
-    },
-    "256395": {
-      "paligemma_token": 256395,
-      "action_value": 6.9
-    },
-    "256397": {
-      "paligemma_token": 256397,
-      "action_value": -7.8
-    },
-    "256398": {
-      "paligemma_token": 256398,
-      "action_value": 6.7
-    },
-    "256399": {
-      "paligemma_token": 256399,
-      "action_value": 7.0
-    },
-    "256405": {
-      "paligemma_token": 256405,
-      "action_value": -0.4
-    },
-    "256407": {
-      "paligemma_token": 256407,
-      "action_value": 6.6
-    },
-    "256409": {
-      "paligemma_token": 256409,
-      "action_value": -8.2
-    },
-    "256410": {
-      "paligemma_token": 256410,
-      "action_value": -7.6
-    },
-    "256411": {
-      "paligemma_token": 256411,
-      "action_value": 6.5
-    },
-    "256414": {
-      "paligemma_token": 256414,
-      "action_value": -0.4
-    },
-    "256416": {
-      "paligemma_token": 256416,
-      "action_value": 6.3
-    },
-    "256417": {
-      "paligemma_token": 256417,
-      "action_value": 6.2
-    },
-    "256418": {
-      "paligemma_token": 256418,
-      "action_value": 6.4
-    },
-    "256419": {
-      "paligemma_token": 256419,
-      "action_value": -7.0
-    },
-    "256420": {
-      "paligemma_token": 256420,
-      "action_value": -8.1
-    },
-    "256423": {
-      "paligemma_token": 256423,
-      "action_value": 6.1
-    },
-    "256424": {
-      "paligemma_token": 256424,
-      "action_value": 0.4
-    },
-    "256427": {
-      "paligemma_token": 256427,
-      "action_value": 0.4
-    },
-    "256428": {
-      "paligemma_token": 256428,
-      "action_value": 8.5
-    },
-    "256435": {
-      "paligemma_token": 256435,
-      "action_value": 5.9
-    },
-    "256437": {
-      "paligemma_token": 256437,
-      "action_value": 0.5
-    },
-    "256438": {
-      "paligemma_token": 256438,
-      "action_value": 5.8
-    },
-    "256439": {
-      "paligemma_token": 256439,
-      "action_value": -5.9
-    },
-    "256440": {
-      "paligemma_token": 256440,
-      "action_value": -0.5
-    },
-    "256442": {
-      "paligemma_token": 256442,
-      "action_value": -6.4
-    },
-    "256445": {
-      "paligemma_token": 256445,
-      "action_value": 5.7
-    },
-    "256446": {
-      "paligemma_token": 256446,
-      "action_value": -0.3
-    },
-    "256449": {
-      "paligemma_token": 256449,
-      "action_value": -0.4
-    },
-    "256451": {
-      "paligemma_token": 256451,
-      "action_value": -6.0
-    },
-    "256452": {
-      "paligemma_token": 256452,
-      "action_value": -5.7
-    },
-    "256454": {
-      "paligemma_token": 256454,
-      "action_value": -5.6
-    },
-    "256457": {
-      "paligemma_token": 256457,
-      "action_value": 5.6
-    },
-    "256459": {
-      "paligemma_token": 256459,
-      "action_value": 5.5
-    },
-    "256460": {
-      "paligemma_token": 256460,
-      "action_value": 0.3
-    },
-    "256461": {
-      "paligemma_token": 256461,
-      "action_value": -6.3
-    },
-    "256463": {
-      "paligemma_token": 256463,
-      "action_value": -6.1
-    },
-    "256464": {
-      "paligemma_token": 256464,
-      "action_value": -6.5
-    },
-    "256466": {
-      "paligemma_token": 256466,
-      "action_value": 5.4
-    },
-    "256467": {
-      "paligemma_token": 256467,
-      "action_value": -5.5
-    },
-    "256468": {
-      "paligemma_token": 256468,
-      "action_value": 0.4
-    },
-    "256470": {
-      "paligemma_token": 256470,
-      "action_value": 0.4
-    },
-    "256474": {
-      "paligemma_token": 256474,
-      "action_value": -0.5
-    },
-    "256475": {
-      "paligemma_token": 256475,
-      "action_value": 0.5
-    },
-    "256476": {
-      "paligemma_token": 256476,
-      "action_value": -6.6
-    },
-    "256477": {
-      "paligemma_token": 256477,
-      "action_value": 5.3
-    },
-    "256480": {
-      "paligemma_token": 256480,
-      "action_value": -0.4
-    },
-    "256481": {
-      "paligemma_token": 256481,
-      "action_value": -5.4
-    },
-    "256482": {
-      "paligemma_token": 256482,
-      "action_value": -6.2
-    },
-    "256483": {
-      "paligemma_token": 256483,
-      "action_value": 6.0
-    },
-    "256486": {
-      "paligemma_token": 256486,
-      "action_value": 5.1
-    },
-    "256487": {
-      "paligemma_token": 256487,
-      "action_value": -6.9
-    },
-    "256490": {
-      "paligemma_token": 256490,
-      "action_value": -5.3
-    },
-    "256491": {
-      "paligemma_token": 256491,
-      "action_value": 5.2
-    },
-    "256494": {
-      "paligemma_token": 256494,
-      "action_value": -7.2
-    },
-    "256495": {
-      "paligemma_token": 256495,
-      "action_value": -0.2
-    },
-    "256496": {
-      "paligemma_token": 256496,
-      "action_value": -6.7
-    },
-    "256497": {
-      "paligemma_token": 256497,
-      "action_value": -6.8
-    },
-    "256499": {
-      "paligemma_token": 256499,
-      "action_value": 0.1
-    },
-    "256500": {
-      "paligemma_token": 256500,
-      "action_value": 4.9
-    },
-    "256501": {
-      "paligemma_token": 256501,
-      "action_value": 0.2
-    },
-    "256503": {
-      "paligemma_token": 256503,
-      "action_value": -5.8
-    },
-    "256505": {
-      "paligemma_token": 256505,
-      "action_value": 4.7
-    },
-    "256507": {
-      "paligemma_token": 256507,
-      "action_value": -0.1
-    },
-    "256509": {
-      "paligemma_token": 256509,
-      "action_value": -5.2
-    },
-    "256511": {
-      "paligemma_token": 256511,
-      "action_value": 5.0
-    },
-    "256512": {
-      "paligemma_token": 256512,
-      "action_value": -0.2
-    },
-    "256513": {
-      "paligemma_token": 256513,
-      "action_value": 0.2
-    },
-    "256514": {
-      "paligemma_token": 256514,
-      "action_value": -4.6
-    },
-    "256518": {
-      "paligemma_token": 256518,
-      "action_value": 0.1
-    },
-    "256519": {
-      "paligemma_token": 256519,
-      "action_value": -4.8
-    },
-    "256520": {
-      "paligemma_token": 256520,
-      "action_value": -4.9
-    },
-    "256521": {
-      "paligemma_token": 256521,
-      "action_value": -4.5
-    },
-    "256522": {
-      "paligemma_token": 256522,
-      "action_value": 4.8
-    },
-    "256525": {
-      "paligemma_token": 256525,
-      "action_value": -4.7
-    },
-    "256526": {
-      "paligemma_token": 256526,
-      "action_value": 4.4
-    },
-    "256527": {
-      "paligemma_token": 256527,
-      "action_value": -4.4
-    },
-    "256528": {
-      "paligemma_token": 256528,
-      "action_value": 4.6
-    },
-    "256529": {
-      "paligemma_token": 256529,
-      "action_value": -5.0
-    },
-    "256530": {
-      "paligemma_token": 256530,
-      "action_value": -4.3
-    },
-    "256533": {
-      "paligemma_token": 256533,
-      "action_value": 4.5
-    },
-    "256534": {
-      "paligemma_token": 256534,
-      "action_value": 4.3
-    },
-    "256536": {
-      "paligemma_token": 256536,
-      "action_value": -5.1
-    },
-    "256541": {
-      "paligemma_token": 256541,
-      "action_value": -0.4
-    },
-    "256545": {
-      "paligemma_token": 256545,
-      "action_value": -4.2
-    },
-    "256546": {
-      "paligemma_token": 256546,
-      "action_value": -0.3
-    },
-    "256547": {
-      "paligemma_token": 256547,
-      "action_value": 0.4
-    },
-    "256548": {
-      "paligemma_token": 256548,
-      "action_value": 4.2
-    },
-    "256549": {
-      "paligemma_token": 256549,
-      "action_value": -4.1
-    },
-    "256550": {
-      "paligemma_token": 256550,
-      "action_value": 4.0
-    },
-    "256551": {
-      "paligemma_token": 256551,
-      "action_value": -3.9
-    },
-    "256554": {
-      "paligemma_token": 256554,
-      "action_value": -4.0
-    },
-    "256555": {
-      "paligemma_token": 256555,
-      "action_value": -3.8
-    },
-    "256557": {
-      "paligemma_token": 256557,
-      "action_value": -0.3
-    },
-    "256559": {
-      "paligemma_token": 256559,
-      "action_value": 3.9
-    },
-    "256561": {
-      "paligemma_token": 256561,
-      "action_value": 4.1
-    },
-    "256562": {
-      "paligemma_token": 256562,
-      "action_value": 3.8
-    },
-    "256563": {
-      "paligemma_token": 256563,
-      "action_value": 0.4
-    },
-    "256564": {
-      "paligemma_token": 256564,
-      "action_value": -3.7
-    },
-    "256565": {
-      "paligemma_token": 256565,
-      "action_value": -0.4
-    },
-    "256568": {
-      "paligemma_token": 256568,
-      "action_value": 3.7
-    },
-    "256570": {
-      "paligemma_token": 256570,
-      "action_value": 0.3
-    },
-    "256571": {
-      "paligemma_token": 256571,
-      "action_value": -3.6
-    },
-    "256572": {
-      "paligemma_token": 256572,
-      "action_value": -0.1
-    },
-    "256573": {
-      "paligemma_token": 256573,
-      "action_value": -3.4
-    },
-    "256574": {
-      "paligemma_token": 256574,
-      "action_value": -0.1
-    },
-    "256575": {
-      "paligemma_token": 256575,
-      "action_value": -3.5
-    },
-    "256576": {
-      "paligemma_token": 256576,
-      "action_value": 3.6
-    },
-    "256578": {
-      "paligemma_token": 256578,
-      "action_value": -3.3
-    },
-    "256579": {
-      "paligemma_token": 256579,
-      "action_value": 0.1
-    },
-    "256580": {
-      "paligemma_token": 256580,
-      "action_value": 3.5
-    },
-    "256581": {
-      "paligemma_token": 256581,
-      "action_value": 0.1
-    },
-    "256583": {
-      "paligemma_token": 256583,
-      "action_value": -0.1
-    },
-    "256584": {
-      "paligemma_token": 256584,
-      "action_value": -3.2
-    },
-    "256588": {
-      "paligemma_token": 256588,
-      "action_value": 0.3
-    },
-    "256589": {
-      "paligemma_token": 256589,
-      "action_value": -3.1
-    },
-    "256592": {
-      "paligemma_token": 256592,
-      "action_value": -0.3
-    },
-    "256593": {
-      "paligemma_token": 256593,
-      "action_value": -0.1
-    },
-    "256594": {
-      "paligemma_token": 256594,
-      "action_value": -3.0
-    },
-    "256596": {
-      "paligemma_token": 256596,
-      "action_value": 3.4
-    },
-    "256599": {
-      "paligemma_token": 256599,
-      "action_value": 3.3
-    },
-    "256600": {
-      "paligemma_token": 256600,
-      "action_value": -2.9
-    },
-    "256601": {
-      "paligemma_token": 256601,
-      "action_value": -2.8
-    },
-    "256602": {
-      "paligemma_token": 256602,
-      "action_value": 3.2
-    },
-    "256603": {
-      "paligemma_token": 256603,
-      "action_value": -0.1
-    },
-    "256604": {
-      "paligemma_token": 256604,
-      "action_value": 0.3
-    },
-    "256605": {
-      "paligemma_token": 256605,
-      "action_value": -2.7
-    },
-    "256606": {
-      "paligemma_token": 256606,
-      "action_value": -0.1
-    },
-    "256609": {
-      "paligemma_token": 256609,
-      "action_value": 3.1
-    },
-    "256611": {
-      "paligemma_token": 256611,
-      "action_value": -2.6
-    },
-    "256612": {
-      "paligemma_token": 256612,
-      "action_value": -2.5
-    },
-    "256614": {
-      "paligemma_token": 256614,
-      "action_value": 3.0
-    },
-    "256618": {
-      "paligemma_token": 256618,
-      "action_value": 2.9
-    },
-    "256619": {
-      "paligemma_token": 256619,
-      "action_value": -2.4
-    },
-    "256622": {
-      "paligemma_token": 256622,
-      "action_value": -0.2
-    },
-    "256623": {
-      "paligemma_token": 256623,
-      "action_value": -2.3
-    },
-    "256624": {
-      "paligemma_token": 256624,
-      "action_value": -0.3
-    },
-    "256625": {
-      "paligemma_token": 256625,
-      "action_value": 2.8
-    },
-    "256626": {
-      "paligemma_token": 256626,
-      "action_value": 0.2
-    },
-    "256629": {
-      "paligemma_token": 256629,
-      "action_value": 0.3
-    },
-    "256630": {
-      "paligemma_token": 256630,
-      "action_value": -2.2
-    },
-    "256632": {
-      "paligemma_token": 256632,
-      "action_value": 2.6
-    },
-    "256633": {
-      "paligemma_token": 256633,
-      "action_value": 0.3
-    },
-    "256634": {
-      "paligemma_token": 256634,
-      "action_value": 2.7
-    },
-    "256639": {
-      "paligemma_token": 256639,
-      "action_value": -2.1
-    },
-    "256641": {
-      "paligemma_token": 256641,
-      "action_value": -0.3
-    },
-    "256645": {
-      "paligemma_token": 256645,
-      "action_value": 2.3
-    },
-    "256646": {
-      "paligemma_token": 256646,
-      "action_value": 2.4
-    },
-    "256647": {
-      "paligemma_token": 256647,
-      "action_value": 2.5
-    },
-    "256648": {
-      "paligemma_token": 256648,
-      "action_value": 0.2
-    },
-    "256650": {
-      "paligemma_token": 256650,
-      "action_value": -2.0
-    },
-    "256651": {
-      "paligemma_token": 256651,
-      "action_value": 2.2
-    },
-    "256652": {
-      "paligemma_token": 256652,
-      "action_value": 2.1
-    },
-    "256653": {
-      "paligemma_token": 256653,
-      "action_value": -1.9
-    },
-    "256654": {
-      "paligemma_token": 256654,
-      "action_value": 2.0
-    },
-    "256659": {
-      "paligemma_token": 256659,
-      "action_value": -1.8
-    },
-    "256660": {
-      "paligemma_token": 256660,
-      "action_value": 1.9
-    },
-    "256664": {
-      "paligemma_token": 256664,
-      "action_value": -1.7
-    },
-    "256666": {
-      "paligemma_token": 256666,
-      "action_value": 1.8
-    },
-    "256669": {
-      "paligemma_token": 256669,
-      "action_value": -0.2
-    },
-    "256672": {
-      "paligemma_token": 256672,
-      "action_value": 1.7
-    },
-    "256675": {
-      "paligemma_token": 256675,
-      "action_value": -1.6
-    },
-    "256679": {
-      "paligemma_token": 256679,
-      "action_value": 1.6
-    },
-    "256682": {
-      "paligemma_token": 256682,
-      "action_value": -1.5
-    },
-    "256684": {
-      "paligemma_token": 256684,
-      "action_value": 1.5
-    },
-    "256688": {
-      "paligemma_token": 256688,
-      "action_value": -1.4
-    },
-    "256689": {
-      "paligemma_token": 256689,
-      "action_value": 1.4
-    },
-    "256690": {
-      "paligemma_token": 256690,
-      "action_value": -0.2
-    },
-    "256695": {
-      "paligemma_token": 256695,
-      "action_value": 1.3
-    },
-    "256696": {
-      "paligemma_token": 256696,
-      "action_value": 0.2
-    },
-    "256697": {
-      "paligemma_token": 256697,
-      "action_value": 0.2
-    },
-    "256699": {
-      "paligemma_token": 256699,
-      "action_value": -0.2
-    },
-    "256701": {
-      "paligemma_token": 256701,
-      "action_value": -1.3
-    },
-    "256702": {
-      "paligemma_token": 256702,
-      "action_value": -1.2
-    },
-    "256704": {
-      "paligemma_token": 256704,
-      "action_value": 1.2
-    },
-    "256706": {
-      "paligemma_token": 256706,
-      "action_value": -1.1
-    },
-    "256709": {
-      "paligemma_token": 256709,
-      "action_value": 1.1
-    },
-    "256714": {
-      "paligemma_token": 256714,
-      "action_value": -1.0
-    },
-    "256715": {
-      "paligemma_token": 256715,
-      "action_value": 1.0
-    },
-    "256719": {
-      "paligemma_token": 256719,
-      "action_value": -0.9
-    },
-    "256720": {
-      "paligemma_token": 256720,
-      "action_value": 0.9
-    },
-    "256721": {
-      "paligemma_token": 256721,
-      "action_value": 0.8
-    },
-    "256722": {
-      "paligemma_token": 256722,
-      "action_value": 0.1
-    },
-    "256723": {
-      "paligemma_token": 256723,
-      "action_value": -0.8
-    },
-    "256724": {
-      "paligemma_token": 256724,
-      "action_value": -0.7
-    },
-    "256725": {
-      "paligemma_token": 256725,
-      "action_value": 0.7
-    },
-    "256726": {
-      "paligemma_token": 256726,
-      "action_value": -0.1
-    },
-    "256727": {
-      "paligemma_token": 256727,
-      "action_value": 0.1
-    },
-    "256728": {
-      "paligemma_token": 256728,
-      "action_value": -0.6
-    },
-    "256729": {
-      "paligemma_token": 256729,
-      "action_value": 0.6
-    },
-    "256732": {
-      "paligemma_token": 256732,
-      "action_value": -0.5
-    },
-    "256733": {
-      "paligemma_token": 256733,
-      "action_value": -0.1
-    },
-    "256734": {
-      "paligemma_token": 256734,
-      "action_value": 0.5
-    },
-    "256740": {
-      "paligemma_token": 256740,
-      "action_value": -0.4
-    },
-    "256741": {
-      "paligemma_token": 256741,
-      "action_value": 0.4
-    },
-    "256743": {
-      "paligemma_token": 256743,
-      "action_value": -0.3
-    },
-    "256746": {
-      "paligemma_token": 256746,
-      "action_value": 0.3
-    },
-    "256751": {
-      "paligemma_token": 256751,
-      "action_value": -0.2
-    },
-    "256752": {
-      "paligemma_token": 256752,
-      "action_value": 0.2
-    },
-    "256757": {
-      "paligemma_token": 256757,
-      "action_value": -0.1
-    },
-    "256758": {
-      "paligemma_token": 256758,
-      "action_value": 0.1
-    },
-    "256768": {
-      "paligemma_token": 256768,
-      "action_value": 6517.9
-    },
-    "256769": {
-      "paligemma_token": 256769,
-      "action_value": 6517.9
-    },
-    "256770": {
-      "paligemma_token": 256770,
-      "action_value": 6517.9
-    },
-    "256771": {
-      "paligemma_token": 256771,
-      "action_value": 6517.9
-    },
-    "256772": {
-      "paligemma_token": 256772,
-      "action_value": 6517.9
-    },
-    "256773": {
-      "paligemma_token": 256773,
-      "action_value": 6517.9
-    },
-    "256774": {
-      "paligemma_token": 256774,
-      "action_value": 6517.9
-    },
-    "256775": {
-      "paligemma_token": 256775,
-      "action_value": 6517.9
-    },
-    "256776": {
-      "paligemma_token": 256776,
-      "action_value": 6517.9
-    },
-    "256777": {
-      "paligemma_token": 256777,
-      "action_value": 6517.9
-    },
-    "256778": {
-      "paligemma_token": 256778,
-      "action_value": 6517.9
-    },
-    "256779": {
-      "paligemma_token": 256779,
-      "action_value": 6517.9
-    },
-    "256780": {
-      "paligemma_token": 256780,
-      "action_value": 6517.9
-    },
-    "256781": {
-      "paligemma_token": 256781,
-      "action_value": 6517.9
-    },
-    "256782": {
-      "paligemma_token": 256782,
-      "action_value": 6517.9
-    },
-    "256783": {
-      "paligemma_token": 256783,
-      "action_value": 6517.9
-    },
-    "256784": {
-      "paligemma_token": 256784,
-      "action_value": 6517.9
-    },
-    "256785": {
-      "paligemma_token": 256785,
-      "action_value": 6517.9
-    },
-    "256786": {
-      "paligemma_token": 256786,
-      "action_value": 6517.9
-    },
-    "256787": {
-      "paligemma_token": 256787,
-      "action_value": 6517.9
-    },
-    "256788": {
-      "paligemma_token": 256788,
-      "action_value": 6517.9
-    },
-    "256789": {
-      "paligemma_token": 256789,
-      "action_value": 6517.9
-    },
-    "256790": {
-      "paligemma_token": 256790,
-      "action_value": 6517.9
-    },
-    "256791": {
-      "paligemma_token": 256791,
-      "action_value": 6517.9
-    },
-    "256792": {
-      "paligemma_token": 256792,
-      "action_value": 6517.9
-    },
-    "256793": {
-      "paligemma_token": 256793,
-      "action_value": 6517.9
-    },
-    "256794": {
-      "paligemma_token": 256794,
-      "action_value": 6517.9
-    },
-    "256795": {
-      "paligemma_token": 256795,
-      "action_value": 6517.9
-    },
-    "256796": {
-      "paligemma_token": 256796,
-      "action_value": 6517.9
-    },
-    "256797": {
-      "paligemma_token": 256797,
-      "action_value": 6517.9
-    },
-    "256798": {
-      "paligemma_token": 256798,
-      "action_value": 6517.9
-    },
-    "256799": {
-      "paligemma_token": 256799,
-      "action_value": 6517.9
-    },
-    "256800": {
-      "paligemma_token": 256800,
-      "action_value": 6517.9
-    },
-    "256801": {
-      "paligemma_token": 256801,
-      "action_value": 6517.9
-    },
-    "256802": {
-      "paligemma_token": 256802,
-      "action_value": -22.7
-    },
-    "256803": {
-      "paligemma_token": 256803,
-      "action_value": -32.2
-    },
-    "256804": {
-      "paligemma_token": 256804,
-      "action_value": -32.3
-    },
-    "256805": {
-      "paligemma_token": 256805,
-      "action_value": -32.4
-    },
-    "256806": {
-      "paligemma_token": 256806,
-      "action_value": -32.5
-    },
-    "256807": {
-      "paligemma_token": 256807,
-      "action_value": -32.6
-    },
-    "256808": {
-      "paligemma_token": 256808,
-      "action_value": -32.7
-    },
-    "256809": {
-      "paligemma_token": 256809,
-      "action_value": -32.8
-    },
-    "256810": {
-      "paligemma_token": 256810,
-      "action_value": -32.9
-    },
-    "256811": {
-      "paligemma_token": 256811,
-      "action_value": -33.0
-    },
-    "256812": {
-      "paligemma_token": 256812,
-      "action_value": -33.1
-    },
-    "256813": {
-      "paligemma_token": 256813,
-      "action_value": -33.2
-    },
-    "256814": {
-      "paligemma_token": 256814,
-      "action_value": -33.3
-    },
-    "256815": {
-      "paligemma_token": 256815,
-      "action_value": -33.4
-    },
-    "256816": {
-      "paligemma_token": 256816,
-      "action_value": -33.5
-    },
-    "256817": {
-      "paligemma_token": 256817,
-      "action_value": -33.6
-    },
-    "256818": {
-      "paligemma_token": 256818,
-      "action_value": -33.7
-    },
-    "256819": {
-      "paligemma_token": 256819,
-      "action_value": -33.8
-    },
-    "256820": {
-      "paligemma_token": 256820,
-      "action_value": -33.9
-    },
-    "256821": {
-      "paligemma_token": 256821,
-      "action_value": -34.0
-    },
-    "256822": {
-      "paligemma_token": 256822,
-      "action_value": -34.1
-    },
-    "256823": {
-      "paligemma_token": 256823,
-      "action_value": -34.2
-    },
-    "256824": {
-      "paligemma_token": 256824,
-      "action_value": -34.3
-    },
-    "256825": {
-      "paligemma_token": 256825,
-      "action_value": -34.4
-    },
-    "256826": {
-      "paligemma_token": 256826,
-      "action_value": -34.5
-    },
-    "256827": {
-      "paligemma_token": 256827,
-      "action_value": -34.6
-    },
-    "256828": {
-      "paligemma_token": 256828,
-      "action_value": -34.7
-    },
-    "256829": {
-      "paligemma_token": 256829,
-      "action_value": -34.8
-    },
-    "256830": {
-      "paligemma_token": 256830,
-      "action_value": -34.9
-    },
-    "256831": {
-      "paligemma_token": 256831,
-      "action_value": -35.0
-    },
-    "256832": {
-      "paligemma_token": 256832,
-      "action_value": -35.1
-    },
-    "256833": {
-      "paligemma_token": 256833,
-      "action_value": -35.2
-    },
-    "256834": {
-      "paligemma_token": 256834,
-      "action_value": -35.3
-    },
-    "256835": {
-      "paligemma_token": 256835,
-      "action_value": -35.4
-    },
-    "256836": {
-      "paligemma_token": 256836,
-      "action_value": 6517.9
-    },
-    "256837": {
-      "paligemma_token": 256837,
-      "action_value": 6517.9
-    },
-    "256838": {
-      "paligemma_token": 256838,
-      "action_value": 6517.9
-    },
-    "256839": {
-      "paligemma_token": 256839,
-      "action_value": 6517.9
-    },
-    "256840": {
-      "paligemma_token": 256840,
-      "action_value": 6517.9
-    },
-    "256841": {
-      "paligemma_token": 256841,
-      "action_value": 6517.9
-    },
-    "256842": {
-      "paligemma_token": 256842,
-      "action_value": 6517.9
-    },
-    "256843": {
-      "paligemma_token": 256843,
-      "action_value": 6517.9
-    },
-    "256844": {
-      "paligemma_token": 256844,
-      "action_value": 6517.9
-    },
-    "256845": {
-      "paligemma_token": 256845,
-      "action_value": 6517.9
-    },
-    "256846": {
-      "paligemma_token": 256846,
-      "action_value": 6517.9
-    },
-    "256847": {
-      "paligemma_token": 256847,
-      "action_value": 6517.9
-    },
-    "256848": {
-      "paligemma_token": 256848,
-      "action_value": 6517.9
-    },
-    "256849": {
-      "paligemma_token": 256849,
-      "action_value": 6517.9
-    },
-    "256850": {
-      "paligemma_token": 256850,
-      "action_value": 6517.9
-    },
-    "256851": {
-      "paligemma_token": 256851,
-      "action_value": 6517.9
-    },
-    "256852": {
-      "paligemma_token": 256852,
-      "action_value": 6517.9
-    },
-    "256853": {
-      "paligemma_token": 256853,
-      "action_value": 6517.9
-    },
-    "256854": {
-      "paligemma_token": 256854,
-      "action_value": 6517.9
-    },
-    "256855": {
-      "paligemma_token": 256855,
-      "action_value": 6517.9
-    },
-    "256856": {
-      "paligemma_token": 256856,
-      "action_value": 6517.9
-    },
-    "256857": {
-      "paligemma_token": 256857,
-      "action_value": 6517.9
-    },
-    "256858": {
-      "paligemma_token": 256858,
-      "action_value": 6517.9
-    },
-    "256859": {
-      "paligemma_token": 256859,
-      "action_value": 6517.9
-    },
-    "256860": {
-      "paligemma_token": 256860,
-      "action_value": 6517.9
-    },
-    "256861": {
-      "paligemma_token": 256861,
-      "action_value": 6517.9
-    },
-    "256862": {
-      "paligemma_token": 256862,
-      "action_value": 6517.9
-    },
-    "256863": {
-      "paligemma_token": 256863,
-      "action_value": 6517.9
-    },
-    "256864": {
-      "paligemma_token": 256864,
-      "action_value": 6517.9
-    },
-    "256865": {
-      "paligemma_token": 256865,
-      "action_value": 6517.9
-    },
-    "256866": {
-      "paligemma_token": 256866,
-      "action_value": 6517.9
-    },
-    "256867": {
-      "paligemma_token": 256867,
-      "action_value": 6517.9
-    },
-    "256868": {
-      "paligemma_token": 256868,
-      "action_value": 6517.9
-    },
-    "256869": {
-      "paligemma_token": 256869,
-      "action_value": 6517.9
-    },
-    "256870": {
-      "paligemma_token": 256870,
-      "action_value": 6517.9
-    },
-    "256871": {
-      "paligemma_token": 256871,
-      "action_value": 6517.9
-    },
-    "256872": {
-      "paligemma_token": 256872,
-      "action_value": 6517.9
-    },
-    "256873": {
-      "paligemma_token": 256873,
-      "action_value": 6517.9
-    },
-    "256874": {
-      "paligemma_token": 256874,
-      "action_value": 6517.9
-    },
-    "256875": {
-      "paligemma_token": 256875,
-      "action_value": 6517.9
-    },
-    "256876": {
-      "paligemma_token": 256876,
-      "action_value": 6517.9
-    },
-    "256877": {
-      "paligemma_token": 256877,
-      "action_value": 6517.9
-    },
-    "256878": {
-      "paligemma_token": 256878,
-      "action_value": 6517.9
-    },
-    "256879": {
-      "paligemma_token": 256879,
-      "action_value": 6517.9
-    },
-    "256880": {
-      "paligemma_token": 256880,
-      "action_value": 6517.9
-    },
-    "256881": {
-      "paligemma_token": 256881,
-      "action_value": 6517.9
-    },
-    "256882": {
-      "paligemma_token": 256882,
-      "action_value": 6517.9
-    },
-    "256883": {
-      "paligemma_token": 256883,
-      "action_value": 6517.9
-    },
-    "256884": {
-      "paligemma_token": 256884,
-      "action_value": 6517.9
-    },
-    "256885": {
-      "paligemma_token": 256885,
-      "action_value": 6517.9
-    },
-    "256886": {
-      "paligemma_token": 256886,
-      "action_value": 6517.9
-    },
-    "256887": {
-      "paligemma_token": 256887,
-      "action_value": 6517.9
-    },
-    "256888": {
-      "paligemma_token": 256888,
-      "action_value": 6517.9
-    },
-    "256889": {
-      "paligemma_token": 256889,
-      "action_value": 6517.9
-    },
-    "256890": {
-      "paligemma_token": 256890,
-      "action_value": 6517.9
-    },
-    "256891": {
-      "paligemma_token": 256891,
-      "action_value": 6517.9
-    },
-    "256892": {
-      "paligemma_token": 256892,
-      "action_value": 6517.9
-    },
-    "256893": {
-      "paligemma_token": 256893,
-      "action_value": 6517.9
-    },
-    "256894": {
-      "paligemma_token": 256894,
-      "action_value": 6517.9
-    },
-    "256895": {
-      "paligemma_token": 256895,
-      "action_value": 6517.9
-    },
-    "256896": {
-      "paligemma_token": 256896,
-      "action_value": 6517.9
-    },
-    "256897": {
-      "paligemma_token": 256897,
-      "action_value": 6517.9
-    },
-    "256898": {
-      "paligemma_token": 256898,
-      "action_value": 6517.9
-    },
-    "256899": {
-      "paligemma_token": 256899,
-      "action_value": 6517.9
-    },
-    "256900": {
-      "paligemma_token": 256900,
-      "action_value": 6517.9
-    },
-    "256901": {
-      "paligemma_token": 256901,
-      "action_value": 6517.9
-    },
-    "256902": {
-      "paligemma_token": 256902,
-      "action_value": 6517.9
-    },
-    "256903": {
-      "paligemma_token": 256903,
-      "action_value": 6517.9
-    },
-    "256904": {
-      "paligemma_token": 256904,
-      "action_value": 6517.9
-    },
-    "256905": {
-      "paligemma_token": 256905,
-      "action_value": 6517.9
-    },
-    "256906": {
-      "paligemma_token": 256906,
-      "action_value": 6517.9
-    },
-    "256907": {
-      "paligemma_token": 256907,
-      "action_value": 6517.9
-    },
-    "256908": {
-      "paligemma_token": 256908,
-      "action_value": 6517.9
-    },
-    "256909": {
-      "paligemma_token": 256909,
-      "action_value": 6517.9
-    },
-    "256910": {
-      "paligemma_token": 256910,
-      "action_value": 6517.9
-    },
-    "256911": {
-      "paligemma_token": 256911,
-      "action_value": 6517.9
-    },
-    "256912": {
-      "paligemma_token": 256912,
-      "action_value": 6517.9
-    },
-    "256913": {
-      "paligemma_token": 256913,
-      "action_value": 6517.9
-    },
-    "256914": {
-      "paligemma_token": 256914,
-      "action_value": 6517.9
-    },
-    "256915": {
-      "paligemma_token": 256915,
-      "action_value": 6517.9
-    },
-    "256916": {
-      "paligemma_token": 256916,
-      "action_value": 6517.9
-    },
-    "256917": {
-      "paligemma_token": 256917,
-      "action_value": 6517.9
-    },
-    "256918": {
-      "paligemma_token": 256918,
-      "action_value": 6517.9
-    },
-    "256919": {
-      "paligemma_token": 256919,
-      "action_value": 6517.9
-    },
-    "256920": {
-      "paligemma_token": 256920,
-      "action_value": 6517.9
-    },
-    "256921": {
-      "paligemma_token": 256921,
-      "action_value": 6517.9
-    },
-    "256922": {
-      "paligemma_token": 256922,
-      "action_value": 6517.9
-    },
-    "256923": {
-      "paligemma_token": 256923,
-      "action_value": 6517.9
-    },
-    "256924": {
-      "paligemma_token": 256924,
-      "action_value": 6517.9
-    },
-    "256925": {
-      "paligemma_token": 256925,
-      "action_value": 6517.9
-    },
-    "256926": {
-      "paligemma_token": 256926,
-      "action_value": 6517.9
-    },
-    "256927": {
-      "paligemma_token": 256927,
-      "action_value": 6517.9
-    },
-    "256928": {
-      "paligemma_token": 256928,
-      "action_value": 6517.9
-    },
-    "256929": {
-      "paligemma_token": 256929,
-      "action_value": 6517.9
-    },
-    "256930": {
-      "paligemma_token": 256930,
-      "action_value": -22.8
-    },
-    "256931": {
-      "paligemma_token": 256931,
-      "action_value": -22.9
-    },
-    "256932": {
-      "paligemma_token": 256932,
-      "action_value": -23.0
-    },
-    "256933": {
-      "paligemma_token": 256933,
-      "action_value": -23.1
-    },
-    "256934": {
-      "paligemma_token": 256934,
-      "action_value": -23.2
-    },
-    "256935": {
-      "paligemma_token": 256935,
-      "action_value": -23.3
-    },
-    "256936": {
-      "paligemma_token": 256936,
-      "action_value": -23.4
-    },
-    "256937": {
-      "paligemma_token": 256937,
-      "action_value": -23.5
-    },
-    "256938": {
-      "paligemma_token": 256938,
-      "action_value": -23.6
-    },
-    "256939": {
-      "paligemma_token": 256939,
-      "action_value": -23.7
-    },
-    "256940": {
-      "paligemma_token": 256940,
-      "action_value": -23.8
-    },
-    "256941": {
-      "paligemma_token": 256941,
-      "action_value": -23.9
-    },
-    "256942": {
-      "paligemma_token": 256942,
-      "action_value": -24.0
-    },
-    "256943": {
-      "paligemma_token": 256943,
-      "action_value": -24.1
-    },
-    "256944": {
-      "paligemma_token": 256944,
-      "action_value": -24.2
-    },
-    "256945": {
-      "paligemma_token": 256945,
-      "action_value": -24.3
-    },
-    "256946": {
-      "paligemma_token": 256946,
-      "action_value": -24.4
-    },
-    "256947": {
-      "paligemma_token": 256947,
-      "action_value": -24.5
-    },
-    "256948": {
-      "paligemma_token": 256948,
-      "action_value": -24.6
-    },
-    "256949": {
-      "paligemma_token": 256949,
-      "action_value": -24.7
-    },
-    "256950": {
-      "paligemma_token": 256950,
-      "action_value": -24.8
-    },
-    "256951": {
-      "paligemma_token": 256951,
-      "action_value": -24.9
-    },
-    "256952": {
-      "paligemma_token": 256952,
-      "action_value": -25.0
-    },
-    "256953": {
-      "paligemma_token": 256953,
-      "action_value": -25.1
-    },
-    "256954": {
-      "paligemma_token": 256954,
-      "action_value": -25.2
-    },
-    "256955": {
-      "paligemma_token": 256955,
-      "action_value": -25.3
-    },
-    "256956": {
-      "paligemma_token": 256956,
-      "action_value": -25.4
-    },
-    "256957": {
-      "paligemma_token": 256957,
-      "action_value": -25.5
-    },
-    "256958": {
-      "paligemma_token": 256958,
-      "action_value": -25.6
-    },
-    "256959": {
-      "paligemma_token": 256959,
-      "action_value": -25.7
-    },
-    "256960": {src/eval/profiling/openpi/scripts/map_bpe_actions.py
-    },
-    "256962": {
-      "paligemma_token": 256962,
-      "action_value": -26.0
-    },
-    "256963": {
-      "paligemma_token": 256963,
-      "action_value": -26.1
-    },
-    "256964": {
-      "paligemma_token": 256964,
-      "action_value": -26.2
-    },
-    "256965": {
-      "paligemma_token": 256965,
-      "action_value": -26.3
-    },
-    "256966": {
-      "paligemma_token": 256966,
-      "action_value": -26.4
-    },
-    "256967": {
-      "paligemma_token": 256967,
-      "action_value": -26.5
-    },
-    "256968": {
-      "paligemma_token": 256968,
-      "action_value": -26.6
-    },
-    "256969": {
-      "paligemma_token": 256969,
-      "action_value": -26.7
-    },
-    "256970": {
-      "paligemma_token": 256970,
-      "action_value": -26.8
-    },
-    "256971": {
-      "paligemma_token": 256971,
-      "action_value": -26.9
-    },
-    "256972": {
-      "paligemma_token": 256972,
-      "action_value": -27.0
-    },
-    "256973": {
-      "paligemma_token": 256973,
-      "action_value": -27.1
-    },
-    "256974": {
-      "paligemma_token": 256974,
-      "action_value": -27.2
-    },
-    "256975": {
-      "paligemma_token": 256975,
-      "action_value": -27.3
-    },
-    "256976": {
-      "paligemma_token": 256976,
-      "action_value": -27.4
-    },
-    "256977": {
-      "paligemma_token": 256977,
-      "action_value": -27.5
-    },
-    "256978": {
-      "paligemma_token": 256978,
-      "action_value": -27.6
-    },
-    "256979": {
-      "paligemma_token": 256979,
-      "action_value": -27.7
-    },
-    "256980": {
-      "paligemma_token": 256980,
-      "action_value": -27.8
-    },
-    "256981": {
-      "paligemma_token": 256981,
-      "action_value": -27.9
-    },
-    "256982": {
-      "paligemma_token": 256982,
-      "action_value": -28.0
-    },
-    "256983": {
-      "paligemma_token": 256983,
-      "action_value": -28.1
-    },
-    "256984": {
-      "paligemma_token": 256984,
-      "action_value": -28.2
-    },
-    "256985": {
-      "paligemma_token": 256985,
-      "action_value": -28.3
-    },
-    "256986": {
-      "paligemma_token": 256986,
-      "action_value": -28.4
-    },
-    "256987": {
-      "paligemma_token": 256987,
-      "action_value": -28.5
-    },
-    "256988": {
-      "paligemma_token": 256988,
-      "action_value": -28.6
-    },
-    "256989": {
-      "paligemma_token": 256989,
-      "action_value": -28.7
-    },
-    "256990": {
-      "paligemma_token": 256990,
-      "action_value": -28.8
-    },
-    "256991": {
-      "paligemma_token": 256991,
-      "action_value": -28.9
-    },
-    "256992": {
-      "paligemma_token": 256992,
-      "action_value": -29.0
-    },
-    "256993": {
-      "paligemma_token": 256993,
-      "action_value": -29.1
-    },
-    "256994": {
-      "paligemma_token": 256994,
-      "action_value": -29.2
-    },
-    "256995": {
-      "paligemma_token": 256995,
-      "action_value": -29.3
-    },
-    "256996": {
-      "paligemma_token": 256996,
-      "action_value": -29.4
-    },
-    "256997": {
-      "paligemma_token": 256997,
-      "action_value": -29.5
-    },
-    "256998": {
-      "paligemma_token": 256998,
-      "action_value": -29.6
-    },
-    "256999": {
-      "paligemma_token": 256999,
-      "action_value": -29.7
-    },
-    "257000": {
-      "paligemma_token": 257000,
-      "action_value": -29.8
-    },
-    "257001": {
-      "paligemma_token": 257001,
-      "action_value": -29.9
-    },
-    "257002": {
-      "paligemma_token": 257002,
-      "action_value": -30.0
-    },
-    "257003": {
-      "paligemma_token": 257003,
-      "action_value": -30.1
-    },
-    "257004": {
-      "paligemma_token": 257004,
-      "action_value": -30.2
-    },
-    "257005": {
-      "paligemma_token": 257005,
-      "action_value": -30.3
-    },
-    "257006": {
-      "paligemma_token": 257006,
-      "action_value": -30.4
-    },
-    "257007": {
-      "paligemma_token": 257007,
-      "action_value": -30.5
-    },
-    "257008": {
-      "paligemma_token": 257008,
-      "action_value": -30.6
-    },
-    "257009": {
-      "paligemma_token": 257009,
-      "action_value": -30.7
-    },
-    "257010": {
-      "paligemma_token": 257010,
-      "action_value": -30.8
-    },
-    "257011": {
-      "paligemma_token": 257011,
-      "action_value": -30.9
-    },
-    "257012": {
-      "paligemma_token": 257012,
-      "action_value": -31.0
-    },
-    "257013": {
-      "paligemma_token": 257013,
-      "action_value": -31.1
-    },
-    "257014": {
-      "paligemma_token": 257014,
-      "action_value": -31.2
-    },
-    "257015": {
-      "paligemma_token": 257015,
-      "action_value": -31.3
-    },
-    "257016": {
-      "paligemma_token": 257016,
-      "action_value": -31.4
-    },
-    "257017": {
-      "paligemma_token": 257017,
-      "action_value": -31.5
-    },
-    "257018": {
-      "paligemma_token": 257018,
-      "action_value": -31.6
-    },
-    "257019": {
-      "paligemma_token": 257019,
-      "action_value": -31.7
-    },
-    "257020": {
-      "paligemma_token": 257020,
-      "action_value": -31.8
-    },
-    "257021": {
-      "paligemma_token": 257021,
-      "action_value": -31.9
-    },
-    "257022": {
-      "paligemma_token": 257022,
-      "action_value": -32.0
-    },
-    "257023": {
-      "paligemma_token": 257023,
-      "action_value": -32.1
-    }
+    "254980": -1.1000000000000003,
+    "254982": 0.10000000000000002,
+    "254987": -0.20000000000000004,
+    "254988": 0.30000000000000004,
+    "254991": -0.10000000000000002,
+    "254993": -1.1000000000000003,
+    "255002": 0.4000000000000001,
+    "255006": -1.2000000000000002,
+    "255007": -0.30000000000000004,
+    "255008": 15.300000000000004,
+    "255011": -14.700000000000003,
+    "255015": -0.10000000000000002,
+    "255017": 0.6000000000000001,
+    "255022": -0.10000000000000002,
+    "255033": 1.2000000000000002,
+    "255036": -1.3000000000000003,
+    "255037": 1.1000000000000003,
+    "255038": -14.600000000000003,
+    "255040": 1.1000000000000003,
+    "255047": -0.5000000000000001,
+    "255049": 1.6000000000000003,
+    "255050": 1.3000000000000003,
+    "255053": -1.7000000000000002,
+    "255057": -0.20000000000000004,
+    "255058": 1.0000000000000002,
+    "255059": -1.5000000000000002,
+    "255069": 0.20000000000000004,
+    "255071": 0.6000000000000001,
+    "255072": -14.500000000000002,
+    "255073": -1.1000000000000003,
+    "255074": 1.2000000000000002,
+    "255078": -0.10000000000000002,
+    "255079": 0.20000000000000004,
+    "255082": 1.3000000000000003,
+    "255083": 1.5000000000000002,
+    "255086": -0.10000000000000002,
+    "255087": -1.4000000000000001,
+    "255094": -0.7000000000000001,
+    "255099": -1.0000000000000002,
+    "255100": 1.4000000000000001,
+    "255101": 1.0000000000000002,
+    "255102": 15.200000000000001,
+    "255105": 0.30000000000000004,
+    "255106": -14.400000000000002,
+    "255107": 0.5000000000000001,
+    "255112": -1.6000000000000003,
+    "255113": 1.7000000000000002,
+    "255116": -0.20000000000000004,
+    "255118": -1.2000000000000002,
+    "255121": -0.10000000000000002,
+    "255130": -0.8000000000000002,
+    "255134": 0.9000000000000001,
+    "255135": 0.30000000000000004,
+    "255136": 15.100000000000001,
+    "255138": -0.20000000000000004,
+    "255140": -0.10000000000000002,
+    "255143": -0.10000000000000002,
+    "255149": -0.10000000000000002,
+    "255150": 1.0000000000000002,
+    "255152": 0.20000000000000004,
+    "255155": -1.0000000000000002,
+    "255156": -14.300000000000002,
+    "255157": 15.000000000000002,
+    "255158": 0.20000000000000004,
+    "255160": 14.900000000000002,
+    "255161": 1.0000000000000002,
+    "255167": 0.20000000000000004,
+    "255174": -14.200000000000001,
+    "255176": 8.500000000000002,
+    "255177": 1.2000000000000002,
+    "255178": 0.7000000000000001,
+    "255181": -1.2000000000000002,
+    "255182": 1.1000000000000003,
+    "255184": -0.6000000000000001,
+    "255187": -0.6000000000000001,
+    "255188": 0.7000000000000001,
+    "255189": 0.20000000000000004,
+    "255192": -0.20000000000000004,
+    "255196": -1.0000000000000002,
+    "255197": -1.2000000000000002,
+    "255199": 0.30000000000000004,
+    "255200": -14.100000000000001,
+    "255202": 1.1000000000000003,
+    "255203": -0.7000000000000001,
+    "255206": -1.1000000000000003,
+    "255207": 14.800000000000002,
+    "255211": 1.0000000000000002,
+    "255214": 1.6000000000000003,
+    "255215": -14.000000000000002,
+    "255216": -0.30000000000000004,
+    "255217": -1.0000000000000002,
+    "255219": 0.4000000000000001,
+    "255220": -1.6000000000000003,
+    "255222": -0.9000000000000001,
+    "255225": -0.4000000000000001,
+    "255226": 0.8000000000000002,
+    "255227": 0.20000000000000004,
+    "255228": -0.4000000000000001,
+    "255231": -0.20000000000000004,
+    "255233": -1.0000000000000002,
+    "255234": -1.2000000000000002,
+    "255235": 1.1000000000000003,
+    "255239": -1.3000000000000003,
+    "255240": -13.9,
+    "255241": -1.0000000000000002,
+    "255244": -0.30000000000000004,
+    "255247": 0.4000000000000001,
+    "255249": -0.6000000000000001,
+    "255250": -0.20000000000000004,
+    "255252": 14.700000000000003,
+    "255256": 0.20000000000000004,
+    "255257": -1.1000000000000003,
+    "255263": -1.4000000000000001,
+    "255264": 1.0000000000000002,
+    "255270": 1.5000000000000002,
+    "255274": -0.20000000000000004,
+    "255275": -1.3000000000000003,
+    "255276": -1.5000000000000002,
+    "255278": 1.4000000000000001,
+    "255281": 0.9000000000000001,
+    "255282": 1.0000000000000002,
+    "255288": 1.3000000000000003,
+    "255295": -0.20000000000000004,
+    "255297": -0.4000000000000001,
+    "255298": -1.1000000000000003,
+    "255299": 1.2000000000000002,
+    "255300": -0.10000000000000002,
+    "255302": 1.0000000000000002,
+    "255303": 1.1000000000000003,
+    "255304": 0.6000000000000001,
+    "255306": -0.8000000000000002,
+    "255307": 1.2000000000000002,
+    "255310": -13.8,
+    "255315": 1.1000000000000003,
+    "255318": 14.600000000000003,
+    "255321": -13.700000000000001,
+    "255322": 14.400000000000002,
+    "255325": 0.20000000000000004,
+    "255326": -1.0000000000000002,
+    "255327": 0.10000000000000002,
+    "255329": -0.9000000000000001,
+    "255331": -1.1000000000000003,
+    "255333": -0.9000000000000001,
+    "255335": -1.1000000000000003,
+    "255337": -0.5000000000000001,
+    "255340": -0.10000000000000002,
+    "255343": 0.5000000000000001,
+    "255348": -13.600000000000001,
+    "255350": -1.2000000000000002,
+    "255351": -1.5000000000000002,
+    "255354": -1.1000000000000003,
+    "255355": -0.4000000000000001,
+    "255356": 14.200000000000001,
+    "255357": 14.300000000000002,
+    "255359": 1.5000000000000002,
+    "255360": 0.9000000000000001,
+    "255363": -0.20000000000000004,
+    "255370": -13.500000000000002,
+    "255373": 0.4000000000000001,
+    "255374": 14.500000000000002,
+    "255376": 0.4000000000000001,
+    "255380": 1.3000000000000003,
+    "255385": 0.20000000000000004,
+    "255386": -0.30000000000000004,
+    "255387": 1.1000000000000003,
+    "255392": 1.0000000000000002,
+    "255393": 1.0000000000000002,
+    "255394": 0.10000000000000002,
+    "255399": 0.20000000000000004,
+    "255401": 14.100000000000001,
+    "255402": 0.8000000000000002,
+    "255404": -0.7000000000000001,
+    "255405": -13.300000000000002,
+    "255406": -0.10000000000000002,
+    "255409": 0.9000000000000001,
+    "255411": -0.20000000000000004,
+    "255416": 0.10000000000000002,
+    "255418": -1.2000000000000002,
+    "255420": 0.20000000000000004,
+    "255423": -13.400000000000002,
+    "255428": 1.4000000000000001,
+    "255429": 14.000000000000002,
+    "255435": 0.9000000000000001,
+    "255437": -1.4000000000000001,
+    "255438": 0.6000000000000001,
+    "255442": 0.10000000000000002,
+    "255445": -1.3000000000000003,
+    "255447": 0.9000000000000001,
+    "255449": 0.5000000000000001,
+    "255451": 1.2000000000000002,
+    "255453": -13.2,
+    "255454": -0.9000000000000001,
+    "255455": -1.0000000000000002,
+    "255456": 13.8,
+    "255457": -0.9000000000000001,
+    "255458": 0.9000000000000001,
+    "255461": 1.1000000000000003,
+    "255463": 13.9,
+    "255465": -0.10000000000000002,
+    "255468": -1.1000000000000003,
+    "255473": -0.20000000000000004,
+    "255474": 1.0000000000000002,
+    "255475": -0.5000000000000001,
+    "255478": -0.30000000000000004,
+    "255480": 0.20000000000000004,
+    "255483": 13.700000000000001,
+    "255484": -6.700000000000001,
+    "255487": 0.7000000000000001,
+    "255489": 0.30000000000000004,
+    "255491": -0.9000000000000001,
+    "255493": -1.0000000000000002,
+    "255496": 1.0000000000000002,
+    "255498": -13.000000000000004,
+    "255499": -13.100000000000003,
+    "255500": 0.30000000000000004,
+    "255504": -0.10000000000000002,
+    "255505": -0.6000000000000001,
+    "255508": 0.10000000000000002,
+    "255509": -0.9000000000000001,
+    "255510": -0.30000000000000004,
+    "255514": -0.10000000000000002,
+    "255516": -12.800000000000002,
+    "255520": 0.9000000000000001,
+    "255523": -0.10000000000000002,
+    "255524": -0.30000000000000004,
+    "255527": -0.20000000000000004,
+    "255529": -0.6000000000000001,
+    "255530": 0.9000000000000001,
+    "255531": 13.600000000000001,
+    "255536": -1.0000000000000002,
+    "255537": -1.3000000000000003,
+    "255538": 0.7000000000000001,
+    "255539": 13.500000000000002,
+    "255544": 1.3000000000000003,
+    "255547": -12.900000000000004,
+    "255548": 0.30000000000000004,
+    "255549": -1.0000000000000002,
+    "255551": 1.2000000000000002,
+    "255554": 1.4000000000000001,
+    "255556": -12.700000000000001,
+    "255557": 0.30000000000000004,
+    "255558": -0.8000000000000002,
+    "255561": -6.800000000000001,
+    "255562": 0.10000000000000002,
+    "255563": -1.4000000000000001,
+    "255564": 0.7000000000000001,
+    "255566": -0.5000000000000001,
+    "255568": -0.20000000000000004,
+    "255569": 13.400000000000002,
+    "255573": 13.300000000000002,
+    "255575": 13.2,
+    "255577": -1.0000000000000002,
+    "255580": -0.30000000000000004,
+    "255581": 0.9000000000000001,
+    "255584": 0.8000000000000002,
+    "255590": 1.0000000000000002,
+    "255592": 0.8000000000000002,
+    "255598": -1.2000000000000002,
+    "255599": -1.1000000000000003,
+    "255600": -0.7000000000000001,
+    "255601": -0.10000000000000002,
+    "255602": 0.20000000000000004,
+    "255604": -12.500000000000002,
+    "255607": -0.20000000000000004,
+    "255608": 0.10000000000000002,
+    "255613": -12.600000000000001,
+    "255615": -1.0000000000000002,
+    "255618": 13.100000000000003,
+    "255620": 1.0000000000000002,
+    "255622": 0.9000000000000001,
+    "255623": -0.10000000000000002,
+    "255624": -0.9000000000000001,
+    "255625": -0.10000000000000002,
+    "255626": 13.000000000000004,
+    "255627": 0.10000000000000002,
+    "255628": 0.9000000000000001,
+    "255629": 12.900000000000004,
+    "255630": -0.9000000000000001,
+    "255631": 0.20000000000000004,
+    "255633": -0.20000000000000004,
+    "255635": 0.6000000000000001,
+    "255638": 1.1000000000000003,
+    "255639": 0.20000000000000004,
+    "255641": 0.20000000000000004,
+    "255643": 0.20000000000000004,
+    "255645": 12.800000000000002,
+    "255651": -0.10000000000000002,
+    "255652": -0.8000000000000002,
+    "255653": -0.20000000000000004,
+    "255658": 0.20000000000000004,
+    "255660": -0.8000000000000002,
+    "255667": 0.8000000000000002,
+    "255668": -0.30000000000000004,
+    "255669": 1.1000000000000003,
+    "255670": -1.3000000000000003,
+    "255671": 0.30000000000000004,
+    "255673": 0.5000000000000001,
+    "255674": 1.3000000000000003,
+    "255675": 12.600000000000001,
+    "255680": 12.700000000000001,
+    "255681": -1.1000000000000003,
+    "255682": -0.4000000000000001,
+    "255685": -12.300000000000002,
+    "255686": 0.8000000000000002,
+    "255687": 0.30000000000000004,
+    "255688": -0.9000000000000001,
+    "255695": 0.8000000000000002,
+    "255698": -8.200000000000001,
+    "255699": 1.2000000000000002,
+    "255706": -0.9000000000000001,
+    "255707": 0.8000000000000002,
+    "255711": -12.100000000000001,
+    "255712": 0.8000000000000002,
+    "255713": -1.2000000000000002,
+    "255715": -0.9000000000000001,
+    "255717": -1.0000000000000002,
+    "255719": 0.6000000000000001,
+    "255720": -12.400000000000002,
+    "255725": -11.900000000000002,
+    "255726": -0.10000000000000002,
+    "255727": -12.000000000000002,
+    "255729": 0.5000000000000001,
+    "255731": 0.9000000000000001,
+    "255732": -0.10000000000000002,
+    "255734": 12.400000000000002,
+    "255736": 12.300000000000002,
+    "255737": 0.8000000000000002,
+    "255741": -12.200000000000001,
+    "255742": -0.5000000000000001,
+    "255746": -0.6000000000000001,
+    "255750": 0.30000000000000004,
+    "255759": 12.200000000000001,
+    "255760": 0.30000000000000004,
+    "255764": 12.500000000000002,
+    "255768": 0.9000000000000001,
+    "255769": -0.8000000000000002,
+    "255770": 0.10000000000000002,
+    "255771": -11.800000000000002,
+    "255772": 0.4000000000000001,
+    "255774": -1.2000000000000002,
+    "255775": 12.100000000000001,
+    "255776": -0.8000000000000002,
+    "255777": -0.30000000000000004,
+    "255781": 0.4000000000000001,
+    "255782": 1.0000000000000002,
+    "255783": 12.000000000000002,
+    "255784": 0.8000000000000002,
+    "255785": -0.20000000000000004,
+    "255786": 0.6000000000000001,
+    "255787": -0.5000000000000001,
+    "255788": -0.30000000000000004,
+    "255790": -0.9000000000000001,
+    "255791": 1.2000000000000002,
+    "255792": 11.900000000000002,
+    "255796": -0.20000000000000004,
+    "255797": 1.0000000000000002,
+    "255799": 11.800000000000002,
+    "255801": -11.700000000000001,
+    "255802": -0.20000000000000004,
+    "255803": -0.10000000000000002,
+    "255805": -0.30000000000000004,
+    "255808": -0.4000000000000001,
+    "255811": 1.1000000000000003,
+    "255812": -0.20000000000000004,
+    "255813": -11.6,
+    "255814": 0.20000000000000004,
+    "255820": -0.10000000000000002,
+    "255824": -0.7000000000000001,
+    "255825": 11.700000000000001,
+    "255826": -1.1000000000000003,
+    "255827": -0.7000000000000001,
+    "255831": 0.7000000000000001,
+    "255834": -0.8000000000000002,
+    "255837": -1.0000000000000002,
+    "255838": 0.10000000000000002,
+    "255840": 11.6,
+    "255844": 0.10000000000000002,
+    "255850": -11.300000000000002,
+    "255851": 0.5000000000000001,
+    "255853": 0.20000000000000004,
+    "255857": -11.4,
+    "255858": -11.200000000000001,
+    "255863": 11.5,
+    "255867": -11.5,
+    "255873": 0.10000000000000002,
+    "255874": 0.8000000000000002,
+    "255875": -0.4000000000000001,
+    "255876": -0.9000000000000001,
+    "255877": 0.8000000000000002,
+    "255883": 0.7000000000000001,
+    "255889": 0.9000000000000001,
+    "255890": -0.8000000000000002,
+    "255892": 0.7000000000000001,
+    "255896": 0.6000000000000001,
+    "255901": -0.8000000000000002,
+    "255902": -11.000000000000002,
+    "255904": 0.7000000000000001,
+    "255906": 11.4,
+    "255908": 0.7000000000000001,
+    "255909": -11.100000000000001,
+    "255913": -0.10000000000000002,
+    "255915": 1.1000000000000003,
+    "255916": 11.300000000000002,
+    "255920": -0.6000000000000001,
+    "255921": -0.20000000000000004,
+    "255922": -1.1000000000000003,
+    "255931": -0.10000000000000002,
+    "255933": -0.7000000000000001,
+    "255937": 1.0000000000000002,
+    "255941": -1.0000000000000002,
+    "255942": 0.9000000000000001,
+    "255944": 0.7000000000000001,
+    "255946": -10.900000000000002,
+    "255947": -0.9000000000000001,
+    "255952": -0.8000000000000002,
+    "255958": 0.4000000000000001,
+    "255963": -0.7000000000000001,
+    "255964": 0.30000000000000004,
+    "255966": 0.4000000000000001,
+    "255967": -10.800000000000002,
+    "255999": 10.800000000000002,
+    "256000": -1.3000000000000003,
+    "256002": 0.7000000000000001,
+    "256003": -0.7000000000000001,
+    "256008": 0.6000000000000001,
+    "256009": 10.700000000000001,
+    "256011": -0.10000000000000002,
+    "256013": 0.6000000000000001,
+    "256015": -0.8000000000000002,
+    "256016": 0.6000000000000001,
+    "256018": 0.20000000000000004,
+    "256019": -0.10000000000000002,
+    "256021": -10.400000000000002,
+    "256022": -0.20000000000000004,
+    "256024": 0.8000000000000002,
+    "256025": 0.6000000000000001,
+    "256027": 0.20000000000000004,
+    "256028": 10.600000000000001,
+    "256029": 1.0000000000000002,
+    "256032": -0.5000000000000001,
+    "256034": 10.500000000000002,
+    "256035": -1.0000000000000002,
+    "256037": -10.100000000000001,
+    "256042": -0.7000000000000001,
+    "256043": -0.6000000000000001,
+    "256044": 0.8000000000000002,
+    "256046": -0.20000000000000004,
+    "256048": -0.6000000000000001,
+    "256049": -0.10000000000000002,
+    "256050": 0.20000000000000004,
+    "256051": -0.20000000000000004,
+    "256052": 0.20000000000000004,
+    "256054": 0.5000000000000001,
+    "256056": -10.700000000000001,
+    "256062": 0.10000000000000002,
+    "256064": 0.6000000000000001,
+    "256065": -0.4000000000000001,
+    "256066": 0.6000000000000001,
+    "256067": -0.7000000000000001,
+    "256071": 0.9000000000000001,
+    "256073": 10.300000000000002,
+    "256075": 0.10000000000000002,
+    "256077": -0.9000000000000001,
+    "256081": -10.500000000000002,
+    "256083": -10.200000000000001,
+    "256091": 0.4000000000000001,
+    "256094": 10.100000000000001,
+    "256095": -9.900000000000002,
+    "256096": -9.8,
+    "256098": -0.6000000000000001,
+    "256101": -0.4000000000000001,
+    "256102": -7.200000000000001,
+    "256103": -10.300000000000002,
+    "256104": -0.7000000000000001,
+    "256105": -0.10000000000000002,
+    "256107": -10.000000000000002,
+    "256109": -0.6000000000000001,
+    "256114": -0.8000000000000002,
+    "256118": -0.7000000000000001,
+    "256119": 0.9000000000000001,
+    "256121": 9.8,
+    "256122": -0.9000000000000001,
+    "256126": 0.7000000000000001,
+    "256127": 0.10000000000000002,
+    "256128": -9.5,
+    "256130": -9.600000000000001,
+    "256131": 9.600000000000001,
+    "256132": 9.700000000000001,
+    "256136": 0.30000000000000004,
+    "256137": -9.700000000000001,
+    "256139": -9.2,
+    "256140": -0.5000000000000001,
+    "256141": -0.6000000000000001,
+    "256143": 0.10000000000000002,
+    "256144": -9.400000000000002,
+    "256145": -0.5000000000000001,
+    "256146": 9.5,
+    "256149": -0.8000000000000002,
+    "256151": 9.400000000000002,
+    "256152": -9.300000000000002,
+    "256158": 0.5000000000000001,
+    "256162": 0.7000000000000001,
+    "256163": -0.30000000000000004,
+    "256166": 9.300000000000002,
+    "256169": 0.10000000000000002,
+    "256171": 10.400000000000002,
+    "256172": -0.6000000000000001,
+    "256173": -0.10000000000000002,
+    "256175": -10.600000000000001,
+    "256176": -0.8000000000000002,
+    "256178": 10.200000000000001,
+    "256180": -0.30000000000000004,
+    "256181": -0.6000000000000001,
+    "256182": 9.2,
+    "256184": 9.100000000000001,
+    "256185": 0.8000000000000002,
+    "256186": 0.20000000000000004,
+    "256195": -9.000000000000002,
+    "256197": 0.20000000000000004,
+    "256202": 9.000000000000002,
+    "256205": 9.900000000000002,
+    "256207": -0.8000000000000002,
+    "256208": 8.900000000000002,
+    "256209": 0.5000000000000001,
+    "256210": -9.100000000000001,
+    "256211": 0.5000000000000001,
+    "256213": 0.4000000000000001,
+    "256214": 10.000000000000002,
+    "256216": 0.20000000000000004,
+    "256218": 0.5000000000000001,
+    "256219": 0.8000000000000002,
+    "256223": -8.900000000000002,
+    "256227": -0.10000000000000002,
+    "256230": 0.20000000000000004,
+    "256231": -0.6000000000000001,
+    "256232": -8.800000000000002,
+    "256240": -0.7000000000000001,
+    "256241": 0.30000000000000004,
+    "256245": 0.5000000000000001,
+    "256247": 0.6000000000000001,
+    "256249": -8.600000000000001,
+    "256253": -0.8000000000000002,
+    "256256": -0.10000000000000002,
+    "256259": -0.5000000000000001,
+    "256266": 8.800000000000002,
+    "256268": -0.20000000000000004,
+    "256269": 0.30000000000000004,
+    "256270": 0.10000000000000002,
+    "256272": 0.4000000000000001,
+    "256273": -0.7000000000000001,
+    "256274": 0.7000000000000001,
+    "256275": -1.3000000000000003,
+    "256278": -0.4000000000000001,
+    "256280": -8.300000000000002,
+    "256281": -0.20000000000000004,
+    "256282": -0.30000000000000004,
+    "256283": 0.6000000000000001,
+    "256284": -0.5000000000000001,
+    "256285": -0.4000000000000001,
+    "256287": -0.6000000000000001,
+    "256290": -0.20000000000000004,
+    "256293": -0.20000000000000004,
+    "256299": 0.7000000000000001,
+    "256301": 8.300000000000002,
+    "256306": 8.200000000000001,
+    "256309": -8.000000000000002,
+    "256310": -0.30000000000000004,
+    "256311": -0.5000000000000001,
+    "256312": -0.5000000000000001,
+    "256313": -0.10000000000000002,
+    "256314": -0.7000000000000001,
+    "256315": -7.900000000000001,
+    "256318": 8.100000000000001,
+    "256319": 8.000000000000002,
+    "256320": -8.700000000000001,
+    "256322": 0.30000000000000004,
+    "256324": -8.500000000000002,
+    "256325": 8.600000000000001,
+    "256326": 8.400000000000002,
+    "256340": 7.6000000000000005,
+    "256342": -0.10000000000000002,
+    "256345": 7.500000000000001,
+    "256347": 7.800000000000002,
+    "256348": 7.900000000000001,
+    "256349": -0.5000000000000001,
+    "256350": -0.6000000000000001,
+    "256351": -7.700000000000002,
+    "256352": -8.400000000000002,
+    "256353": -0.10000000000000002,
+    "256354": 0.6000000000000001,
+    "256355": 7.700000000000002,
+    "256356": -0.30000000000000004,
+    "256359": 0.30000000000000004,
+    "256360": 8.700000000000001,
+    "256361": -7.400000000000001,
+    "256362": 0.5000000000000001,
+    "256363": 7.400000000000001,
+    "256364": -0.10000000000000002,
+    "256365": -7.500000000000001,
+    "256366": -0.10000000000000002,
+    "256367": -7.300000000000002,
+    "256368": 7.300000000000002,
+    "256370": 7.200000000000001,
+    "256371": 0.5000000000000001,
+    "256372": -0.4000000000000001,
+    "256374": -7.1000000000000005,
+    "256381": -0.6000000000000001,
+    "256382": 0.4000000000000001,
+    "256384": -0.5000000000000001,
+    "256386": 0.6000000000000001,
+    "256388": 7.1000000000000005,
+    "256394": 6.800000000000001,
+    "256395": 6.9,
+    "256397": -7.800000000000002,
+    "256398": 6.700000000000001,
+    "256399": 7.000000000000001,
+    "256405": -0.4000000000000001,
+    "256407": 6.6,
+    "256409": -8.200000000000001,
+    "256410": -7.6000000000000005,
+    "256411": 6.500000000000002,
+    "256414": -0.4000000000000001,
+    "256416": 6.300000000000001,
+    "256417": 6.200000000000001,
+    "256418": 6.400000000000001,
+    "256419": -7.000000000000001,
+    "256420": -8.100000000000001,
+    "256423": 6.1000000000000005,
+    "256424": 0.4000000000000001,
+    "256427": 0.4000000000000001,
+    "256428": 8.500000000000002,
+    "256435": 5.900000000000001,
+    "256437": 0.5000000000000001,
+    "256438": 5.8,
+    "256439": -5.900000000000001,
+    "256440": -0.5000000000000001,
+    "256442": -6.400000000000001,
+    "256445": 5.7,
+    "256446": -0.30000000000000004,
+    "256449": -0.4000000000000001,
+    "256451": -6.000000000000001,
+    "256452": -5.7,
+    "256454": -5.6000000000000005,
+    "256457": 5.6000000000000005,
+    "256459": 5.500000000000001,
+    "256460": 0.30000000000000004,
+    "256461": -6.300000000000001,
+    "256463": -6.1000000000000005,
+    "256464": -6.500000000000002,
+    "256466": 5.400000000000001,
+    "256467": -5.500000000000001,
+    "256468": 0.4000000000000001,
+    "256470": 0.4000000000000001,
+    "256474": -0.5000000000000001,
+    "256475": 0.5000000000000001,
+    "256476": -6.6,
+    "256477": 5.300000000000001,
+    "256480": -0.4000000000000001,
+    "256481": -5.400000000000001,
+    "256482": -6.200000000000001,
+    "256483": 6.000000000000001,
+    "256486": 5.1000000000000005,
+    "256487": -6.9,
+    "256490": -5.300000000000001,
+    "256491": 5.200000000000001,
+    "256494": -7.200000000000001,
+    "256495": -0.20000000000000004,
+    "256496": -6.700000000000001,
+    "256497": -6.800000000000001,
+    "256499": 0.10000000000000002,
+    "256500": 4.9,
+    "256501": 0.20000000000000004,
+    "256503": -5.8,
+    "256505": 4.700000000000001,
+    "256507": -0.10000000000000002,
+    "256509": -5.200000000000001,
+    "256511": 5.000000000000001,
+    "256512": -0.20000000000000004,
+    "256513": 0.20000000000000004,
+    "256514": -4.6,
+    "256518": 0.10000000000000002,
+    "256519": -4.800000000000001,
+    "256520": -4.9,
+    "256521": -4.500000000000001,
+    "256522": 4.800000000000001,
+    "256525": -4.700000000000001,
+    "256526": 4.400000000000001,
+    "256527": -4.400000000000001,
+    "256528": 4.6,
+    "256529": -5.000000000000001,
+    "256530": -4.300000000000001,
+    "256533": 4.500000000000001,
+    "256534": 4.300000000000001,
+    "256536": -5.1000000000000005,
+    "256541": -0.4000000000000001,
+    "256545": -4.200000000000001,
+    "256546": -0.30000000000000004,
+    "256547": 0.4000000000000001,
+    "256548": 4.200000000000001,
+    "256549": -4.1000000000000005,
+    "256550": 4.000000000000001,
+    "256551": -3.900000000000001,
+    "256554": -4.000000000000001,
+    "256555": -3.8000000000000003,
+    "256557": -0.30000000000000004,
+    "256559": 3.900000000000001,
+    "256561": 4.1000000000000005,
+    "256562": 3.8000000000000003,
+    "256563": 0.4000000000000001,
+    "256564": -3.7000000000000006,
+    "256565": -0.4000000000000001,
+    "256568": 3.7000000000000006,
+    "256570": 0.30000000000000004,
+    "256571": -3.6000000000000005,
+    "256572": -0.10000000000000002,
+    "256573": -3.4000000000000004,
+    "256574": -0.10000000000000002,
+    "256575": -3.5000000000000004,
+    "256576": 3.6000000000000005,
+    "256578": -3.3,
+    "256579": 0.10000000000000002,
+    "256580": 3.5000000000000004,
+    "256581": 0.10000000000000002,
+    "256583": -0.10000000000000002,
+    "256584": -3.2000000000000006,
+    "256588": 0.30000000000000004,
+    "256589": -3.1000000000000005,
+    "256592": -0.30000000000000004,
+    "256593": -0.10000000000000002,
+    "256594": -3.0000000000000004,
+    "256596": 3.4000000000000004,
+    "256599": 3.3,
+    "256600": -2.9,
+    "256601": -2.8000000000000003,
+    "256602": 3.2000000000000006,
+    "256603": -0.10000000000000002,
+    "256604": 0.30000000000000004,
+    "256605": -2.7000000000000006,
+    "256606": -0.10000000000000002,
+    "256609": 3.1000000000000005,
+    "256611": -2.6000000000000005,
+    "256612": -2.5000000000000004,
+    "256614": 3.0000000000000004,
+    "256618": 2.9,
+    "256619": -2.4000000000000004,
+    "256622": -0.20000000000000004,
+    "256623": -2.3,
+    "256624": -0.30000000000000004,
+    "256625": 2.8000000000000003,
+    "256626": 0.20000000000000004,
+    "256629": 0.30000000000000004,
+    "256630": -2.2000000000000006,
+    "256632": 2.6000000000000005,
+    "256633": 0.30000000000000004,
+    "256634": 2.7000000000000006,
+    "256639": -2.1000000000000005,
+    "256641": -0.30000000000000004,
+    "256645": 2.3,
+    "256646": 2.4000000000000004,
+    "256647": 2.5000000000000004,
+    "256648": 0.20000000000000004,
+    "256650": -2.0000000000000004,
+    "256651": 2.2000000000000006,
+    "256652": 2.1000000000000005,
+    "256653": -1.9000000000000001,
+    "256654": 2.0000000000000004,
+    "256659": -1.8000000000000003,
+    "256660": 1.9000000000000001,
+    "256664": -1.7000000000000002,
+    "256666": 1.8000000000000003,
+    "256669": -0.20000000000000004,
+    "256672": 1.7000000000000002,
+    "256675": -1.6000000000000003,
+    "256679": 1.6000000000000003,
+    "256682": -1.5000000000000002,
+    "256684": 1.5000000000000002,
+    "256688": -1.4000000000000001,
+    "256689": 1.4000000000000001,
+    "256690": -0.20000000000000004,
+    "256695": 1.3000000000000003,
+    "256696": 0.20000000000000004,
+    "256697": 0.20000000000000004,
+    "256699": -0.20000000000000004,
+    "256701": -1.3000000000000003,
+    "256702": -1.2000000000000002,
+    "256704": 1.2000000000000002,
+    "256706": -1.1000000000000003,
+    "256709": 1.1000000000000003,
+    "256714": -1.0000000000000002,
+    "256715": 1.0000000000000002,
+    "256719": -0.9000000000000001,
+    "256720": 0.9000000000000001,
+    "256721": 0.8000000000000002,
+    "256722": 0.10000000000000002,
+    "256723": -0.8000000000000002,
+    "256724": -0.7000000000000001,
+    "256725": 0.7000000000000001,
+    "256726": -0.10000000000000002,
+    "256727": 0.10000000000000002,
+    "256728": -0.6000000000000001,
+    "256729": 0.6000000000000001,
+    "256732": -0.5000000000000001,
+    "256733": -0.10000000000000002,
+    "256734": 0.5000000000000001,
+    "256740": -0.4000000000000001,
+    "256741": 0.4000000000000001,
+    "256743": -0.30000000000000004,
+    "256746": 0.30000000000000004,
+    "256751": -0.20000000000000004,
+    "256752": 0.20000000000000004,
+    "256757": -0.10000000000000002,
+    "256758": 0.10000000000000002,
+    "256768": 6517.900000000001,
+    "256769": 6517.900000000001,
+    "256770": 6517.900000000001,
+    "256771": 6517.900000000001,
+    "256772": 6517.900000000001,
+    "256773": 6517.900000000001,
+    "256774": 6517.900000000001,
+    "256775": 6517.900000000001,
+    "256776": 6517.900000000001,
+    "256777": 6517.900000000001,
+    "256778": 6517.900000000001,
+    "256779": 6517.900000000001,
+    "256780": 6517.900000000001,
+    "256781": 6517.900000000001,
+    "256782": 6517.900000000001,
+    "256783": 6517.900000000001,
+    "256784": 6517.900000000001,
+    "256785": 6517.900000000001,
+    "256786": 6517.900000000001,
+    "256787": 6517.900000000001,
+    "256788": 6517.900000000001,
+    "256789": 6517.900000000001,
+    "256790": 6517.900000000001,
+    "256791": 6517.900000000001,
+    "256792": 6517.900000000001,
+    "256793": 6517.900000000001,
+    "256794": 6517.900000000001,
+    "256795": 6517.900000000001,
+    "256796": 6517.900000000001,
+    "256797": 6517.900000000001,
+    "256798": 6517.900000000001,
+    "256799": 6517.900000000001,
+    "256800": 6517.900000000001,
+    "256801": 6517.900000000001,
+    "256802": -22.700000000000003,
+    "256803": -32.20000000000001,
+    "256804": -32.300000000000004,
+    "256805": -32.400000000000006,
+    "256806": -32.5,
+    "256807": -32.60000000000001,
+    "256808": -32.70000000000001,
+    "256809": -32.800000000000004,
+    "256810": -32.900000000000006,
+    "256811": -33.0,
+    "256812": -33.10000000000001,
+    "256813": -33.20000000000001,
+    "256814": -33.300000000000004,
+    "256815": -33.4,
+    "256816": -33.50000000000001,
+    "256817": -33.60000000000001,
+    "256818": -33.7,
+    "256819": -33.800000000000004,
+    "256820": -33.9,
+    "256821": -34.00000000000001,
+    "256822": -34.10000000000001,
+    "256823": -34.2,
+    "256824": -34.3,
+    "256825": -34.400000000000006,
+    "256826": -34.50000000000001,
+    "256827": -34.6,
+    "256828": -34.70000000000001,
+    "256829": -34.800000000000004,
+    "256830": -34.900000000000006,
+    "256831": -35.00000000000001,
+    "256832": -35.10000000000001,
+    "256833": -35.20000000000001,
+    "256834": -35.300000000000004,
+    "256835": -35.400000000000006,
+    "256836": 6517.900000000001,
+    "256837": 6517.900000000001,
+    "256838": 6517.900000000001,
+    "256839": 6517.900000000001,
+    "256840": 6517.900000000001,
+    "256841": 6517.900000000001,
+    "256842": 6517.900000000001,
+    "256843": 6517.900000000001,
+    "256844": 6517.900000000001,
+    "256845": 6517.900000000001,
+    "256846": 6517.900000000001,
+    "256847": 6517.900000000001,
+    "256848": 6517.900000000001,
+    "256849": 6517.900000000001,
+    "256850": 6517.900000000001,
+    "256851": 6517.900000000001,
+    "256852": 6517.900000000001,
+    "256853": 6517.900000000001,
+    "256854": 6517.900000000001,
+    "256855": 6517.900000000001,
+    "256856": 6517.900000000001,
+    "256857": 6517.900000000001,
+    "256858": 6517.900000000001,
+    "256859": 6517.900000000001,
+    "256860": 6517.900000000001,
+    "256861": 6517.900000000001,
+    "256862": 6517.900000000001,
+    "256863": 6517.900000000001,
+    "256864": 6517.900000000001,
+    "256865": 6517.900000000001,
+    "256866": 6517.900000000001,
+    "256867": 6517.900000000001,
+    "256868": 6517.900000000001,
+    "256869": 6517.900000000001,
+    "256870": 6517.900000000001,
+    "256871": 6517.900000000001,
+    "256872": 6517.900000000001,
+    "256873": 6517.900000000001,
+    "256874": 6517.900000000001,
+    "256875": 6517.900000000001,
+    "256876": 6517.900000000001,
+    "256877": 6517.900000000001,
+    "256878": 6517.900000000001,
+    "256879": 6517.900000000001,
+    "256880": 6517.900000000001,
+    "256881": 6517.900000000001,
+    "256882": 6517.900000000001,
+    "256883": 6517.900000000001,
+    "256884": 6517.900000000001,
+    "256885": 6517.900000000001,
+    "256886": 6517.900000000001,
+    "256887": 6517.900000000001,
+    "256888": 6517.900000000001,
+    "256889": 6517.900000000001,
+    "256890": 6517.900000000001,
+    "256891": 6517.900000000001,
+    "256892": 6517.900000000001,
+    "256893": 6517.900000000001,
+    "256894": 6517.900000000001,
+    "256895": 6517.900000000001,
+    "256896": 6517.900000000001,
+    "256897": 6517.900000000001,
+    "256898": 6517.900000000001,
+    "256899": 6517.900000000001,
+    "256900": 6517.900000000001,
+    "256901": 6517.900000000001,
+    "256902": 6517.900000000001,
+    "256903": 6517.900000000001,
+    "256904": 6517.900000000001,
+    "256905": 6517.900000000001,
+    "256906": 6517.900000000001,
+    "256907": 6517.900000000001,
+    "256908": 6517.900000000001,
+    "256909": 6517.900000000001,
+    "256910": 6517.900000000001,
+    "256911": 6517.900000000001,
+    "256912": 6517.900000000001,
+    "256913": 6517.900000000001,
+    "256914": 6517.900000000001,
+    "256915": 6517.900000000001,
+    "256916": 6517.900000000001,
+    "256917": 6517.900000000001,
+    "256918": 6517.900000000001,
+    "256919": 6517.900000000001,
+    "256920": 6517.900000000001,
+    "256921": 6517.900000000001,
+    "256922": 6517.900000000001,
+    "256923": 6517.900000000001,
+    "256924": 6517.900000000001,
+    "256925": 6517.900000000001,
+    "256926": 6517.900000000001,
+    "256927": 6517.900000000001,
+    "256928": 6517.900000000001,
+    "256929": 6517.900000000001,
+    "256930": -22.8,
+    "256931": -22.900000000000002,
+    "256932": -23.0,
+    "256933": -23.100000000000005,
+    "256934": -23.2,
+    "256935": -23.300000000000004,
+    "256936": -23.400000000000002,
+    "256937": -23.500000000000007,
+    "256938": -23.600000000000005,
+    "256939": -23.7,
+    "256940": -23.800000000000004,
+    "256941": -23.9,
+    "256942": -24.000000000000004,
+    "256943": -24.100000000000005,
+    "256944": -24.200000000000003,
+    "256945": -24.300000000000004,
+    "256946": -24.400000000000002,
+    "256947": -24.500000000000004,
+    "256948": -24.600000000000005,
+    "256949": -24.700000000000003,
+    "256950": -24.800000000000004,
+    "256951": -24.900000000000002,
+    "256952": -25.000000000000004,
+    "256953": -25.1,
+    "256954": -25.200000000000003,
+    "256955": -25.3,
+    "256956": -25.400000000000002,
+    "256957": -25.5,
+    "256958": -25.600000000000005,
+    "256959": -25.700000000000003,
+    "256960": -25.800000000000008,
+    "256961": -25.900000000000002,
+    "256962": -26.000000000000007,
+    "256963": -26.100000000000005,
+    "256964": -26.200000000000006,
+    "256965": -26.300000000000004,
+    "256966": -26.4,
+    "256967": -26.500000000000004,
+    "256968": -26.600000000000005,
+    "256969": -26.700000000000003,
+    "256970": -26.800000000000004,
+    "256971": -26.900000000000006,
+    "256972": -27.000000000000004,
+    "256973": -27.100000000000005,
+    "256974": -27.200000000000003,
+    "256975": -27.300000000000004,
+    "256976": -27.400000000000002,
+    "256977": -27.500000000000004,
+    "256978": -27.6,
+    "256979": -27.700000000000003,
+    "256980": -27.8,
+    "256981": -27.900000000000002,
+    "256982": -28.000000000000004,
+    "256983": -28.10000000000001,
+    "256984": -28.200000000000003,
+    "256985": -28.300000000000008,
+    "256986": -28.400000000000002,
+    "256987": -28.500000000000007,
+    "256988": -28.600000000000005,
+    "256989": -28.700000000000006,
+    "256990": -28.800000000000004,
+    "256991": -28.9,
+    "256992": -29.000000000000004,
+    "256993": -29.100000000000005,
+    "256994": -29.200000000000006,
+    "256995": -29.300000000000004,
+    "256996": -29.400000000000006,
+    "256997": -29.500000000000004,
+    "256998": -29.600000000000005,
+    "256999": -29.700000000000003,
+    "257000": -29.800000000000004,
+    "257001": -29.900000000000002,
+    "257002": -30.000000000000004,
+    "257003": -30.10000000000001,
+    "257004": -30.200000000000003,
+    "257005": -30.300000000000004,
+    "257006": -30.400000000000002,
+    "257007": -30.500000000000004,
+    "257008": -30.60000000000001,
+    "257009": -30.700000000000003,
+    "257010": -30.800000000000008,
+    "257011": -30.900000000000002,
+    "257012": -31.000000000000007,
+    "257013": -31.100000000000005,
+    "257014": -31.200000000000006,
+    "257015": -31.300000000000004,
+    "257016": -31.400000000000002,
+    "257017": -31.500000000000004,
+    "257018": -31.600000000000005,
+    "257019": -31.700000000000006,
+    "257020": -31.800000000000004,
+    "257021": -31.900000000000006,
+    "257022": -32.00000000000001,
+    "257023": -32.1
+  },
+  "duplicate_stats": {
+    "-1.1000000000000003": 15,
+    "0.10000000000000002": 26,
+    "-0.20000000000000004": 36,
+    "0.30000000000000004": 25,
+    "-0.10000000000000002": 48,
+    "0.4000000000000001": 20,
+    "-1.2000000000000002": 11,
+    "-0.30000000000000004": 24,
+    "15.300000000000004": 1,
+    "-14.700000000000003": 1,
+    "0.6000000000000001": 19,
+    "1.2000000000000002": 10,
+    "-1.3000000000000003": 9,
+    "1.1000000000000003": 14,
+    "-14.600000000000003": 1,
+    "-0.5000000000000001": 18,
+    "1.6000000000000003": 3,
+    "1.3000000000000003": 7,
+    "-1.7000000000000002": 2,
+    "1.0000000000000002": 19,
+    "-1.5000000000000002": 4,
+    "0.20000000000000004": 36,
+    "-14.500000000000002": 1,
+    "1.5000000000000002": 4,
+    "-1.4000000000000001": 5,
+    "-0.7000000000000001": 17,
+    "-1.0000000000000002": 18,
+    "1.4000000000000001": 5,
+    "15.200000000000001": 1,
+    "-14.400000000000002": 1,
+    "0.5000000000000001": 17,
+    "-1.6000000000000003": 3,
+    "1.7000000000000002": 2,
+    "-0.8000000000000002": 18,
+    "0.9000000000000001": 19,
+    "15.100000000000001": 1,
+    "-14.300000000000002": 1,
+    "15.000000000000002": 1,
+    "14.900000000000002": 1,
+    "-14.200000000000001": 1,
+    "8.500000000000002": 2,
+    "0.7000000000000001": 17,
+    "-0.6000000000000001": 19,
+    "-14.100000000000001": 1,
+    "14.800000000000002": 1,
+    "-14.000000000000002": 1,
+    "-0.9000000000000001": 18,
+    "-0.4000000000000001": 19,
+    "0.8000000000000002": 18,
+    "-13.9": 1,
+    "14.700000000000003": 1,
+    "-13.8": 1,
+    "14.600000000000003": 1,
+    "-13.700000000000001": 1,
+    "14.400000000000002": 1,
+    "-13.600000000000001": 1,
+    "14.200000000000001": 1,
+    "14.300000000000002": 1,
+    "-13.500000000000002": 1,
+    "14.500000000000002": 1,
+    "14.100000000000001": 1,
+    "-13.300000000000002": 1,
+    "-13.400000000000002": 1,
+    "14.000000000000002": 1,
+    "-13.2": 1,
+    "13.8": 1,
+    "13.9": 1,
+    "13.700000000000001": 1,
+    "-6.700000000000001": 2,
+    "-13.000000000000004": 1,
+    "-13.100000000000003": 1,
+    "-12.800000000000002": 1,
+    "13.600000000000001": 1,
+    "13.500000000000002": 1,
+    "-12.900000000000004": 1,
+    "-12.700000000000001": 1,
+    "-6.800000000000001": 2,
+    "13.400000000000002": 1,
+    "13.300000000000002": 1,
+    "13.2": 1,
+    "-12.500000000000002": 1,
+    "-12.600000000000001": 1,
+    "13.100000000000003": 1,
+    "13.000000000000004": 1,
+    "12.900000000000004": 1,
+    "12.800000000000002": 1,
+    "12.600000000000001": 1,
+    "12.700000000000001": 1,
+    "-12.300000000000002": 1,
+    "-8.200000000000001": 2,
+    "-12.100000000000001": 1,
+    "-12.400000000000002": 1,
+    "-11.900000000000002": 1,
+    "-12.000000000000002": 1,
+    "12.400000000000002": 1,
+    "12.300000000000002": 1,
+    "-12.200000000000001": 1,
+    "12.200000000000001": 1,
+    "12.500000000000002": 1,
+    "-11.800000000000002": 1,
+    "12.100000000000001": 1,
+    "12.000000000000002": 1,
+    "11.900000000000002": 1,
+    "11.800000000000002": 1,
+    "-11.700000000000001": 1,
+    "-11.6": 1,
+    "11.700000000000001": 1,
+    "11.6": 1,
+    "-11.300000000000002": 1,
+    "-11.4": 1,
+    "-11.200000000000001": 1,
+    "11.5": 1,
+    "-11.5": 1,
+    "-11.000000000000002": 1,
+    "11.4": 1,
+    "-11.100000000000001": 1,
+    "11.300000000000002": 1,
+    "-10.900000000000002": 1,
+    "-10.800000000000002": 1,
+    "10.800000000000002": 1,
+    "10.700000000000001": 1,
+    "-10.400000000000002": 1,
+    "10.600000000000001": 1,
+    "10.500000000000002": 1,
+    "-10.100000000000001": 1,
+    "-10.700000000000001": 1,
+    "10.300000000000002": 1,
+    "-10.500000000000002": 1,
+    "-10.200000000000001": 1,
+    "10.100000000000001": 1,
+    "-9.900000000000002": 1,
+    "-9.8": 1,
+    "-7.200000000000001": 2,
+    "-10.300000000000002": 1,
+    "-10.000000000000002": 1,
+    "9.8": 1,
+    "-9.5": 1,
+    "-9.600000000000001": 1,
+    "9.600000000000001": 1,
+    "9.700000000000001": 1,
+    "-9.700000000000001": 1,
+    "-9.2": 1,
+    "-9.400000000000002": 1,
+    "9.5": 1,
+    "9.400000000000002": 1,
+    "-9.300000000000002": 1,
+    "9.300000000000002": 1,
+    "10.400000000000002": 1,
+    "-10.600000000000001": 1,
+    "10.200000000000001": 1,
+    "9.2": 1,
+    "9.100000000000001": 1,
+    "-9.000000000000002": 1,
+    "9.000000000000002": 1,
+    "9.900000000000002": 1,
+    "8.900000000000002": 1,
+    "-9.100000000000001": 1,
+    "10.000000000000002": 1,
+    "-8.900000000000002": 1,
+    "-8.800000000000002": 1,
+    "-8.600000000000001": 1,
+    "8.800000000000002": 1,
+    "-8.300000000000002": 1,
+    "8.300000000000002": 1,
+    "8.200000000000001": 1,
+    "-8.000000000000002": 1,
+    "-7.900000000000001": 1,
+    "8.100000000000001": 1,
+    "8.000000000000002": 1,
+    "-8.700000000000001": 1,
+    "-8.500000000000002": 1,
+    "8.600000000000001": 1,
+    "8.400000000000002": 1,
+    "7.6000000000000005": 1,
+    "7.500000000000001": 1,
+    "7.800000000000002": 1,
+    "7.900000000000001": 1,
+    "-7.700000000000002": 1,
+    "-8.400000000000002": 1,
+    "7.700000000000002": 1,
+    "8.700000000000001": 1,
+    "-7.400000000000001": 1,
+    "7.400000000000001": 1,
+    "-7.500000000000001": 1,
+    "-7.300000000000002": 1,
+    "7.300000000000002": 1,
+    "7.200000000000001": 1,
+    "-7.1000000000000005": 1,
+    "7.1000000000000005": 1,
+    "6.800000000000001": 1,
+    "6.9": 1,
+    "-7.800000000000002": 1,
+    "6.700000000000001": 1,
+    "7.000000000000001": 1,
+    "6.6": 1,
+    "-7.6000000000000005": 1,
+    "6.500000000000002": 1,
+    "6.300000000000001": 1,
+    "6.200000000000001": 1,
+    "6.400000000000001": 1,
+    "-7.000000000000001": 1,
+    "-8.100000000000001": 1,
+    "6.1000000000000005": 1,
+    "5.900000000000001": 1,
+    "5.8": 1,
+    "-5.900000000000001": 1,
+    "-6.400000000000001": 1,
+    "5.7": 1,
+    "-6.000000000000001": 1,
+    "-5.7": 1,
+    "-5.6000000000000005": 1,
+    "5.6000000000000005": 1,
+    "5.500000000000001": 1,
+    "-6.300000000000001": 1,
+    "-6.1000000000000005": 1,
+    "-6.500000000000002": 1,
+    "5.400000000000001": 1,
+    "-5.500000000000001": 1,
+    "-6.6": 1,
+    "5.300000000000001": 1,
+    "-5.400000000000001": 1,
+    "-6.200000000000001": 1,
+    "6.000000000000001": 1,
+    "5.1000000000000005": 1,
+    "-6.9": 1,
+    "-5.300000000000001": 1,
+    "5.200000000000001": 1,
+    "4.9": 1,
+    "-5.8": 1,
+    "4.700000000000001": 1,
+    "-5.200000000000001": 1,
+    "5.000000000000001": 1,
+    "-4.6": 1,
+    "-4.800000000000001": 1,
+    "-4.9": 1,
+    "-4.500000000000001": 1,
+    "4.800000000000001": 1,
+    "-4.700000000000001": 1,
+    "4.400000000000001": 1,
+    "-4.400000000000001": 1,
+    "4.6": 1,
+    "-5.000000000000001": 1,
+    "-4.300000000000001": 1,
+    "4.500000000000001": 1,
+    "4.300000000000001": 1,
+    "-5.1000000000000005": 1,
+    "-4.200000000000001": 1,
+    "4.200000000000001": 1,
+    "-4.1000000000000005": 1,
+    "4.000000000000001": 1,
+    "-3.900000000000001": 1,
+    "-4.000000000000001": 1,
+    "-3.8000000000000003": 1,
+    "3.900000000000001": 1,
+    "4.1000000000000005": 1,
+    "3.8000000000000003": 1,
+    "-3.7000000000000006": 1,
+    "3.7000000000000006": 1,
+    "-3.6000000000000005": 1,
+    "-3.4000000000000004": 1,
+    "-3.5000000000000004": 1,
+    "3.6000000000000005": 1,
+    "-3.3": 1,
+    "3.5000000000000004": 1,
+    "-3.2000000000000006": 1,
+    "-3.1000000000000005": 1,
+    "-3.0000000000000004": 1,
+    "3.4000000000000004": 1,
+    "3.3": 1,
+    "-2.9": 1,
+    "-2.8000000000000003": 1,
+    "3.2000000000000006": 1,
+    "-2.7000000000000006": 1,
+    "3.1000000000000005": 1,
+    "-2.6000000000000005": 1,
+    "-2.5000000000000004": 1,
+    "3.0000000000000004": 1,
+    "2.9": 1,
+    "-2.4000000000000004": 1,
+    "-2.3": 1,
+    "2.8000000000000003": 1,
+    "-2.2000000000000006": 1,
+    "2.6000000000000005": 1,
+    "2.7000000000000006": 1,
+    "-2.1000000000000005": 1,
+    "2.3": 1,
+    "2.4000000000000004": 1,
+    "2.5000000000000004": 1,
+    "-2.0000000000000004": 1,
+    "2.2000000000000006": 1,
+    "2.1000000000000005": 1,
+    "-1.9000000000000001": 1,
+    "2.0000000000000004": 1,
+    "-1.8000000000000003": 1,
+    "1.9000000000000001": 1,
+    "1.8000000000000003": 1,
+    "6517.900000000001": 128,
+    "-22.700000000000003": 1,
+    "-32.20000000000001": 1,
+    "-32.300000000000004": 1,
+    "-32.400000000000006": 1,
+    "-32.5": 1,
+    "-32.60000000000001": 1,
+    "-32.70000000000001": 1,
+    "-32.800000000000004": 1,
+    "-32.900000000000006": 1,
+    "-33.0": 1,
+    "-33.10000000000001": 1,
+    "-33.20000000000001": 1,
+    "-33.300000000000004": 1,
+    "-33.4": 1,
+    "-33.50000000000001": 1,
+    "-33.60000000000001": 1,
+    "-33.7": 1,
+    "-33.800000000000004": 1,
+    "-33.9": 1,
+    "-34.00000000000001": 1,
+    "-34.10000000000001": 1,
+    "-34.2": 1,
+    "-34.3": 1,
+    "-34.400000000000006": 1,
+    "-34.50000000000001": 1,
+    "-34.6": 1,
+    "-34.70000000000001": 1,
+    "-34.800000000000004": 1,
+    "-34.900000000000006": 1,
+    "-35.00000000000001": 1,
+    "-35.10000000000001": 1,
+    "-35.20000000000001": 1,
+    "-35.300000000000004": 1,
+    "-35.400000000000006": 1,
+    "-22.8": 1,
+    "-22.900000000000002": 1,
+    "-23.0": 1,
+    "-23.100000000000005": 1,
+    "-23.2": 1,
+    "-23.300000000000004": 1,
+    "-23.400000000000002": 1,
+    "-23.500000000000007": 1,
+    "-23.600000000000005": 1,
+    "-23.7": 1,
+    "-23.800000000000004": 1,
+    "-23.9": 1,
+    "-24.000000000000004": 1,
+    "-24.100000000000005": 1,
+    "-24.200000000000003": 1,
+    "-24.300000000000004": 1,
+    "-24.400000000000002": 1,
+    "-24.500000000000004": 1,
+    "-24.600000000000005": 1,
+    "-24.700000000000003": 1,
+    "-24.800000000000004": 1,
+    "-24.900000000000002": 1,
+    "-25.000000000000004": 1,
+    "-25.1": 1,
+    "-25.200000000000003": 1,
+    "-25.3": 1,
+    "-25.400000000000002": 1,
+    "-25.5": 1,
+    "-25.600000000000005": 1,
+    "-25.700000000000003": 1,
+    "-25.800000000000008": 1,
+    "-25.900000000000002": 1,
+    "-26.000000000000007": 1,
+    "-26.100000000000005": 1,
+    "-26.200000000000006": 1,
+    "-26.300000000000004": 1,
+    "-26.4": 1,
+    "-26.500000000000004": 1,
+    "-26.600000000000005": 1,
+    "-26.700000000000003": 1,
+    "-26.800000000000004": 1,
+    "-26.900000000000006": 1,
+    "-27.000000000000004": 1,
+    "-27.100000000000005": 1,
+    "-27.200000000000003": 1,
+    "-27.300000000000004": 1,
+    "-27.400000000000002": 1,
+    "-27.500000000000004": 1,
+    "-27.6": 1,
+    "-27.700000000000003": 1,
+    "-27.8": 1,
+    "-27.900000000000002": 1,
+    "-28.000000000000004": 1,
+    "-28.10000000000001": 1,
+    "-28.200000000000003": 1,
+    "-28.300000000000008": 1,
+    "-28.400000000000002": 1,
+    "-28.500000000000007": 1,
+    "-28.600000000000005": 1,
+    "-28.700000000000006": 1,
+    "-28.800000000000004": 1,
+    "-28.9": 1,
+    "-29.000000000000004": 1,
+    "-29.100000000000005": 1,
+    "-29.200000000000006": 1,
+    "-29.300000000000004": 1,
+    "-29.400000000000006": 1,
+    "-29.500000000000004": 1,
+    "-29.600000000000005": 1,
+    "-29.700000000000003": 1,
+    "-29.800000000000004": 1,
+    "-29.900000000000002": 1,
+    "-30.000000000000004": 1,
+    "-30.10000000000001": 1,
+    "-30.200000000000003": 1,
+    "-30.300000000000004": 1,
+    "-30.400000000000002": 1,
+    "-30.500000000000004": 1,
+    "-30.60000000000001": 1,
+    "-30.700000000000003": 1,
+    "-30.800000000000008": 1,
+    "-30.900000000000002": 1,
+    "-31.000000000000007": 1,
+    "-31.100000000000005": 1,
+    "-31.200000000000006": 1,
+    "-31.300000000000004": 1,
+    "-31.400000000000002": 1,
+    "-31.500000000000004": 1,
+    "-31.600000000000005": 1,
+    "-31.700000000000006": 1,
+    "-31.800000000000004": 1,
+    "-31.900000000000006": 1,
+    "-32.00000000000001": 1,
+    "-32.1": 1
   },
   "stats": {
-    "valid_token_range": {
-      "min": 254980,
-      "max": 257023
-    },
     "action_value_range": {
-      "min": -35.4,
-      "max": 6517.9
+      "min": -35.400000000000006,
+      "max": 6517.900000000001
     },
-    "unique_integer_ranges": {
-      "-1": 69,
-      "0": 414,
-      "15": 4,
-      "-14": 8,
-      "1": 66,
-      "14": 10,
-      "8": 11,
-      "-13": 10,
-      "13": 10,
-      "-6": 12,
-      "-12": 10,
-      "12": 10,
-      "-8": 11,
-      "-11": 10,
-      "11": 7,
-      "-10": 10,
-      "10": 9,
-      "-9": 10,
-      "-7": 11,
-      "9": 10,
-      "7": 10,
-      "6": 10,
-      "5": 10,
-      "-5": 10,
-      "4": 10,
-      "-4": 10,
-      "-3": 10,
-      "3": 10,
-      "-2": 10,
-      "2": 10,
-      "6517": 128,
-      "-22": 3,
-      "-32": 10,
-      "-33": 10,
-      "-34": 10,
-      "-35": 5,
-      "-23": 10,
-      "-24": 10,
-      "-25": 10,
-      "-26": 10,
-      "-27": 10,
-      "-28": 10,
-      "-29": 10,
-      "-30": 10,
-      "-31": 10
-    },
-    "total_valid_mappings": 1068
+    "total_valid_mappings": 1068,
+    "unique_action_values": 425
   }
 }
