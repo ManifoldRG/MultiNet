@@ -9,7 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../.
 from src.eval.profiling.openpi.src.openpi.models import pi0_fast
 from src.eval.profiling.openpi.src.openpi.models import model as _model
 from src.eval.profiling.openpi.src.openpi.models.model import Observation
-from src.eval.profiling.openpi.src.openpi.models.tokenizer import FASTTokenizer, PaligemmaTokenizer
+from src.eval.profiling.openpi.src.openpi.models.tokenizer import FASTTokenizer
 from src.data_utils.procgen_dataloader import get_procgen_dataloader
 # 'definitions' import is now handled correctly because project root is in sys.path
 # No change needed for the import within procgen_dataloader.py itself
@@ -21,11 +21,22 @@ import gc
 # Update imports to be relative to the project root (prefix with 'src.')
 from src.eval.profiling.openpi.src.openpi.shared import normalize
 from src.eval.profiling.openpi.src.openpi.transforms import Unnormalize, ExtractFASTActions, pad_to_dim
-from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats, NormStats
-from src.eval.profiling.openpi.scripts.procgen_utils import ActionUtils, MetricUtils
+from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
+from src.eval.profiling.openpi.scripts.procgen_utils import ActionUtils
 from definitions.procgen import ProcGenDefinitions
-# from src.eval_utils import MetricUtils
+from src.eval_utils import (
+    calculate_brier_mae, 
+    calculate_max_relative_mae, 
+    calculate_proportion_beyond_mae_threshold,
+    get_exact_match_rate,
+    calculate_tp_fp_fn_counts,
+    get_micro_precision_from_counts, 
+    get_micro_recall_from_counts, 
+    get_micro_f1
+)
+import time
 
+from dataclasses import dataclass, field, fields
 import jax.numpy as jnp
 import jax.tree_util as jtu
 
@@ -35,6 +46,47 @@ tf.config.set_visible_devices([], "GPU")
 os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.6'
 os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
+MAX_BRIER_ERROR = 2.0
+
+
+@dataclass
+class DatasetResults:
+    all_preds: list[list[float]] = field(default_factory=list)
+    all_gt: list[list[float]] = field(default_factory=list)
+    
+    total_batches: int = 0
+    total_timesteps: int = 0
+    total_invalid_predictions: int = 0
+    invalid_predictions_percentage: float = 0
+    total_emr: float = 0
+    total_brier_mae: float = 0
+    total_micro_precision: float = 0
+    total_micro_recall: float = 0
+    total_micro_f1: float = 0
+    avg_emr: float = 0
+    avg_brier_mae: float = 0
+    avg_micro_precision: float = 0
+    avg_micro_recall: float = 0
+    avg_micro_f1: float = 0
+    total_clipped_emr: float = 0
+    total_clipped_micro_precision: float = 0
+    total_clipped_micro_recall: float = 0
+    total_clipped_micro_f1: float = 0
+    avg_clipped_emr: float = 0
+    avg_clipped_micro_precision: float = 0
+    avg_clipped_micro_recall: float = 0
+    avg_clipped_micro_f1: float = 0
+    total_micro_precision_without_invalids: float = 0
+    total_micro_f1_without_invalids: float = 0
+    avg_micro_precision_without_invalids: float = 0
+    avg_micro_f1_without_invalids: float = 0
+
+    def to_dict(self) -> dict:
+        return {
+            field.name: getattr(self, field.name)
+            for field in fields(self)
+        }
+
 
 class ProcGenInferenceFast:
     def __init__(self, model, tokenizer: FASTTokenizer, config: pi0_fast.Pi0FASTConfig, max_decoding_steps: int = 10):
@@ -221,23 +273,24 @@ class ProcGenInferenceFast:
         # Create and apply unnormalize transform
         unnormalizer = Unnormalize(norm_stats={'action': norm_stats}, use_quantiles=True)
         unnormalized_actions = unnormalizer({'action': actions})['action']
-        print('Action after unnormalization: ', unnormalized_actions)
 
         """Discretize the actions after scaling them back to the original action space"""
         # Procgen actions are typically integers representing discrete choices.
         # Rounding might be appropriate, or casting to int if they map directly.
         discretized_actions = np.round(unnormalized_actions).astype(int) # Round and cast to int
+        print('Action after unnormalization: ', discretized_actions)
 
         return discretized_actions
     
     def evaluate_model(self, key, config, dataset_stats: dict, dataloader: tf.data.Dataset, dataset: str, output_dir: str):
         """Evaluate the model on the dataset"""
         counter = 0
-        results_file = os.path.join(output_dir, f'{dataset}_results.json')
+        dataset_results = DatasetResults()
         
         # Create CPU device for data preparation
         cpu_device = jax.devices("cpu")[0]
         
+        start_time = time.perf_counter()
         for batch in dataloader:
             # Process entire batch at once, keeping data on CPU
             with jax.default_device(cpu_device):
@@ -271,7 +324,6 @@ class ProcGenInferenceFast:
 
             # Process each action to ensure consistent shape and size
             processed_actions = []
-            processed_actions_to_paligemma_probs = []
             for action in decoded_actions:
                 # Convert to numpy and squeeze any extra dimensions
                 action = np.array(action)
@@ -300,79 +352,147 @@ class ProcGenInferenceFast:
 
             # Process outputs back on CPU
             with jax.default_device(cpu_device):
-                action_space = ProcGenDefinitions.get_valid_action_space(dataset)
+                action_space = sorted(ProcGenDefinitions.get_valid_action_space(dataset, "default"))
 
                 unnormalizer = Unnormalize(norm_stats={'action': dataset_stats['action']}, use_quantiles=True)
                 unnormalized_action_values_to_probs = np.zeros((len(action_space),))
                 for action_value, paligemma_probs in action_value_to_paligemma_probs_mappings.items():
                     unnormalized_action_value = unnormalizer({'action': action_value})['action']
                     unnormalized_discrete_action_value = np.round(unnormalized_action_value).astype(int)
-                    unnormalized_action_values_to_probs[unnormalized_discrete_action_value] += paligemma_probs
-                
+
+                    # We discard probs for actions that are not in the action space and set Brier MAE to 2.0 as penalty
+                    if unnormalized_discrete_action_value in action_space:
+                        unnormalized_action_values_to_probs[unnormalized_discrete_action_value] += paligemma_probs
+                    else:
+                        print(f'skipping probs for action {unnormalized_discrete_action_value} as it is not in action space')
+
+                # normalize the probs to sum to 1
+                unnormalized_action_values_to_probs = unnormalized_action_values_to_probs / np.sum(unnormalized_action_values_to_probs)
+
                 unnormalized_discrete_actions = self.process_output(actions, dataset_stats)
+                print('Unnormalized discrete actions: ', unnormalized_discrete_actions)
+                print('Softmax highest prob action: ', np.argmax(unnormalized_action_values_to_probs))
+
                 counter += 1
                 
                 # Get ground truth actions and compute metrics on CPU
                 gt_actions = np.array(batch['action'])
                 gt_actions = ActionUtils.set_procgen_unused_special_action_to_stand_still(gt_actions, dataset)
-
                 
-                predicted_action_space = unnormalized_action_values_to_probs.keys()
-                assert len(predicted_action_space) == len(action_space), f"Predicted action space {predicted_action_space} does not match ground truth action space {action_space}"
-                
-                # get one hot encoded gt action
+               # get one hot encoded gt action
                 gt_actions_one_hot = np.zeros((len(gt_actions), len(action_space)))
                 for i, action in enumerate(gt_actions):
                     gt_actions_one_hot[i, action] = 1
-
-                # get probs over action space for predicted actions
                 
+                if unnormalized_discrete_actions not in action_space:
+                    brier_mae = MAX_BRIER_ERROR
+                else:
+                    brier_mae = calculate_brier_mae(unnormalized_action_values_to_probs, gt_actions_one_hot)
 
+                # Calculate metrics
+                emr = get_exact_match_rate(unnormalized_discrete_actions, gt_actions)
+                
+                # Calculate metrics counts once and reuse
+                total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
+                    unnormalized_discrete_actions, gt_actions, action_space
+                )
 
-                total_tp, total_fp, total_fn = MetricUtils._calculate_metrics_counts(gt_actions_one_hot, unnormalized_discrete_actions, action_space)
-                micro_precision = MetricUtils.get_micro_precision_from_counts(total_tp, total_fp)
-                micro_recall = MetricUtils.get_micro_recall_from_counts(total_tp, total_fn)
-                micro_f1 = MetricUtils.get_micro_f1(micro_precision, micro_recall)
+                # Calculate all metrics using the same counts
+                """
+                using micro to avoid minority class distortion since we expect the action predictions to be imbalanced.
+                e.g. in one episode, the agent might take the same action consecutively to reach a goal in a straight line.
+                """
+                micro_precision = get_micro_precision_from_counts(total_tp, total_fp)
+                micro_recall = get_micro_recall_from_counts(total_tp, total_fn)
+                micro_f1 = get_micro_f1(micro_precision, micro_recall)
+                
+                print(f"Unclipped Micro Precision: {micro_precision}, Micro Recall: {micro_recall}, Micro F1: {micro_f1}")
+                
+                # Calculate metrics that count invalid predictions as both false positives and false negatives
+                total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
+                    unnormalized_discrete_actions, gt_actions, action_space
+                )
 
-                batch_results = {
-                    "dataset": dataset,
-                    "batch_id": counter,
-                    "metrics": {
-                        "micro_precision": float(micro_precision),
-                        "micro_recall": float(micro_recall),
-                        "micro_f1_score": float(micro_f1)
-                    },
-                    "predictions": {
-                        "ground_truth": gt_actions.tolist(),
-                        "predicted": unnormalized_discrete_actions.tolist()
-                    }
-                }
+                micro_precision_without_invalids = get_micro_precision_from_counts(total_tp, valid_fp)
+                micro_f1_without_invalids = get_micro_f1(micro_precision_without_invalids, micro_recall) # micro_recall is not affected
 
-            # Handle results file I/O
-            if os.path.exists(results_file):
-                with open(results_file, 'r') as f:
-                    dataset_results = json.load(f)
-            else:
-                dataset_results = {
-                    "dataset": dataset,
-                    "batches": []
-                }
-            
-            dataset_results["batches"].append(batch_results)
-            with open(results_file, 'w') as f:
-                json.dump(dataset_results, f, indent=4)
-            
-            print(f"Dataset: {dataset}, Batch {counter} metrics - Micro Precision: {micro_precision:.4f}, Micro Recall: {micro_recall:.4f}, Micro F1: {micro_f1:.4f}")
-            
+                print(f"Unclipped Micro Precision without invalids: {micro_precision_without_invalids}, \
+                    Unclipped Micro F1 without invalids: {micro_f1_without_invalids}")
+
+                clipped_predictions = np.clip(unnormalized_discrete_actions, action_space[0], action_space[-1])
+                clipped_emr = get_exact_match_rate(clipped_predictions, gt_actions)
+                clipped_total_tp, clipped_total_fp, clipped_total_fn, _, _ = calculate_tp_fp_fn_counts(
+                    clipped_predictions, gt_actions, action_space
+                )
+                clipped_micro_precision = get_micro_precision_from_counts(clipped_total_tp, clipped_total_fp)
+                clipped_micro_recall = get_micro_recall_from_counts(clipped_total_tp, clipped_total_fn)
+                clipped_micro_f1 = get_micro_f1(clipped_micro_precision, clipped_micro_recall)
+
+                print(f"Clipped Micro Precision: {clipped_micro_precision}, Clipped Micro Recall: {clipped_micro_recall}, Clipped Micro F1: {clipped_micro_f1}")
+
+                # Store results for this batch
+                dataset_results.all_preds.extend(unnormalized_discrete_actions.tolist())
+                dataset_results.all_gt.extend(gt_actions.tolist())
+                dataset_results.total_invalid_predictions += int(invalid_fp)  # invalid_fp is the same as the number of invalid predictions
+                dataset_results.total_batches = counter
+                dataset_results.total_timesteps += len(actions)
+                dataset_results.total_brier_mae += brier_mae
+                dataset_results.total_emr += emr
+                dataset_results.total_micro_precision += micro_precision
+                dataset_results.total_micro_recall += micro_recall
+                dataset_results.total_micro_f1 += micro_f1
+
+                dataset_results.total_clipped_emr += clipped_emr
+                dataset_results.total_clipped_micro_precision += clipped_micro_precision
+                dataset_results.total_clipped_micro_recall += clipped_micro_recall
+                dataset_results.total_clipped_micro_f1 += clipped_micro_f1
+
+                dataset_results.total_micro_precision_without_invalids += micro_precision_without_invalids
+                dataset_results.total_micro_f1_without_invalids += micro_f1_without_invalids
+
+                # Memory management
+                del transformed_dict, observation, actions, unnormalized_discrete_actions, \
+                    unnormalized_action_values_to_probs, gt_actions, total_tp, total_fp, total_fn, \
+                    gt_actions_one_hot, brier_mae, clipped_predictions, \
+                    clipped_total_tp, clipped_total_fp, clipped_total_fn, \
+                    micro_precision, micro_recall, micro_f1, clipped_micro_precision, \
+                    clipped_micro_recall, clipped_micro_f1, emr, clipped_emr, \
+                    micro_precision_without_invalids, micro_f1_without_invalids
+                gc.collect()
+                jax.clear_caches()
+                print(f"Processed {counter} episodes, cleared memory")
+
+                # Uncomment to stop after 2 batches
+                if counter == 1:
+                    break
+
+        end_time = time.perf_counter()
+        print(f"Time taken for {counter} batches: {end_time - start_time} seconds")
+
+        dataset_results.avg_emr = dataset_results.total_emr / dataset_results.total_timesteps
+        dataset_results.avg_brier_mae = dataset_results.total_brier_mae / dataset_results.total_timesteps
+        dataset_results.invalid_predictions_percentage = dataset_results.total_invalid_predictions / dataset_results.total_timesteps * 100
+        dataset_results.avg_micro_precision = dataset_results.total_micro_precision / dataset_results.total_timesteps
+        dataset_results.avg_micro_recall = dataset_results.total_micro_recall / dataset_results.total_timesteps
+        dataset_results.avg_micro_f1 = dataset_results.total_micro_f1 / dataset_results.total_timesteps
+        dataset_results.avg_clipped_emr = dataset_results.total_clipped_emr / dataset_results.total_timesteps
+        dataset_results.avg_clipped_micro_precision = dataset_results.total_clipped_micro_precision / dataset_results.total_timesteps
+        dataset_results.avg_clipped_micro_recall = dataset_results.total_clipped_micro_recall / dataset_results.total_timesteps
+        dataset_results.avg_clipped_micro_f1 = dataset_results.total_clipped_micro_f1 / dataset_results.total_timesteps
+        dataset_results.avg_micro_precision_without_invalids = dataset_results.total_micro_precision_without_invalids / dataset_results.total_timesteps
+        dataset_results.avg_micro_f1_without_invalids = dataset_results.total_micro_f1_without_invalids / dataset_results.total_timesteps
+
+        return dataset_results.to_dict()
+
 
     def get_final_action_value_to_paligemma_probs_mapping(
-            self, action_probs: np.ndarray
+            self, action_probs_for_last_token: np.ndarray
         ) -> dict[float, float]:
         try:
             action_value_to_paligemma_probs_mappings = {}
-            for i in range(action_probs.shape[0]):
+            for i in range(action_probs_for_last_token.shape[0]):
                 if str(i) in self.bpe_to_action_value_mappings["mappings"]:
-                    action_value_to_paligemma_probs_mappings[self.bpe_to_action_value_mappings["mappings"][str(i)]] = action_probs[i]
+                    action_value_to_paligemma_probs_mappings[self.bpe_to_action_value_mappings["mappings"][str(i)]] = action_probs_for_last_token[i]
             return action_value_to_paligemma_probs_mappings
         except Exception as e:
             print(f"Error getting final action value to PaliGemma token mapping: {e}")
@@ -441,6 +561,7 @@ def main():
     print('Pi0-FAST Model loaded')
     procgen_inference = ProcGenInferenceFast(model,tokenizer, config, max_decoding_steps=4)  # 4 becasue of "Action", ":", and " " before action tokens
 
+    results_file = os.path.join(args.output_dir, 'pi0_fast_procgen_results.json')
 
     # Get dataset shards
     procgen_dataset_list = os.listdir(args.dataset_dir) # Update path as needed
@@ -451,23 +572,21 @@ def main():
             print(f"Skipping {dataset}, not a directory.")
             continue
 
-        tfds_shards = os.listdir(dataset_path) # Update path as needed
-        # Filter out non-directory files if any
-        tfds_shards = [s for s in tfds_shards if os.path.isdir(os.path.join(dataset_path, s))]
+        tfds_shards = os.listdir(f'{args.dataset_dir}/{dataset}') # Update path as needed
+        tfds_sorted_shards = sorted(
+            tfds_shards,
+            key=lambda x: (
+                datetime.datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"),  # primary sort by timestamp
+                *(int(n) for n in x.split('_')[1:-1]),  # middle numbers as integers
+                float(x.split('_')[-1])  # last number as float
+            )
+        )
         if not tfds_shards:
             print(f"No data shards found in {dataset_path}. Skipping.")
             continue
 
-        # Attempt to sort shards by timestamp, handle potential errors
-        try:
-            tfds_sorted_shards = sorted(tfds_shards, key=lambda x: datetime.datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"))
-        except (ValueError, IndexError):
-            print(f"Warning: Could not sort shards by timestamp for {dataset}. Using unsorted order.")
-            tfds_sorted_shards = tfds_shards
-
         # Add path to shards
-        tfds_sorted_shard_paths = [os.path.join(dataset_path, shard) for shard in tfds_sorted_shards]
-
+        tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}', shard) for shard in tfds_sorted_shards]
 
         #Dataset stats loading/calculation
         stats_output_path = os.path.join(args.output_dir, f'{dataset}_dataset_stats.json')
@@ -511,7 +630,7 @@ def main():
         # Create dataloader
         try:
             # Pass batch_size from args
-            dataset_obj, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=args.batch_size)
+            dataset_obj, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, dataset_name=dataset, batch_size=args.batch_size)
             del dataset_obj
             gc.collect()
             jax.clear_caches()
@@ -520,9 +639,23 @@ def main():
 
         
         # Call evaluate_model with dataset_stats
-        procgen_inference.evaluate_model(key, config, dataset_stats, dataloader, dataset, args.output_dir)
+        results = procgen_inference.evaluate_model(key, config, dataset_stats, dataloader, dataset, args.output_dir)
 
+        # Load existing results if file exists, otherwise create new
+        if os.path.exists(results_file):
+            try:
+                with open(results_file, 'r') as f:
+                    dataset_results = json.load(f)
+            except Exception as e:
+                raise Exception(f"Result file might be corrupted. Please delete it and run the script again. {e}")
+        else:
+            dataset_results = {}
 
+        dataset_results[dataset] = results
+        
+        # Save updated results
+        with open(results_file, 'w') as f:
+            json.dump(dataset_results, f, indent=4)
 
 
 if __name__ == "__main__":
