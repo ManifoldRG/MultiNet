@@ -27,6 +27,7 @@ from src.eval_utils import (get_exact_match_rate,
                             get_micro_recall_from_counts, 
                             get_micro_f1)
 from dataclasses import dataclass, field, fields
+import time
 
 
 #Restrict tf to CPU
@@ -44,6 +45,7 @@ class DatasetResults:
     
     total_batches: int = 0
     total_timesteps: int = 0
+    eval_time: float = 0
     total_invalid_predictions: int = 0
     invalid_predictions_percentage: float = 0
     total_emr: float = 0
@@ -211,6 +213,8 @@ class ProcGenInference:
         counter = 0
         dataset_results = DatasetResults()
 
+        start_time = time.perf_counter()
+
         for batch in dataloader:
             # Process entire batch at once
             obs = {
@@ -312,6 +316,9 @@ class ProcGenInference:
             # if counter == 1:
             #     break
 
+        end_time = time.perf_counter()
+        eval_duration = end_time - start_time
+        dataset_results.eval_time = eval_duration
         dataset_results.avg_emr = dataset_results.total_emr / dataset_results.total_timesteps
         dataset_results.invalid_predictions_percentage = dataset_results.total_invalid_predictions / dataset_results.total_timesteps * 100
         dataset_results.avg_micro_precision = dataset_results.total_micro_precision / dataset_results.total_timesteps
@@ -384,7 +391,7 @@ def main():
         tfds_sorted_shards = sorted(
             tfds_shards,
             key=lambda x: (
-                datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"),  # primary sort by timestamp
+                datetime.datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"),  # primary sort by timestamp
                 *(int(n) for n in x.split('_')[1:-1]),  # middle numbers as integers
                 float(x.split('_')[-1])  # last number as float
             )
@@ -410,7 +417,7 @@ def main():
                 json.dump(dataset_stats_dict, f, indent=4)
 
         # Create dataloader
-        dataset_obj, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=5)
+        dataset_obj, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=5, dataset_name=dataset)
 
         results = procgen_inference.evaluate_model(model, key, config, dataset_stats, dataloader, dataset)
     
