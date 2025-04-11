@@ -81,7 +81,7 @@ class ProcGenInference:
         self.tokenizer = tokenizer
         self.config = config
 
-    def prepare_observation(self, obs_dict: dict, batch_size: int = 5, action_dim: int = 32, max_token_length: int = 48) -> dict:
+    def prepare_observation(self, obs_dict: dict, batch_size: int, action_dim: int = 32, max_token_length: int = 48) -> dict:
     #Prepare observation dictionary for pi0 model inference
         tokenizer = self.tokenizer
         
@@ -196,12 +196,12 @@ class ProcGenInference:
         # Load normalization statistics
         norm_stats = dataset_stats
         
-        print('Raw model actions:', actions)
-        print('Normalization stats:', norm_stats)
+        #print('Raw model actions:', actions)
+        #print('Normalization stats:', norm_stats)
         # Create and apply unnormalize transform
         unnormalizer = Unnormalize(norm_stats=norm_stats)
         unnormalized_actions = unnormalizer({'action': actions})['action']
-        print('Action after unnormalization: ', unnormalized_actions)
+        #print('Action after unnormalization: ', unnormalized_actions)
 
         """Discretize the actions after scaling them back to the original action space"""
         unnormalized_actions = np.round(unnormalized_actions, 0)
@@ -217,28 +217,30 @@ class ProcGenInference:
 
         for batch in dataloader:
             # Process entire batch at once
+            #For cases where the last batch is not full
+            actual_batch_size = len(batch['image_observation'])
             obs = {
                 'image_observation': batch['image_observation'],  # Full batch
                 'text_observation': batch['text_observation']     # Full batch
             }
             print(f"Batch {counter} obs size: {len(obs['image_observation'])}")
             # Transform observation
-            transformed_dict = self.prepare_observation(obs, max_token_length=config.max_token_len)
+            transformed_dict = self.prepare_observation(obs, max_token_length=config.max_token_len, batch_size=actual_batch_size)
             observation = Observation.from_dict(transformed_dict)
             
             # Sample actions for entire episode
             actions = model.sample_actions(key, observation, num_steps=10)
             unnormalized_discrete_actions = self.process_output(actions, dataset_stats)
             counter += 1
-            print(f"Batch {counter} actions:", unnormalized_discrete_actions)
+            #print(f"Batch {counter} actions:", unnormalized_discrete_actions)
 
             #Compare to gt actions and calculate error value
             # Get ground truth actions from batch
             gt_actions = np.array(batch['action'])
             gt_actions = ActionUtils.set_procgen_unused_special_action_to_stand_still(gt_actions, dataset)
             
-            print('Ground truth actions: ', gt_actions)
-            print('Predicted actions: ', unnormalized_discrete_actions)
+            #print('Ground truth actions: ', gt_actions)
+            #print('Predicted actions: ', unnormalized_discrete_actions)
             
             # Calculate metrics
             emr = get_exact_match_rate(unnormalized_discrete_actions, gt_actions)
@@ -355,6 +357,12 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help='Root directory containing the procgen datasets'
     )
+    parser.add_argument(
+        '--batch_size',
+        type=int,
+        default=5,
+        help='Batch size for inference'
+    )
     
     args = parser.parse_args()
     
@@ -387,7 +395,7 @@ def main():
     procgen_dataset_list = os.listdir(args.dataset_dir) # Update path as needed
     for dataset in procgen_dataset_list:
         print(f'\n ---- EVALUATING {dataset} ---- \n')
-        tfds_shards = os.listdir(f'{args.dataset_dir}/{dataset}') # Update path as needed
+        tfds_shards = os.listdir(f'{args.dataset_dir}/{dataset}/test_final/') # Update path as needed
         tfds_sorted_shards = sorted(
             tfds_shards,
             key=lambda x: (
@@ -397,17 +405,17 @@ def main():
             )
         )
         # Add path to shards
-        tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}', shard) for shard in tfds_sorted_shards]
+        tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}/test_final/', shard) for shard in tfds_sorted_shards]
 
 
         # Get dataset stats and save to JSON file
-        stats_output_path = os.path.join(args.output_dir, f'{dataset}_dataset_stats.json')
+        stats_output_path = os.path.join(args.output_dir, f'procgen_dataset_stats_prod.json') #Update path as needed
         if os.path.exists(stats_output_path):
             print(f'Dataset stats already exist at {stats_output_path}')
             with open(stats_output_path, 'r') as f:
                 dataset_stats_dict = json.load(f)
             dataset_stats = {}
-            dataset_stats['action'] = normalize.NormStats(**dataset_stats_dict['action'])
+            dataset_stats['action'] = normalize.NormStats(**dataset_stats_dict[dataset]['action'])
             
         else:
             dataset_stats_dict, dataset_stats = procgen_inference.get_dataset_stats(tfds_sorted_shard_paths, dataset_name=dataset)
@@ -417,7 +425,7 @@ def main():
                 json.dump(dataset_stats_dict, f, indent=4)
 
         # Create dataloader
-        dataset_obj, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=5, dataset_name=dataset)
+        dataset_obj, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=args.batch_size, dataset_name=dataset)
 
         results = procgen_inference.evaluate_model(model, key, config, dataset_stats, dataloader, dataset)
     
