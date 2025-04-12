@@ -147,7 +147,10 @@ def process_single_dataset(
         logger.debug(f"Evaluating {dataset_name} on procgen...")
         (
             all_preds,
-            all_actuals,
+            all_actuals,            
+            all_argmax_preds,
+            all_action_probs,
+            all_argmax_mismatches,
             invalids,
             invalid_percentage,
             num_timesteps,
@@ -199,6 +202,9 @@ def process_single_dataset(
         return {
             'all_preds': all_preds,
             'all_gt': all_actuals,
+            'all_argmax_preds': all_argmax_preds,
+            'all_action_probs': all_action_probs,
+            'all_argmax_mismatches': all_argmax_mismatches,
             'invalids': invalids,
             'invalid_percentage': invalid_percentage,
             'num_timesteps': num_timesteps,

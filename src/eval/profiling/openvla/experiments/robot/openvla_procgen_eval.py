@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 import os
 import numpy as np
+import torch
 from typing import Dict, Any, Optional
 
 current_file = Path(__file__).resolve()
@@ -111,7 +112,10 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
         num_actions = len(action_space)
         batch_preds = []
         batch_actuals = []
-
+        batch_argmax_preds = []
+        batch_action_probs = []
+        batch_argmax_mismatches = 0
+        
         for timestep_idx in range(obs_len):
             logger.debug("================================")
             logger.debug(f"{self.dataset_name}")
@@ -136,6 +140,9 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
                 predicted_action = predictions['actions']
                 logger.debug(f"Predicted action: {predicted_action}")
 
+                debug_actions = predictions['debug_actions']
+                logger.debug(f"Debug actions: {debug_actions}")
+
                 # Standardize predicted action
                 standardized_predicted_action = standardize_predicted_action(
                     predicted_action,
@@ -143,18 +150,38 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
                     self.dataset_name
                 )
                 
+                debug_standardized_actions = standardize_predicted_action(
+                    debug_actions,
+                    self.action_decoding_strategy,
+                    self.dataset_name
+                )
+                logger.debug(f"Debug standardized actions: {debug_standardized_actions}")
+
                 # Get actual action
                 actual_action = self.get_actual_action(batch, episode_idx, timestep_idx)
                 if actual_action is None:
                     raise ValueError(f"Actual action is None for dataset {self.dataset_name}")
 
+
                 batch_preds.append(standardized_predicted_action)
                 batch_actuals.append(actual_action)
 
-                logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
                 logger.debug(f"Actual action: {actual_action}")
+                logger.warning(f"Standardized predicted action: {standardized_predicted_action}")
 
                 action_probs = predictions['action_probs_by_dimension'][0]  # Procgen only has 1 action dim
+                logger.warning(f"Argmax action probs: {int(np.argmax(action_probs))}")
+                logger.debug(f"Action probs: {action_probs}")
+                batch_argmax_preds.append(int(np.argmax(action_probs)))
+
+                if standardized_predicted_action[0] != int(np.argmax(action_probs)):
+                    logger.warning("MISMATCH")
+
+                if int(np.argmax(action_probs)) != standardized_predicted_action:
+                    batch_action_probs.append({'pred': standardized_predicted_action, 'probs': action_probs.tolist(), 'mismatch': True})
+                    batch_argmax_mismatches += 1
+                else:
+                    batch_action_probs.append({'pred': standardized_predicted_action, 'probs': action_probs.tolist(), 'mismatch': False})
 
                 one_hot_actual = [0.0] * num_actions
                 one_hot_actual[int(actual_action[0])] = 1.0
@@ -184,7 +211,10 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
             timestep_brier_maes, 
             action_success,
             batch_preds,
-            batch_actuals
+            batch_actuals,
+            batch_argmax_preds,
+            batch_action_probs,
+            batch_argmax_mismatches
         )
     
     def is_last_timestep(self, batch: dict[str, any], timestep_idx: int) -> bool:
@@ -221,22 +251,25 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
         dataloader = self.get_dataloader(tfds_shards)
         action_space = sorted(ProcGenDefinitions.get_valid_action_space(self.dataset_name, 'default'))
         all_brier_maes, all_action_successes = [], []
-        all_preds, all_actuals = [], []
+        all_preds, all_actuals, all_argmax_preds, all_action_probs = [], [], [], []
         episode_idx = 0
+        all_argmax_mismatches = 0
         
         for batch in dataloader:
-            (batch_brier_maes, batch_action_successes, batch_preds, batch_actuals) = self.process_batch(batch, episode_idx, action_space)
+            (batch_brier_maes, batch_action_successes, batch_preds, batch_actuals, batch_argmax_preds, batch_action_probs, batch_argmax_mismatches) = self.process_batch(batch, episode_idx, action_space)
             
             all_brier_maes.extend(batch_brier_maes)
             all_action_successes.extend(batch_action_successes)
             all_preds.extend(batch_preds)
             all_actuals.extend(batch_actuals)
-            
+            all_argmax_preds.extend(batch_argmax_preds)
+            all_action_probs.extend(batch_action_probs)
+            all_argmax_mismatches += batch_argmax_mismatches
             episode_idx += 1
 
             # Uncomment to limit evaluation to 2 episodes
-            # if episode_idx == 1:
-            #     break
+            if episode_idx == 1:
+                break
 
         # Calculate quantile filtered MAE metrics
         quantile_filtered_brier_maes = quantile_filter(all_brier_maes)
@@ -273,6 +306,9 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
         return (
             all_preds,
             all_actuals,
+            all_argmax_preds,
+            all_action_probs,
+            all_argmax_mismatches,
             int(invalid_fp),
             invalid_percentage,
             num_timesteps,
