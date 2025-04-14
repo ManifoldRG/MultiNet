@@ -547,9 +547,10 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
             # Run inference with logits
             generation_output = self.generate(input_ids, **generate_kwargs)
             generated_ids = generation_output.sequences
-            all_token_scores = generation_output.scores
+            logits = generation_output.scores
+            assert torch.argmax(logits[0]) == generated_ids[0, -1], "The predicted llama action token should be the one with the highest logit"
 
-            final_action_probs = self._get_final_action_probs(unnorm_key, all_token_scores)
+            final_action_probs = self._get_final_action_probs(unnorm_key, logits)
             logger.debug(f"final_action_probs: {final_action_probs}")
         else:
             generated_ids = self.generate(input_ids, max_new_tokens=action_dim, **kwargs)
@@ -629,7 +630,9 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
         assert len(llama_vocab_probs) == len(vocab_to_action), "Vocab to action mapping and logits probabilities should have the same length"
         final_action_probs = np.zeros(action_space)
         np.add.at(final_action_probs, vocab_to_action, llama_vocab_probs)
-        
+
+        final_action_probs = final_action_probs / np.sum(final_action_probs)
+
         return final_action_probs
 
     def _unnormalize_actions(
