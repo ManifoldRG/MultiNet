@@ -587,19 +587,12 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
         return input_ids
 
     def _tokens_to_normalized_actions(self, generated_ids: torch.Tensor, action_dim: int) -> np.ndarray:
-        logger.debug("\n=== _tokens_to_normalized_actions DEBUG ===")
-        logger.debug(f"Input generated_ids shape: {generated_ids.shape}")
-        
         predicted_tokens = generated_ids[0, -action_dim:].cpu().numpy()
-        logger.debug(f"Predicted tokens: {predicted_tokens}")
-        
         # Step 1: Convert tokens to bin indices   Llama 32000 -> 255 action tokens
         discretized_actions = np.clip(self.vocab_size - predicted_tokens - 1,
                                     a_min=0, a_max=self.bin_centers.shape[0] - 1)
-
         # Step 2: Get normalized values
         normalized_actions = self.bin_centers[discretized_actions]
-        
         return normalized_actions
     
     def _get_final_action_probs(self, unnorm_key: str, logits: torch.Tensor) -> list[np.ndarray]:

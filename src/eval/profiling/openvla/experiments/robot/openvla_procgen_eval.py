@@ -3,7 +3,6 @@ from pathlib import Path
 import sys
 import os
 import numpy as np
-import torch
 from typing import Dict, Any, Optional
 
 current_file = Path(__file__).resolve()
@@ -110,7 +109,7 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
         
         batch_preds = []
         batch_actuals = []
-        
+
         for timestep_idx in range(obs_len):
             logger.debug("================================")
             logger.debug(f"{self.dataset_name}")
