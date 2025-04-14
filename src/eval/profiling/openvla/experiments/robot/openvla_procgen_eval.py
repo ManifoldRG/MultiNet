@@ -107,8 +107,6 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
         except (KeyError, IndexError, TypeError) as e:
             raise ValueError(f"Error accessing image_observation: {e}")
         
-        # Get action space information
-        num_actions = len(action_space)
         batch_preds = []
         batch_actuals = []
 
@@ -151,18 +149,17 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
                 batch_preds.append(standardized_predicted_action)
                 batch_actuals.append(actual_action)
 
-                logger.debug(f"Standardized predicted action: {standardized_predicted_action}")
                 logger.debug(f"Actual action: {actual_action}")
+                logger.debug(f"Predicted action: {standardized_predicted_action}")
 
-                action_probs = predictions['action_probs_by_dimension'][0]  # Procgen only has 1 action dim
+                action_probs = predictions['action_probs_by_dimension']
 
-                one_hot_actual = [0.0] * num_actions
+                one_hot_actual = [0.0] * len(action_space)
                 one_hot_actual[int(actual_action[0])] = 1.0
                 
                 brier_mae = calculate_brier_mae(action_probs, one_hot_actual)
                 timestep_brier_maes.append(brier_mae)
 
-                logger.debug(f"Predicted probs: {action_probs}")
                 logger.debug(f"Actual one-hot: {one_hot_actual}")
                 logger.debug(f"Brier MAE: {brier_mae}")
                     
@@ -231,11 +228,10 @@ class ProcGenEvaluator(OpenVLABaseEvaluator):
             all_action_successes.extend(batch_action_successes)
             all_preds.extend(batch_preds)
             all_actuals.extend(batch_actuals)
-            
             episode_idx += 1
 
             # Uncomment to limit evaluation to 2 episodes
-            # if episode_idx == 1:
+            # if episode_idx == 2:
             #     break
 
         # Calculate quantile filtered MAE metrics
