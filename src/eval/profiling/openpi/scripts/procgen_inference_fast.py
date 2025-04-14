@@ -97,6 +97,8 @@ class ProcGenInferenceFast:
         with open("src/eval/profiling/openpi/scripts/bpe_token_to_action_value_mappings.json", "r") as f:
             self.bpe_to_action_value_mappings = json.load(f)
 
+        self.paligemma_tokens_to_action_values = {}
+
     def prepare_observation(self, obs_dict: dict, action_dim: int = 1, max_token_length: int = 48) -> dict:
         # Prepare observation dictionary for pi0 model inference
         tokenizer = self.tokenizer
@@ -347,30 +349,44 @@ class ProcGenInferenceFast:
             # Stack the actions into a single array
             actions = np.stack(processed_actions)
             #print('\nDecoded Actions: ', actions)
-            
-            action_value_to_paligemma_probs_mappings = self.get_final_action_value_to_paligemma_probs_mapping(np.array(action_probs[0][-1]))  # only the last token is action token
 
             # Process outputs back on CPU
             with jax.default_device(cpu_device):
+                unnormalizer = Unnormalize(norm_stats={'action': dataset_stats['action']}, use_quantiles=True)
                 action_space = sorted(ProcGenDefinitions.get_valid_action_space(dataset, "default"))
 
-                unnormalizer = Unnormalize(norm_stats={'action': dataset_stats['action']}, use_quantiles=True)
-                unnormalized_action_values_to_probs = np.zeros((len(action_space),))
-                for action_value, paligemma_probs in action_value_to_paligemma_probs_mappings.items():
-                    unnormalized_action_value = unnormalizer({'action': action_value})['action']
-                    unnormalized_discrete_action_value = np.round(unnormalized_action_value).astype(int)
+                if dataset not in self.paligemma_tokens_to_action_values.keys():
+                    self.paligemma_tokens_to_action_values[dataset] = {}
+                    # Vectorize the unnormalization operation
+                    all_action_values = np.array([float(v) for v in self.bpe_to_action_value_mappings["mappings"].values()])  # all action values in the json file
+                    unnormalized_values = unnormalizer({'action': all_action_values})['action']
+                    rounded_values = np.round(unnormalized_values).astype(int)
+                    
+                    # Create the mapping in one go
+                    for token_id, final_action_value in zip(self.bpe_to_action_value_mappings["mappings"].keys(), rounded_values):  # loop through the paligemma tokens and rounded action values
+                        if final_action_value in action_space:
+                            self.paligemma_tokens_to_action_values[dataset][token_id] = final_action_value
 
-                    # We discard probs for actions that are not in the action space and set Brier MAE to 2.0 as penalty
-                    if unnormalized_discrete_action_value in action_space:
-                        unnormalized_action_values_to_probs[unnormalized_discrete_action_value] += paligemma_probs
-                    else:
-                        print(f'skipping probs for action {unnormalized_discrete_action_value} as it is not in action space')
+                unnormalized_action_values_to_probs = np.zeros(len(action_space))
+                last_token_probs = action_probs[0][-1]
+              
+                # only get the probs of the valid actions
+                valid_action_probs = np.array(last_token_probs[np.fromiter(self.paligemma_tokens_to_action_values[dataset].keys(), dtype=int)])
 
-                # normalize the probs to sum to 1
-                unnormalized_action_values_to_probs = unnormalized_action_values_to_probs / np.sum(unnormalized_action_values_to_probs)
+                # Accumulate probabilities
+                np.add.at(
+                    unnormalized_action_values_to_probs,
+                    np.array(list(self.paligemma_tokens_to_action_values[dataset].values())),
+                    valid_action_probs
+                )
 
-                unnormalized_discrete_actions = self.process_output(actions, dataset_stats)
-                print('Unnormalized discrete actions: ', unnormalized_discrete_actions)
+                # Vectorized normalization
+                total_prob = np.sum(unnormalized_action_values_to_probs)
+                if total_prob > 0:
+                    unnormalized_action_values_to_probs /= total_prob
+
+                unnormalized_discrete_action = self.process_output(actions, dataset_stats)
+
                 print('Softmax highest prob action: ', np.argmax(unnormalized_action_values_to_probs))
 
                 counter += 1
@@ -384,17 +400,17 @@ class ProcGenInferenceFast:
                 for i, action in enumerate(gt_actions):
                     gt_actions_one_hot[i, action] = 1
                 
-                if unnormalized_discrete_actions not in action_space:
+                if unnormalized_discrete_action not in action_space:
                     brier_mae = MAX_BRIER_ERROR
                 else:
                     brier_mae = calculate_brier_mae(unnormalized_action_values_to_probs, gt_actions_one_hot)
 
                 # Calculate metrics
-                emr = get_exact_match_rate(unnormalized_discrete_actions, gt_actions)
+                emr = get_exact_match_rate(unnormalized_discrete_action, gt_actions)
                 
                 # Calculate metrics counts once and reuse
                 total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
-                    unnormalized_discrete_actions, gt_actions, action_space
+                    unnormalized_discrete_action, gt_actions, action_space
                 )
 
                 # Calculate all metrics using the same counts
@@ -410,7 +426,7 @@ class ProcGenInferenceFast:
                 
                 # Calculate metrics that count invalid predictions as both false positives and false negatives
                 total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
-                    unnormalized_discrete_actions, gt_actions, action_space
+                    unnormalized_discrete_action, gt_actions, action_space
                 )
 
                 micro_precision_without_invalids = get_micro_precision_from_counts(total_tp, valid_fp)
@@ -419,7 +435,7 @@ class ProcGenInferenceFast:
                 print(f"Unclipped Micro Precision without invalids: {micro_precision_without_invalids}, \
                     Unclipped Micro F1 without invalids: {micro_f1_without_invalids}")
 
-                clipped_predictions = np.clip(unnormalized_discrete_actions, action_space[0], action_space[-1])
+                clipped_predictions = np.clip(unnormalized_discrete_action, action_space[0], action_space[-1])
                 clipped_emr = get_exact_match_rate(clipped_predictions, gt_actions)
                 clipped_total_tp, clipped_total_fp, clipped_total_fn, _, _ = calculate_tp_fp_fn_counts(
                     clipped_predictions, gt_actions, action_space
@@ -431,7 +447,7 @@ class ProcGenInferenceFast:
                 print(f"Clipped Micro Precision: {clipped_micro_precision}, Clipped Micro Recall: {clipped_micro_recall}, Clipped Micro F1: {clipped_micro_f1}")
 
                 # Store results for this batch
-                dataset_results.all_preds.extend(unnormalized_discrete_actions.tolist())
+                dataset_results.all_preds.extend(unnormalized_discrete_action.tolist())
                 dataset_results.all_gt.extend(gt_actions.tolist())
                 dataset_results.total_invalid_predictions += int(invalid_fp)  # invalid_fp is the same as the number of invalid predictions
                 dataset_results.total_batches = counter
@@ -451,7 +467,7 @@ class ProcGenInferenceFast:
                 dataset_results.total_micro_f1_without_invalids += micro_f1_without_invalids
 
                 # Memory management
-                del transformed_dict, observation, actions, unnormalized_discrete_actions, \
+                del transformed_dict, observation, actions, unnormalized_discrete_action, \
                     unnormalized_action_values_to_probs, gt_actions, total_tp, total_fp, total_fn, \
                     gt_actions_one_hot, brier_mae, clipped_predictions, \
                     clipped_total_tp, clipped_total_fp, clipped_total_fn, \
@@ -463,7 +479,7 @@ class ProcGenInferenceFast:
                 print(f"Processed {counter} episodes, cleared memory")
 
                 # Uncomment to stop after 2 batches
-                if counter == 1:
+                if counter == 4:
                     break
 
         end_time = time.perf_counter()
@@ -483,20 +499,6 @@ class ProcGenInferenceFast:
         dataset_results.avg_micro_f1_without_invalids = dataset_results.total_micro_f1_without_invalids / dataset_results.total_timesteps
 
         return dataset_results.to_dict()
-
-
-    def get_final_action_value_to_paligemma_probs_mapping(
-            self, action_probs_for_last_token: np.ndarray
-        ) -> dict[float, float]:
-        try:
-            action_value_to_paligemma_probs_mappings = {}
-            for i in range(action_probs_for_last_token.shape[0]):
-                if str(i) in self.bpe_to_action_value_mappings["mappings"]:
-                    action_value_to_paligemma_probs_mappings[self.bpe_to_action_value_mappings["mappings"][str(i)]] = action_probs_for_last_token[i]
-            return action_value_to_paligemma_probs_mappings
-        except Exception as e:
-            print(f"Error getting final action value to PaliGemma token mapping: {e}")
-            raise e
 
 
 def parse_args() -> argparse.Namespace:
