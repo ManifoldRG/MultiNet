@@ -25,13 +25,16 @@ from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
 from src.eval.profiling.openpi.scripts.procgen_utils import ActionUtils
 from definitions.procgen import ProcGenDefinitions
 from src.eval_utils import (
-    calculate_brier_mae, 
-    calculate_max_relative_mae, 
+    calculate_brier_mae,
+    calculate_mean,
+    quantile_filter,
+    min_max_normalize,
+    calculate_max_relative_mae,
     calculate_proportion_beyond_mae_threshold,
     get_exact_match_rate,
     calculate_tp_fp_fn_counts,
-    get_micro_precision_from_counts, 
-    get_micro_recall_from_counts, 
+    get_micro_precision_from_counts,
+    get_micro_recall_from_counts,
     get_micro_f1
 )
 import time
@@ -57,26 +60,34 @@ class DatasetResults:
     eval_time: float = 0
     total_batches: int = 0
     total_timesteps: int = 0
-    total_invalid_predictions: int = 0
+    total_invalids: int = 0
     invalid_predictions_percentage: float = 0
-    total_emr: float = 0
-    total_brier_mae: float = 0
+    emr: float = 0
+    total_brier_mae: float = 0;
+    total_quantile_filtered_brier_mae: float = 0
     total_micro_precision: float = 0
     total_micro_recall: float = 0
     total_micro_f1: float = 0
-    avg_emr: float = 0
+
     avg_brier_mae: float = 0
+    avg_normalized_brier_mae: float = 0
+    avg_quantile_filtered_brier_mae: float = 0
+    avg_quantile_filtered_normalized_brier_mae: float = 0
+    max_rel_brier_mae: float = 0
+    prop_beyond_threshold_brier_mae: float = 0
     avg_micro_precision: float = 0
     avg_micro_recall: float = 0
     avg_micro_f1: float = 0
-    total_clipped_emr: float = 0
+
+    clipped_emr: float = 0
     total_clipped_micro_precision: float = 0
     total_clipped_micro_recall: float = 0
     total_clipped_micro_f1: float = 0
-    avg_clipped_emr: float = 0
+
     avg_clipped_micro_precision: float = 0
     avg_clipped_micro_recall: float = 0
     avg_clipped_micro_f1: float = 0
+
     total_micro_precision_without_invalids: float = 0
     total_micro_f1_without_invalids: float = 0
     avg_micro_precision_without_invalids: float = 0
@@ -289,7 +300,8 @@ class ProcGenInferenceFast:
         """Evaluate the model on the dataset"""
         counter = 0
         dataset_results = DatasetResults()
-        
+        all_brier_maes = []
+
         # Create CPU device for data preparation
         cpu_device = jax.devices("cpu")[0]
         
@@ -350,25 +362,29 @@ class ProcGenInferenceFast:
             # Stack the actions into a single array
             actions = np.stack(processed_actions)
             #print('\nDecoded Actions: ', actions)
+            dataset_results.total_timesteps += len(actions)
 
             # Process outputs back on CPU
             with jax.default_device(cpu_device):
                 unnormalizer = Unnormalize(norm_stats={'action': dataset_stats['action']}, use_quantiles=True)
                 action_space = sorted(ProcGenDefinitions.get_valid_action_space(dataset, "default"))
-                batch_brier_mae = 0
+                unnormalized_discrete_actions = self.process_output(actions, dataset_stats)
+                # Get ground truth actions and compute metrics on CPU
+                gt_actions = np.array(batch['action'])
+                gt_actions = ActionUtils.set_procgen_unused_special_action_to_stand_still(gt_actions, dataset)
+
+                dataset_results.all_preds.extend(unnormalized_discrete_actions.tolist())
+                dataset_results.all_gt.extend(gt_actions.tolist())
+
+                # Calculate Brier MAE
                 for action_idx in range(len(actions)):
-                    unnormalized_discrete_actions = self.process_output(actions, dataset_stats)
-                    # Get ground truth actions and compute metrics on CPU
-                    gt_actions = np.array(batch['action'])
-                    gt_actions = ActionUtils.set_procgen_unused_special_action_to_stand_still(gt_actions, dataset)
-                    
                     # get one hot encoded gt action
                     gt_actions_one_hot = np.zeros((len(gt_actions), len(action_space)))
                     for i, action in enumerate(gt_actions):
                         gt_actions_one_hot[i, action] = 1
                     
                     if unnormalized_discrete_actions[action_idx] not in action_space:
-                        batch_brier_mae += MAX_BRIER_ERROR
+                        all_brier_maes.append(MAX_BRIER_ERROR)
                     else:
                         unnormalized_action_values_to_probs, action_contributors = self.get_unnormalized_action_values_to_probs(
                             dataset, action_probs[action_idx][-1], unnormalizer, action_space
@@ -414,77 +430,11 @@ class ProcGenInferenceFast:
                                 unnormalized_action_values_to_probs[softmax_highest_prob_action]
                             )
 
-                        batch_brier_mae += calculate_brier_mae(unnormalized_action_values_to_probs[action_idx], gt_actions_one_hot[action_idx])
-
-                # Calculate metrics
-                emr = get_exact_match_rate(unnormalized_discrete_actions, gt_actions)
-                
-                # Calculate metrics counts once and reuse
-                total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
-                    unnormalized_discrete_actions, gt_actions, action_space
-                )
-
-                # Calculate all metrics using the same counts
-                """
-                using micro to avoid minority class distortion since we expect the action predictions to be imbalanced.
-                e.g. in one episode, the agent might take the same action consecutively to reach a goal in a straight line.
-                """
-                micro_precision = get_micro_precision_from_counts(total_tp, total_fp)
-                micro_recall = get_micro_recall_from_counts(total_tp, total_fn)
-                micro_f1 = get_micro_f1(micro_precision, micro_recall)
-                
-                print(f"Unclipped Micro Precision: {micro_precision}, Micro Recall: {micro_recall}, Micro F1: {micro_f1}")
-                
-                # Calculate metrics that count invalid predictions as both false positives and false negatives
-                total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
-                    unnormalized_discrete_actions, gt_actions, action_space
-                )
-
-                micro_precision_without_invalids = get_micro_precision_from_counts(total_tp, valid_fp)
-                micro_f1_without_invalids = get_micro_f1(micro_precision_without_invalids, micro_recall) # micro_recall is not affected
-
-                print(f"Unclipped Micro Precision without invalids: {micro_precision_without_invalids}, \
-                    Unclipped Micro F1 without invalids: {micro_f1_without_invalids}")
-
-                clipped_predictions = np.clip(unnormalized_discrete_actions, action_space[0], action_space[-1])
-                clipped_emr = get_exact_match_rate(clipped_predictions, gt_actions)
-                clipped_total_tp, clipped_total_fp, clipped_total_fn, _, _ = calculate_tp_fp_fn_counts(
-                    clipped_predictions, gt_actions, action_space
-                )
-                clipped_micro_precision = get_micro_precision_from_counts(clipped_total_tp, clipped_total_fp)
-                clipped_micro_recall = get_micro_recall_from_counts(clipped_total_tp, clipped_total_fn)
-                clipped_micro_f1 = get_micro_f1(clipped_micro_precision, clipped_micro_recall)
-
-                print(f"Clipped Micro Precision: {clipped_micro_precision}, Clipped Micro Recall: {clipped_micro_recall}, Clipped Micro F1: {clipped_micro_f1}")
-
-                # Store results for this batch
-                dataset_results.all_preds.extend(unnormalized_discrete_actions.tolist())
-                dataset_results.all_gt.extend(gt_actions.tolist())
-                dataset_results.total_invalid_predictions += int(invalid_fp)  # invalid_fp is the same as the number of invalid predictions
-                dataset_results.total_batches = counter
-                dataset_results.total_timesteps += len(actions)
-                dataset_results.total_brier_mae += batch_brier_mae
-                dataset_results.total_emr += emr
-                dataset_results.total_micro_precision += micro_precision
-                dataset_results.total_micro_recall += micro_recall
-                dataset_results.total_micro_f1 += micro_f1
-
-                dataset_results.total_clipped_emr += clipped_emr
-                dataset_results.total_clipped_micro_precision += clipped_micro_precision
-                dataset_results.total_clipped_micro_recall += clipped_micro_recall
-                dataset_results.total_clipped_micro_f1 += clipped_micro_f1
-
-                dataset_results.total_micro_precision_without_invalids += micro_precision_without_invalids
-                dataset_results.total_micro_f1_without_invalids += micro_f1_without_invalids
+                        all_brier_maes.append(calculate_brier_mae(unnormalized_action_values_to_probs[action_idx], gt_actions_one_hot[action_idx]))
 
                 # Memory management
                 del transformed_dict, observation, actions, unnormalized_discrete_actions, \
-                    gt_actions, total_tp, total_fp, total_fn, \
-                    gt_actions_one_hot, batch_brier_mae, clipped_predictions, \
-                    clipped_total_tp, clipped_total_fp, clipped_total_fn, \
-                    micro_precision, micro_recall, micro_f1, clipped_micro_precision, \
-                    clipped_micro_recall, clipped_micro_f1, emr, clipped_emr, \
-                    micro_precision_without_invalids, micro_f1_without_invalids
+                    gt_actions, gt_actions_one_hot
                 gc.collect()
                 jax.clear_caches()
                 print(f"Processed {counter} episodes, cleared memory")
@@ -492,23 +442,82 @@ class ProcGenInferenceFast:
 
                 counter += 1
                 # Uncomment to stop after 2 batches
-                # if counter == 6:
+                # if counter == 5:
                 #     break
 
         end_time = time.perf_counter()
-        print(f"Time taken for {counter} batches: {end_time - start_time} seconds")
-
         dataset_results.eval_time = end_time - start_time
-        dataset_results.avg_emr = dataset_results.total_emr / dataset_results.total_timesteps
-        dataset_results.avg_brier_mae = dataset_results.total_brier_mae / dataset_results.total_timesteps
-        dataset_results.invalid_predictions_percentage = dataset_results.total_invalid_predictions / dataset_results.total_timesteps * 100
+        print(f"Time taken for {counter} batches: {dataset_results.eval_time} seconds")
+
+        # Calculate metrics
+        total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
+            dataset_results.all_preds, dataset_results.all_gt, action_space
+        )
+
+        micro_precision = get_micro_precision_from_counts(total_tp, total_fp)
+        micro_recall = get_micro_recall_from_counts(total_tp, total_fn)
+        micro_f1 = get_micro_f1(micro_precision, micro_recall)
+        
+        print(f"Unclipped Micro Precision: {micro_precision}, Micro Recall: {micro_recall}, Micro F1: {micro_f1}")
+        
+        total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
+            dataset_results.all_preds, dataset_results.all_gt, action_space
+        )
+
+        micro_precision_without_invalids = get_micro_precision_from_counts(total_tp, valid_fp)
+        micro_f1_without_invalids = get_micro_f1(micro_precision_without_invalids, micro_recall) # micro_recall is not affected
+
+        print(f"Unclipped Micro Precision without invalids: {micro_precision_without_invalids}, \
+            Unclipped Micro F1 without invalids: {micro_f1_without_invalids}")
+
+        clipped_predictions = np.clip(dataset_results.all_preds, action_space[0], action_space[-1])
+        clipped_emr = get_exact_match_rate(clipped_predictions, dataset_results.all_gt)
+        clipped_total_tp, clipped_total_fp, clipped_total_fn, _, _ = calculate_tp_fp_fn_counts(
+            clipped_predictions, dataset_results.all_gt, action_space
+        )
+        clipped_micro_precision = get_micro_precision_from_counts(clipped_total_tp, clipped_total_fp)
+        clipped_micro_recall = get_micro_recall_from_counts(clipped_total_tp, clipped_total_fn)
+        clipped_micro_f1 = get_micro_f1(clipped_micro_precision, clipped_micro_recall)
+
+        print(f"Clipped Micro Precision: {clipped_micro_precision}, Clipped Micro Recall: {clipped_micro_recall}, Clipped Micro F1: {clipped_micro_f1}")
+
+        # Store results for this batch
+        dataset_results.total_invalids = int(invalid_fp)  # invalid_fp is the same as the number of invalid predictions
+        dataset_results.invalid_predictions_percentage = dataset_results.total_invalids / dataset_results.total_timesteps * 100
+
+        dataset_results.total_batches = counter
+        dataset_results.total_brier_mae = sum(all_brier_maes)
+        dataset_results.emr = get_exact_match_rate(dataset_results.all_preds, dataset_results.all_gt)
+        dataset_results.total_micro_precision = micro_precision
+        dataset_results.total_micro_recall = micro_recall
+        dataset_results.total_micro_f1 = micro_f1
+
+        dataset_results.clipped_emr = clipped_emr
+        dataset_results.total_clipped_micro_precision = clipped_micro_precision
+        dataset_results.total_clipped_micro_recall = clipped_micro_recall
+        dataset_results.total_clipped_micro_f1 = clipped_micro_f1
+
+        dataset_results.avg_brier_mae = calculate_mean(all_brier_maes)
+        dataset_results.avg_normalized_brier_mae = calculate_mean(min_max_normalize(all_brier_maes).tolist())
+
+        quantile_filtered_brier_maes = quantile_filter(all_brier_maes)
+        dataset_results.total_quantile_filtered_brier_mae = sum(quantile_filtered_brier_maes)
+        dataset_results.avg_quantile_filtered_brier_mae = calculate_mean(quantile_filtered_brier_maes)
+        dataset_results.avg_quantile_filtered_normalized_brier_mae = calculate_mean(min_max_normalize(quantile_filtered_brier_maes).tolist())
+
+        dataset_results.max_rel_brier_mae = calculate_max_relative_mae(all_brier_maes)
+        dataset_results.prop_beyond_threshold_brier_mae = calculate_proportion_beyond_mae_threshold(all_brier_maes)
+
         dataset_results.avg_micro_precision = dataset_results.total_micro_precision / dataset_results.total_timesteps
         dataset_results.avg_micro_recall = dataset_results.total_micro_recall / dataset_results.total_timesteps
         dataset_results.avg_micro_f1 = dataset_results.total_micro_f1 / dataset_results.total_timesteps
-        dataset_results.avg_clipped_emr = dataset_results.total_clipped_emr / dataset_results.total_timesteps
+
         dataset_results.avg_clipped_micro_precision = dataset_results.total_clipped_micro_precision / dataset_results.total_timesteps
         dataset_results.avg_clipped_micro_recall = dataset_results.total_clipped_micro_recall / dataset_results.total_timesteps
         dataset_results.avg_clipped_micro_f1 = dataset_results.total_clipped_micro_f1 / dataset_results.total_timesteps
+
+        dataset_results.total_micro_precision_without_invalids = micro_precision_without_invalids
+        dataset_results.total_micro_f1_without_invalids = micro_f1_without_invalids
         dataset_results.avg_micro_precision_without_invalids = dataset_results.total_micro_precision_without_invalids / dataset_results.total_timesteps
         dataset_results.avg_micro_f1_without_invalids = dataset_results.total_micro_f1_without_invalids / dataset_results.total_timesteps
 
