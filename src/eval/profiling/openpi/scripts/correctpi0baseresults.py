@@ -25,22 +25,12 @@ class DatasetResults:
     total_micro_precision: float = 0
     total_micro_recall: float = 0
     total_micro_f1: float = 0
-    avg_emr: float = 0
-    avg_micro_precision: float = 0
-    avg_micro_recall: float = 0
-    avg_micro_f1: float = 0
     total_clipped_emr: float = 0
     total_clipped_micro_precision: float = 0
     total_clipped_micro_recall: float = 0
     total_clipped_micro_f1: float = 0
-    avg_clipped_emr: float = 0
-    avg_clipped_micro_precision: float = 0
-    avg_clipped_micro_recall: float = 0
-    avg_clipped_micro_f1: float = 0
     total_micro_precision_without_invalids: float = 0
     total_micro_f1_without_invalids: float = 0
-    avg_micro_precision_without_invalids: float = 0
-    avg_micro_f1_without_invalids: float = 0
 
     def to_dict(self) -> dict:
         return {
