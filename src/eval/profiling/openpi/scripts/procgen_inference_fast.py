@@ -572,6 +572,12 @@ def parse_args() -> argparse.Namespace:
         help='Root directory containing the procgen datasets'
     )
     parser.add_argument(
+        '--dataset_stats_dir',
+        type=str,
+        required=True,
+        help='Directory to store dataset statistics'
+    )
+    parser.add_argument(
         '--batch_size',
         type=int,
         default=5,
@@ -638,7 +644,7 @@ def main():
         tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}', shard) for shard in tfds_sorted_shards]
 
         #Dataset stats loading/calculation
-        stats_output_path = os.path.join(args.output_dir, f'{dataset}_dataset_stats.json')
+        stats_output_path = os.path.join(args.dataset_stats_dir, f'{dataset}_dataset_stats.json')
         if os.path.exists(stats_output_path):
             print(f'Loading existing dataset stats from {stats_output_path}')
             with open(stats_output_path, 'r') as f:
@@ -647,7 +653,7 @@ def main():
             # Ensure the structure matches what NormStats expects (mean, std, q01, q99)
             try:
                  # Assuming the dict has an 'action' key containing the stats dict
-                 action_stats_dict = dataset_stats_dict.get('action', {})
+                 action_stats_dict = dataset_stats_dict[dataset].get('action', {})
                  # Convert lists back to numpy arrays if needed by NormStats constructor
                  for stat_key in action_stats_dict:
                      action_stats_dict[stat_key] = np.array(action_stats_dict[stat_key])
