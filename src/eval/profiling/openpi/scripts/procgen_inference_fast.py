@@ -65,9 +65,9 @@ class DatasetResults:
     emr: float = 0
     total_brier_mae: float = 0;
     total_quantile_filtered_brier_mae: float = 0
-    total_micro_precision: float = 0
-    total_micro_recall: float = 0
-    total_micro_f1: float = 0
+    micro_precision: float = 0
+    micro_recall: float = 0
+    micro_f1: float = 0
 
     avg_brier_mae: float = 0
     avg_normalized_brier_mae: float = 0
@@ -77,13 +77,12 @@ class DatasetResults:
     prop_beyond_threshold_brier_mae: float = 0
 
     clipped_emr: float = 0
-    total_clipped_micro_precision: float = 0
-    total_clipped_micro_recall: float = 0
-    total_clipped_micro_f1: float = 0
+    clipped_micro_precision: float = 0
+    clipped_micro_recall: float = 0
+    clipped_micro_f1: float = 0
 
-
-    total_micro_precision_without_invalids: float = 0
-    total_micro_f1_without_invalids: float = 0
+    micro_precision_without_invalids: float = 0
+    micro_f1_without_invalids: float = 0
 
     def to_dict(self) -> dict:
         return {
@@ -480,14 +479,14 @@ class ProcGenInferenceFast:
         dataset_results.total_batches = counter
         dataset_results.total_brier_mae = sum(all_brier_maes)
         dataset_results.emr = get_exact_match_rate(dataset_results.all_preds, dataset_results.all_gt)
-        dataset_results.total_micro_precision = micro_precision
-        dataset_results.total_micro_recall = micro_recall
-        dataset_results.total_micro_f1 = micro_f1
+        dataset_results.micro_precision = micro_precision
+        dataset_results.micro_recall = micro_recall
+        dataset_results.micro_f1 = micro_f1
 
         dataset_results.clipped_emr = clipped_emr
-        dataset_results.total_clipped_micro_precision = clipped_micro_precision
-        dataset_results.total_clipped_micro_recall = clipped_micro_recall
-        dataset_results.total_clipped_micro_f1 = clipped_micro_f1
+        dataset_results.clipped_micro_precision = clipped_micro_precision
+        dataset_results.clipped_micro_recall = clipped_micro_recall
+        dataset_results.clipped_micro_f1 = clipped_micro_f1
 
         dataset_results.avg_brier_mae = calculate_mean(all_brier_maes)
         dataset_results.avg_normalized_brier_mae = calculate_mean(min_max_normalize(all_brier_maes).tolist())
@@ -500,8 +499,8 @@ class ProcGenInferenceFast:
         dataset_results.max_rel_brier_mae = calculate_max_relative_mae(all_brier_maes)
         dataset_results.prop_beyond_threshold_brier_mae = calculate_proportion_beyond_mae_threshold(all_brier_maes)
 
-        dataset_results.total_micro_precision_without_invalids = micro_precision_without_invalids
-        dataset_results.total_micro_f1_without_invalids = micro_f1_without_invalids
+        dataset_results.micro_precision_without_invalids = micro_precision_without_invalids
+        dataset_results.micro_f1_without_invalids = micro_f1_without_invalids
 
         return dataset_results.to_dict()
 
