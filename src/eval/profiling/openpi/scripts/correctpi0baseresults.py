@@ -104,6 +104,8 @@ for dataset in procgen_datasets:
 
     dataset_results.total_micro_precision_without_invalids = micro_precision_without_invalids 
     dataset_results.total_micro_f1_without_invalids = micro_f1_without_invalids 
+    dataset_results.total_batches = results[dataset]['total_batches']
+    dataset_results.eval_time = results[dataset]['eval_time']
 
     # Save results
     output_file = os.path.join(json_base_dir, f'corrected_pi0_base_procgen_results_{dataset}.json')
