@@ -356,85 +356,85 @@ class ProcGenInferenceFast:
             dataset_results.total_timesteps += len(actions)
 
             # Process outputs back on CPU
-            with jax.default_device(cpu_device):
-                unnormalizer = Unnormalize(norm_stats={'action': dataset_stats['action']}, use_quantiles=True)
-                action_space = sorted(ProcGenDefinitions.get_valid_action_space(dataset, "default"))
-                unnormalized_discrete_actions = self.process_output(actions, dataset_stats)
-                # Get ground truth actions and compute metrics on CPU
-                gt_actions = np.array(batch['action'])
-                gt_actions = ActionUtils.set_procgen_unused_special_action_to_stand_still(gt_actions, dataset)
+            # with jax.default_device(cpu_device):
+            unnormalizer = Unnormalize(norm_stats={'action': dataset_stats['action']}, use_quantiles=True)
+            action_space = sorted(ProcGenDefinitions.get_valid_action_space(dataset, "default"))
+            unnormalized_discrete_actions = self.process_output(actions, dataset_stats)
+            # Get ground truth actions and compute metrics on CPU
+            gt_actions = np.array(batch['action'])
+            gt_actions = ActionUtils.set_procgen_unused_special_action_to_stand_still(gt_actions, dataset)
 
-                dataset_results.all_preds.extend(unnormalized_discrete_actions.tolist())
-                dataset_results.all_gt.extend(gt_actions.tolist())
+            dataset_results.all_preds.extend(unnormalized_discrete_actions.tolist())
+            dataset_results.all_gt.extend(gt_actions.tolist())
 
-                # Calculate Brier MAE
-                for action_idx in range(len(actions)):
-                    # get one hot encoded gt action
-                    gt_actions_one_hot = np.zeros((len(gt_actions), len(action_space)))
-                    for i, action in enumerate(gt_actions):
-                        gt_actions_one_hot[i, action] = 1
-                    
-                    if unnormalized_discrete_actions[action_idx] not in action_space:
-                        all_brier_maes.append(MAX_BRIER_ERROR)
-                    else:
-                        unnormalized_action_values_to_probs, action_contributors = self.get_unnormalized_action_values_to_probs(
-                            dataset, action_probs[action_idx][-1], unnormalizer, action_space
-                        )
-                        softmax_highest_prob_action = np.argmax(unnormalized_action_values_to_probs)
-                        print('Softmax highest prob action: ', softmax_highest_prob_action)
+            # Calculate Brier MAE
+            for action_idx in range(len(actions)):
+                # get one hot encoded gt action
+                gt_actions_one_hot = np.zeros((len(gt_actions), len(action_space)))
+                for i, action in enumerate(gt_actions):
+                    gt_actions_one_hot[i, action] = 1
+                
+                if unnormalized_discrete_actions[action_idx] not in action_space:
+                    all_brier_maes.append(MAX_BRIER_ERROR)
+                else:
+                    unnormalized_action_values_to_probs, action_contributors = self.get_unnormalized_action_values_to_probs(
+                        dataset, action_probs[action_idx][-1], unnormalizer, action_space
+                    )
+                    softmax_highest_prob_action = np.argmax(unnormalized_action_values_to_probs)
+                    print('Softmax highest prob action: ', softmax_highest_prob_action)
 
-                        if unnormalized_discrete_actions[action_idx] != softmax_highest_prob_action:
-                            print(f'MISMATCH! {unnormalized_discrete_actions[action_idx][0]} != {softmax_highest_prob_action}')
-                            print(f'Probs: {unnormalized_action_values_to_probs}')
-                            def print_top_contributors(action_dict, action_name, total_prob):
-                                    # Sort contributors by probability (value) in descending order
-                                    sorted_contributors = sorted(action_dict.items(), key=lambda x: x[1], reverse=True)
-                                    # Get top 10 (or fewer if there are less than 10 contributors)
-                                    top_10 = sorted_contributors[:10]
-                                    
-                                    print(f"\nTop 10 contributing tokens for {action_name}:")
-                                    print("Token ID  |  Probability")
-                                    print("-" * 30)
-                                    for token_id, prob in top_10:
-                                        if prob >= 0.01:
-                                            print(f"{token_id:8d} | {prob:.3f}")
-                                        else:
-                                            print(f"{token_id:8d} | {prob:.6f}")
-                                    if total_prob >= 0.01:
-                                        print(f"Total probability: {total_prob:.3f}")
-                                    else:
-                                        print(f"Total probability: {total_prob:.6f}")
+                    if unnormalized_discrete_actions[action_idx] != softmax_highest_prob_action:
+                        print(f'MISMATCH! {unnormalized_discrete_actions[action_idx][0]} != {softmax_highest_prob_action}')
+                        print(f'Probs: {unnormalized_action_values_to_probs}')
+                        def print_top_contributors(action_dict, action_name, total_prob):
+                                # Sort contributors by probability (value) in descending order
+                                sorted_contributors = sorted(action_dict.items(), key=lambda x: x[1], reverse=True)
+                                # Get top 10 (or fewer if there are less than 10 contributors)
+                                top_10 = sorted_contributors[:10]
                                 
-                            # Print for decoded action
-                            decoded_action_contributors = action_contributors[unnormalized_discrete_actions[action_idx][0]]
-                            print_top_contributors(
-                                decoded_action_contributors,
-                                f"decoded action {unnormalized_discrete_actions[action_idx][0]} with paligemma token {int(action_tokens[action_idx][-1])}",
-                                unnormalized_action_values_to_probs[unnormalized_discrete_actions[action_idx][0]]
-                            )
+                                print(f"\nTop 10 contributing tokens for {action_name}:")
+                                print("Token ID  |  Probability")
+                                print("-" * 30)
+                                for token_id, prob in top_10:
+                                    if prob >= 0.01:
+                                        print(f"{token_id:8d} | {prob:.3f}")
+                                    else:
+                                        print(f"{token_id:8d} | {prob:.6f}")
+                                if total_prob >= 0.01:
+                                    print(f"Total probability: {total_prob:.3f}")
+                                else:
+                                    print(f"Total probability: {total_prob:.6f}")
                             
-                            # Print for argmax action
-                            argmax_action_contributors = action_contributors[softmax_highest_prob_action]
-                            print_top_contributors(
-                                argmax_action_contributors,
-                                f"argmax action {softmax_highest_prob_action}",
-                                unnormalized_action_values_to_probs[softmax_highest_prob_action]
-                            )
+                        # Print for decoded action
+                        decoded_action_contributors = action_contributors[unnormalized_discrete_actions[action_idx][0]]
+                        print_top_contributors(
+                            decoded_action_contributors,
+                            f"decoded action {unnormalized_discrete_actions[action_idx][0]} with paligemma token {int(action_tokens[action_idx][-1])}",
+                            unnormalized_action_values_to_probs[unnormalized_discrete_actions[action_idx][0]]
+                        )
+                        
+                        # Print for argmax action
+                        argmax_action_contributors = action_contributors[softmax_highest_prob_action]
+                        print_top_contributors(
+                            argmax_action_contributors,
+                            f"argmax action {softmax_highest_prob_action}",
+                            unnormalized_action_values_to_probs[softmax_highest_prob_action]
+                        )
 
-                        all_brier_maes.append(calculate_brier_mae(unnormalized_action_values_to_probs[action_idx], gt_actions_one_hot[action_idx]))
+                    all_brier_maes.append(calculate_brier_mae(unnormalized_action_values_to_probs[action_idx], gt_actions_one_hot[action_idx]))
 
-                # Memory management
-                del transformed_dict, observation, actions, unnormalized_discrete_actions, \
-                    gt_actions, gt_actions_one_hot
-                gc.collect()
-                jax.clear_caches()
-                print(f"Processed {counter} episodes, cleared memory")
+            # Memory management
+            del transformed_dict, observation, actions, unnormalized_discrete_actions, \
+                gt_actions, gt_actions_one_hot
+            gc.collect()
+            jax.clear_caches()
+            print(f"Processed {counter} episodes, cleared memory")
 
 
-                counter += 1
-                # Uncomment to stop after 2 batches
-                # if counter == 5:
-                #     break
+            counter += 1
+            # Uncomment to stop after 2 batches
+            # if counter == 5:
+            #     break
 
         end_time = time.perf_counter()
         dataset_results.eval_time = end_time - start_time
