@@ -296,6 +296,19 @@ class ProcGenInferenceFast:
         all_brier_maes = []
 
         start_time = time.perf_counter()
+        decoder = ExtractFASTActions(tokenizer=self.tokenizer, action_horizon=config.action_horizon, action_dim=config.action_dim)
+        unnormalizer = Unnormalize(norm_stats={'action': dataset_stats['action']}, use_quantiles=True)
+
+        def calculate_brier_mae(predicted_probabilities, one_hot_label) -> float:
+            """Calculate mean absolute error from absolute errors using JAX operations"""
+            return jnp.sum(jnp.abs(predicted_probabilities - one_hot_label))
+
+        @functools.partial(jax.jit, static_argnames=['action_space_size'])
+        def calculate_batch_brier_mae(action_probs_batch, gt_actions_batch, action_space_size):
+            # Create one-hot encoded ground truth actions for entire batch at once
+            gt_one_hot = jax.nn.one_hot(gt_actions_batch, action_space_size)
+            return jax.vmap(lambda x, y: calculate_brier_mae(x, y))(action_probs_batch, gt_one_hot)
+
         for batch in dataloader:
             # Process entire batch at once, keeping data on CPU
             # with jax.default_device(cpu_device):
@@ -319,7 +332,6 @@ class ProcGenInferenceFast:
             # The model's sample_actions will handle the device transfer internally
             action_tokens, action_probs = self.model.sample_actions(key, observation, max_decoding_steps = self.max_decoding_steps, temperature=0.0)
             #print('\nAction tokens before decoding: ', action_tokens)
-            decoder = ExtractFASTActions(tokenizer=self.tokenizer, action_horizon=config.action_horizon, action_dim=config.action_dim)
             
             # Process all action tokens at once instead of individually
             decoded_actions = []
@@ -356,7 +368,6 @@ class ProcGenInferenceFast:
 
             # Process outputs back on CPU
             # with jax.default_device(cpu_device):
-            unnormalizer = Unnormalize(norm_stats={'action': dataset_stats['action']}, use_quantiles=True)
             action_space = sorted(ProcGenDefinitions.get_valid_action_space(dataset, "default"))
             unnormalized_discrete_actions = self.process_output(actions, dataset_stats)
             # Get ground truth actions and compute metrics on CPU
@@ -366,15 +377,6 @@ class ProcGenInferenceFast:
             dataset_results.all_preds.extend(unnormalized_discrete_actions.tolist())
             dataset_results.all_gt.extend(gt_actions.tolist())
 
-            def calculate_brier_mae(predicted_probabilities, one_hot_label) -> float:
-                """Calculate mean absolute error from absolute errors using JAX operations"""
-                return jnp.sum(jnp.abs(predicted_probabilities - one_hot_label))
-
-            @functools.partial(jax.jit, static_argnames=['action_space_size'])
-            def calculate_batch_brier_mae(action_probs_batch, gt_actions_batch, action_space_size):
-                # Create one-hot encoded ground truth actions for entire batch at once
-                gt_one_hot = jax.nn.one_hot(gt_actions_batch, action_space_size)
-                return jax.vmap(lambda x, y: calculate_brier_mae(x, y))(action_probs_batch, gt_one_hot)
 
             unnormalized_probs_batch = jax.vmap(
                 lambda x: self.get_unnormalized_action_values_to_probs(
@@ -388,22 +390,17 @@ class ProcGenInferenceFast:
                 gt_actions, 
                 len(action_space)
             )
-
+            print(f"Batch Brier MAEs: {batch_brier_maes}")
             all_brier_maes.extend(batch_brier_maes.tolist())
 
-            # Memory management
-            del transformed_dict, observation, actions, unnormalized_discrete_actions, \
-                gt_actions, \
-                # gt_actions_one_hot
             gc.collect()
             jax.clear_caches()
             print(f"Processed {counter} episodes, cleared memory")
 
-
             counter += 1
             # Uncomment to stop after 2 batches
-            # if counter == 5:
-            #     break
+            if counter == 10:
+                break
 
         end_time = time.perf_counter()
         dataset_results.eval_time = end_time - start_time
