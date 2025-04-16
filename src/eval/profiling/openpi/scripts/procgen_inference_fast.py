@@ -15,6 +15,7 @@ from src.data_utils.procgen_dataloader import get_procgen_dataloader
 # No change needed for the import within procgen_dataloader.py itself
 from src.eval.profiling.openpi.src.openpi.shared import download
 import jax
+import jax.numpy as jnp
 import numpy as np
 import tensorflow as tf
 import gc
@@ -25,7 +26,7 @@ from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
 from src.eval.profiling.openpi.scripts.procgen_utils import ActionUtils
 from definitions.procgen import ProcGenDefinitions
 from src.eval_utils import (
-    calculate_brier_mae,
+    # calculate_brier_mae,
     calculate_mean,
     quantile_filter,
     min_max_normalize,
@@ -38,6 +39,7 @@ from src.eval_utils import (
     get_micro_f1
 )
 import time
+import functools
 
 from dataclasses import dataclass, field, fields
 import jax.numpy as jnp
@@ -47,7 +49,7 @@ import jax.tree_util as jtu
 tf.config.set_visible_devices([], "GPU")
 # Configure JAX memory settings
 os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
-os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.6'
+os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.9'
 os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
 MAX_BRIER_ERROR = 2.0
 
@@ -293,28 +295,25 @@ class ProcGenInferenceFast:
         dataset_results = DatasetResults()
         all_brier_maes = []
 
-        # Create CPU device for data preparation
-        cpu_device = jax.devices("cpu")[0]
-        
         start_time = time.perf_counter()
         for batch in dataloader:
             # Process entire batch at once, keeping data on CPU
-            with jax.default_device(cpu_device):
-                obs = {
-                    'image_observation': batch['image_observation'],
-                    'text_observation': batch['text_observation']
-                }
-                
-                # Transform observation (will stay on CPU)
-                transformed_dict = self.prepare_observation(obs, max_token_length=config.max_token_len)
-                if "token_loss_mask" not in transformed_dict:
-                    transformed_dict["token_loss_mask"] = jax.numpy.zeros_like(
-                        transformed_dict["tokenized_prompt_mask"], 
-                        dtype=bool
-                    )
+            # with jax.default_device(cpu_device):
+            obs = {
+                'image_observation': batch['image_observation'],
+                'text_observation': batch['text_observation']
+            }
+            
+            # Transform observation (will stay on CPU)
+            transformed_dict = self.prepare_observation(obs, max_token_length=config.max_token_len)
+            if "token_loss_mask" not in transformed_dict:
+                transformed_dict["token_loss_mask"] = jax.numpy.zeros_like(
+                    transformed_dict["tokenized_prompt_mask"], 
+                    dtype=bool
+                )
 
-                # Create observation object on CPU
-                observation = Observation.from_dict(transformed_dict)
+            # Create observation object on CPU
+            observation = Observation.from_dict(transformed_dict)
 
             # Transfer necessary data to accelerator only for model inference
             # The model's sample_actions will handle the device transfer internally
@@ -367,65 +366,35 @@ class ProcGenInferenceFast:
             dataset_results.all_preds.extend(unnormalized_discrete_actions.tolist())
             dataset_results.all_gt.extend(gt_actions.tolist())
 
-            # Calculate Brier MAE
-            for action_idx in range(len(actions)):
-                # get one hot encoded gt action
-                gt_actions_one_hot = np.zeros((len(gt_actions), len(action_space)))
-                for i, action in enumerate(gt_actions):
-                    gt_actions_one_hot[i, action] = 1
-                
-                if unnormalized_discrete_actions[action_idx] not in action_space:
-                    all_brier_maes.append(MAX_BRIER_ERROR)
-                else:
-                    unnormalized_action_values_to_probs, action_contributors = self.get_unnormalized_action_values_to_probs(
-                        dataset, action_probs[action_idx][-1], unnormalizer, action_space
-                    )
-                    softmax_highest_prob_action = np.argmax(unnormalized_action_values_to_probs)
-                    print('Softmax highest prob action: ', softmax_highest_prob_action)
+            def calculate_brier_mae(predicted_probabilities, one_hot_label) -> float:
+                """Calculate mean absolute error from absolute errors using JAX operations"""
+                return jnp.sum(jnp.abs(predicted_probabilities - one_hot_label))
 
-                    if unnormalized_discrete_actions[action_idx] != softmax_highest_prob_action:
-                        print(f'MISMATCH! {unnormalized_discrete_actions[action_idx][0]} != {softmax_highest_prob_action}')
-                        print(f'Probs: {unnormalized_action_values_to_probs}')
-                        def print_top_contributors(action_dict, action_name, total_prob):
-                                # Sort contributors by probability (value) in descending order
-                                sorted_contributors = sorted(action_dict.items(), key=lambda x: x[1], reverse=True)
-                                # Get top 10 (or fewer if there are less than 10 contributors)
-                                top_10 = sorted_contributors[:10]
-                                
-                                print(f"\nTop 10 contributing tokens for {action_name}:")
-                                print("Token ID  |  Probability")
-                                print("-" * 30)
-                                for token_id, prob in top_10:
-                                    if prob >= 0.01:
-                                        print(f"{token_id:8d} | {prob:.3f}")
-                                    else:
-                                        print(f"{token_id:8d} | {prob:.6f}")
-                                if total_prob >= 0.01:
-                                    print(f"Total probability: {total_prob:.3f}")
-                                else:
-                                    print(f"Total probability: {total_prob:.6f}")
-                            
-                        # Print for decoded action
-                        decoded_action_contributors = action_contributors[unnormalized_discrete_actions[action_idx][0]]
-                        print_top_contributors(
-                            decoded_action_contributors,
-                            f"decoded action {unnormalized_discrete_actions[action_idx][0]} with paligemma token {int(action_tokens[action_idx][-1])}",
-                            unnormalized_action_values_to_probs[unnormalized_discrete_actions[action_idx][0]]
-                        )
-                        
-                        # Print for argmax action
-                        argmax_action_contributors = action_contributors[softmax_highest_prob_action]
-                        print_top_contributors(
-                            argmax_action_contributors,
-                            f"argmax action {softmax_highest_prob_action}",
-                            unnormalized_action_values_to_probs[softmax_highest_prob_action]
-                        )
+            @functools.partial(jax.jit, static_argnames=['action_space_size'])
+            def calculate_batch_brier_mae(action_probs_batch, gt_actions_batch, action_space_size):
+                # Create one-hot encoded ground truth actions for entire batch at once
+                gt_one_hot = jax.nn.one_hot(gt_actions_batch, action_space_size)
+                return jax.vmap(lambda x, y: calculate_brier_mae(x, y))(action_probs_batch, gt_one_hot)
 
-                    all_brier_maes.append(calculate_brier_mae(unnormalized_action_values_to_probs[action_idx], gt_actions_one_hot[action_idx]))
+            unnormalized_probs_batch = jax.vmap(
+                lambda x: self.get_unnormalized_action_values_to_probs(
+                    dataset, x, unnormalizer, action_space
+                )[0]  # Only take probs, ignore contributors
+            )(action_probs[:, -1])
+
+            # Calculate all Brier MAEs at once
+            batch_brier_maes = calculate_batch_brier_mae(
+                unnormalized_probs_batch, 
+                gt_actions, 
+                len(action_space)
+            )
+
+            all_brier_maes.extend(batch_brier_maes.tolist())
 
             # Memory management
             del transformed_dict, observation, actions, unnormalized_discrete_actions, \
-                gt_actions, gt_actions_one_hot
+                gt_actions, \
+                # gt_actions_one_hot
             gc.collect()
             jax.clear_caches()
             print(f"Processed {counter} episodes, cleared memory")
@@ -505,14 +474,14 @@ class ProcGenInferenceFast:
         return dataset_results.to_dict()
 
     def get_unnormalized_action_values_to_probs(
-            self, dataset: str, action_probs_for_last_token: np.ndarray, unnormalizer: Unnormalize, action_space: list[int]
-        ) -> np.ndarray:
+            self, dataset: str, action_probs_for_last_token: jnp.ndarray, unnormalizer: Unnormalize, action_space: list[int]
+        ) -> jnp.ndarray:
         if dataset not in self.paligemma_tokens_to_action_values.keys():
             self.paligemma_tokens_to_action_values[dataset] = {}
             # Vectorize the unnormalization operation
-            all_action_values = np.array([float(v) for v in self.bpe_to_action_value_mappings["mappings"].values()])  # all action values in the json file
+            all_action_values = jnp.array([float(v) for v in self.bpe_to_action_value_mappings["mappings"].values()])  # all action values in the json file
             unnormalized_values = unnormalizer({'action': all_action_values})['action']
-            rounded_values = np.round(unnormalized_values).astype(int)
+            rounded_values = jnp.round(unnormalized_values).astype(int)
 
             # Create the mapping in one go
             for token_id, final_action_value in zip(self.bpe_to_action_value_mappings["mappings"].keys(), rounded_values):  # loop through the paligemma tokens and rounded action values
@@ -520,33 +489,24 @@ class ProcGenInferenceFast:
                     continue
                 self.paligemma_tokens_to_action_values[dataset][token_id] = final_action_value
 
-        unnormalized_action_values_to_probs = np.zeros(len(action_space))
-
-        action_contributors = {action: {} for action in action_space}
-
-        # only get the probs of the valid actions
-        token_ids = np.fromiter(self.paligemma_tokens_to_action_values[dataset].keys(), dtype=int)
-        valid_action_probs = np.array(action_probs_for_last_token[token_ids])
-
-        # Accumulate probabilities
-        # np.add.at(
-        #     unnormalized_action_values_to_probs,
-        #     np.array(list(self.paligemma_tokens_to_action_values[dataset].values())),
-        #     valid_action_probs
-        # )
-
-        # Track contributions while accumulating probabilities
-        for token_id, prob in zip(token_ids, valid_action_probs):
-            final_action = self.paligemma_tokens_to_action_values[dataset][str(token_id)]
-            action_contributors[final_action][int(token_id)] = float(prob)
-            unnormalized_action_values_to_probs[final_action] += prob
-
-        # Vectorized normalization
-        total_prob = np.sum(unnormalized_action_values_to_probs)
-        if total_prob > 0:
-            unnormalized_action_values_to_probs /= total_prob
+        token_ids = jnp.array([int(k) for k in self.paligemma_tokens_to_action_values[dataset].keys()])
+        action_values = jnp.array([int(v) for v in self.paligemma_tokens_to_action_values[dataset].values()])
         
-        return unnormalized_action_values_to_probs, action_contributors
+        valid_action_probs = action_probs_for_last_token[token_ids]
+        
+        unnormalized_action_values_to_probs = jnp.zeros(len(action_space))
+        
+        # Use JAX's scatter_add instead of loop
+        unnormalized_action_values_to_probs = jnp.zeros_like(unnormalized_action_values_to_probs).at[action_values].add(valid_action_probs)
+
+        total_prob = jnp.sum(unnormalized_action_values_to_probs)
+        unnormalized_action_values_to_probs = jnp.where(
+            total_prob > 0,
+            unnormalized_action_values_to_probs / total_prob,
+            unnormalized_action_values_to_probs
+        )
+        
+        return unnormalized_action_values_to_probs, None
 
 def parse_args() -> argparse.Namespace:
     """Parse and validate command line arguments.
@@ -644,7 +604,7 @@ def main():
         tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}', shard) for shard in tfds_sorted_shards]
 
         #Dataset stats loading/calculation
-        stats_output_path = os.path.join(args.dataset_stats_dir, f'{dataset}_dataset_stats.json')
+        stats_output_path = os.path.join(args.dataset_stats_dir, 'procgen_dataset_statistics_prod.json')
         if os.path.exists(stats_output_path):
             print(f'Loading existing dataset stats from {stats_output_path}')
             with open(stats_output_path, 'r') as f:
