@@ -326,7 +326,6 @@ class Pi0FAST(_model.BaseModel):
             _, _, _, _, all_eos, step, _ = carry # Unpack rng state but don't use it in condition
             return (~all_eos) & (step < max_decoding_steps)
 
-        # Run the decoding loop with the initial carry including rng
         final_state = jax.lax.while_loop(
             cond,
             step,
@@ -339,4 +338,4 @@ class Pi0FAST(_model.BaseModel):
         final_output_probs = jax.nn.softmax(final_output_logits, axis=-1)
 
         # Return both tokens and logits
-        return final_output_tokens, final_output_probs
+        return final_output_tokens, final_output_probs[:, -1, :]

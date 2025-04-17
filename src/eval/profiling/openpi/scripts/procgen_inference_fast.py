@@ -49,7 +49,7 @@ import jax.tree_util as jtu
 tf.config.set_visible_devices([], "GPU")
 # Configure JAX memory settings
 os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
-os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.9'
+os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.1'
 os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
 MAX_BRIER_ERROR = 2.0
 
@@ -311,28 +311,34 @@ class ProcGenInferenceFast:
 
         for batch in dataloader:
             # Process entire batch at once, keeping data on CPU
-            # with jax.default_device(cpu_device):
-            obs = {
-                'image_observation': batch['image_observation'],
-                'text_observation': batch['text_observation']
-            }
-            
-            # Transform observation (will stay on CPU)
-            transformed_dict = self.prepare_observation(obs, max_token_length=config.max_token_len)
-            if "token_loss_mask" not in transformed_dict:
-                transformed_dict["token_loss_mask"] = jax.numpy.zeros_like(
-                    transformed_dict["tokenized_prompt_mask"], 
-                    dtype=bool
-                )
+            with jax.default_device(jax.devices("cpu")[0]):
+                obs = {
+                    'image_observation': batch['image_observation'],
+                    'text_observation': batch['text_observation']
+                }
+                
+                # Transform observation (will stay on CPU)
+                transformed_dict = self.prepare_observation(obs, max_token_length=config.max_token_len)
+                if "token_loss_mask" not in transformed_dict:
+                    transformed_dict["token_loss_mask"] = jax.numpy.zeros_like(
+                        transformed_dict["tokenized_prompt_mask"], 
+                        dtype=bool
+                    )
 
-            # Create observation object on CPU
-            observation = Observation.from_dict(transformed_dict)
+                # Create observation object on CPU
+                observation = Observation.from_dict(transformed_dict)
 
             # Transfer necessary data to accelerator only for model inference
             # The model's sample_actions will handle the device transfer internally
-            action_tokens, action_probs = self.model.sample_actions(key, observation, max_decoding_steps = self.max_decoding_steps, temperature=0.0)
+            # Only move to GPU for model inference
+            with jax.default_device(jax.devices("gpu")[0]):
+                action_tokens, action_probs = self.model.sample_actions(key, observation, max_decoding_steps = self.max_decoding_steps, temperature=0.0)
             #print('\nAction tokens before decoding: ', action_tokens)
-            
+
+            # Move results back to CPU immediately
+            action_tokens = jax.device_get(action_tokens)
+            action_probs = jax.device_get(action_probs)
+
             # Process all action tokens at once instead of individually
             decoded_actions = []
             for each_action in action_tokens:
@@ -382,7 +388,7 @@ class ProcGenInferenceFast:
                 lambda x: self.get_unnormalized_action_values_to_probs(
                     dataset, x, unnormalizer, action_space
                 )[0]  # Only take probs, ignore contributors
-            )(action_probs[:, -1])
+            )(action_probs)
 
             # Calculate all Brier MAEs at once
             batch_brier_maes = calculate_batch_brier_mae(
@@ -393,8 +399,11 @@ class ProcGenInferenceFast:
             print(f"Batch Brier MAEs: {batch_brier_maes}")
             all_brier_maes.extend(batch_brier_maes.tolist())
 
+            del obs, transformed_dict, observation, action_tokens, action_probs, decoded_actions, processed_actions, \
+                unnormalized_probs_batch, batch_brier_maes, unnormalized_discrete_actions, gt_actions
             gc.collect()
             jax.clear_caches()
+            tf.keras.backend.clear_session()
             print(f"Processed {counter} episodes, cleared memory")
 
             counter += 1
