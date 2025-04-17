@@ -40,7 +40,7 @@ def _validate_text_output(output, num_actions) -> bool:
             vals.append(v)
     
     # Check if the sum of the probabilities is 1, avoiding floating point errors
-    if sum(vals) < 0.999:
+    if abs(sum(vals) - 1.0) > 1e-5:
         return False
     
     return True
