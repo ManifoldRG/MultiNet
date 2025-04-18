@@ -7,12 +7,9 @@ from src.eval.profiling.openpi.src.openpi.models.tokenizer import FASTTokenizer
 import numpy as np
 from collections import Counter
 
-# Constants from processor_config.json
-MIN_TOKEN = -354
-SCALE = 10
 ACTION_HORIZON = 1
 ACTION_DIM = 1
-FAST_SKIP_TOKENS = 128
+
 
 def map_bpe_to_actions():
     tokenizer = FASTTokenizer()
@@ -25,7 +22,7 @@ def map_bpe_to_actions():
     
     print("\nTrying all possible action tokens...")
     
-    for token_id in range(300000):  # PaliGemma token range id 254980 to 257023. 1078 tokens
+    for token_id in range(300000):  # Cover all possible Paligemma token id range
         try:
             action = tokenizer.extract_actions(np.array([4022, 235292, 235248, token_id]).astype(np.int32), 
                                             action_horizon=ACTION_HORIZON, 
@@ -83,6 +80,7 @@ def map_bpe_to_actions():
         print("\nMappings saved to src/eval/profiling/openpi/scripts/bpe_token_to_action_value_mappings.json")
     else:
         print("\nNo valid mappings found!")
+
 
 if __name__ == "__main__":
     map_bpe_to_actions()

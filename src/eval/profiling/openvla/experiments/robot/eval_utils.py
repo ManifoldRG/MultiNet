@@ -26,7 +26,7 @@ def preprocess_expert_actions(batch, dataset_name, batch_idx, idx) -> list[float
         action_data = batch['action'][batch_idx][idx]
 
         if dataset_name in ProcGenDefinitions.DESCRIPTIONS.keys():
-            action_data = ManualRuleMapping.set_procgen_unused_special_action_to_stand_still(action_data, dataset_name)
+            action_data = ProcGenDefinitions.set_procgen_unused_special_action_to_stand_still(action_data, dataset_name)
 
         return ExpertActionUtils.drop_is_terminal_dim(action_data, dataset_name)
     except (IndexError, KeyError) as e:

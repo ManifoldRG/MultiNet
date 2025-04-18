@@ -100,6 +100,7 @@ class UniversalActionProcessor(ProcessorMixin):
             except Exception as e:
                 #print(f"Error decoding tokens: {e}")
                 #print(f"Tokens: {token}")
+                # Check if decoded_dct_coeff is 2D and has correct dimensions
                 if decoded_dct_coeff.ndim == 2:
                     # Flatten to 1D array
                     flat_coeffs = decoded_dct_coeff.flatten()
@@ -122,6 +123,8 @@ class UniversalActionProcessor(ProcessorMixin):
                     decoded_dct_coeff = flat_coeffs.reshape(self.time_horizon, self.action_dim)
                     #print('\nReshaped coeffs to: ', decoded_dct_coeff.shape)
                 #decoded_dct_coeff = np.zeros((self.time_horizon, self.action_dim))
+                #print('\nDecoded DCT Coefficients: ', decoded_dct_coeff)
+                #print('\nIDCT: ', idct(decoded_dct_coeff / self.scale, axis=0, norm="ortho"))
             decoded_actions.append(idct(decoded_dct_coeff / self.scale, axis=0, norm="ortho"))
         return np.stack(decoded_actions)
 
