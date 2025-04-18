@@ -1,3 +1,5 @@
+import numpy as np
+
 class ProcGenDefinitions:
     DESCRIPTIONS = {
         "bigfish": {
@@ -226,3 +228,22 @@ class ProcGenDefinitions:
         move_action_space = ProcGenDefinitions.movement_actions.keys()
         valid_action_space = list(special_action_space) + list(move_action_space)
         return valid_action_space
+
+    @staticmethod
+    def set_procgen_unused_special_action_to_stand_still(action: np.ndarray, dataset_name: str) -> np.ndarray:
+        """
+        Set unused action in procgen to stand still action index 4
+
+        Args:
+            action (np.ndarray): The action array to clip.
+            dataset_name (str): The name of the dataset to use for default values.
+
+        Returns:
+            np.ndarray: The clipped action array.
+        """
+        valid_action_space = ProcGenDefinitions.get_valid_action_space(dataset_name, 'default')
+        action = np.array(action)
+
+        invalid_mask = ~np.isin(action, valid_action_space)
+        action[invalid_mask] = 4 # action index for stand still based on procgen codebase
+        return action

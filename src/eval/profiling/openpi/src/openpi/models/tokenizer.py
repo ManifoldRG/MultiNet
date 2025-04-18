@@ -112,13 +112,13 @@ class FASTTokenizer:
 
         #We use this model to directly decode the action tokens, so there's no need to check for "Action: " in decoded_tokens
         # Extract actions from FAST model outputs
-        '''if "Action: " not in decoded_tokens:
-            print('\nNo actions found in decoded tokens')
-            return np.zeros((action_horizon, action_dim), dtype=np.float32)'''
+        if "Action: " not in decoded_tokens:
+            logging.warning("No actions found in decoded tokens")
+            # return np.zeros((action_horizon, action_dim), dtype=np.float32)
 
         # Extract actions from decoded tokens -- in our case only the action tokens are passed to the extracting module
         raw_action_tokens = np.array(
-            self._paligemma_tokenizer.encode(decoded_tokens)#.split("Action: ")[1].strip())
+            self._paligemma_tokenizer.encode(decoded_tokens.split("Action: ")[-1].strip())
         )
         action_tokens = self._act_tokens_to_paligemma_tokens(raw_action_tokens)
         

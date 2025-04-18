@@ -72,6 +72,7 @@ class UniversalActionProcessor(ProcessorMixin):
         time_horizon: int | None = None,
         action_dim: int | None = None,
     ) -> np.array:
+        
         self.time_horizon = time_horizon or self.time_horizon or self.called_time_horizon
         self.action_dim = action_dim or self.action_dim or self.called_action_dim
 
