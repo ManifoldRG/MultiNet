@@ -151,6 +151,8 @@ def get_f1_per_class(
         else:
             class_f1s[label] = float(2 * (precision * recall) / (precision + recall))
 
+    return class_f1s
+
 def get_macro_precision(class_precisions: dict[int, float]) -> float:
     """Calculate macro precision by averaging precision across all classes."""
     return float(np.mean(list(class_precisions.values())))
