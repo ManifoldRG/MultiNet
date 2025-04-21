@@ -91,6 +91,77 @@ def get_micro_f1(precision: float, recall: float) -> float:
         return 0.0
     return float(2 * (precision * recall) / (precision + recall))
 
+def get_precision_per_class(
+        predicted_actions: np.ndarray, gt_actions: np.ndarray, all_labels: list) -> dict[int, float]:
+    """Calculate macro precision by computing precision for each class label.
+    Returns a dictionary mapping class labels to their precision values."""
+    # Initialize dictionary to store class precisions
+    class_precisions = {}
+    
+    # For each unique class label
+    for label in set(all_labels):
+        # Get predictions and ground truth matches for this class
+        pred_matches = (predicted_actions == label)
+        gt_matches = (gt_actions == label)
+        
+        # Calculate true positives and false positives for this class
+        class_tp = np.sum(pred_matches & gt_matches)
+        class_fp = np.sum(pred_matches & ~gt_matches)
+        
+        # Calculate precision for this class
+        if class_tp + class_fp == 0:
+            class_precisions[label] = 0.0
+        else:
+            class_precisions[label] = float(class_tp / (class_tp + class_fp))
+    
+    return class_precisions
+
+def get_recall_per_class(
+        predicted_actions: np.ndarray, gt_actions: np.ndarray, all_labels: list) -> dict[int, float]:
+    """Calculate macro recall by computing recall for each class label.
+    Returns a dictionary mapping class labels to their recall values."""
+    class_recalls = {}
+    
+    for label in set(all_labels):
+        pred_matches = (predicted_actions == label)
+        gt_matches = (gt_actions == label)
+        
+        # Calculate true positives and false negatives for this class
+        class_tp = np.sum(pred_matches & gt_matches)
+        class_fn = np.sum(~pred_matches & gt_matches)
+        
+        # Calculate recall for this class
+        if class_tp + class_fn == 0:
+            class_recalls[label] = 0.0
+        else:
+            class_recalls[label] = float(class_tp / (class_tp + class_fn))
+    
+    return class_recalls
+
+def get_f1_per_class(
+        class_precisions: dict[int, float], class_recalls: dict[int, float]) -> dict[int, float]:
+    """Calculate macro F1 score by computing F1 for each class label.
+    Returns a dictionary mapping class labels to their F1 values."""
+    class_f1s = {}
+    for label in set(class_precisions.keys()):
+        precision = class_precisions[label]
+        recall = class_recalls[label]
+        if precision + recall == 0:
+            class_f1s[label] = 0.0
+        else:
+            class_f1s[label] = float(2 * (precision * recall) / (precision + recall))
+
+def get_macro_precision(class_precisions: dict[int, float]) -> float:
+    """Calculate macro precision by averaging precision across all classes."""
+    return float(np.mean(list(class_precisions.values())))
+
+def get_macro_recall(class_recalls: dict[int, float]) -> float:
+    """Calculate macro recall by averaging recall across all classes."""
+    return float(np.mean(list(class_recalls.values())))
+
+def get_macro_f1(class_f1s: dict[int, float]) -> float:
+    """Calculate macro F1 score by averaging F1 scores across all classes."""
+    return float(np.mean(list(class_f1s.values())))
 
 def calculate_mae(predicted_action, actual_action) -> float:
     """Calculate mean absolute error from absolute errors"""
