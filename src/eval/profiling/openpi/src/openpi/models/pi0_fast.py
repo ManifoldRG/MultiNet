@@ -234,9 +234,8 @@ class Pi0FAST(_model.BaseModel):
         *,
         max_decoding_steps: int | at.Int[at.Array, ""] = 256,
         temperature: float = 0.0,
-    ) -> tuple[_model.Actions, at.Float[at.Array, "b s v"]]:
-        
-        # Preprocess observation
+    ) -> tuple[_model.Actions, at.Float[at.Array, "b v"]]:
+        # TODO: this is a hack to get the image keys.
         observation = _model.preprocess_observation(
             None, observation, train=False, image_keys=list(observation.images.keys())
         )
@@ -245,7 +244,7 @@ class Pi0FAST(_model.BaseModel):
         prefix_token_embeddings, prefix_mask, prefix_ar_mask = self.embed_inputs(observation)
         prefix_attn_mask = make_attn_mask(prefix_mask, prefix_ar_mask)
 
-        # Left to right align all input token sequences
+        # left to right align all input token sequences
         prefix_token_embeddings, prefix_mask, prefix_attn_mask = left_to_right_align(
             prefix_token_embeddings, prefix_mask, prefix_attn_mask
         )
@@ -253,49 +252,30 @@ class Pi0FAST(_model.BaseModel):
         prefill_len = jnp.sum(prefix_mask, axis=-1)
         prefix_start = prefill_size - prefill_len
 
-        # Pad attention mask for KV cache
         prefix_attn_mask = jnp.pad(prefix_attn_mask, ((0, 0), (0, 0), (0, max_decoding_steps)))
         prefix_positions = jnp.cumsum(prefix_mask, axis=-1) - 1
-
-        # First forward pass to fill KV cache
         prefix_logits, kv_cache, _ = self.PaliGemma.llm(
-            embedded_prefix=prefix_token_embeddings, 
-            mask=prefix_attn_mask, 
-            positions=prefix_positions, 
+            embedded_prefix=prefix_token_embeddings,
+            mask=prefix_attn_mask,
+            positions=prefix_positions,
             decode=True
         )
 
-        # Prepare for decoding
-        last_logit = prefix_logits[:, -1:]  # shape: (batch_size, 1, vocab_size)
+        last_logit = prefix_logits[:, -1:]  # intermediate logits
         output_tokens = jnp.zeros((last_logit.shape[0], max_decoding_steps))
-        output_logits = jnp.zeros((last_logit.shape[0], max_decoding_steps, last_logit.shape[-1]))
-
-        # Pass the main rng key into the loop state
-        initial_carry = (last_logit, output_tokens, output_logits, kv_cache, False, 0, rng)
+        final_logit = prefix_logits[:, -1:]  # corresponding to final tokens
 
         def step(carry):
-            last_logit, output_tokens, output_logits, cache, _, step, loop_rng = carry # Unpack rng
+            last_logit, output_tokens, final_logit, cache, _, step = carry
 
-            # Split RNG key for this step
-            step_rng, next_loop_rng = jax.random.split(loop_rng)
-
-            # Sample token
+            # Sample token from last logit
             if temperature > 0.0:
-                last_logit_temp = last_logit / temperature
-                token = jax.random.categorical(step_rng, last_logit_temp, axis=-1) # Use step_rng
+                last_logit = last_logit / temperature
+                token = jax.random.categorical(rng, last_logit, axis=-1)
             else:
                 token = jnp.argmax(last_logit, axis=-1)
-
-            # Update output tokens and logits
-            indices = jnp.broadcast_to(step, (token.shape[0], 1))
-            updated_output_tokens = put_along_last_axis(
-                output_tokens,
-                indices,
-                token.astype(output_tokens.dtype) # Ensure dtype match
-            )
-
-            # Update output logits - we need to handle the extra dimension correctly
-            updated_output_logits = output_logits.at[:, step].set(last_logit[:, 0])
+            output_tokens = put_along_last_axis(output_tokens, jnp.broadcast_to(step, (token.shape[0], 1)), token)
+            final_logit = last_logit
 
             # Check for early stopping
             has_eos = jnp.any(token == PALIGEMMA_EOS_TOKEN, axis=-1)
@@ -305,37 +285,21 @@ class Pi0FAST(_model.BaseModel):
             # Decode one step
             token_embedding = self.PaliGemma.llm(token, embed_only=True)
             positions = prefill_len[:, None] + step + 1
-            
-            # Create mask for current step
             mask = jnp.logical_and(
                 jnp.arange(prefill_size + max_decoding_steps)[None, None, :] >= prefix_start[:, None, None],
                 jnp.arange(prefill_size + max_decoding_steps)[None, None, :]
                 < (jnp.broadcast_to(prefill_size + step + 1, (prefix_start.shape[0], 1, 1))),
             )
-            # Forward pass for current step
-            last_logit_next, kv_cache_next, _ = self.PaliGemma.llm(
-                embedded_prefix=token_embedding, 
-                mask=mask, 
-                positions=positions, 
-                decode=True, 
-                kv_cache=cache
+            last_logit, kv_cache, _ = self.PaliGemma.llm(
+                embedded_prefix=token_embedding, mask=mask, positions=positions, decode=True, kv_cache=cache
             )
-            return last_logit_next, updated_output_tokens, updated_output_logits, kv_cache_next, all_eos, step + 1, next_loop_rng
+            return last_logit, output_tokens, final_logit,kv_cache, all_eos, step + 1
 
         def cond(carry):
-            _, _, _, _, all_eos, step, _ = carry # Unpack rng state but don't use it in condition
+            _, _, _, _, all_eos, step = carry
             return (~all_eos) & (step < max_decoding_steps)
 
-        final_state = jax.lax.while_loop(
-            cond,
-            step,
-            initial_carry # Pass initial carry including rng
-        )
+        last_logit, output_tokens, final_logit, _, _, _ = jax.lax.while_loop(cond, step, (last_logit, output_tokens, final_logit, kv_cache, False, 0))
+        output_probs = jax.nn.softmax(final_logit, axis=-1)
 
-        # Unpack the final state
-        _, final_output_tokens, final_output_logits, _, _, _, _ = final_state
-
-        final_output_probs = jax.nn.softmax(final_output_logits, axis=-1)
-
-        # Return both tokens and logits
-        return final_output_tokens, final_output_probs[:, -1, :]
+        return output_tokens, output_probs[:, -1]

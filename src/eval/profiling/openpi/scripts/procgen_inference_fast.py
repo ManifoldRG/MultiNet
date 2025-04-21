@@ -381,10 +381,8 @@ class ProcGenInferenceFast:
             # Calculate Brier MAE
             for action_idx in range(len(actions)):
                 # get one hot encoded gt action
-                gt_actions_one_hot = np.zeros((len(gt_actions), len(action_space)))
-                for i, action in enumerate(gt_actions):
-                    gt_actions_one_hot[i, action] = 1
-
+                gt_action_one_hot = np.zeros((len(action_space)))
+                gt_action_one_hot[gt_actions[action_idx]] = 1
                 if unnormalized_discrete_actions[action_idx] not in action_space:
                     all_brier_maes.append(MAX_BRIER_ERROR)
                 else:
@@ -392,7 +390,7 @@ class ProcGenInferenceFast:
                         dataset, action_probs[action_idx], unnormalizer, action_space
                     )
 
-                    all_brier_maes.append(calculate_brier_mae(unnormalized_action_values_to_probs[action_idx], gt_actions_one_hot[action_idx]))
+                    all_brier_maes.append(calculate_brier_mae(unnormalized_action_values_to_probs, gt_action_one_hot))
 
             time_per_timestep = (time.perf_counter() - batch_start_time)/len(actions)
             del obs, transformed_dict, observation, action_tokens, action_probs, decoded_actions, processed_actions, \
@@ -680,4 +678,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()
