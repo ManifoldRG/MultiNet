@@ -18,7 +18,6 @@ sys.path.append(str(project_root))
 
 from definitions.openx import OpenXDefinitions
 from definitions.procgen import ProcGenDefinitions
-from src.eval.profiling.openvla.experiments.robot.openvla_action_decoding_utils import ManualRuleMapping
 
 
 DATASET_CONFIG_NAME = 'dataset_statistics_config.yaml'
@@ -114,7 +113,7 @@ class DatasetActionStatisticsCalculator:
                         logger.debug(f"float_action_tensors: {float_action_tensors}")
 
                 elif self.dataset_name in ProcGenDefinitions.DESCRIPTIONS.keys():
-                    float_action_tensor = ManualRuleMapping.set_procgen_unused_special_action_to_stand_still(
+                    float_action_tensor = ProcGenDefinitions.set_procgen_unused_special_action_to_stand_still(
                         np.array(elem['actions'][0]), self.dataset_name)
                     float_action_tensors.append(float_action_tensor)
 

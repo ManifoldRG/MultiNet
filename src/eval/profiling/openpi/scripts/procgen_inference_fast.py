@@ -9,12 +9,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../.
 from src.eval.profiling.openpi.src.openpi.models import pi0_fast
 from src.eval.profiling.openpi.src.openpi.models import model as _model
 from src.eval.profiling.openpi.src.openpi.models.model import Observation
-from src.eval.profiling.openpi.src.openpi.models.tokenizer import FASTTokenizer, PaligemmaTokenizer
+from src.eval.profiling.openpi.src.openpi.models.tokenizer import FASTTokenizer
 from src.data_utils.procgen_dataloader import get_procgen_dataloader
 # 'definitions' import is now handled correctly because project root is in sys.path
 # No change needed for the import within procgen_dataloader.py itself
 from src.eval.profiling.openpi.src.openpi.shared import download
 import jax
+import jax.numpy as jnp
 import numpy as np
 import tensorflow as tf
 import gc
@@ -22,6 +23,25 @@ import gc
 from src.eval.profiling.openpi.src.openpi.shared import normalize
 from src.eval.profiling.openpi.src.openpi.transforms import Unnormalize, ExtractFASTActions, pad_to_dim
 from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
+from src.eval.profiling.openpi.scripts.procgen_utils import ActionUtils
+from definitions.procgen import ProcGenDefinitions
+from src.eval_utils import (
+    calculate_brier_mae,
+    calculate_mean,
+    quantile_filter,
+    min_max_normalize,
+    calculate_max_relative_mae,
+    calculate_proportion_beyond_mae_threshold,
+    get_exact_match_rate,
+    calculate_tp_fp_fn_counts,
+    get_micro_precision_from_counts,
+    get_micro_recall_from_counts,
+    get_micro_f1
+)
+import time
+import functools
+
+from dataclasses import dataclass, field, fields
 import jax.numpy as jnp
 import jax.tree_util as jtu
 
@@ -31,14 +51,60 @@ tf.config.set_visible_devices([], "GPU")
 os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.6'
 os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
+MAX_BRIER_ERROR = 2.0
+
+
+@dataclass
+class DatasetResults:
+    all_preds: list[list[float]] = field(default_factory=list)
+    all_gt: list[list[float]] = field(default_factory=list)
+    
+    eval_time: float = 0
+    total_batches: int = 0
+    total_timesteps: int = 0
+    total_invalids: int = 0
+    invalid_predictions_percentage: float = 0
+    emr: float = 0
+    total_brier_mae: float = 0;
+    total_quantile_filtered_brier_mae: float = 0
+    micro_precision: float = 0
+    micro_recall: float = 0
+    micro_f1: float = 0
+
+    avg_brier_mae: float = 0
+    avg_normalized_brier_mae: float = 0
+    avg_quantile_filtered_brier_mae: float = 0
+    avg_quantile_filtered_normalized_brier_mae: float = 0
+    max_rel_brier_mae: float = 0
+    prop_beyond_threshold_brier_mae: float = 0
+
+    clipped_emr: float = 0
+    clipped_micro_precision: float = 0
+    clipped_micro_recall: float = 0
+    clipped_micro_f1: float = 0
+
+    micro_precision_without_invalids: float = 0
+    micro_f1_without_invalids: float = 0
+
+    def to_dict(self) -> dict:
+        return {
+            field.name: getattr(self, field.name)
+            for field in fields(self)
+        }
+
 
 class ProcGenInferenceFast:
-    def __init__(self, model, tokenizer: FASTTokenizer, config: pi0_fast.Pi0FASTConfig):
+    def __init__(self, model, tokenizer: FASTTokenizer, config: pi0_fast.Pi0FASTConfig, max_decoding_steps: int):
         self.model = model
         self.tokenizer = tokenizer
         self.config = config
+        self.max_decoding_steps = max_decoding_steps
+        with open("src/eval/profiling/openpi/scripts/bpe_token_to_action_value_mappings.json", "r") as f:
+            self.bpe_to_action_value_mappings = json.load(f)
 
-    def prepare_observation(self, obs_dict: dict, action_dim: int = 32, max_token_length: int = 48) -> dict:
+        self.paligemma_tokens_to_action_values = {}
+
+    def prepare_observation(self, obs_dict: dict, action_dim: int = 1, max_token_length: int = 48) -> dict:
         # Prepare observation dictionary for pi0 model inference
         tokenizer = self.tokenizer
 
@@ -142,7 +208,7 @@ class ProcGenInferenceFast:
         return transformed_dict
 
 
-    def get_dataset_stats(self, root_dir: str):
+    def get_dataset_stats(self, root_dir: str, dataset_name: str):
         
         running_stats = RunningStats()
 
@@ -153,7 +219,9 @@ class ProcGenInferenceFast:
             dataset = tf.data.Dataset.load(shard)
             actions = []
             for elem in dataset:
-                actions.append(elem['actions'][0].numpy()) # Procgen has 1D action space so only first dimension is used
+                float_actions = ProcGenDefinitions.set_procgen_unused_special_action_to_stand_still(
+                    elem['actions'][0].numpy(), dataset_name) # Procgen has 1D action space so only first dimension is used
+                actions.append(float_actions)
             
             # Update running statistics
             actions = np.array(actions)
@@ -212,48 +280,62 @@ class ProcGenInferenceFast:
         # Create and apply unnormalize transform
         unnormalizer = Unnormalize(norm_stats={'action': norm_stats}, use_quantiles=True)
         unnormalized_actions = unnormalizer({'action': actions})['action']
-        print('Action after unnormalization: ', unnormalized_actions)
 
         """Discretize the actions after scaling them back to the original action space"""
         # Procgen actions are typically integers representing discrete choices.
         # Rounding might be appropriate, or casting to int if they map directly.
         discretized_actions = np.round(unnormalized_actions).astype(int) # Round and cast to int
+        print('Action after unnormalization: ', discretized_actions)
 
         return discretized_actions
     
     def evaluate_model(self, key, config, dataset_stats: dict, dataloader: tf.data.Dataset, dataset: str, output_dir: str):
         """Evaluate the model on the dataset"""
         counter = 0
-        results_file = os.path.join(output_dir, f'{dataset}_results.json')
-        
-        # Create CPU device for data preparation
-        cpu_device = jax.devices("cpu")[0]
-        
-        for batch in dataloader:
-            # Process entire batch at once, keeping data on CPU
-            with jax.default_device(cpu_device):
-                obs = {
-                    'image_observation': batch['image_observation'],
-                    'text_observation': batch['text_observation']
-                }
-                
-                # Transform observation (will stay on CPU)
-                transformed_dict = self.prepare_observation(obs, max_token_length=config.max_token_len)
-                if "token_loss_mask" not in transformed_dict:
-                    transformed_dict["token_loss_mask"] = jax.numpy.zeros_like(
-                        transformed_dict["tokenized_prompt_mask"], 
-                        dtype=bool
-                    )
+        dataset_results = DatasetResults()
+        all_brier_maes = []
 
-                # Create observation object on CPU
-                observation = Observation.from_dict(transformed_dict)
+        start_time = time.perf_counter()
+        decoder = ExtractFASTActions(tokenizer=self.tokenizer, action_horizon=config.action_horizon, action_dim=config.action_dim)
+        unnormalizer = Unnormalize(norm_stats={'action': dataset_stats['action']}, use_quantiles=True)
+
+        # def calculate_brier_mae(predicted_probabilities, one_hot_label) -> float:
+        #     """Calculate mean absolute error from absolute errors using JAX operations"""
+        #     return jnp.sum(jnp.abs(predicted_probabilities - one_hot_label))
+
+        # @functools.partial(jax.jit, static_argnames=['action_space_size'])
+        # def calculate_batch_brier_mae(action_probs_batch, gt_actions_batch, action_space_size):
+        #     # Create one-hot encoded ground truth actions for entire batch at once
+        #     gt_one_hot = jax.nn.one_hot(gt_actions_batch, action_space_size)
+        #     return jax.vmap(lambda x, y: calculate_brier_mae(x, y))(action_probs_batch, gt_one_hot)
+
+        for batch in dataloader:
+            batch_start_time = time.perf_counter()
+            # Process entire batch at once, keeping data on CPU
+            obs = {
+                'image_observation': batch['image_observation'],
+                'text_observation': batch['text_observation']
+            }
+            
+            # Transform observation (will stay on CPU)
+            transformed_dict = self.prepare_observation(obs, max_token_length=config.max_token_len)
+            if "token_loss_mask" not in transformed_dict:
+                transformed_dict["token_loss_mask"] = jax.numpy.zeros_like(
+                    transformed_dict["tokenized_prompt_mask"], 
+                    dtype=bool
+                )
+
+            # Create observation object on CPU
+            observation = Observation.from_dict(transformed_dict)
 
             # Transfer necessary data to accelerator only for model inference
             # The model's sample_actions will handle the device transfer internally
-            action_tokens = self.model.sample_actions(key, observation, max_decoding_steps = 32, temperature=0.0)
-            #print('\nAction tokens before decoding: ', action_tokens)
-            decoder = ExtractFASTActions(tokenizer=self.tokenizer, action_horizon=config.action_horizon, action_dim=config.action_dim)
-            
+            action_tokens, action_probs = self.model.sample_actions(key, observation, max_decoding_steps = self.max_decoding_steps, temperature=0.0)
+
+            # Move results back to CPU immediately
+            action_tokens = jax.device_get(action_tokens)
+            action_probs = jax.device_get(action_probs)
+
             # Process all action tokens at once instead of individually
             decoded_actions = []
             for each_action in action_tokens:
@@ -265,65 +347,170 @@ class ProcGenInferenceFast:
             for action in decoded_actions:
                 # Convert to numpy and squeeze any extra dimensions
                 action = np.array(action)
-                if len(action.shape) > 1:
-                    action = np.squeeze(action)
-                # Trim to 32 dimensions if needed
-                if len(action) > config.action_dim:
-                    print('\nAction is longer than {} dimensions: '.format(config.action_dim), action)
-                    action = action[:config.action_dim]
-                elif len(action) < config.action_dim:
-                    print('\nAction is shorter than {} dimensions: '.format(config.action_dim), action)
-                    action = np.pad(action, (0, config.action_dim - len(action)))
+                try:
+                    if len(action.shape) > 1:
+                        action = np.squeeze(action)
+                    # Trim to 1 dimensions if needed
+                    if len(action) > self.max_decoding_steps:
+                        print('\nAction is longer than {} dimensions: '.format(self.max_decoding_steps), action)
+                        action = action[:self.max_decoding_steps]
+                    elif len(action) < self.max_decoding_steps:
+                        print('\nAction is shorter than {} dimensions: '.format(self.max_decoding_steps), action)
+                        action = np.pad(action, (0, self.max_decoding_steps - len(action)))
+                    else:
+                        print('\nAction is of correct size: ', action)
+                except:
+                    print('\n Scalar action detected: ', action)
+                
                 processed_actions.append(action)
-            
+
             # Stack the actions into a single array
             actions = np.stack(processed_actions)
             #print('\nDecoded Actions: ', actions)
+            dataset_results.total_timesteps += len(actions)
 
-            # Process outputs back on CPU
-            with jax.default_device(cpu_device):
-                unnormalized_discrete_actions = self.process_output(actions, dataset_stats)
-                counter += 1
-                
-                # Get ground truth actions and compute metrics on CPU
-                gt_actions = np.array(batch['action'])
-                
-                #PLACEHOLDER METRICS - CHANGE ME!!
-                # Calculate error metrics
-                mae = np.mean(np.abs(gt_actions - unnormalized_discrete_actions))
-                mse = np.mean(np.square(gt_actions - unnormalized_discrete_actions))
-                rmse = np.sqrt(mse)
-                
-                batch_results = {
-                    "dataset": dataset,
-                    "batch_id": counter,
-                    "metrics": {
-                        "mae": float(mae),
-                        "mse": float(mse), 
-                        "rmse": float(rmse)
-                    },
-                    "predictions": {
-                        "ground_truth": gt_actions.tolist(),
-                        "predicted": unnormalized_discrete_actions.tolist()
-                    }
-                }
+            action_space = sorted(ProcGenDefinitions.get_valid_action_space(dataset, "default"))
+            unnormalized_discrete_actions = self.process_output(actions, dataset_stats)
+            # Get ground truth actions and compute metrics on CPU
+            gt_actions = np.array(batch['action'])
+            gt_actions = ProcGenDefinitions.set_procgen_unused_special_action_to_stand_still(gt_actions, dataset)
 
-            # Handle results file I/O
-            if os.path.exists(results_file):
-                with open(results_file, 'r') as f:
-                    dataset_results = json.load(f)
-            else:
-                dataset_results = {
-                    "dataset": dataset,
-                    "batches": []
-                }
-            
-            dataset_results["batches"].append(batch_results)
-            with open(results_file, 'w') as f:
-                json.dump(dataset_results, f, indent=4)
-            
-            print(f"Dataset: {dataset}, Batch {counter} metrics - MAE: {mae:.4f}, MSE: {mse:.4f}, RMSE: {rmse:.4f}")
-            
+            dataset_results.all_preds.extend(unnormalized_discrete_actions.tolist())
+            dataset_results.all_gt.extend(gt_actions.tolist())
+
+            # Calculate Brier MAE
+            for action_idx in range(len(actions)):
+                # get one hot encoded gt action
+                gt_action_one_hot = np.zeros((len(action_space)))
+                gt_action_one_hot[gt_actions[action_idx]] = 1
+                if unnormalized_discrete_actions[action_idx] not in action_space:
+                    all_brier_maes.append(MAX_BRIER_ERROR)
+                else:
+                    unnormalized_action_values_to_probs = self.get_unnormalized_action_values_to_probs(
+                        dataset, action_probs[action_idx], unnormalizer, action_space
+                    )
+
+                    all_brier_maes.append(calculate_brier_mae(unnormalized_action_values_to_probs, gt_action_one_hot))
+
+            time_per_timestep = (time.perf_counter() - batch_start_time)/len(actions)
+            del obs, transformed_dict, observation, action_tokens, action_probs, decoded_actions, processed_actions, \
+                unnormalized_discrete_actions, gt_actions
+                # unnormalized_probs_batch, batch_brier_maes, 
+            gc.collect()
+            jax.clear_caches()
+            tf.keras.backend.clear_session()
+
+            print(f"Processed {counter} episodes, cleared memory, took {time_per_timestep} seconds per timestep")
+            counter += 1
+            # Uncomment to stop after 2 batches
+            # if counter == 10:
+            #     break
+
+        end_time = time.perf_counter()
+        dataset_results.eval_time = end_time - start_time
+        print(f"Time taken for {counter} batches: {dataset_results.eval_time} seconds")
+
+        # Calculate metrics
+        total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
+            dataset_results.all_preds, dataset_results.all_gt, action_space
+        )
+
+        micro_precision = get_micro_precision_from_counts(total_tp, total_fp)
+        micro_recall = get_micro_recall_from_counts(total_tp, total_fn)
+        micro_f1 = get_micro_f1(micro_precision, micro_recall)
+        
+        print(f"Unclipped Micro Precision: {micro_precision}, Micro Recall: {micro_recall}, Micro F1: {micro_f1}")
+        
+        total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
+            dataset_results.all_preds, dataset_results.all_gt, action_space
+        )
+
+        micro_precision_without_invalids = get_micro_precision_from_counts(total_tp, valid_fp)
+        micro_f1_without_invalids = get_micro_f1(micro_precision_without_invalids, micro_recall) # micro_recall is not affected
+
+        print(f"Unclipped Micro Precision without invalids: {micro_precision_without_invalids}, \
+            Unclipped Micro F1 without invalids: {micro_f1_without_invalids}")
+
+        clipped_predictions = np.clip(dataset_results.all_preds, action_space[0], action_space[-1])
+        clipped_emr = get_exact_match_rate(clipped_predictions, dataset_results.all_gt)
+        clipped_total_tp, clipped_total_fp, clipped_total_fn, _, _ = calculate_tp_fp_fn_counts(
+            clipped_predictions, dataset_results.all_gt, action_space
+        )
+        clipped_micro_precision = get_micro_precision_from_counts(clipped_total_tp, clipped_total_fp)
+        clipped_micro_recall = get_micro_recall_from_counts(clipped_total_tp, clipped_total_fn)
+        clipped_micro_f1 = get_micro_f1(clipped_micro_precision, clipped_micro_recall)
+
+        print(f"Clipped Micro Precision: {clipped_micro_precision}, Clipped Micro Recall: {clipped_micro_recall}, Clipped Micro F1: {clipped_micro_f1}")
+
+        # Store results for this batch
+        dataset_results.total_invalids = int(invalid_fp)  # invalid_fp is the same as the number of invalid predictions
+        dataset_results.invalid_predictions_percentage = dataset_results.total_invalids / dataset_results.total_timesteps * 100
+
+        dataset_results.total_batches = counter
+        dataset_results.total_brier_mae = sum(all_brier_maes)
+        dataset_results.emr = get_exact_match_rate(dataset_results.all_preds, dataset_results.all_gt)
+        dataset_results.micro_precision = micro_precision
+        dataset_results.micro_recall = micro_recall
+        dataset_results.micro_f1 = micro_f1
+
+        dataset_results.clipped_emr = clipped_emr
+        dataset_results.clipped_micro_precision = clipped_micro_precision
+        dataset_results.clipped_micro_recall = clipped_micro_recall
+        dataset_results.clipped_micro_f1 = clipped_micro_f1
+
+        dataset_results.avg_brier_mae = calculate_mean(all_brier_maes)
+        dataset_results.avg_normalized_brier_mae = calculate_mean(min_max_normalize(all_brier_maes).tolist())
+
+        quantile_filtered_brier_maes = quantile_filter(all_brier_maes)
+        dataset_results.total_quantile_filtered_brier_mae = sum(quantile_filtered_brier_maes)
+        dataset_results.avg_quantile_filtered_brier_mae = calculate_mean(quantile_filtered_brier_maes)
+        dataset_results.avg_quantile_filtered_normalized_brier_mae = calculate_mean(min_max_normalize(quantile_filtered_brier_maes).tolist())
+
+        dataset_results.max_rel_brier_mae = calculate_max_relative_mae(all_brier_maes)
+        dataset_results.prop_beyond_threshold_brier_mae = calculate_proportion_beyond_mae_threshold(all_brier_maes)
+
+        dataset_results.micro_precision_without_invalids = micro_precision_without_invalids
+        dataset_results.micro_f1_without_invalids = micro_f1_without_invalids
+
+        return dataset_results.to_dict()
+
+    def get_unnormalized_action_values_to_probs(
+            self, dataset: str, action_probs_for_last_token: np.ndarray, unnormalizer: Unnormalize, action_space: list[int]
+        ) -> np.ndarray:
+            if dataset not in self.paligemma_tokens_to_action_values.keys():
+                self.paligemma_tokens_to_action_values[dataset] = {}
+                # Vectorize the unnormalization operation
+                all_action_values = np.array([float(v) for v in self.bpe_to_action_value_mappings["mappings"].values()])  # all action values in the json file
+                unnormalized_values = unnormalizer({'action': all_action_values})['action']
+                rounded_values = np.round(unnormalized_values).astype(int)
+
+                # Create the mapping in one go
+                for token_id, final_action_value in zip(self.bpe_to_action_value_mappings["mappings"].keys(), rounded_values):  # loop through the paligemma tokens and rounded action values
+                    if final_action_value not in action_space:
+                        continue
+                    self.paligemma_tokens_to_action_values[dataset][token_id] = final_action_value
+
+            unnormalized_action_values_to_probs = np.zeros(len(action_space))
+
+
+            # only get the probs of the valid actions
+            token_ids = np.fromiter(self.paligemma_tokens_to_action_values[dataset].keys(), dtype=int)
+            valid_action_probs = np.array(action_probs_for_last_token[token_ids])
+
+            # Accumulate probabilities
+            np.add.at(
+                unnormalized_action_values_to_probs,
+                np.array(list(self.paligemma_tokens_to_action_values[dataset].values())),
+                valid_action_probs
+            )
+
+            # Vectorized normalization
+            total_prob = np.sum(unnormalized_action_values_to_probs)
+            if total_prob > 0:
+                unnormalized_action_values_to_probs /= total_prob
+
+            return unnormalized_action_values_to_probs
+
 
 def parse_args() -> argparse.Namespace:
     """Parse and validate command line arguments.
@@ -347,6 +534,12 @@ def parse_args() -> argparse.Namespace:
         type=str,
         required=True,
         help='Root directory containing the procgen datasets'
+    )
+    parser.add_argument(
+        '--dataset_stats_dir',
+        type=str,
+        required=True,
+        help='Directory to store dataset statistics'
     )
     parser.add_argument(
         '--batch_size',
@@ -375,7 +568,7 @@ def main():
 
     # Initialize model and inference object for pi0_fast
     # Use pi0_fast config and checkpoint
-    config = pi0_fast.Pi0FASTConfig(action_horizon=1) 
+    config = pi0_fast.Pi0FASTConfig(action_horizon=1, action_dim=1) 
     tokenizer = FASTTokenizer()
     key = jax.random.key(0)
 
@@ -385,38 +578,37 @@ def main():
     gc.collect()
     jax.clear_caches()
     print('Pi0-FAST Model loaded')
-    procgen_inference = ProcGenInferenceFast(model,tokenizer, config)
+    procgen_inference = ProcGenInferenceFast(model,tokenizer, config, max_decoding_steps=4)  # 4 becasue of "Action", ":", and " " before action tokens
 
+    results_file = os.path.join(args.output_dir, 'pi0_fast_procgen_results.json')
 
     # Get dataset shards
     procgen_dataset_list = os.listdir(args.dataset_dir) # Update path as needed
     for dataset in procgen_dataset_list:
         print(f'\n ---- EVALUATING {dataset} ---- \n')
-        dataset_path = os.path.join('/home/pranav/bigfish') #Update path as needed
+        dataset_path = os.path.join(args.dataset_dir, dataset) #Update path as needed
         if not os.path.isdir(dataset_path):
             print(f"Skipping {dataset}, not a directory.")
             continue
 
-        tfds_shards = os.listdir(dataset_path) # Update path as needed
-        # Filter out non-directory files if any
-        tfds_shards = [s for s in tfds_shards if os.path.isdir(os.path.join(dataset_path, s))]
+        tfds_shards = os.listdir(f'{args.dataset_dir}/{dataset}') # Update path as needed
+        tfds_sorted_shards = sorted(
+            tfds_shards,
+            key=lambda x: (
+                datetime.datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"),  # primary sort by timestamp
+                *(int(n) for n in x.split('_')[1:-1]),  # middle numbers as integers
+                float(x.split('_')[-1])  # last number as float
+            )
+        )
         if not tfds_shards:
             print(f"No data shards found in {dataset_path}. Skipping.")
             continue
 
-        # Attempt to sort shards by timestamp, handle potential errors
-        try:
-            tfds_sorted_shards = sorted(tfds_shards, key=lambda x: datetime.datetime.strptime(x.split('_')[0], "%Y%m%dT%H%M%S"))
-        except (ValueError, IndexError):
-            print(f"Warning: Could not sort shards by timestamp for {dataset}. Using unsorted order.")
-            tfds_sorted_shards = tfds_shards
-
         # Add path to shards
-        tfds_sorted_shard_paths = [os.path.join(dataset_path, shard) for shard in tfds_sorted_shards]
-
+        tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}', shard) for shard in tfds_sorted_shards]
 
         #Dataset stats loading/calculation
-        stats_output_path = os.path.join(args.output_dir, f'{dataset}_dataset_stats.json')
+        stats_output_path = os.path.join(args.dataset_stats_dir, 'procgen_dataset_statistics_prod.json')
         if os.path.exists(stats_output_path):
             print(f'Loading existing dataset stats from {stats_output_path}')
             with open(stats_output_path, 'r') as f:
@@ -425,7 +617,7 @@ def main():
             # Ensure the structure matches what NormStats expects (mean, std, q01, q99)
             try:
                  # Assuming the dict has an 'action' key containing the stats dict
-                 action_stats_dict = dataset_stats_dict.get('action', {})
+                 action_stats_dict = dataset_stats_dict[dataset].get('action', {})
                  # Convert lists back to numpy arrays if needed by NormStats constructor
                  for stat_key in action_stats_dict:
                      action_stats_dict[stat_key] = np.array(action_stats_dict[stat_key])
@@ -442,7 +634,7 @@ def main():
         else:
             print(f'Calculating dataset stats for {dataset}...')
             # Pass the list of full shard paths to get_dataset_stats
-            dataset_stats_dict, dataset_stats = procgen_inference.get_dataset_stats(tfds_sorted_shard_paths)
+            dataset_stats_dict, dataset_stats = procgen_inference.get_dataset_stats(tfds_sorted_shard_paths, dataset_name=dataset)
             print('Dataset stats calculated.')
             print(f'Saving dataset stats to {stats_output_path}')
             # Ensure the dictionary saved contains serializable lists (handled by get_dataset_stats)
@@ -457,7 +649,7 @@ def main():
         # Create dataloader
         try:
             # Pass batch_size from args
-            dataset_obj, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, batch_size=args.batch_size)
+            dataset_obj, dataloader = get_procgen_dataloader(tfds_sorted_shard_paths, dataset_name=dataset, batch_size=args.batch_size)
             del dataset_obj
             gc.collect()
             jax.clear_caches()
@@ -466,10 +658,24 @@ def main():
 
         
         # Call evaluate_model with dataset_stats
-        procgen_inference.evaluate_model(key, config, dataset_stats, dataloader, dataset, args.output_dir)
+        results = procgen_inference.evaluate_model(key, config, dataset_stats, dataloader, dataset, args.output_dir)
 
+        # Load existing results if file exists, otherwise create new
+        if os.path.exists(results_file):
+            try:
+                with open(results_file, 'r') as f:
+                    dataset_results = json.load(f)
+            except Exception as e:
+                raise Exception(f"Result file might be corrupted. Please delete it and run the script again. {e}")
+        else:
+            dataset_results = {}
 
+        dataset_results[dataset] = results
+        
+        # Save updated results
+        with open(results_file, 'w') as f:
+            json.dump(dataset_results, f, indent=4)
 
 
 if __name__ == "__main__":
-    main() 
+    main()
