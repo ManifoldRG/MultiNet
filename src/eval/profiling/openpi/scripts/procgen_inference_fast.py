@@ -106,8 +106,6 @@ class ProcGenInferenceFast:
 
     def prepare_observation(self, obs_dict: dict, action_dim: int = 1, max_token_length: int = 48) -> dict:
         # Prepare observation dictionary for pi0 model inference
-        tokenizer = self.tokenizer
-
         # Process image observation
         base_image = obs_dict["image_observation"]
         if isinstance(base_image, list) and isinstance(base_image[0], tf.Tensor): # Handle list of tensors
@@ -204,6 +202,11 @@ class ProcGenInferenceFast:
             "token_ar_mask": token_ar_mask,
             "token_loss_mask": token_loss_mask
         }
+        
+        # Clear original image data
+        obs_dict["image_observation"] = None
+        del base_image
+        gc.collect()
 
         return transformed_dict
 
@@ -568,7 +571,7 @@ def main():
 
     # Initialize model and inference object for pi0_fast
     # Use pi0_fast config and checkpoint
-    config = pi0_fast.Pi0FASTConfig(action_horizon=1, action_dim=1) 
+    config = pi0_fast.Pi0FASTConfig(action_horizon=1, action_dim=1, batch_size=args.batch_size)
     tokenizer = FASTTokenizer()
     key = jax.random.key(0)
 

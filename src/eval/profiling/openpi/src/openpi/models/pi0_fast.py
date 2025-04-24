@@ -81,6 +81,7 @@ class Pi0FASTConfig(_model.BaseModelConfig):
     action_dim: int = 32
     action_horizon: int = 32
     max_token_len: int = 250
+    batch_size: int = 1
 
     @property
     @override
@@ -149,6 +150,53 @@ class Pi0FAST(_model.BaseModel):
         )
         img.lazy_init(next(iter(config.fake_obs().images.values())), train=False, rngs=rngs)
         self.PaliGemma = nnx.Dict(llm=llm, img=img)
+        self.batch_size = config.batch_size
+        self.zero_embeddings = None
+        self.padding_kv = None
+
+    def get_padding_kv(self):
+        """Get the padding KV cache tuple."""
+        # 3. Run through gemma.llm to get K,V values for padding positions:
+        #    - base_1_rgb position starts at patch_seq_len
+        #    - wrist_0_rgb position starts at 2*patch_seq_len
+        if self.padding_kv is not None:
+            return self.padding_kv
+
+        # Get patch sequence length for positioning
+        patch_seq_len = self.zero_embeddings.shape[1]
+
+        # 3. Create concatenated embeddings for both padding images
+        padding_embeddings = jnp.concatenate([self.zero_embeddings, self.zero_embeddings], axis=1)
+
+        # 4. Create positions starting from patch_seq_len
+        positions = jnp.arange(2 * patch_seq_len)[None, :] 
+        positions = positions + patch_seq_len  # Start after first image
+
+        # 5. Create attention mask for padding images
+        padding_mask = jnp.ones((self.batch_size, 1, 2*patch_seq_len, 2*patch_seq_len))
+        block_mask = jnp.where(
+            (jnp.arange(2*patch_seq_len)[None, None, :, None] < patch_seq_len) & 
+            (jnp.arange(2*patch_seq_len)[None, None, None, :] >= patch_seq_len),
+            0.0, 1.0)
+        padding_mask = padding_mask * block_mask
+        
+        # 6. Store both the KVs and the starting index
+        kv_cache = self.PaliGemma.llm(
+            embedded_prefix=padding_embeddings,
+            positions=positions,
+            mask=padding_mask,
+            decode=True,
+            return_kv_only=True
+        )
+        
+        # Extract just the K,V values and create proper padding_kv tuple
+        # kv_cache is (idx, k_cache, v_cache)
+        _, k_cache, v_cache = kv_cache
+        
+        # Create proper padding_kv tuple with scalar start_idx
+        self.padding_kv = (patch_seq_len, k_cache, v_cache)  # start at 256
+
+        return self.padding_kv
 
     @at.typecheck
     def embed_inputs(
@@ -159,7 +207,14 @@ class Pi0FAST(_model.BaseModel):
         token_embeddings = []
         # embed images
         for name in obs.images:
-            image_token_embeddings, _ = self.PaliGemma.img(obs.images[name], train=False)
+            if name in ["base_1_rgb", "wrist_0_rgb"]:
+                if self.zero_embeddings is None:
+                    image_token_embeddings, _ = self.PaliGemma.img(obs.images[name], train=False)
+                    self.zero_embeddings = image_token_embeddings
+                else:
+                    image_token_embeddings = self.zero_embeddings
+            else:
+                image_token_embeddings, _ = self.PaliGemma.img(obs.images[name], train=False)
 
             token_embeddings.append(image_token_embeddings)
             input_mask.append(
@@ -258,7 +313,8 @@ class Pi0FAST(_model.BaseModel):
             embedded_prefix=prefix_token_embeddings,
             mask=prefix_attn_mask,
             positions=prefix_positions,
-            decode=True
+            decode=True,
+            precomputed_kv=self.get_padding_kv(),
         )
 
         last_logit = prefix_logits[:, -1:]  # intermediate logits
