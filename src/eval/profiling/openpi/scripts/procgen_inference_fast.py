@@ -205,11 +205,6 @@ class ProcGenInferenceFast:
             "token_loss_mask": token_loss_mask
         }
 
-        # Clear original image data
-        obs_dict["image_observation"] = None
-        del base_image
-        gc.collect()
-
         return transformed_dict
 
 
@@ -407,9 +402,6 @@ class ProcGenInferenceFast:
 
             print(f"Processed {counter} episodes, cleared memory, took {time_per_timestep} seconds per timestep")
             counter += 1
-            # Uncomment for testing
-            # if counter == 4:
-            #     break
 
         end_time = time.perf_counter()
         dataset_results.eval_time = end_time - start_time
