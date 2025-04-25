@@ -299,16 +299,6 @@ class ProcGenInferenceFast:
         decoder = ExtractFASTActions(tokenizer=self.tokenizer, action_horizon=config.action_horizon, action_dim=config.action_dim)
         unnormalizer = Unnormalize(norm_stats={'action': dataset_stats['action']}, use_quantiles=True)
 
-        # def calculate_brier_mae(predicted_probabilities, one_hot_label) -> float:
-        #     """Calculate mean absolute error from absolute errors using JAX operations"""
-        #     return jnp.sum(jnp.abs(predicted_probabilities - one_hot_label))
-
-        # @functools.partial(jax.jit, static_argnames=['action_space_size'])
-        # def calculate_batch_brier_mae(action_probs_batch, gt_actions_batch, action_space_size):
-        #     # Create one-hot encoded ground truth actions for entire batch at once
-        #     gt_one_hot = jax.nn.one_hot(gt_actions_batch, action_space_size)
-        #     return jax.vmap(lambda x, y: calculate_brier_mae(x, y))(action_probs_batch, gt_one_hot)
-
         for batch in dataloader:
             batch_start_time = time.perf_counter()
             # Process entire batch at once, keeping data on CPU

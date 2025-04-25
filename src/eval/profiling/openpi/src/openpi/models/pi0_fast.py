@@ -162,7 +162,8 @@ class Pi0FAST(_model.BaseModel):
         for name in obs.images:
             # TODO: hacky way only for procgen case only with two zero images
             if name in ["base_1_rgb", "wrist_0_rgb"]:
-                if self.zero_image_embeddings is None:
+                # update zero image embeddings cache if no cache or it's not a full batch
+                if self.zero_image_embeddings is None or obs.images[name].shape[0] != self.zero_image_embeddings.shape[0]:
                     image_token_embeddings, _ = self.PaliGemma.img(obs.images[name], train=False)
                     self.zero_image_embeddings = image_token_embeddings
                 else:
