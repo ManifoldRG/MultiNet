@@ -196,14 +196,19 @@ class ProcGenInferenceFast:
             "image_mask": {
                 # Use current_batch_size for masks
                 "base_0_rgb": jax.numpy.ones(current_batch_size, dtype=bool),
-                "base_1_rgb": jax.numpy.zeros(current_batch_size, dtype=bool), # Added mask for base_1
-                "wrist_0_rgb": jax.numpy.zeros(current_batch_size, dtype=bool) # Renamed mask for wrist
+                "base_1_rgb": jax.numpy.ones(current_batch_size, dtype=bool), # Added mask for base_1
+                "wrist_0_rgb": jax.numpy.ones(current_batch_size, dtype=bool) # Renamed mask for wrist
             },
             "tokenized_prompt": tokens,
             "tokenized_prompt_mask": token_mask,
             "token_ar_mask": token_ar_mask,
             "token_loss_mask": token_loss_mask
         }
+
+        # Clear original image data
+        obs_dict["image_observation"] = None
+        del base_image
+        gc.collect()
 
         return transformed_dict
 
@@ -402,8 +407,8 @@ class ProcGenInferenceFast:
 
             print(f"Processed {counter} episodes, cleared memory, took {time_per_timestep} seconds per timestep")
             counter += 1
-            # Uncomment to stop after 2 batches
-            # if counter == 10:
+            # Uncomment for testing
+            # if counter == 4:
             #     break
 
         end_time = time.perf_counter()
@@ -591,7 +596,8 @@ def main():
             print(f"Skipping {dataset}, not a directory.")
             continue
 
-        tfds_shards = os.listdir(f'{args.dataset_dir}/{dataset}') # Update path as needed
+        tfds_shards = os.listdir(f'{args.dataset_dir}/{dataset}/test_final') # Update path as needed
+        # tfds_shards = os.listdir(f'{args.dataset_dir}/{dataset}') # Update path as needed
         tfds_sorted_shards = sorted(
             tfds_shards,
             key=lambda x: (
@@ -605,7 +611,8 @@ def main():
             continue
 
         # Add path to shards
-        tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}', shard) for shard in tfds_sorted_shards]
+        tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}/test_final', shard) for shard in tfds_sorted_shards]
+        # tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}', shard) for shard in tfds_sorted_shards]
 
         #Dataset stats loading/calculation
         stats_output_path = os.path.join(args.dataset_stats_dir, 'procgen_dataset_statistics_prod.json')
