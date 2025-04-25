@@ -155,32 +155,32 @@ class Pi0FAST(_model.BaseModel):
         self.padding_kv = None
 
     def get_padding_kv(self):
-        """Get the padding KV cache tuple."""
-        # 3. Run through gemma.llm to get K,V values for padding positions:
-        #    - base_1_rgb position starts at patch_seq_len
-        #    - wrist_0_rgb position starts at 2*patch_seq_len
+        """Get the padding KV cache tuple.
+        
+        Run through gemma.llm to get K,V values for padding embeddings in the middle of the sequence:
+            - base_1_rgb position starts at patch_seq_len
+            - wrist_0_rgb position starts at 2*patch_seq_len
+        """
         if self.padding_kv is not None:
             return self.padding_kv
 
         # Get patch sequence length for positioning
         patch_seq_len = self.zero_embeddings.shape[1]
 
-        # 3. Create concatenated embeddings for both padding images
         padding_embeddings = jnp.concatenate([self.zero_embeddings, self.zero_embeddings], axis=1)
+        single_image_mask = einops.repeat(
+            jnp.ones(self.batch_size, dtype=bool),  # matches obs.image_masks[name]
+            "b -> b s",
+            s=patch_seq_len
+        )
+        input_mask = jnp.concatenate([single_image_mask, single_image_mask], axis=1)
+        # For each image section, create zeros of the same shape as the input mask section
+        ar_mask = jnp.zeros_like(input_mask, dtype=bool)
+        padding_mask = make_attn_mask(input_mask, ar_mask)
+        # Create positions starting from patch_seq_len (where these will be inserted)
+        positions = jnp.arange(2 * patch_seq_len)[None, :] + patch_seq_len
 
-        # 4. Create positions starting from patch_seq_len
-        positions = jnp.arange(2 * patch_seq_len)[None, :] 
-        positions = positions + patch_seq_len  # Start after first image
-
-        # 5. Create attention mask for padding images
-        padding_mask = jnp.ones((self.batch_size, 1, 2*patch_seq_len, 2*patch_seq_len))
-        block_mask = jnp.where(
-            (jnp.arange(2*patch_seq_len)[None, None, :, None] < patch_seq_len) & 
-            (jnp.arange(2*patch_seq_len)[None, None, None, :] >= patch_seq_len),
-            0.0, 1.0)
-        padding_mask = padding_mask * block_mask
-        
-        # 6. Store both the KVs and the starting index
+        # Get KV cache
         kv_cache = self.PaliGemma.llm(
             embedded_prefix=padding_embeddings,
             positions=positions,
@@ -189,12 +189,10 @@ class Pi0FAST(_model.BaseModel):
             return_kv_only=True
         )
         
-        # Extract just the K,V values and create proper padding_kv tuple
-        # kv_cache is (idx, k_cache, v_cache)
         _, k_cache, v_cache = kv_cache
-        
-        # Create proper padding_kv tuple with scalar start_idx
-        self.padding_kv = (patch_seq_len, k_cache, v_cache)  # start at 256
+        # Create proper padding_kv tuple with scalar start_idx at 256
+        # TODO: make the structure more consistent with kv_cache
+        self.padding_kv = (patch_seq_len, k_cache, v_cache)
 
         return self.padding_kv
 
@@ -307,14 +305,19 @@ class Pi0FAST(_model.BaseModel):
         prefill_len = jnp.sum(prefix_mask, axis=-1)
         prefix_start = prefill_size - prefill_len
 
+        # Get precomputed KV for zero images
+        padding_kv = self.get_padding_kv()  # This already positions the KV at patch_seq_len
+
+        # Pad attention mask for decoding steps
         prefix_attn_mask = jnp.pad(prefix_attn_mask, ((0, 0), (0, 0), (0, max_decoding_steps)))
         prefix_positions = jnp.cumsum(prefix_mask, axis=-1) - 1
+
         prefix_logits, kv_cache, _ = self.PaliGemma.llm(
             embedded_prefix=prefix_token_embeddings,
             mask=prefix_attn_mask,
             positions=prefix_positions,
             decode=True,
-            precomputed_kv=self.get_padding_kv(),
+            precomputed_kv=padding_kv,
         )
 
         last_logit = prefix_logits[:, -1:]  # intermediate logits

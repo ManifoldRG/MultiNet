@@ -194,8 +194,8 @@ class ProcGenInferenceFast:
             "image_mask": {
                 # Use current_batch_size for masks
                 "base_0_rgb": jax.numpy.ones(current_batch_size, dtype=bool),
-                "base_1_rgb": jax.numpy.zeros(current_batch_size, dtype=bool), # Added mask for base_1
-                "wrist_0_rgb": jax.numpy.zeros(current_batch_size, dtype=bool) # Renamed mask for wrist
+                "base_1_rgb": jax.numpy.ones(current_batch_size, dtype=bool), # Added mask for base_1
+                "wrist_0_rgb": jax.numpy.ones(current_batch_size, dtype=bool) # Renamed mask for wrist
             },
             "tokenized_prompt": tokens,
             "tokenized_prompt_mask": token_mask,

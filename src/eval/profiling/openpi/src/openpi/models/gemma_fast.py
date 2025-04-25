@@ -189,50 +189,110 @@ class Attention(nn.Module):
             q, k, v = self.qkv_einsum("BSD,3KDH->3BSKH", x)
         else:
             q = self.q_einsum("BTD,NDH->BTNH", x)
-            k, v = self.kv_einsum("BSD,2KDH->2BSKH", x)
+            # k, v = self.kv_einsum("BSD,2KDH->2BSKH", x)
 
         q = _apply_rope(q, positions=positions)  # promotes to float32
         q *= self.head_dim**-0.5
-
-        k = _apply_rope(k, positions=positions)  # promotes to float32
+        # k = _apply_rope(k, positions=positions)  # promotes to float32
 
         if kv_cache is None:
             if precomputed_kv is not None:
                 # Unpack precomputed values
                 start_idx, precomputed_k, precomputed_v = precomputed_kv
+                patch_seq_len = 256
+                text_start = patch_seq_len * 3
                 
-                # Get this layer's KV values using layer_idx
-                layer_k = precomputed_k[layer_idx]  # Now layer_idx is a scalar
-                layer_v = precomputed_v[layer_idx]
+                # Only compute k,v for first image and text parts
+                first_image = jax.lax.dynamic_slice(
+                    x,
+                    start_indices=(0, 0, 0),
+                    slice_sizes=(x.shape[0], patch_seq_len, x.shape[2])
+                )
+                # Get text section
+                text = jax.lax.dynamic_slice(
+                    x,
+                    start_indices=(0, text_start, 0),
+                    slice_sizes=(x.shape[0], x.shape[1] - text_start, x.shape[2])
+                )
+
+                # jax.debug.print("first_image.shape: {}, text.shape: {}", first_image.shape, text.shape)
+
+                # Compute k,v for first image
+                if self.num_kv_heads == self.num_heads:
+                    raise NotImplementedError("Equal number of heads and kv heads not implemented")
                 
-                # Initialize cache with enough space
+                # Compute k,v for first image
+                k1, v1 = self.kv_einsum("BSD,2KDH->2BSKH", first_image)
+                k1 = _apply_rope(k1, positions=jax.lax.dynamic_slice(
+                    positions,
+                    start_indices=(0, 0),  # [batch_start, seq_start]
+                    slice_sizes=(positions.shape[0], patch_seq_len)  # [batch_size, first_image_len]
+                ))
+                
+                # Compute k,v for text
+                k2, v2 = self.kv_einsum("BSD,2KDH->2BSKH", text)
+                k2 = _apply_rope(k2, positions=jax.lax.dynamic_slice(
+                    positions,
+                    start_indices=(0, text_start),  # [batch_start, text_start_position]
+                    slice_sizes=(positions.shape[0], x.shape[1] - text_start)  # [batch_size, text_length]
+                ))
+
+                # Initialize cache with full sequence length
                 total_seq_len = attn_mask.shape[-1]
-                idx, k_cache, v_cache = self._init_cache(k, v, total_seq_len)
+                temp_k = jnp.zeros((x.shape[0], total_seq_len, self.num_kv_heads, self.head_dim))
+                temp_v = jnp.zeros((x.shape[0], total_seq_len, self.num_kv_heads, self.head_dim))
+
+                # Initialize cache with full sequence length
+                idx, k_cache, v_cache = self._init_cache(temp_k, temp_v, total_seq_len)
+
+                # Put first image k,v at the start
+                k_cache = k_cache.at[:, :patch_seq_len, :, :].set(k1)
+                v_cache = v_cache.at[:, :patch_seq_len, :, :].set(v1)
+                # jax.debug.print("first image k, v inserted at 0")
+
+                # Get this layer's KV values using layer_idx
+                layer_k = jax.lax.dynamic_index_in_dim(precomputed_k, layer_idx, axis=0, keepdims=False)
+                layer_v = jax.lax.dynamic_index_in_dim(precomputed_v, layer_idx, axis=0, keepdims=False)
                 
-                # First insert current k,v at the start
-                k_cache = k_cache.at[:, :k.shape[1], :, :].set(k)
-                v_cache = v_cache.at[:, :v.shape[1], :, :].set(v)
-                
-                # Insert precomputed values at the correct position
+                # Insert precomputed values after first image
                 k_cache = jax.lax.dynamic_update_slice(
                     k_cache,
                     layer_k,  # Already for this layer
-                    (0, start_idx, 0, 0)  # start_idx should be scalar 256
+                    (0, patch_seq_len, 0, 0)  # start_idx should be scalar 256
                 )
                 v_cache = jax.lax.dynamic_update_slice(
                     v_cache,
                     layer_v,
-                    (0, start_idx, 0, 0)
+                    (0, patch_seq_len, 0, 0)
                 )
-                
+                # jax.debug.print("precomputed k, v inserted at {}", patch_seq_len)
+                # Put text k,v at the end
+                k_cache = k_cache.at[:, text_start:text_start + k2.shape[1], :, :].set(k2)
+                v_cache = v_cache.at[:, text_start:text_start + v2.shape[1], :, :].set(v2)
+                # jax.debug.print("text k, v inserted at {}", text_start)
+
                 # Update idx
-                idx = jnp.array([start_idx + layer_k.shape[1]])
+                idx = jnp.array([text_start + k2.shape[1]])  # Should be 1024
+                # jax.debug.print("idx updated to {}", idx)
             else:
+                k, v = self.kv_einsum("BSD,2KDH->2BSKH", x)
                 # Just initialize cache normally for text-only case
                 idx, k_cache, v_cache = self._init_cache(k, v, attn_mask.shape[-1])
+                # jax.debug.print("kv cache initialized for layer {} with shape {} {} {}", layer_idx, k_cache.shape, v_cache.shape, idx)
         else:
             idx, k_cache, v_cache = kv_cache
+            # jax.debug.print("at layer {}, kv cache passed in: {} {} {}", layer_idx, idx, k_cache.shape, v_cache.shape)
+
+            if x.shape[1] != 1:
+                raise ValueError("x.shape[1] != 1")
+
+            if self.num_kv_heads == self.num_heads:
+                raise NotImplementedError("Not implemented")
+            
+            k, v = self.kv_einsum("BSD,2KDH->2BSKH", x)
+            k = _apply_rope(k, positions=positions)  # promotes to float32
             idx, k_cache, v_cache = self._update_cache(k, v, idx, k_cache, v_cache)
+            # jax.debug.print("at layer {}, kv cache updated: {} {} {}", layer_idx, idx, k_cache.shape, v_cache.shape)
 
         k, v = k_cache, v_cache
         kv_cache = (idx, k_cache, v_cache)
