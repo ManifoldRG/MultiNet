@@ -166,8 +166,10 @@ class Pi0FAST(_model.BaseModel):
                 if self.zero_image_embeddings is None or obs.images[name].shape[0] != self.zero_image_embeddings.shape[0]:
                     image_token_embeddings, _ = self.PaliGemma.img(obs.images[name], train=False)
                     self.zero_image_embeddings = image_token_embeddings
+                    print(f"Updated zero image embeddings cache for {name}")
                 else:
                     image_token_embeddings = self.zero_image_embeddings
+                    print(f"Used cached zero image embeddings for {name}")
             else:
                 image_token_embeddings, _ = self.PaliGemma.img(obs.images[name], train=False)
 
@@ -310,6 +312,5 @@ class Pi0FAST(_model.BaseModel):
             return (~all_eos) & (step < max_decoding_steps)
 
         last_logit, output_tokens, final_logit, _, _, _ = jax.lax.while_loop(cond, step, (last_logit, output_tokens, final_logit, kv_cache, False, 0))
-        output_probs = jax.nn.softmax(final_logit, axis=-1)
 
-        return output_tokens, output_probs[:, -1]
+        return output_tokens, final_logit

@@ -58,7 +58,8 @@ MAX_BRIER_ERROR = 2.0
 class DatasetResults:
     all_preds: list[list[float]] = field(default_factory=list)
     all_gt: list[list[float]] = field(default_factory=list)
-    
+    all_preds_logits: list[list[float]] = field(default_factory=list)
+
     eval_time: float = 0
     total_batches: int = 0
     total_timesteps: int = 0
@@ -91,7 +92,6 @@ class DatasetResults:
             field.name: getattr(self, field.name)
             for field in fields(self)
         }
-
 
 class ProcGenInferenceFast:
     def __init__(self, model, tokenizer: FASTTokenizer, config: pi0_fast.Pi0FASTConfig, max_decoding_steps: int):
@@ -320,11 +320,8 @@ class ProcGenInferenceFast:
 
             # Transfer necessary data to accelerator only for model inference
             # The model's sample_actions will handle the device transfer internally
-            action_tokens, action_probs = self.model.sample_actions(key, observation, max_decoding_steps = self.max_decoding_steps, temperature=0.0)
-
-            # Move results back to CPU immediately
-            action_tokens = jax.device_get(action_tokens)
-            action_probs = jax.device_get(action_probs)
+            action_tokens, final_logit = self.model.sample_actions(key, observation, max_decoding_steps = self.max_decoding_steps, temperature=0.0)
+            action_probs = jax.nn.softmax(final_logit, axis=-1)[:, -1]
 
             # Process all action tokens at once instead of individually
             decoded_actions = []
@@ -367,6 +364,7 @@ class ProcGenInferenceFast:
 
             dataset_results.all_preds.extend(unnormalized_discrete_actions.tolist())
             dataset_results.all_gt.extend(gt_actions.tolist())
+            dataset_results.all_preds_logits.extend(final_logit.reshape(final_logit.shape[0], -1).tolist())
 
             # Calculate Brier MAE
             for action_idx in range(len(actions)):
@@ -567,11 +565,10 @@ def main():
     print('Pi0-FAST Model loaded')
     procgen_inference = ProcGenInferenceFast(model,tokenizer, config, max_decoding_steps=4)  # 4 becasue of "Action", ":", and " " before action tokens
 
-    results_file = os.path.join(args.output_dir, 'pi0_fast_procgen_results.json')
-
     # Get dataset shards
     procgen_dataset_list = os.listdir(args.dataset_dir) # Update path as needed
     for dataset in procgen_dataset_list:
+        results_file = os.path.join(args.output_dir, f'pi0_fast_procgen_results_{dataset}.json')
         print(f'\n ---- EVALUATING {dataset} ---- \n')
         dataset_path = os.path.join(args.dataset_dir, dataset) #Update path as needed
         if not os.path.isdir(dataset_path):
