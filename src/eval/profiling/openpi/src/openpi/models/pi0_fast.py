@@ -149,6 +149,7 @@ class Pi0FAST(_model.BaseModel):
         )
         img.lazy_init(next(iter(config.fake_obs().images.values())), train=False, rngs=rngs)
         self.PaliGemma = nnx.Dict(llm=llm, img=img)
+        self.zero_image_embeddings = None
 
     @at.typecheck
     def embed_inputs(
@@ -159,7 +160,18 @@ class Pi0FAST(_model.BaseModel):
         token_embeddings = []
         # embed images
         for name in obs.images:
-            image_token_embeddings, _ = self.PaliGemma.img(obs.images[name], train=False)
+            # TODO: hacky way only for procgen case only with two zero images
+            if name in ["base_1_rgb", "wrist_0_rgb"]:
+                # update zero image embeddings cache if no cache or it's not a full batch
+                if self.zero_image_embeddings is None or obs.images[name].shape[0] != self.zero_image_embeddings.shape[0]:
+                    image_token_embeddings, _ = self.PaliGemma.img(obs.images[name], train=False)
+                    self.zero_image_embeddings = image_token_embeddings
+                    print(f"Updated zero image embeddings cache for {name}")
+                else:
+                    image_token_embeddings = self.zero_image_embeddings
+                    print(f"Used cached zero image embeddings for {name}")
+            else:
+                image_token_embeddings, _ = self.PaliGemma.img(obs.images[name], train=False)
 
             token_embeddings.append(image_token_embeddings)
             input_mask.append(
@@ -300,6 +312,5 @@ class Pi0FAST(_model.BaseModel):
             return (~all_eos) & (step < max_decoding_steps)
 
         last_logit, output_tokens, final_logit, _, _, _ = jax.lax.while_loop(cond, step, (last_logit, output_tokens, final_logit, kv_cache, False, 0))
-        output_probs = jax.nn.softmax(final_logit, axis=-1)
 
-        return output_tokens, output_probs[:, -1]
+        return output_tokens, final_logit

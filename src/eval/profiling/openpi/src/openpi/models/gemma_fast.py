@@ -118,28 +118,7 @@ class Embedder(nn.Module):
         return x
 
     def decode(self, x):
-        def cpu_decode(x, embedding_table):
-            # Move everything to CPU at the start
-            cpu = jax.devices("cpu")[0]
-            x_cpu = jax.device_put(x, cpu)
-            embedding_table_cpu = jax.device_put(embedding_table, cpu)
-            result = jnp.dot(x_cpu, embedding_table_cpu.T)
-            return result.astype(x.dtype)
-        
-        if x.shape[1] == 1024:
-            print(f"Calculating kv cache on CPU: {x.shape}")
-            result = jax.pure_callback(
-                lambda args: cpu_decode(args[0], args[1]),
-                jax.ShapeDtypeStruct(shape=(*x.shape[:-1], self.input_embedding_table.shape[0]), dtype="bfloat16"),
-                (x, self.input_embedding_table)  # Pass both tensors to be moved to CPU
-            )
-        elif x.shape[1] == 1:
-            print(f"Calculating kv cache on GPU: {x.shape}")
-            result = jnp.dot(x, self.input_embedding_table.T).astype("bfloat16")
-        else:
-            raise ValueError(f"Unexpected input shape: {x.shape}")
-
-        return result
+        return jnp.dot(x, self.input_embedding_table.T)
 
 
 @at.typecheck
@@ -185,52 +164,20 @@ class Attention(nn.Module):
 
     def _init_cache(self, k, v, cache_size):
         """Initialize KV cache"""
-        def cpu_init_cache(k, v, cache_size, prefill_len):
-            cpu = jax.devices("cpu")[0]
-            k_cpu = jax.device_put(k, cpu).astype("bfloat16")
-            v_cpu = jax.device_put(v, cpu).astype("bfloat16")
-            
-            pad_width = ((0, 0), (0, cache_size - prefill_len), (0, 0), (0, 0))
-            k_cache = jnp.pad(k_cpu, pad_width)
-            v_cache = jnp.pad(v_cpu, pad_width)
-            return k_cache, v_cache
-
-        prefill_len = k.shape[1]  # Get this value before the callback
-        # Move cache initialization to CPU
-        k_cache, v_cache = jax.pure_callback(
-            lambda args: cpu_init_cache(args[0], args[1], cache_size, prefill_len),
-            (jax.ShapeDtypeStruct(shape=(k.shape[0], cache_size, *k.shape[2:]), dtype="bfloat16"),
-             jax.ShapeDtypeStruct(shape=(v.shape[0], cache_size, *v.shape[2:]), dtype="bfloat16")),
-            (k, v)
-        )
-        
-        idx = jnp.array([prefill_len], dtype=jnp.int32)  # Create as array
+        prefill_len = k.shape[1]
+        pad_width = ((0, 0), (0, cache_size - prefill_len), (0, 0), (0, 0))
+        cache_dtype = self.cache_dtype or k.dtype
+        k_cache = jnp.pad(k.astype(cache_dtype), pad_width)
+        v_cache = jnp.pad(v.astype(cache_dtype), pad_width)
+        idx = jnp.zeros((k.shape[0],), dtype=jnp.int32) + prefill_len
         return idx, k_cache, v_cache
 
     def _update_cache(self, k, v, idx, k_cache, v_cache):
-        """Update KV cache with new values"""
-        def cpu_update_cache(k, v, k_cache, v_cache, idx):
-            cpu = jax.devices("cpu")[0]
-            k_cpu = jax.device_put(k, cpu).astype("bfloat16")
-            v_cpu = jax.device_put(v, cpu).astype("bfloat16")
-            k_cache_cpu = jax.device_put(k_cache, cpu).astype("bfloat16")
-            v_cache_cpu = jax.device_put(v_cache, cpu).astype("bfloat16")
-            
-            assert k_cpu.shape[1] == 1, "Only support kv-cache updates of length 1"
-            # Use the full idx array instead of trying to extract a scalar
-            indices = jnp.array([0, idx[0], 0, 0])
-            k_new = jax.lax.dynamic_update_slice(k_cache_cpu, k_cpu, indices)
-            v_new = jax.lax.dynamic_update_slice(v_cache_cpu, v_cpu, indices)
-            return k_new, v_new
-
-        # Pass the entire idx array to the callback
-        k_new, v_new = jax.pure_callback(
-            lambda args: cpu_update_cache(args[0], args[1], args[2], args[3], args[4]),
-            (jax.ShapeDtypeStruct(shape=k_cache.shape, dtype="bfloat16"),
-             jax.ShapeDtypeStruct(shape=v_cache.shape, dtype="bfloat16")),
-            (k, v, k_cache, v_cache, idx)
-        )
-        
+        assert k.shape[1] == 1, "Only support kv-cache updates of length 1"
+        indices = (0, idx[0], 0, 0)
+        cache_dtype = self.cache_dtype or k.dtype
+        k_new = jax.lax.dynamic_update_slice(k_cache, k.astype(cache_dtype), indices)
+        v_new = jax.lax.dynamic_update_slice(v_cache, v.astype(cache_dtype), indices)
         idx_new = idx + 1
         return idx_new, k_new, v_new
 
