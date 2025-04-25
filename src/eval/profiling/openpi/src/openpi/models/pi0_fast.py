@@ -149,7 +149,7 @@ class Pi0FAST(_model.BaseModel):
         )
         img.lazy_init(next(iter(config.fake_obs().images.values())), train=False, rngs=rngs)
         self.PaliGemma = nnx.Dict(llm=llm, img=img)
-        self.zero_embeddings = None
+        self.zero_image_embeddings = None
 
     @at.typecheck
     def embed_inputs(
@@ -162,11 +162,11 @@ class Pi0FAST(_model.BaseModel):
         for name in obs.images:
             # TODO: hacky way only for procgen case only with two zero images
             if name in ["base_1_rgb", "wrist_0_rgb"]:
-                if self.zero_embeddings is None:
+                if self.zero_image_embeddings is None:
                     image_token_embeddings, _ = self.PaliGemma.img(obs.images[name], train=False)
-                    self.zero_embeddings = image_token_embeddings
+                    self.zero_image_embeddings = image_token_embeddings
                 else:
-                    image_token_embeddings = self.zero_embeddings
+                    image_token_embeddings = self.zero_image_embeddings
             else:
                 image_token_embeddings, _ = self.PaliGemma.img(obs.images[name], train=False)
 
