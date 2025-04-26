@@ -58,7 +58,7 @@ MAX_BRIER_ERROR = 2.0
 class DatasetResults:
     all_preds: list[list[float]] = field(default_factory=list)
     all_gt: list[list[float]] = field(default_factory=list)
-    all_preds_logits: list[list[float]] = field(default_factory=list)
+    all_preds_probs: list[list[float]] = field(default_factory=list)
 
     eval_time: float = 0
     total_batches: int = 0
@@ -106,8 +106,6 @@ class ProcGenInferenceFast:
 
     def prepare_observation(self, obs_dict: dict, action_dim: int = 1, max_token_length: int = 48) -> dict:
         # Prepare observation dictionary for pi0 model inference
-        tokenizer = self.tokenizer
-
         # Process image observation
         base_image = obs_dict["image_observation"]
         if isinstance(base_image, list) and isinstance(base_image[0], tf.Tensor): # Handle list of tensors
@@ -364,7 +362,6 @@ class ProcGenInferenceFast:
 
             dataset_results.all_preds.extend(unnormalized_discrete_actions.tolist())
             dataset_results.all_gt.extend(gt_actions.tolist())
-            dataset_results.all_preds_logits.extend(final_logit.reshape(final_logit.shape[0], -1).tolist())
 
             # Calculate Brier MAE
             for action_idx in range(len(actions)):
@@ -373,10 +370,12 @@ class ProcGenInferenceFast:
                 gt_action_one_hot[gt_actions[action_idx]] = 1
                 if unnormalized_discrete_actions[action_idx] not in action_space:
                     all_brier_maes.append(MAX_BRIER_ERROR)
+                    dataset_results.all_preds_probs.append([-1])
                 else:
                     unnormalized_action_values_to_probs = self.get_unnormalized_action_values_to_probs(
                         dataset, action_probs[action_idx], unnormalizer, action_space
                     )
+                    dataset_results.all_preds_probs.append(unnormalized_action_values_to_probs.tolist())
 
                     all_brier_maes.append(calculate_brier_mae(unnormalized_action_values_to_probs, gt_action_one_hot))
 
