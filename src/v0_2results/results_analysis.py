@@ -7,6 +7,7 @@ from pathlib import Path
 from collections import Counter
 from sklearn.metrics import confusion_matrix, matthews_corrcoef
 import seaborn as sns
+import pandas as pd
 
 current_file = Path(__file__).resolve()
 project_root = next(
@@ -144,7 +145,6 @@ def plot_individual_models(results_dir, models):
     plt.ylabel('Macro F1 score')
     plt.title('Model Performance Comparison Across Subdatasets')
     plt.xticks(x, subdatasets, rotation=45)
-    # plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc='lower left', mode="expand", ncol=5)
     plt.legend()
     plt.ylim(0, 0.15)  # Set y-axis limit to 0.15
     
@@ -841,50 +841,199 @@ def calculate_confusion_matrices_and_mcc(results_dir: str, models: list[str]):
                     f.write(f'{model} | {dataset} | {mcc_scores[model][dataset]:.3f}\n')
 
 
+def plot_dataset_specific_metrics(results_dir):
+    """Create plots showing precision, recall, and F1 scores for each dataset separately,
+    with three subplots per dataset and action classes as columns.
+    """
+    results = load_results(results_dir)
+    
+    # Get all available models and datasets
+    models = list(results.keys())
+    datasets = list(results['gpt4o'].keys())  # Using gpt4o as reference for available datasets
+    
+    # For each dataset, create three subplots
+    for dataset in datasets:
+        # Get valid actions for this dataset
+        valid_actions = sorted(ProcGenDefinitions.get_valid_action_space(dataset, 'default'))
+        
+        # Collect metrics for each model and action class
+        action_metrics = {action: {
+            'precision': [],
+            'recall': [],
+            'f1': [],
+            'model_names': []
+        } for action in valid_actions}
+        
+        # Collect metrics for each model
+        for model in models:
+            try:
+                if dataset in results[model][dataset]:
+                    metrics = results[model][dataset][dataset]['class_wise_metrics']
+                else:
+                    metrics = results[model][dataset]['class_wise_metrics']
+                
+                # For each action class, collect its metrics
+                for action in valid_actions:
+                    if str(action) in metrics:
+                        action_metrics[action]['precision'].append(metrics[str(action)]['precision'])
+                        action_metrics[action]['recall'].append(metrics[str(action)]['recall'])
+                        action_metrics[action]['f1'].append(metrics[str(action)]['f1'])
+                        action_metrics[action]['model_names'].append(model)
+                    else:
+                        action_metrics[action]['precision'].append(0)
+                        action_metrics[action]['recall'].append(0)
+                        action_metrics[action]['f1'].append(0)
+                        action_metrics[action]['model_names'].append(model)
+                        
+            except KeyError as e:
+                print(f"Missing data for {model} on {dataset}: {e}")
+                continue
+        
+        # Create figure with three subplots
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(max(12, len(valid_actions) * 2.5), 18))
+        
+        # Add the main title
+        fig.suptitle(f'Model Performance Metrics for {dataset}', fontsize=12, y=0.95)
+        
+        # Calculate bar positions
+        num_models = len(models)
+        bar_width = 0.15
+        group_width = bar_width * num_models + 0.3  # Add padding between groups
+        
+        # Plot settings for each metric
+        metric_settings = [
+            ('precision', 'Precision', ax1, '#1f77b4'),
+            ('recall', 'Recall', ax2, '#2ca02c'),
+            ('f1', 'F1 Score', ax3, '#ff7f0e')
+        ]
+        
+        # Create plots for each metric
+        for metric_name, metric_label, ax, color in metric_settings:
+            for model_idx, model in enumerate(models):
+                values = []
+                x_positions = []
+                
+                for action_idx, action in enumerate(valid_actions):
+                    if model_idx < len(action_metrics[action]['model_names']):
+                        values.append(action_metrics[action][metric_name][model_idx])
+                        x_pos = action_idx * group_width + model_idx * bar_width
+                        x_positions.append(x_pos)
+                
+                # Plot bars for this model
+                bars = ax.bar(x_positions, values, bar_width,
+                            label=model, color=COLORS[model_idx], alpha=0.7)
+                
+                # Add value labels on top of bars
+                for i, value in enumerate(values):
+                    ax.text(x_positions[i], value, f'{value:.2f}',
+                           ha='center', va='bottom', rotation=0, fontsize=8)
+            
+            # Customize subplot
+            ax.set_ylabel(metric_label, fontsize=12)
+            ax.set_title(f'{metric_label}', fontsize=12, pad=10)
+            
+            # Set x-ticks at the center of each group
+            group_centers = [i * group_width + (bar_width * (num_models - 1)) / 2 for i in range(len(valid_actions))]
+            ax.set_xticks(group_centers)
+            ax.set_xticklabels([f'Action {action}' for action in valid_actions], fontsize=10)
+            
+            # Add legend
+            ax.legend()
+            
+            # Set y-axis limit with padding for labels
+            ax.set_ylim(0, 1.15)
+            
+            # Add grid
+            ax.grid(True, alpha=0.3)
+            
+            # Increase tick label size
+            ax.tick_params(axis='both', which='major', labelsize=10)
+        
+        # Adjust layout and save
+        plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust the top margin to make room for the suptitle
+        plt.savefig(os.path.join(results_dir, f'dataset_metrics_by_action_{dataset}.png'),
+                   bbox_inches='tight', dpi=300)
+        plt.close()
+
+
+def print_preds_gt_unique_value_counts(results_dir):
+    results = load_results(results_dir)
+    models = list(results.keys())
+
+    # Analyze action value distributions for each dataset
+    for dataset in results['gpt4o'].keys():
+        print(f"\n=== Action Value Distribution for {dataset} ===")
+        
+        # Create a DataFrame for this dataset
+        df = pd.DataFrame()
+        
+        # Get ground truth and predictions for each model
+        for model in models:
+            try:
+                if model in ['pi0_base', 'pi0_fast']:
+                    predictions = np.array(results[model][dataset][dataset]['all_preds']).flatten()
+                    ground_truth = np.array(results[model][dataset][dataset]['all_gt']).flatten()
+                elif model in ['gpt4o', 'gpt4_1']:
+                    predictions = np.array(results[model][dataset][dataset]['preds']).flatten()
+                    ground_truth = np.array(results[model][dataset][dataset]['gt_actions']).flatten()
+                elif model == 'openvla':
+                    try:
+                        predictions = np.array(results[model][dataset]['all_preds']).flatten()
+                        ground_truth = np.array(results[model][dataset]['all_gt']).flatten()
+                    except KeyError:
+                        predictions = np.array(results[model][dataset][dataset]['all_preds']).flatten()
+                        ground_truth = np.array(results[model][dataset][dataset]['all_gt']).flatten()
+                # Add to DataFrame
+                df[f'{model}_gt'] = ground_truth
+                df[f'{model}_preds'] = predictions
+                
+            except KeyError as e:
+                print(f"Missing data for {model} on {dataset}: {e}")
+                continue
+        
+        # Print unique values and their counts for each column
+        for col in df.columns:
+            value_counts = df[col].value_counts().sort_index()
+            print(f"\n{col}:")
+            print(value_counts)
+            print(f"Total unique values: {len(value_counts)}")
+            print(f"Most common value: {value_counts.idxmax()} (count: {value_counts.max()})")
+            print(f"Least common value: {value_counts.idxmin()} (count: {value_counts.min()})")
+
+
 if __name__ == "__main__":
     results_dir = "src/v0_2results"
     models = ['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']
     
+    # plot_dataset_specific_metrics(results_dir)
+
     # # Generate plots
-    calculate_classwise_metrics(results_dir, 'pi0_fast')
-    plot_model_metrics(results_dir, 'pi0_fast') #Change model as needed
-    plot_classwise_metrics(results_dir, 'pi0_fast')
+    # calculate_classwise_metrics(results_dir, 'pi0_fast')
+    # plot_model_metrics(results_dir, 'pi0_fast') #Change model as needed
+    # plot_classwise_metrics(results_dir, 'pi0_fast')
 
-    calculate_classwise_metrics(results_dir, 'gpt4o')
-    plot_model_metrics(results_dir, 'gpt4o') #Change model as needed
-    plot_classwise_metrics(results_dir, 'gpt4o')
+    # calculate_classwise_metrics(results_dir, 'gpt4o')
+    # plot_model_metrics(results_dir, 'gpt4o') #Change model as needed
+    # plot_classwise_metrics(results_dir, 'gpt4o')
 
-    calculate_classwise_metrics(results_dir, 'gpt4_1')
-    plot_model_metrics(results_dir, 'gpt4_1') #Change model as needed
-    plot_classwise_metrics(results_dir, 'gpt4_1')
+    # calculate_classwise_metrics(results_dir, 'gpt4_1')
+    # plot_model_metrics(results_dir, 'gpt4_1') #Change model as needed
+    # plot_classwise_metrics(results_dir, 'gpt4_1')
 
-    plot_individual_models(results_dir, models)
-    plot_individual_models_macro_recall(results_dir, models)
+    # plot_individual_models(results_dir, models)
+    # plot_individual_models_macro_recall(results_dir, models)
 
-    # results = load_results(results_dir)
-
-    # # convert all_gt in results to set
-    # from collections import Counter
-    # gt_stats = Counter(np.array(results['pi0_fast']['chaser']['chaser']['all_gt']).flatten())
-    # print(gt_stats)
+    # # Generate comparative plots
+    # plot_cross_model_class_comparison(results_dir, models)
     
-    # pred_stats = Counter(np.array(results['pi0_fast']['chaser']['chaser']['all_preds']).flatten())
-    # print(pred_stats)
-    # # import pandas as pd
-    # # df = pd.DataFrame(results['pi0_fast']['chaser']['chaser']['all_gt'])
-    # # print(df.info())
+    # # # Calculate confusion matrices and MCC
+    # calculate_confusion_matrices_and_mcc(results_dir, models)
 
+    # # # # Generate heatmaps for each metric
+    # # # for metric in ['f1', 'precision', 'recall']:
+    # # #     plot_action_difficulty_heatmap(results_dir, models, metric)
 
-    # Generate comparative plots
-    plot_cross_model_class_comparison(results_dir, models)
-    
-    # # Calculate confusion matrices and MCC
-    calculate_confusion_matrices_and_mcc(results_dir, models)
+    # # # Generate category performance plots
+    # plot_category_performance(results_dir, models)
 
-    # # # Generate heatmaps for each metric
-    # # for metric in ['f1', 'precision', 'recall']:
-    # #     plot_action_difficulty_heatmap(results_dir, models, metric)
-
-    # # Generate category performance plots
-    plot_category_performance(results_dir, models)
-
+    print_preds_gt_unique_value_counts(results_dir)
