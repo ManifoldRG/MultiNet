@@ -17,12 +17,17 @@ sys.path.append(str(project_root))
 from definitions.procgen import ProcGenDefinitions
 from src.eval_utils import get_precision_per_class, get_recall_per_class, get_f1_per_class, get_macro_precision, get_macro_recall, get_macro_f1
 
+COLORS = ['#1f77b4',  # Blue
+          '#d62728',  # Red
+          '#2ca02c',  # Green
+          '#9467bd',  # Purple
+          '#ff7f0e']  # Orange
 
-
-def load_results(results_dir):
+def load_results(results_dir, models=['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']):
     """Load results from json files in the specified directory"""
     results = {}
-    for model_name in os.listdir(results_dir):
+
+    for model_name in models:
         if model_name == 'pi0_base':
             results[model_name] = {}
             results_path = os.path.join(results_dir, model_name, 'procgen_results', 'corrected_results')
@@ -39,11 +44,22 @@ def load_results(results_dir):
                             results[model_name][dataset_name] = json.load(f)
                             #print(results[model_name][dataset_name])
                         break
-        
+    
         elif model_name == 'gpt4o':
             results[model_name] = {}
-            # results_path = os.path.join(results_dir, model_name, 'procgen_results', 'corrected_results')
-            results_path = os.path.join(results_dir, 'gpt4o', 'procgen_results', 'gpt4.1_new_prompt')  # TODO: Change this back to corrected_results
+            results_path = os.path.join(results_dir, model_name, 'procgen_results', 'corrected_results')
+            for dataset in os.listdir(results_path):
+                filename_parts = dataset.split('_')
+                for part in filename_parts:
+                    if part in ProcGenDefinitions.DESCRIPTIONS:
+                        dataset_name = part
+                        with open(os.path.join(results_path, dataset), 'r') as f:
+                            results[model_name][dataset_name] = json.load(f)
+                            #print(results[model_name][dataset_name])
+                        break
+        elif model_name == 'gpt4_1':
+            results[model_name] = {}
+            results_path = os.path.join(results_dir, 'gpt4o', 'procgen_results', 'gpt4.1_new_prompt')
             for dataset in os.listdir(results_path):
                 filename_parts = dataset.split('_')
                 for part in filename_parts:
@@ -75,27 +91,27 @@ def load_results(results_dir):
                             with open(os.path.join(results_dir, model_name, 'procgen_results', dataset), 'r') as f:
                                 results[model_name][dataset_name] = json.load(f)
                             break
-                    
+                
     return results
 
-def plot_individual_models(results_dir):
+def plot_individual_models(results_dir, models):
     """Create individual plots for each model across subdatasets
        CHANGE KEYS/METRIC NAMES BASED ON THE RESULTS FILES
     """
-    results = load_results(results_dir)
+    results = load_results(results_dir, models)
     #print(results.keys())
     #print(results['gpt4o'].keys())
 
     # Get list of all subdatasets -- common ones
     # subdatasets = list(results['pi0_fast'].keys())
-    subdatasets = list(results['gpt4o'].keys())
+    subdatasets = list(results[models[0]].keys())
     # Set width of bars and positions of the bars
     width = 0.35
     x = np.arange(len(subdatasets))
     
     # Create lists of normalized_brier_mae values for each model
     gpt4o_scores = [results['gpt4o'][dataset][dataset]['macro_f1'] for dataset in subdatasets]
-
+    gpt4_1_scores = [results['gpt4_1'][dataset][dataset]['macro_f1'] for dataset in subdatasets]
     openvla_scores = []
     for dataset in subdatasets:
         if dataset in results['openvla'][dataset]:
@@ -119,18 +135,79 @@ def plot_individual_models(results_dir):
     # Increase spacing between groups by multiplying x by a factor
     x = x * 2  # Double the spacing between groups
     
-    plt.bar(x - width/2, gpt4o_scores, width, label='GPT-4o')
-    plt.bar(x + width/2, openvla_scores, width, label='OpenVLA')
-    plt.bar(x + 3*width/2, pi0_base_scores, width, label='PI0 Base')
-    plt.bar(x + 5*width/2, pi0_fast_scores, width, label='PI0 Fast')
+    plt.bar(x - width/2, gpt4o_scores, width, label='GPT-4o', color=COLORS[0])
+    plt.bar(x + width/2, openvla_scores, width, label='OpenVLA', color=COLORS[1])
+    plt.bar(x + 3*width/2, pi0_base_scores, width, label='PI0 Base', color=COLORS[2])
+    plt.bar(x + 5*width/2, pi0_fast_scores, width, label='PI0 Fast', color=COLORS[3])
+    plt.bar(x + 7*width/2, gpt4_1_scores, width, label='GPT-4_1', color=COLORS[4])
     # Customize the plot
     plt.ylabel('Macro F1 score')
     plt.title('Model Performance Comparison Across Subdatasets')
     plt.xticks(x, subdatasets, rotation=45)
+    # plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc='lower left', mode="expand", ncol=5)
     plt.legend()
+    plt.ylim(0, 0.15)  # Set y-axis limit to 0.15
     
     plt.tight_layout()
     plt.savefig(os.path.join(results_dir, 'model_comparison_macro_f1.png'))
+    plt.close()
+
+def plot_individual_models_macro_recall(results_dir, models):
+    """Create individual plots for each model across subdatasets
+       CHANGE KEYS/METRIC NAMES BASED ON THE RESULTS FILES
+    """
+    results = load_results(results_dir, models)
+    #print(results.keys())
+    #print(results['gpt4o'].keys())
+
+    # Get list of all subdatasets -- common ones
+    # subdatasets = list(results['pi0_fast'].keys())
+    subdatasets = list(results[models[0]].keys())
+    # Set width of bars and positions of the bars
+    width = 0.35
+    x = np.arange(len(subdatasets))
+    
+    # Create lists of normalized_brier_mae values for each model
+    gpt4o_scores = [results['gpt4o'][dataset][dataset]['macro_recall'] for dataset in subdatasets]
+    gpt4_1_scores = [results['gpt4_1'][dataset][dataset]['macro_recall'] for dataset in subdatasets]
+    openvla_scores = []
+    for dataset in subdatasets:
+        if dataset in results['openvla'][dataset]:
+            openvla_scores.append(results['openvla'][dataset][dataset]['macro_recall'])
+        else:
+            openvla_scores.append(results['openvla'][dataset]['macro_recall'])
+    #print(results['pi0_base'].keys())
+    pi0_base_scores = [results['pi0_base'][dataset][dataset]['macro_recall'] for dataset in subdatasets]
+
+    pi0_fast_scores = []
+    for dataset in subdatasets:
+        if dataset in results['pi0_fast'].keys():
+            pi0_fast_scores.append(results['pi0_fast'][dataset][dataset]['macro_recall'])
+        else:
+            pi0_fast_scores.append(0)
+
+    # Create the figure and axis
+    plt.figure(figsize=(12, 6))
+    
+    # Create bars
+    # Increase spacing between groups by multiplying x by a factor
+    x = x * 2  # Double the spacing between groups
+    
+    plt.bar(x - width/2, gpt4o_scores, width, label='GPT-4o', color=COLORS[0])
+    plt.bar(x + width/2, openvla_scores, width, label='OpenVLA', color=COLORS[1])
+    plt.bar(x + 3*width/2, pi0_base_scores, width, label='PI0 Base', color=COLORS[2])
+    plt.bar(x + 5*width/2, pi0_fast_scores, width, label='PI0 Fast', color=COLORS[3])
+    plt.bar(x + 7*width/2, gpt4_1_scores, width, label='GPT-4_1', color=COLORS[4])
+    # Customize the plot
+    plt.ylabel('Macro Recall')
+    plt.title('Model Performance Comparison Across Subdatasets')
+    plt.xticks(x, subdatasets, rotation=45)
+    # plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc='lower left', mode="expand", ncol=5)
+    plt.legend()
+    plt.ylim(0, 0.15)  # Set y-axis limit to 0.15
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, 'model_comparison_macro_recall.png'))
     plt.close()
 
 def plot_classwise_metrics(results_dir, model_name):
@@ -215,7 +292,7 @@ def plot_model_metrics(results_dir, model_name):
         avg_normalized_brier_mae_key = 'avg_normalized_brier_mae' 
         avg_dataset_brier_mae_key = 'avg_brier_mae'
         avg_quantile_filtered_normalized_brier_mae_key = 'avg_quantile_filtered_normalized_brier_mae'
-    elif model_name == 'gpt4o':
+    elif model_name in ['gpt4o', 'gpt4_1']:
         avg_normalized_brier_mae_key = 'normalized_amae'
         avg_dataset_brier_mae_key = 'avg_dataset_amae'
         avg_quantile_filtered_normalized_brier_mae_key = 'normalized_quantile_filtered_amae'
@@ -268,7 +345,8 @@ def calculate_classwise_metrics(results_dir, model_name):
         if model_name == 'pi0_base':
             json_path = os.path.join(results_dir, model_name, 'procgen_results', 'corrected_results')
         elif model_name == 'gpt4o':
-            # json_path = os.path.join(results_dir, model_name, 'procgen_results', 'corrected_results')
+            json_path = os.path.join(results_dir, model_name, 'procgen_results', 'corrected_results')
+        elif model_name == 'gpt4_1':
             json_path = os.path.join(results_dir, model_name, 'procgen_results', 'gpt4.1_new_prompt')
             predictions = np.array(results[model_name][dataset][dataset]['preds'])
             ground_truth = np.array(results[model_name][dataset][dataset]['gt_actions'])
@@ -334,7 +412,6 @@ def plot_cross_model_class_comparison(results_dir: str, models: list[str]):
         common_datasets.intersection_update(results[model].keys())
     
     # Plot settings
-    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']  # Different color for each model
     bar_width = 0.15  # Width of each bar
     
     # Initialize dictionaries to store metrics per action class across all datasets
@@ -389,7 +466,7 @@ def plot_cross_model_class_comparison(results_dir: str, models: list[str]):
                 stds.append(np.std(values))
             
             plt.bar(x + i*bar_width, averages, bar_width,
-                   label=model, color=colors[i], alpha=0.7,
+                   label=model, color=COLORS[i], alpha=0.7,
                    yerr=stds, capsize=5)
             
             # Add value labels
@@ -526,7 +603,6 @@ def plot_category_performance(results_dir: str, models: list[str]):
     }
     
     # Plot settings
-    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']  # Colors for different models
     bar_width = 0.15
     
     # Create plots for each categorization scheme
@@ -572,7 +648,7 @@ def plot_category_performance(results_dir: str, models: list[str]):
                 
                 # Plot bars with error bars
                 plt.bar(x + i*bar_width, category_means, bar_width,
-                       label=model, color=colors[i], alpha=0.7,
+                       label=model, color=COLORS[i], alpha=0.7,
                        yerr=category_stds, capsize=5)
             
             # Customize plot
@@ -631,8 +707,8 @@ def plot_category_performance(results_dir: str, models: list[str]):
             values = np.concatenate((values, [values[0]]))
             
             # Plot the values
-            ax.plot(angles, values, 'o-', label=model, color=colors[i], alpha=0.7)
-            ax.fill(angles, values, color=colors[i], alpha=0.1)
+            ax.plot(angles, values, 'o-', label=model, color=COLORS[i], alpha=0.7)
+            ax.fill(angles, values, color=COLORS[i], alpha=0.1)
         
         # Set the labels
         ax.set_xticks(angles[:-1])
@@ -672,7 +748,7 @@ def calculate_confusion_matrices_and_mcc(results_dir: str, models: list[str]):
         for dataset in common_datasets:
             try:
                 # Get predictions and ground truth based on model type
-                if model == 'gpt4o':
+                if model in ['gpt4o', 'gpt4_1']:
                     predictions = np.array(results[model][dataset][dataset]['preds']).flatten()
                     ground_truth = np.array(results[model][dataset][dataset]['gt_actions']).flatten()
                 elif model == 'pi0_fast':
@@ -705,7 +781,10 @@ def calculate_confusion_matrices_and_mcc(results_dir: str, models: list[str]):
                 # Plot individual confusion matrix
                 plt.figure(figsize=(10, 8))
                 # Row normalize the confusion matrix
-                cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+                row_sums = cm.sum(axis=1)[:, np.newaxis]
+                # Handle zero-sum rows to avoid division by zero
+                row_sums[row_sums == 0] = 1  # Replace zeros with ones to avoid division by zero
+                cm_normalized = cm.astype('float') / row_sums
                 sns.heatmap(cm_normalized, annot=True, fmt='.2f', cmap='YlOrRd',
                            xticklabels=range(num_classes),
                            yticklabels=range(num_classes))
@@ -735,7 +814,10 @@ def calculate_confusion_matrices_and_mcc(results_dir: str, models: list[str]):
             # Plot union confusion matrix
             plt.figure(figsize=(12, 10))
             # Row normalize the union confusion matrix
-            union_cm_normalized = union_cm.astype('float') / union_cm.sum(axis=1)[:, np.newaxis]
+            row_sums = union_cm.sum(axis=1)[:, np.newaxis]
+            # Handle zero-sum rows to avoid division by zero
+            row_sums[row_sums == 0] = 1  # Replace zeros with ones to avoid division by zero
+            union_cm_normalized = union_cm.astype('float') / row_sums
             sns.heatmap(union_cm_normalized, annot=True, fmt='.2f', cmap='YlOrRd',
                        xticklabels=range(max_classes),
                        yticklabels=range(max_classes))
@@ -761,18 +843,23 @@ def calculate_confusion_matrices_and_mcc(results_dir: str, models: list[str]):
 
 if __name__ == "__main__":
     results_dir = "src/v0_2results"
-    models = ['gpt4o', 'openvla', 'pi0_base', 'pi0_fast']
+    models = ['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']
     
     # # Generate plots
-    # calculate_classwise_metrics(results_dir, 'pi0_fast')
-    # plot_individual_models(results_dir)
-    # plot_model_metrics(results_dir, 'pi0_fast') #Change model as needed
-    # plot_classwise_metrics(results_dir, 'pi0_fast')
+    calculate_classwise_metrics(results_dir, 'pi0_fast')
+    plot_model_metrics(results_dir, 'pi0_fast') #Change model as needed
+    plot_classwise_metrics(results_dir, 'pi0_fast')
 
     calculate_classwise_metrics(results_dir, 'gpt4o')
-    plot_individual_models(results_dir)
     plot_model_metrics(results_dir, 'gpt4o') #Change model as needed
     plot_classwise_metrics(results_dir, 'gpt4o')
+
+    calculate_classwise_metrics(results_dir, 'gpt4_1')
+    plot_model_metrics(results_dir, 'gpt4_1') #Change model as needed
+    plot_classwise_metrics(results_dir, 'gpt4_1')
+
+    plot_individual_models(results_dir, models)
+    plot_individual_models_macro_recall(results_dir, models)
 
     # results = load_results(results_dir)
 
