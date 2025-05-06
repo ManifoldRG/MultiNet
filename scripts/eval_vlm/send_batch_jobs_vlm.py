@@ -13,10 +13,12 @@ import json
 
 
 if __name__=="__main__":
+    
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_root_dir', type=str, required=True, help="The root directory of the translated data.")
     parser.add_argument('--dataset_family', type=str, required=True, help="The name of the dataset to evaluate.")
     parser.add_argument('--model', type=str, required=True, help="The name of the model to evaluate.")
+    parser.add_argument("--metadata_dir", type=str, required=True, help="The directory to save batch info in after sending the jobs.")
     parser.add_argument('--batch_size', type=int, default=1, help="The batch size used for evaluation.")
     parser.add_argument('--k_shots', type=int, default=0, help="Setting how many few-shots examples should be used.")
 
@@ -37,6 +39,11 @@ if __name__=="__main__":
     # Setting the configurations of the current evaluation job.
     modality, source = config['models'][args.model]
 
+    confirm_intention = input(f"This script will process all timesteps for all {args.dataset_family} datasets in {args.data_root_dir} and send batch jobs to the {source} API. Do you want to continue? (y/n): ")
+    if confirm_intention.lower() != 'y':
+        print("Exiting the script.")
+        exit(0)
+        
     # Setting the extra information depending on the model.
     if source == 'openai':
         os.environ["OPENAI_API_KEY"] = input("Enter the OpenAI API key: ")
@@ -47,9 +54,9 @@ if __name__=="__main__":
     
     dataset_module = None
     if args.dataset_family == 'procgen':
-        dataset_module = ProcGenBatchModule(data_root_dir, modality, source, args.model, args.batch_size, args.k_shots)
+        dataset_module = ProcGenBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     elif args.dataset_family == 'openx':
-        dataset_module = OpenXBatchModule(data_root_dir, modality, source, args.model, args.batch_size, args.k_shots)
+        dataset_module = OpenXBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     else:
         print(f"The dataset family {args.dataset_family} is not supported.")
         exit(1)
