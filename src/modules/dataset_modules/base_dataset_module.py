@@ -301,9 +301,9 @@ class BatchInfo:
  
 
 class DatasetBatchModule(DatasetModule, ABC):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0, no_inference: bool = False) -> None:
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_info_dir: str, batch_size: int = 1, k_shots: int = 0) -> None:
         super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
-        self.batch_size = batch_size
+        self.batch_info_dir = batch_info_dir
         self._batch_list = None
         
     @property
@@ -324,7 +324,7 @@ class DatasetBatchModule(DatasetModule, ABC):
         is_lasts = [int(is_last) for is_last in is_lasts]
         labels = [label.numpy() if not isinstance(label, np.ndarray) else label for label in labels]
 
-        batch_job = BatchInfo(self.dataset_family, dataset_name, batch_num, batch_id, output_types, token_count, is_lasts, labels, num_inputs, self.disk_root_dir, self.model)
+        batch_job = BatchInfo(self.dataset_family, dataset_name, batch_num, batch_id, output_types, token_count, is_lasts, labels, num_inputs, self.batch_info_dir, self.model)
         fp = batch_job.save_to_file()
         self.batch_list[dataset_name].append(str(fp))
         

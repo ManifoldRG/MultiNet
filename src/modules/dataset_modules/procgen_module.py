@@ -220,8 +220,8 @@ class ProcGenModule(DatasetModule):
 
 
 class ProcGenBatchModule(DatasetBatchModule):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0):
-        super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_info_dir: str, batch_size: int = 1, k_shots: int = 0):
+        super().__init__(disk_root_dir, modality, source, model, batch_info_dir, batch_size, k_shots)
         self._definitions_class = ProcGenDefinitions
         self.get_dataloader_fn = get_procgen_dataloader
         self.dataset_family = 'procgen'

@@ -1,10 +1,11 @@
 INSTRUCTION = [
-    "You are an AI agent to solve the task called \"{env_name}\".",
+    "We are running a simulation for an AI agent playing a video game. Your role is to evaluate potential moves based on a snapshot.",
+    "The description of this hypothetical scenario is \"{env_name}\".",
     "In this environment: {env_desc}",
     "You should produce a proper action output to achieve the final goal given the current progress so far given the current state information.",
-    "The current state can be any forms, such as images, continuous/discrete vectors, or texts.",
+    "The current state consists of an image, which is a snapshot of the game screen, and a text description of the objective.",
     "The actions available: {action_desc}",
-    "You must generate your output keeping the following format: {output_format}",
+    "You MUST generate your output keeping the following format: {output_format}",
     "You should not include any other words or characters in your response.",
     "{additional_inst}"
 ]
@@ -45,11 +46,11 @@ def format_instruction_prompt(env_name: str, env_desc: str, action_space: dict, 
     if only_one_action:
         output_format = "A list starting with '[' and ending with ']'. "
         if discrete_only:
-            output_format += "Each position corresponds to each action index. Each position in that list should be a hashmap starting with '{' and ending with '}'. The hashmap should contain a key for each option index of that action, and the value for that key corresponds to the probability that this option should be selected as the next step. All probabilities across all actions, as opposed to per action or hashmap, must sum up to 1.0."
+            output_format += "Each position corresponds to each action index. Each position MUST be a hashmap starting with '{' and ending with '}'. The hashmap should contain a key for each option index of that action, and the value for that key corresponds to the probability that this option should be selected as the next step. ALL probabilities across all actions, as opposed to per action or hashmap, MUST sum up to 1.0."
         elif continuous_only:
-            output_format += "Each position corresponds to each action index. The a value in that position should be a tuple with 2 values in this format: (the actual value of that action, the probability that this action should be taken)."
+            output_format += "Each position corresponds to each action index. Each position MUST be a tuple with 2 values in this format: (the actual value of that action, the probability that this action should be taken). ALL probabilities across all actions MUST sum up to 1.0."
         else:
-            output_format += "Each position corresponds to each action index. If the action is continuous, the a value in that position should be a tuple with 2 values in this format: (the actual value of that action, the probability that this action should be taken). If the action for an action index in discrete, then a value in that position in the list should be a hashmap starting with '{' and ending with '}'. The hashmap should contain a key for each option index of that action, and the value for that key corresponds to the probability that this action-option combination should be selected as the next step. All probabilities across all actions together, as opposed to per action or hashmap, must sum up to 1.0."
+            output_format += "Each position corresponds to each action index. If the action is continuous, the corresponding position MUST be a tuple with 2 values in this format: (the actual value of that action, the probability that this action should be taken). If the action for an action index is discrete, the corresponding position MUST be a hashmap starting with '{' and ending with '}'. The hashmap should contain a key for each option index of that action, and the value for that key corresponds to the probability that this action-option combination should be selected as the next step. ALL probabilities across all actions, as opposed to per action or hashmap, MUST sum up to 1.0."
  
     else:
         output_format = "A list starting with '[' and ending with ']'. "

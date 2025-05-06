@@ -3,6 +3,7 @@ from typing import Any
 from PIL import Image
 from io import BytesIO
 
+import os
 import tiktoken
 import math
 import numpy as np
@@ -12,6 +13,7 @@ import time
 import warnings
 
 CONTEXT_SIZE_MAP = {
+    'gpt-4.1-2025-04-14': 1000000,
     'gpt-4o': 128000,
     'gpt-4o-2024-05-13': 128000,
     'gpt-4o-2024-08-06': 128000,
@@ -28,10 +30,11 @@ CONTEXT_SIZE_MAP = {
 }
 
 BATCH_QUEUE_TOKEN_DAY_LIMIT = {
-    'gpt-4o': 10000000000,
-    'gpt-4o-2024-05-13': 10000000000,
-    'gpt-4o-2024-08-06': 10000000000,
-    'chatgpt-4o-latest': 10000000000,
+    'gpt-4.1-2025-04-14': 15000000000,
+    'gpt-4o': 15000000000,
+    'gpt-4o-2024-05-13': 15000000000,
+    'gpt-4o-2024-08-06': 15000000000,
+    'chatgpt-4o-latest': 15000000000,
     'gpt-4o-mini': 15000000000,
     'gpt-4o-mini-2024-07-18	': 15000000000,
     'gpt-4-turbo': 300000000,
@@ -44,7 +47,7 @@ BATCH_QUEUE_TOKEN_DAY_LIMIT = {
 }
 
 class OpenAIModule:
-    def __init__(self, model: str, max_concurrent_prompts: int = None, max_output_tokens_per_query=256) -> None:
+    def __init__(self, model: str, max_concurrent_prompts: int = None, max_output_tokens_per_query=256, save_batch_queries=False) -> None:
         if model not in CONTEXT_SIZE_MAP:
             raise KeyError(f"The model {model} is not currenly supported.")
         
@@ -55,6 +58,8 @@ class OpenAIModule:
         self.cur_num_tokens_cache = [[] for _ in range(self._max_concurrent_prompts)]
         self._batch_job_ids = []
         self.client = OpenAI()
+        self.save_batch_queries = save_batch_queries
+        
         try:
             self.encoding = tiktoken.encoding_for_model(self.model)
         except KeyError:
@@ -231,6 +236,10 @@ class OpenAIModule:
         )
         
         batch_job_id = batch_job.id
+        
+        if self.save_batch_queries:
+            os.rename(file_name, f"batch_queries_{batch_job.id}.jsonl")
+        
         self._batch_job_ids.append(batch_job_id)
         
         if retrieve_and_return_results:
