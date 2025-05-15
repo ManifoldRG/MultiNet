@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')  # Set the backend to non-interactive Agg
 import os
 import json
 import matplotlib.pyplot as plt
@@ -19,11 +21,11 @@ sys.path.append(str(project_root))
 from definitions.procgen import ProcGenDefinitions
 from src.eval_utils import get_precision_per_class, get_recall_per_class, get_f1_per_class, get_macro_precision, get_macro_recall, get_macro_f1, calculate_tp_fp_fn_counts, get_micro_precision_from_counts, get_micro_recall_from_counts, get_micro_f1
 
-COLORS = ['#1f77b4',  # Blue
-          '#d62728',  # Red
-          '#2ca02c',  # Green
-          '#000000',  # Black
-          '#FFFF00']  # Orange
+COLORS = ["#ea5545",
+          "#ede15b",
+          "#87bc45",
+          "#27aeef",
+          "#b33dc6"]
 
 def load_results(results_dir, models=['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']):
     """Load results from json files in the specified directory"""
@@ -197,7 +199,7 @@ def sample_from_preds_and_gt(data, sample_size):
     
     return sampled_data
 
-def get_macro_metrics_std_per_dataset_from_bootstrap_sample(model, data, dataset, sample_size=20_000, n_iterations=200, metric_type='macro'):
+def get_macro_micro_metrics_std_per_dataset_from_bootstrap_sample(model, data, dataset, sample_size=20_000, n_iterations=200, metric_type='macro', with_invalids: bool = True):
     """Calculate standard deviation of macro metrics using bootstrap sampling.
     
     Args:
@@ -232,10 +234,10 @@ def get_macro_metrics_std_per_dataset_from_bootstrap_sample(model, data, dataset
     sampled_data_recall = []
     sampled_data_f1 = []
 
-    # Store per-class metrics for analysis
-    class_precisions = {action: [] for action in valid_actions}
-    class_recalls = {action: [] for action in valid_actions}
-    class_f1s = {action: [] for action in valid_actions}
+    # # Store per-class metrics for analysis
+    # class_precisions = {action: [] for action in valid_actions}
+    # class_recalls = {action: [] for action in valid_actions}
+    # class_f1s = {action: [] for action in valid_actions}
 
     # Perform bootstrap sampling
     for i in range(n_iterations):
@@ -253,58 +255,63 @@ def get_macro_metrics_std_per_dataset_from_bootstrap_sample(model, data, dataset
             sampled_data_f1.append(get_macro_f1(f1s))
         elif metric_type == 'micro':
             total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(sampled_data['preds'], sampled_data['gt_actions'], valid_actions)
-            precisions = get_micro_precision_from_counts(total_tp, total_fp)
-            recalls = get_micro_recall_from_counts(total_tp, total_fn)
-            f1s = get_micro_f1(precisions, recalls)
+            if with_invalids:
+                precisions = get_micro_precision_from_counts(total_tp, total_fp)
+                recalls = get_micro_recall_from_counts(total_tp, total_fn)
+                f1s = get_micro_f1(precisions, recalls)
+            else:
+                precisions = get_micro_precision_from_counts(total_tp, valid_fp)
+                recalls = get_micro_recall_from_counts(total_tp, total_fn)
+                f1s = get_micro_f1(precisions, recalls)
             sampled_data_precision.append(precisions)
             sampled_data_recall.append(recalls)
             sampled_data_f1.append(f1s)
         else:
             raise ValueError(f"Invalid metric type: {metric_type}")
 
-        # Store per-class metrics
-        for action in valid_actions:
-            class_precisions[action].append(precisions[action])
-            class_recalls[action].append(recalls[action])
-            class_f1s[action].append(f1s[action])
+    #     # Store per-class metrics
+    #     for action in valid_actions:
+    #         class_precisions[action].append(precisions[action])
+    #         class_recalls[action].append(recalls[action])
+    #         class_f1s[action].append(f1s[action])
 
     
-    # Calculate per-class statistics
-    class_stats = {
-        'precision': {action: {
-            'mean': np.mean(class_precisions[action]),
-            'std': np.std(class_precisions[action]),
-        } for action in valid_actions},
-        'recall': {action: {
-            'mean': np.mean(class_recalls[action]),
-            'std': np.std(class_recalls[action])
-        } for action in valid_actions},
-        'f1': {action: {
-            'mean': np.mean(class_f1s[action]),
-            'std': np.std(class_f1s[action])
-        } for action in valid_actions}
-    }
+    # # Calculate per-class statistics
+    # class_stats = {
+    #     'precision': {action: {
+    #         'mean': np.mean(class_precisions[action]),
+    #         'std': np.std(class_precisions[action]),
+    #     } for action in valid_actions},
+    #     'recall': {action: {
+    #         'mean': np.mean(class_recalls[action]),
+    #         'std': np.std(class_recalls[action])
+    #     } for action in valid_actions},
+    #     'f1': {action: {
+    #         'mean': np.mean(class_f1s[action]),
+    #         'std': np.std(class_f1s[action])
+    #     } for action in valid_actions}
+    # }
     
     # Calculate standard deviations
     precision_std = np.std(sampled_data_precision)
     recall_std = np.std(sampled_data_recall)
     f1_std = np.std(sampled_data_f1)
     
-    if model == 'openvla':  # DEBUG
-        print(f"{model} - {dataset}:")
-        pprint(class_stats)
+    # if model == 'openvla':  # DEBUG
+    #     print(f"{model} - {dataset}:")
+    #     pprint(class_stats)
 
     return precision_std, recall_std, f1_std
 
-def plot_individual_models_macro_metric(results_dir, models, metric='recall', metric_type='macro'):
+def plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='macro', with_invalids: bool = True):
     """Create individual plots for each model across subdatasets with error bars
        CHANGE KEYS/METRIC NAMES BASED ON THE RESULTS FILES
     """
     results = load_results(results_dir)
 
     # Get list of all subdatasets -- common ones
-    subdatasets = list(results[models[0]].keys())
-    
+    subdatasets = sorted(list(results[models[0]].keys()))
+    print(subdatasets)
     # Set width of bars and positions of the bars
     width = 0.3
     x = np.arange(len(subdatasets))
@@ -343,28 +350,38 @@ def plot_individual_models_macro_metric(results_dir, models, metric='recall', me
 
     for dataset in subdatasets:
         try:
-            gpt4o_scores_std.append(get_macro_metrics_std_per_dataset_from_bootstrap_sample('gpt4o', results, dataset, metric_type=metric_type)[metric_std_index])
-        except Exception:
+            std = get_macro_micro_metrics_std_per_dataset_from_bootstrap_sample('gpt4o', results, dataset, metric_type=metric_type, with_invalids=with_invalids)[metric_std_index]
+            gpt4o_scores_std.append(std)
+        except Exception as e:
+            print(f"Error in gpt4o: {e}")
             gpt4o_scores_std.append(0.0)
             
         try:
-            gpt4_1_scores_std.append(get_macro_metrics_std_per_dataset_from_bootstrap_sample('gpt4_1', results, dataset, metric_type=metric_type)[metric_std_index])
-        except Exception:
+            std = get_macro_micro_metrics_std_per_dataset_from_bootstrap_sample('gpt4_1', results, dataset, metric_type=metric_type, with_invalids=with_invalids)[metric_std_index]
+            gpt4_1_scores_std.append(std)
+        except Exception as e:
+            print(f"Error in gpt4_1: {e}")
             gpt4_1_scores_std.append(0.0)
             
         try:
-            pi0_base_scores_std.append(get_macro_metrics_std_per_dataset_from_bootstrap_sample('pi0_base', results, dataset, metric_type=metric_type)[metric_std_index])
-        except Exception:
+            std = get_macro_micro_metrics_std_per_dataset_from_bootstrap_sample('pi0_base', results, dataset, metric_type=metric_type, with_invalids=with_invalids)[metric_std_index]
+            pi0_base_scores_std.append(std)
+        except Exception as e:
+            print(f"Error in pi0_base: {e}")
             pi0_base_scores_std.append(0.0)
             
         try:
-            pi0_fast_scores_std.append(get_macro_metrics_std_per_dataset_from_bootstrap_sample('pi0_fast', results, dataset, metric_type=metric_type)[metric_std_index])
-        except Exception:
+            std = get_macro_micro_metrics_std_per_dataset_from_bootstrap_sample('pi0_fast', results, dataset, metric_type=metric_type, with_invalids=with_invalids)[metric_std_index]
+            pi0_fast_scores_std.append(std)
+        except Exception as e:
+            print(f"Error in pi0_fast: {e}")
             pi0_fast_scores_std.append(0.0)
             
         try:
-            openvla_scores_std.append(get_macro_metrics_std_per_dataset_from_bootstrap_sample('openvla', results, dataset, metric_type=metric_type)[metric_std_index])
-        except Exception:
+            std = get_macro_micro_metrics_std_per_dataset_from_bootstrap_sample('openvla', results, dataset, metric_type=metric_type, with_invalids=with_invalids)[metric_std_index]
+            openvla_scores_std.append(std)
+        except Exception as e:
+            print(f"Error in openvla: {e}")
             openvla_scores_std.append(0.0)
 
     # Create lists of metrics for each model
@@ -379,7 +396,13 @@ def plot_individual_models_macro_metric(results_dir, models, metric='recall', me
             if metric_type == 'macro':
                 gpt4o_scores.append(results['gpt4o'][dataset][dataset][metric_key])
             elif metric_type == 'micro':
-                gpt4o_scores.append(results['gpt4o'][dataset][dataset][metric_key.split('_')[-1]])
+                if with_invalids:
+                    gpt4o_scores.append(results['gpt4o'][dataset][dataset][metric_key.split('_')[-1]])
+                else:
+                    if metric_key == 'micro_recall':
+                        gpt4o_scores.append(results['gpt4o'][dataset][dataset][f'{metric_key.split("_")[-1]}'])
+                    else:
+                        gpt4o_scores.append(results['gpt4o'][dataset][dataset][f'{metric_key.split("_")[-1]}_without_invalid'])
         except (KeyError, TypeError):
             gpt4o_scores.append(0)
             
@@ -387,7 +410,13 @@ def plot_individual_models_macro_metric(results_dir, models, metric='recall', me
             if metric_type == 'macro':
                 gpt4_1_scores.append(results['gpt4_1'][dataset][dataset][metric_key])
             elif metric_type == 'micro':
-                gpt4_1_scores.append(results['gpt4_1'][dataset][dataset][metric_key.split('_')[-1]])
+                if with_invalids:
+                    gpt4_1_scores.append(results['gpt4_1'][dataset][dataset][metric_key.split('_')[-1]])
+                else:
+                    if metric_key == 'micro_recall':
+                        gpt4_1_scores.append(results['gpt4_1'][dataset][dataset][f'{metric_key.split("_")[-1]}'])
+                    else:
+                        gpt4_1_scores.append(results['gpt4_1'][dataset][dataset][f'{metric_key.split("_")[-1]}_without_invalid'])
         except (KeyError, TypeError):
             gpt4_1_scores.append(0)
             
@@ -398,7 +427,10 @@ def plot_individual_models_macro_metric(results_dir, models, metric='recall', me
                 else:
                     openvla_scores.append(results['openvla'][dataset][metric_key])
             elif metric_type == 'micro':
-                openvla_scores.append(results['openvla'][dataset][dataset][f'average_{metric_key}'])
+                try:
+                    openvla_scores.append(results['openvla'][dataset][dataset][f'total_{metric_key}'])
+                except (KeyError, TypeError):
+                    openvla_scores.append(results['openvla'][dataset][f'total_{metric_key}'])
         except (KeyError, TypeError):
             openvla_scores.append(0)
             
@@ -406,7 +438,13 @@ def plot_individual_models_macro_metric(results_dir, models, metric='recall', me
             if metric_type == 'macro':
                 pi0_base_scores.append(results['pi0_base'][dataset][dataset][metric_key])
             elif metric_type == 'micro':
-                pi0_base_scores.append(results['pi0_base'][dataset][dataset][f'avg_{metric_key}'])
+                if with_invalids:
+                    pi0_base_scores.append(results['pi0_base'][dataset][dataset][f'total_{metric_key}'])
+                else:
+                    if metric_key == 'micro_recall':
+                        pi0_base_scores.append(results['pi0_base'][dataset][dataset][f'total_{metric_key}'])
+                    else:
+                        pi0_base_scores.append(results['pi0_base'][dataset][dataset][f'total_{metric_key}_without_invalids'])
         except (KeyError, TypeError):
             pi0_base_scores.append(0)
             
@@ -417,11 +455,51 @@ def plot_individual_models_macro_metric(results_dir, models, metric='recall', me
                 else:
                     pi0_fast_scores.append(results['pi0_fast'][dataset][metric_key])
             elif metric_type == 'micro':
-                pi0_fast_scores.append(results['pi0_fast'][dataset][dataset][f'avg_{metric_key}'])
+                if with_invalids:
+                    pi0_fast_scores.append(results['pi0_fast'][dataset][dataset][f'{metric_key}'])
+                else:
+                    if metric_key == 'micro_recall':
+                        pi0_fast_scores.append(results['pi0_fast'][dataset][dataset][f'{metric_key}'])
+                    else:
+                        pi0_fast_scores.append(results['pi0_fast'][dataset][dataset][f'{metric_key}_without_invalids'])
             else:
                 pi0_fast_scores.append(0)
         except (KeyError, TypeError):
             pi0_fast_scores.append(0)
+
+    metrics_file = os.path.join(results_dir, "metrics.json")
+
+    # Initialize metrics dictionary structure
+    metrics = {
+        'gpt4o': {},
+        'gpt4_1': {},
+        'openvla': {},
+        'pi0_base': {},
+        'pi0_fast': {}
+    }
+
+    # Try to load existing metrics if file exists
+    if os.path.exists(metrics_file):
+        with open(metrics_file, "r") as f:
+            metrics = json.load(f)
+            if 'pi0_base' not in metrics:
+                metrics['pi0_base'] = {}
+
+    # Update metrics for this model
+    metrics['gpt4o'][metric_key] = gpt4o_scores
+    metrics['gpt4o'][f'{metric_key}_std'] = gpt4o_scores_std
+    metrics['gpt4_1'][metric_key] = gpt4_1_scores
+    metrics['gpt4_1'][f'{metric_key}_std'] = gpt4_1_scores_std
+    metrics['openvla'][metric_key] = openvla_scores
+    metrics['openvla'][f'{metric_key}_std'] = openvla_scores_std
+    metrics['pi0_base'][metric_key] = pi0_base_scores
+    metrics['pi0_base'][f'{metric_key}_std'] = pi0_base_scores_std
+    metrics['pi0_fast'][metric_key] = pi0_fast_scores
+    metrics['pi0_fast'][f'{metric_key}_std'] = pi0_fast_scores_std
+
+    # Write back to file
+    with open(metrics_file, "w") as f:
+        json.dump(metrics, f, indent=2)
 
     # Create the figure and axis
     plt.figure(figsize=(15, 8))
@@ -469,7 +547,10 @@ def plot_individual_models_macro_metric(results_dir, models, metric='recall', me
     plt.grid(True, axis='y', linestyle='--', alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, f'model_comparison_{metric_key}_with_std.png'))
+    if with_invalids:
+        plt.savefig(os.path.join(results_dir, f'model_comparison_{metric_type}_{metric_key}_with_invalids.png'))
+    else:
+        plt.savefig(os.path.join(results_dir, f'model_comparison_{metric_type}_{metric_key}_without_invalids.png'))
     plt.close()
 
 def plot_classwise_metrics(results_dir, model_name):
@@ -517,16 +598,16 @@ def plot_classwise_metrics(results_dir, model_name):
                 recalls.append(metrics[str(class_id)]['recall'])
                 f1s.append(metrics[str(class_id)]['f1'])
         #plt.bar(x, precisions)
-        #plt.bar(x, recalls)
-        plt.bar(x, f1s)
+        plt.bar(x, recalls)
+        # plt.bar(x, f1s)
         # Customize plot
-        plt.ylabel('F1 Score')
+        plt.ylabel('Recall')
         plt.xlabel('Class ID')
-        plt.title(f'Class-wise F1 Score for {model_name} on {dataset}')
+        plt.title(f'Class-wise Recall for {model_name} on {dataset}')
         plt.xticks(x, [str(i) for i in range(num_classes)])
         
         plt.tight_layout()
-        plt.savefig(os.path.join(results_dir, f'{model_name}_{dataset}_classwise_f1_score.png'))
+        plt.savefig(os.path.join(results_dir, f'{model_name}_{dataset}_classwise_recall.png'))
         plt.close()
     
 
@@ -537,8 +618,8 @@ def plot_model_metrics(results_dir, model_name):
     results = load_results(results_dir)
     
     # Get list of all subdatasets for the model
-    subdatasets = list(results[model_name].keys())
-    
+    subdatasets = sorted(list(results[model_name].keys()))
+    print(subdatasets)
     # Set width of bars and positions
     width = 0.25
     x = np.arange(len(subdatasets))
@@ -557,6 +638,10 @@ def plot_model_metrics(results_dir, model_name):
         avg_normalized_brier_mae_key = 'normalized_amae'
         avg_dataset_brier_mae_key = 'avg_dataset_amae'
         avg_quantile_filtered_normalized_brier_mae_key = 'normalized_quantile_filtered_amae'
+    elif model_name == 'openvla':
+        avg_normalized_brier_mae_key = 'average_normalized_brier_mae'
+        avg_dataset_brier_mae_key = 'avg_dataset_brier_mae'
+        avg_quantile_filtered_normalized_brier_mae_key = 'average_quantile_filtered_normalized_brier_mae'
     else:
         avg_normalized_brier_mae_key = 'average_normalized_brier_mae'
         avg_dataset_brier_mae_key = 'average_brier_mae'
@@ -571,6 +656,31 @@ def plot_model_metrics(results_dir, model_name):
             normalized_amae.append(results[model_name][dataset][avg_normalized_brier_mae_key])
             amae.append(results[model_name][dataset][avg_dataset_brier_mae_key]) 
             normalized_quantile_filtered_amae.append(results[model_name][dataset][avg_quantile_filtered_normalized_brier_mae_key])
+    
+    metrics_file = os.path.join(results_dir, "metrics.json")
+    
+    # Initialize metrics dictionary structure
+    metrics = {
+        'gpt4o': {},
+        'gpt4_1': {},
+        'openvla': {},
+        'pi0_fast': {}
+    }
+    
+    # Try to load existing metrics if file exists
+    if os.path.exists(metrics_file):
+        with open(metrics_file, "r") as f:
+            metrics = json.load(f)
+    
+    # Update metrics for this model
+    metrics[model_name]['normalized_amae'] = normalized_amae
+    metrics[model_name]['amae'] = amae
+    metrics[model_name]['normalized_quantile_filtered_amae'] = normalized_quantile_filtered_amae
+    
+    # Write back to file
+    with open(metrics_file, "w") as f:
+        json.dump(metrics, f, indent=2)
+    
     # Create the figure and axis
     plt.figure(figsize=(12, 6))
     
@@ -605,9 +715,13 @@ def calculate_classwise_metrics(results_dir, model_name):
             continue
         # Get the data path where the original JSON is stored
         if model_name == 'pi0_base':
-            json_path = os.path.join(results_dir, model_name, 'procgen_results', 'corrected_results')
+            # json_path = os.path.join(results_dir, model_name, 'procgen_results', 'corrected_results')
+            raise Exception("Not supported for pi0 base")
         elif model_name == 'gpt4o':
             json_path = os.path.join(results_dir, model_name, 'procgen_results', 'corrected_results')
+            predictions = np.array(results[model_name][dataset][dataset]['preds'])
+            ground_truth = np.array(results[model_name][dataset][dataset]['gt_actions'])
+            dataset_path = os.path.join(json_path, f'{dataset}_results.json')
         elif model_name == 'gpt4_1':
             json_path = os.path.join(results_dir, model_name, 'procgen_results', 'gpt4.1_new_prompt')
             predictions = np.array(results[model_name][dataset][dataset]['preds'])
@@ -664,7 +778,7 @@ def calculate_classwise_metrics(results_dir, model_name):
     print("Completed class-wise metrics calculation")
 
 
-def plot_cross_model_classwise_comparison(results_dir: str, models: list[str]):
+def plot_cross_model_classwise_comparison(results_dir: str, models: list[str], with_invalids: bool = True):
     """Create comparative plots of class-wise metrics across all models."""
     results = load_results(results_dir)
     
@@ -730,11 +844,6 @@ def plot_cross_model_classwise_comparison(results_dir: str, models: list[str]):
             plt.bar(x + i*bar_width, averages, bar_width,
                    label=model, color=COLORS[i], alpha=0.7,
                    yerr=stds, capsize=5)
-            
-            # Add value labels
-            for j, v in enumerate(averages):
-                plt.text(x[j] + i*bar_width, v + stds[j], f'{v:.2f}',
-                        ha='center', va='bottom', rotation=45, fontsize=8)
         
         plt.ylabel(f'Average {metric_name}')
         plt.xlabel('Action Class ID')
@@ -748,29 +857,6 @@ def plot_cross_model_classwise_comparison(results_dir: str, models: list[str]):
         plt.savefig(os.path.join(results_dir, f'action_class_comparison_{metric_key}.png'),
                     bbox_inches='tight', dpi=300)
         plt.close()
-    
-    # Also create a table with the exact values
-    table_data = []
-    headers = ['Action Class'] + [f'{model} (mean ± std)' for model in models]
-    
-    for action in sorted(action_class_metrics.keys()):
-        row = [str(action)]
-        for model in models:
-            f1_values = action_class_metrics[action][model]['f1']
-            mean = np.mean(f1_values)
-            std = np.std(f1_values)
-            row.append(f'{mean:.3f} ± {std:.3f}')
-        table_data.append(row)
-    
-    # Save table as text file
-    with open(os.path.join(results_dir, 'action_class_performance_table.txt'), 'w') as f:
-        # Write headers
-        f.write(' | '.join(headers) + '\n')
-        f.write('-' * (sum(len(h) for h in headers) + 3 * (len(headers) - 1)) + '\n')
-        
-        # Write data rows
-        for row in table_data:
-            f.write(' | '.join(row) + '\n')
 
 def plot_action_difficulty_heatmap(results_dir: str, models: list[str], metric: str = 'f1'):
     """Create heatmap showing action difficulty across models and datasets.
@@ -1051,11 +1137,16 @@ def calculate_confusion_matrices_and_mcc(results_dir: str, models: list[str]):
     confusion_matrices = {model: {} for model in models}
     mcc_scores = {model: {} for model in models}
     union_confusion_matrices = {model: None for model in models}
+    confusion_matrix_percentages = {model: {} for model in models} # New dictionary for percentages
+    
+    # Dictionary to store action class counts
+    action_counts = {model: {} for model in models}
     
     # Process each model and dataset
     for model in models:
         all_preds = []  # Store all predictions for union confusion matrix
         all_gt = []     # Store all ground truth for union confusion matrix
+        confusion_matrix_percentages[model] = {} # Initialize for current model
         
         for dataset in common_datasets:
             try:
@@ -1078,8 +1169,21 @@ def calculate_confusion_matrices_and_mcc(results_dir: str, models: list[str]):
                 valid_actions = sorted(ProcGenDefinitions.get_valid_action_space(dataset, "default"))
                 num_classes = len(valid_actions)
                 
+                # Count occurrences of each action class
+                pred_counts = {}
+                gt_counts = {}
+                for action_idx, action in enumerate(valid_actions): # Use enumerate to get index for labels
+                    pred_counts[action] = int(np.sum(predictions == action))
+                    gt_counts[action] = int(np.sum(ground_truth == action))
+                
+                # Store counts in the action_counts dictionary
+                action_counts[model][dataset] = {
+                    "prediction": pred_counts,
+                    "ground_truth": gt_counts
+                }
+
                 # Calculate confusion matrix
-                cm = confusion_matrix(ground_truth, predictions, labels=range(num_classes))
+                cm = confusion_matrix(ground_truth, predictions, labels=valid_actions) # Use valid_actions as labels
                 confusion_matrices[model][dataset] = cm
                 
                 # Calculate MCC
@@ -1089,17 +1193,26 @@ def calculate_confusion_matrices_and_mcc(results_dir: str, models: list[str]):
                 # Accumulate predictions and ground truth for union confusion matrix
                 all_preds.extend(predictions)
                 all_gt.extend(ground_truth)
-                
-                # Plot individual confusion matrix
-                plt.figure(figsize=(10, 8))
-                # Row normalize the confusion matrix
+
+                # Normalize confusion matrix row-wise for percentages
                 row_sums = cm.sum(axis=1)[:, np.newaxis]
                 # Handle zero-sum rows to avoid division by zero
-                row_sums[row_sums == 0] = 1  # Replace zeros with ones to avoid division by zero
-                cm_normalized = cm.astype('float') / row_sums
-                sns.heatmap(cm_normalized, annot=True, fmt='.2f', cmap='YlOrRd',
-                           xticklabels=range(num_classes),
-                           yticklabels=range(num_classes))
+                row_sums[row_sums == 0] = 1 
+                cm_normalized_for_percentages = cm.astype('float') / row_sums
+                
+                # Store percentages in the new dictionary
+                confusion_matrix_percentages[model][dataset] = {}
+                for i, true_action in enumerate(valid_actions):
+                    confusion_matrix_percentages[model][dataset][str(true_action)] = {}
+                    for j, pred_action in enumerate(valid_actions):
+                        confusion_matrix_percentages[model][dataset][str(true_action)][str(pred_action)] = cm_normalized_for_percentages[i, j]
+
+                # Plot individual confusion matrix
+                plt.figure(figsize=(10, 8))
+                # Row normalize the confusion matrix for plotting (can reuse cm_normalized_for_percentages)
+                sns.heatmap(cm_normalized_for_percentages, annot=True, fmt='.2f', cmap='YlOrRd',
+                           xticklabels=[str(a) for a in valid_actions], # Use stringified valid_actions for labels
+                           yticklabels=[str(a) for a in valid_actions])
                 plt.title(f'Confusion Matrix for {model} on {dataset}\nMCC: {mcc:.3f}')
                 plt.xlabel('Predicted')
                 plt.ylabel('True')
@@ -1113,11 +1226,14 @@ def calculate_confusion_matrices_and_mcc(results_dir: str, models: list[str]):
         
         # Calculate union confusion matrix for this model
         try:
-            # Get maximum number of classes across all datasets
-            max_classes = max(len(ProcGenDefinitions.get_valid_action_space(dataset, 'default')) 
-                            for dataset in common_datasets)
-            
-            union_cm = confusion_matrix(all_gt, all_preds, labels=range(max_classes))
+            # Get maximum number of classes across all datasets to define labels for union matrix
+            # This ensures consistent sizing for the union matrix across all models
+            all_possible_actions_across_datasets = set()
+            for ds_name in common_datasets:
+                 all_possible_actions_across_datasets.update(ProcGenDefinitions.get_valid_action_space(ds_name, 'default'))
+            union_labels = sorted(list(all_possible_actions_across_datasets))
+
+            union_cm = confusion_matrix(all_gt, all_preds, labels=union_labels)
             union_confusion_matrices[model] = union_cm
             
             # Calculate union MCC
@@ -1128,11 +1244,11 @@ def calculate_confusion_matrices_and_mcc(results_dir: str, models: list[str]):
             # Row normalize the union confusion matrix
             row_sums = union_cm.sum(axis=1)[:, np.newaxis]
             # Handle zero-sum rows to avoid division by zero
-            row_sums[row_sums == 0] = 1  # Replace zeros with ones to avoid division by zero
+            row_sums[row_sums == 0] = 1 
             union_cm_normalized = union_cm.astype('float') / row_sums
             sns.heatmap(union_cm_normalized, annot=True, fmt='.2f', cmap='YlOrRd',
-                       xticklabels=range(max_classes),
-                       yticklabels=range(max_classes))
+                       xticklabels=[str(a) for a in union_labels], # Use stringified union_labels
+                       yticklabels=[str(a) for a in union_labels])
             plt.title(f'Union Confusion Matrix for {model}\nMCC: {union_mcc:.3f}')
             plt.xlabel('Predicted')
             plt.ylabel('True')
@@ -1151,7 +1267,14 @@ def calculate_confusion_matrices_and_mcc(results_dir: str, models: list[str]):
             for dataset in common_datasets:
                 if dataset in mcc_scores[model]:
                     f.write(f'{model} | {dataset} | {mcc_scores[model][dataset]:.3f}\n')
+    
+    # Save action class counts to a JSON file
+    with open(os.path.join(results_dir, 'action_class_counts.json'), 'w') as f:
+        json.dump(action_counts, f, indent=2)
 
+    # Save confusion matrix percentages to a JSON file
+    with open(os.path.join(results_dir, 'confusion_matrix_percentages.json'), 'w') as f:
+        json.dump(confusion_matrix_percentages, f, indent=2)
 
 def plot_dataset_specific_metrics(results_dir):
     """Create plots showing precision, recall, and F1 scores for each dataset separately,
@@ -1380,8 +1503,8 @@ def print_preds_gt_unique_value_counts(results_dir, datasets=None, models=None):
 if __name__ == "__main__":
     results_dir = "src/v0_2results"
     models = ['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']
-    # models = ['gpt4_1']
-    # datasets = ['coinrun', 'maze']
+    # models = ['gpt4_1', 'gpt4o']
+    # datasets = ['bossfight']
     
     # plot_dataset_specific_metrics(results_dir)
 
@@ -1403,15 +1526,23 @@ if __name__ == "__main__":
     # plot_classwise_metrics(results_dir, 'pi0_base')
     # plot_classwise_metrics(results_dir, 'pi0_fast')
 
-    # plot_individual_models_macro_metric(results_dir, models, metric='recall')
-    # plot_individual_models_macro_metric(results_dir, models, metric='precision')
-    plot_individual_models_macro_metric(results_dir, models, metric='f1')
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='micro', with_invalids=True)
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='micro', with_invalids=True)
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='micro', with_invalids=True)
+
+    # # plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='micro', with_invalids=False)
+    # # plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='micro', with_invalids=False)
+    # # plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='micro', with_invalids=False)
+
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='macro', with_invalids=True)
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='macro', with_invalids=True)
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='macro', with_invalids=True)
 
     # Generate comparative plots
     # plot_cross_model_classwise_comparison(results_dir, models)
     
     # # # Calculate confusion matrices and MCC
-    # calculate_confusion_matrices_and_mcc(results_dir, models)
+    calculate_confusion_matrices_and_mcc(results_dir, models)
 
     # # # # Generate heatmaps for each metric
     # # # for metric in ['f1', 'precision', 'recall']:
