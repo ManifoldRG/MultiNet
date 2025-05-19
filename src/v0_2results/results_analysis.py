@@ -304,25 +304,16 @@ def get_macro_micro_metrics_std_per_dataset_from_bootstrap_sample(model, data, d
     return precision_std, recall_std, f1_std
 
 def plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='macro', with_invalids: bool = True):
-    """Create individual plots for each model across subdatasets with error bars
-       CHANGE KEYS/METRIC NAMES BASED ON THE RESULTS FILES
-    """
+    """Create a bump chart visualization comparing model rankings across datasets"""
     results = load_results(results_dir)
 
     # Get list of all subdatasets -- common ones
     subdatasets = sorted(list(results[models[0]].keys()))
-    print(subdatasets)
-    # Set width of bars and positions of the bars
-    width = 0.3
-    x = np.arange(len(subdatasets))
     
-    # calculate the error std per dataset list
-    gpt4o_scores_std = [] # per dataset
-    gpt4_1_scores_std = []
-    pi0_base_scores_std = []
-    pi0_fast_scores_std = []
-    openvla_scores_std = []
-
+    # Calculate metrics for each model
+    model_scores = {}
+    model_scores_std = {}
+    
     if metric_type == 'macro':
         if metric == 'precision':
             metric_key = 'macro_precision'
@@ -348,209 +339,201 @@ def plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', me
         else:
             raise ValueError(f"Invalid metric: {metric}")
 
-    for dataset in subdatasets:
-        try:
-            std = get_macro_micro_metrics_std_per_dataset_from_bootstrap_sample('gpt4o', results, dataset, metric_type=metric_type, with_invalids=with_invalids)[metric_std_index]
-            gpt4o_scores_std.append(std)
-        except Exception as e:
-            print(f"Error in gpt4o: {e}")
-            gpt4o_scores_std.append(0.0)
+    # Collect scores for each model
+    min_non_zero_score = float('inf')
+    for model in models:
+        scores = []
+        scores_std = []
+        for dataset in subdatasets:
+            try:
+                std = get_macro_micro_metrics_std_per_dataset_from_bootstrap_sample(
+                    model, results, dataset, metric_type=metric_type, with_invalids=with_invalids)[metric_std_index]
+                scores_std.append(std)
+            except Exception as e:
+                print(f"Error in {model}: {e}")
+                scores_std.append(0.0)
             
-        try:
-            std = get_macro_micro_metrics_std_per_dataset_from_bootstrap_sample('gpt4_1', results, dataset, metric_type=metric_type, with_invalids=with_invalids)[metric_std_index]
-            gpt4_1_scores_std.append(std)
-        except Exception as e:
-            print(f"Error in gpt4_1: {e}")
-            gpt4_1_scores_std.append(0.0)
-            
-        try:
-            std = get_macro_micro_metrics_std_per_dataset_from_bootstrap_sample('pi0_base', results, dataset, metric_type=metric_type, with_invalids=with_invalids)[metric_std_index]
-            pi0_base_scores_std.append(std)
-        except Exception as e:
-            print(f"Error in pi0_base: {e}")
-            pi0_base_scores_std.append(0.0)
-            
-        try:
-            std = get_macro_micro_metrics_std_per_dataset_from_bootstrap_sample('pi0_fast', results, dataset, metric_type=metric_type, with_invalids=with_invalids)[metric_std_index]
-            pi0_fast_scores_std.append(std)
-        except Exception as e:
-            print(f"Error in pi0_fast: {e}")
-            pi0_fast_scores_std.append(0.0)
-            
-        try:
-            std = get_macro_micro_metrics_std_per_dataset_from_bootstrap_sample('openvla', results, dataset, metric_type=metric_type, with_invalids=with_invalids)[metric_std_index]
-            openvla_scores_std.append(std)
-        except Exception as e:
-            print(f"Error in openvla: {e}")
-            openvla_scores_std.append(0.0)
+            try:
+                if model in ['gpt4o', 'gpt4_1']:
+                    if metric_type == 'macro':
+                        score = results[model][dataset][dataset][metric_key]
+                    elif metric_type == 'micro':
+                        if with_invalids:
+                            score = results[model][dataset][dataset][metric_key.split('_')[-1]]
+                        else:
+                            if metric_key == 'micro_recall':
+                                score = results[model][dataset][dataset][f'{metric_key.split("_")[-1]}']
+                            else:
+                                score = results[model][dataset][dataset][f'{metric_key.split("_")[-1]}_without_invalid']
+                elif model == 'openvla':
+                    if metric_type == 'macro':
+                        if dataset in results[model][dataset]:
+                            score = results[model][dataset][dataset][metric_key]
+                        else:
+                            score = results[model][dataset][metric_key]
+                    elif metric_type == 'micro':
+                        try:
+                            score = results[model][dataset][dataset][f'total_{metric_key}']
+                        except (KeyError, TypeError):
+                            score = results[model][dataset][f'total_{metric_key}']
+                elif model == 'pi0_base':
+                    if metric_type == 'macro':
+                        score = results[model][dataset][dataset][metric_key]
+                    elif metric_type == 'micro':
+                        if with_invalids:
+                            score = results[model][dataset][dataset][f'total_{metric_key}']
+                        else:
+                            if metric_key == 'micro_recall':
+                                score = results[model][dataset][dataset][f'total_{metric_key}']
+                            else:
+                                score = results[model][dataset][dataset][f'total_{metric_key}_without_invalids']
+                elif model == 'pi0_fast':
+                    if metric_type == 'macro':
+                        if dataset in results[model].keys():
+                            score = results[model][dataset][dataset][metric_key]
+                        else:
+                            score = results[model][dataset][metric_key]
+                    elif metric_type == 'micro':
+                        if with_invalids:
+                            score = results[model][dataset][dataset][f'{metric_key}']
+                        else:
+                            if metric_key == 'micro_recall':
+                                score = results[model][dataset][dataset][f'{metric_key}']
+                            else:
+                                score = results[model][dataset][dataset][f'{metric_key}_without_invalids']
+                scores.append(score)
+                if score > 0 and score < min_non_zero_score:
+                    min_non_zero_score = score
+            except (KeyError, TypeError):
+                scores.append(0)
+        
+        model_scores[model] = scores
+        model_scores_std[model] = scores_std
 
-    # Create lists of metrics for each model
-    gpt4o_scores = []
-    gpt4_1_scores = []
-    openvla_scores = []
-    pi0_base_scores = []
-    pi0_fast_scores = []
-
-    for dataset in subdatasets:
-        try:
-            if metric_type == 'macro':
-                gpt4o_scores.append(results['gpt4o'][dataset][dataset][metric_key])
-            elif metric_type == 'micro':
-                if with_invalids:
-                    gpt4o_scores.append(results['gpt4o'][dataset][dataset][metric_key.split('_')[-1]])
-                else:
-                    if metric_key == 'micro_recall':
-                        gpt4o_scores.append(results['gpt4o'][dataset][dataset][f'{metric_key.split("_")[-1]}'])
-                    else:
-                        gpt4o_scores.append(results['gpt4o'][dataset][dataset][f'{metric_key.split("_")[-1]}_without_invalid'])
-        except (KeyError, TypeError):
-            gpt4o_scores.append(0)
-            
-        try:
-            if metric_type == 'macro':
-                gpt4_1_scores.append(results['gpt4_1'][dataset][dataset][metric_key])
-            elif metric_type == 'micro':
-                if with_invalids:
-                    gpt4_1_scores.append(results['gpt4_1'][dataset][dataset][metric_key.split('_')[-1]])
-                else:
-                    if metric_key == 'micro_recall':
-                        gpt4_1_scores.append(results['gpt4_1'][dataset][dataset][f'{metric_key.split("_")[-1]}'])
-                    else:
-                        gpt4_1_scores.append(results['gpt4_1'][dataset][dataset][f'{metric_key.split("_")[-1]}_without_invalid'])
-        except (KeyError, TypeError):
-            gpt4_1_scores.append(0)
-            
-        try:
-            if metric_type == 'macro':
-                if dataset in results['openvla'][dataset]:
-                    openvla_scores.append(results['openvla'][dataset][dataset][metric_key])
-                else:
-                    openvla_scores.append(results['openvla'][dataset][metric_key])
-            elif metric_type == 'micro':
-                try:
-                    openvla_scores.append(results['openvla'][dataset][dataset][f'total_{metric_key}'])
-                except (KeyError, TypeError):
-                    openvla_scores.append(results['openvla'][dataset][f'total_{metric_key}'])
-        except (KeyError, TypeError):
-            openvla_scores.append(0)
-            
-        try:
-            if metric_type == 'macro':
-                pi0_base_scores.append(results['pi0_base'][dataset][dataset][metric_key])
-            elif metric_type == 'micro':
-                if with_invalids:
-                    pi0_base_scores.append(results['pi0_base'][dataset][dataset][f'total_{metric_key}'])
-                else:
-                    if metric_key == 'micro_recall':
-                        pi0_base_scores.append(results['pi0_base'][dataset][dataset][f'total_{metric_key}'])
-                    else:
-                        pi0_base_scores.append(results['pi0_base'][dataset][dataset][f'total_{metric_key}_without_invalids'])
-        except (KeyError, TypeError):
-            pi0_base_scores.append(0)
-            
-        try:
-            if metric_type == 'macro':
-                if dataset in results['pi0_fast'].keys():
-                    pi0_fast_scores.append(results['pi0_fast'][dataset][dataset][metric_key])
-                else:
-                    pi0_fast_scores.append(results['pi0_fast'][dataset][metric_key])
-            elif metric_type == 'micro':
-                if with_invalids:
-                    pi0_fast_scores.append(results['pi0_fast'][dataset][dataset][f'{metric_key}'])
-                else:
-                    if metric_key == 'micro_recall':
-                        pi0_fast_scores.append(results['pi0_fast'][dataset][dataset][f'{metric_key}'])
-                    else:
-                        pi0_fast_scores.append(results['pi0_fast'][dataset][dataset][f'{metric_key}_without_invalids'])
-            else:
-                pi0_fast_scores.append(0)
-        except (KeyError, TypeError):
-            pi0_fast_scores.append(0)
-
+    # Save metrics to JSON
     metrics_file = os.path.join(results_dir, "metrics.json")
-
-    # Initialize metrics dictionary structure
-    metrics = {
-        'gpt4o': {},
-        'gpt4_1': {},
-        'openvla': {},
-        'pi0_base': {},
-        'pi0_fast': {}
-    }
-
-    # Try to load existing metrics if file exists
+    metrics = {model: {} for model in models}
     if os.path.exists(metrics_file):
         with open(metrics_file, "r") as f:
             metrics = json.load(f)
-            if 'pi0_base' not in metrics:
-                metrics['pi0_base'] = {}
-
-    # Update metrics for this model
-    metrics['gpt4o'][metric_key] = gpt4o_scores
-    metrics['gpt4o'][f'{metric_key}_std'] = gpt4o_scores_std
-    metrics['gpt4_1'][metric_key] = gpt4_1_scores
-    metrics['gpt4_1'][f'{metric_key}_std'] = gpt4_1_scores_std
-    metrics['openvla'][metric_key] = openvla_scores
-    metrics['openvla'][f'{metric_key}_std'] = openvla_scores_std
-    metrics['pi0_base'][metric_key] = pi0_base_scores
-    metrics['pi0_base'][f'{metric_key}_std'] = pi0_base_scores_std
-    metrics['pi0_fast'][metric_key] = pi0_fast_scores
-    metrics['pi0_fast'][f'{metric_key}_std'] = pi0_fast_scores_std
-
-    # Write back to file
+    
+    for model in models:
+        metrics[model][metric_key] = model_scores[model]
+        metrics[model][f'{metric_key}_std'] = model_scores_std[model]
+    
     with open(metrics_file, "w") as f:
         json.dump(metrics, f, indent=2)
 
-    # Create the figure and axis
-    plt.figure(figsize=(15, 8))
+    # Create figure with proper spacing
+    fig = plt.figure(figsize=(8, 6))  # Slightly reduce height
     
-    # Create bars with error bars
-    # Increase spacing between groups by multiplying x by a factor
-    x = x * 3  # Increased from 2 to 3 for more space between groups
+    # Create gridspec for better control over spacing
+    gs = plt.GridSpec(3, 1, height_ratios=[0.1, 0.1, 1], hspace=0.05)  # Reduce height ratios for title/legend and spacing
     
-    # Plot each model's bars with error bars
-    bars1 = plt.bar(x - width*2, gpt4o_scores, width, label='GPT-4o', color=COLORS[0], 
-                   yerr=gpt4o_scores_std, capsize=3, error_kw={'elinewidth': 1, 'ecolor': 'black'})
-    bars2 = plt.bar(x - width, openvla_scores, width, label='OpenVLA', color=COLORS[1],
-                   yerr=openvla_scores_std, capsize=3, error_kw={'elinewidth': 1, 'ecolor': 'black'})
-    bars3 = plt.bar(x, pi0_base_scores, width, label='PI0 Base', color=COLORS[2],
-                   yerr=pi0_base_scores_std, capsize=3, error_kw={'elinewidth': 1, 'ecolor': 'black'})
-    bars4 = plt.bar(x + width, pi0_fast_scores, width, label='PI0 Fast', color=COLORS[3],
-                   yerr=pi0_fast_scores_std, capsize=3, error_kw={'elinewidth': 1, 'ecolor': 'black'})
-    bars5 = plt.bar(x + width*2, gpt4_1_scores, width, label='GPT-4_1', color=COLORS[4],
-                   yerr=gpt4_1_scores_std, capsize=3, error_kw={'elinewidth': 1, 'ecolor': 'black'})
-
-    # # Add value labels on top of bars
-    # def add_labels(bars, stds):
-    #     for bar, std in zip(bars, stds):
-    #         height = bar.get_height()
-    #         if height > 0:  # Only add labels for non-zero values
-    #             plt.text(bar.get_x() + bar.get_width()/2., height + std + 0.01,
-    #                     f'{height:.2f}',  # Only show 2 decimal places
-    #                     ha='center', va='bottom', rotation=45, fontsize=8)
-
-    # add_labels(bars1, gpt4o_scores_std)
-    # add_labels(bars2, openvla_scores_std)
-    # add_labels(bars3, pi0_base_scores_std)
-    # add_labels(bars4, pi0_fast_scores_std)
-    # add_labels(bars5, gpt4_1_scores_std)
-
-    # Customize the plot
-    plt.ylabel(metric_key.capitalize())
-    plt.title('Model Performance Comparison Across Subdatasets')
-    plt.xticks(x, subdatasets, rotation=45)
-    plt.legend()
-    # make it 1.5 * max of the stds
-    plt.ylim(0, 1.5 * max(max(gpt4o_scores), max(openvla_scores), max(pi0_base_scores), max(pi0_fast_scores), max(gpt4_1_scores)))  # Adjusted y-axis limit to accommodate error bars and labels
+    # Create axes for title, legend, and main plot
+    title_ax = fig.add_subplot(gs[0])
+    legend_ax = fig.add_subplot(gs[1])
+    ax = fig.add_subplot(gs[2])
     
-    # Add grid for better readability
-    plt.grid(True, axis='y', linestyle='--', alpha=0.3)
+    # Hide axes for title and legend
+    title_ax.axis('off')
+    legend_ax.axis('off')
     
-    plt.tight_layout()
+    # Add title
+    title = f'Model {metric_type.capitalize()} {metric.capitalize()} Rankings'
+    if not with_invalids:
+        title += ' (Without Invalids)'
+    title_ax.text(0.5, 0.2, title, fontsize=10, ha='center', va='center')  # Move title text up
+    
+    # Calculate rankings for each dataset
+    rankings = []
+    for i in range(len(subdatasets)):
+        dataset_scores = [(model_scores[model][i], model) for model in models]
+        sorted_scores = sorted(dataset_scores, reverse=True)
+        rank_dict = {model: rank + 1 for rank, (_, model) in enumerate(sorted_scores)}
+        rankings.append(rank_dict)
+    
+    # Plot lines connecting rankings
+    x = np.arange(len(subdatasets))
+    
+    # First plot all lines with lower alpha
+    for model_idx, model in enumerate(models):
+        model_rankings = [rankings[i][model] for i in range(len(subdatasets))]
+        ax.plot(x, model_rankings, '-', color=COLORS[model_idx], 
+                linewidth=1.5, alpha=0.3)
+    
+    # Then plot points and labels on top
+    legend_handles = []
+    for model_idx, model in enumerate(models):
+        model_rankings = [rankings[i][model] for i in range(len(subdatasets))]
+        
+        # Plot points
+        scatter = ax.scatter(x, model_rankings, color=COLORS[model_idx], 
+                           s=50, zorder=5, alpha=0.9, label=model)
+        legend_handles.append(scatter)
+        
+        # Add score labels for all points
+        for i, (rank, score) in enumerate(zip(model_rankings, model_scores[model])):
+            # Format score based on magnitude
+            if score == 0:
+                score_text = "0"
+            elif score < 0.001:  # Very small values in scientific notation
+                score_text = f"{score:.1e}"
+            elif score < 0.01:  # Small values with 4 decimal places
+                score_text = f"{score:.4f}"
+            else:  # Regular values with 3 decimal places
+                score_text = f"{score:.3f}"
+            
+            # Position labels alternating above/below points to avoid overlap
+            vert_offset = 0.2 if i % 2 == 0 else -0.2
+            # Adjust offset based on rank to avoid legend
+            if rank == 1:
+                vert_offset = max(vert_offset, 0.2)  # Always above for rank 1
+            elif rank == len(models):
+                vert_offset = min(vert_offset, -0.2)  # Always below for last rank
+            
+            ax.annotate(score_text, 
+                       (x[i], rank),
+                       xytext=(0, vert_offset * 20),
+                       textcoords='offset points',
+                       ha='center',
+                       va='bottom' if vert_offset > 0 else 'top',
+                       fontsize=7)
+    
+    # Add legend to the legend axis
+    legend_ax.legend(legend_handles, models,
+                    loc='center',
+                    ncol=3,
+                    fontsize=8,
+                    frameon=True,
+                    borderaxespad=0)
+    
+    # Customize main plot
+    ax.invert_yaxis()  # Invert y-axis so rank 1 is at the top
+    ax.grid(True, axis='y', linestyle='--', alpha=0.2)
+    
+    # Set y-axis ticks and labels
+    ax.set_yticks(range(1, len(models) + 1))
+    ax.set_ylabel('Rank', fontsize=9)
+    
+    # Set x-axis ticks and labels
+    ax.set_xticks(x)
+    ax.set_xticklabels(subdatasets, rotation=45, ha='right')
+    
+    # Remove spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    
+    # Adjust spacing between subplots
+    plt.subplots_adjust(top=0.95, bottom=0.15, left=0.1, right=0.95)
+    
+    # Save the plot with high DPI
     if with_invalids:
-        plt.savefig(os.path.join(results_dir, f'model_comparison_{metric_type}_{metric_key}_with_invalids.png'))
+        plt.savefig(os.path.join(results_dir, f'model_comparison_{metric_type}_{metric_key}_with_invalids.png'),
+                    bbox_inches='tight', dpi=300)
     else:
-        plt.savefig(os.path.join(results_dir, f'model_comparison_{metric_type}_{metric_key}_without_invalids.png'))
+        plt.savefig(os.path.join(results_dir, f'model_comparison_{metric_type}_{metric_key}_without_invalids.png'),
+                    bbox_inches='tight', dpi=300)
     plt.close()
 
 def plot_classwise_metrics(results_dir, model_name):
@@ -1526,23 +1509,23 @@ if __name__ == "__main__":
     # plot_classwise_metrics(results_dir, 'pi0_base')
     # plot_classwise_metrics(results_dir, 'pi0_fast')
 
-    # plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='micro', with_invalids=True)
-    # plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='micro', with_invalids=True)
-    # plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='micro', with_invalids=True)
+    plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='micro', with_invalids=True)
+    plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='micro', with_invalids=True)
+    plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='micro', with_invalids=True)
 
-    # # plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='micro', with_invalids=False)
-    # # plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='micro', with_invalids=False)
-    # # plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='micro', with_invalids=False)
+    plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='micro', with_invalids=False)
+    plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='micro', with_invalids=False)
+    plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='micro', with_invalids=False)
 
-    # plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='macro', with_invalids=True)
-    # plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='macro', with_invalids=True)
-    # plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='macro', with_invalids=True)
+    plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='macro', with_invalids=True)
+    plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='macro', with_invalids=True)
+    plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='macro', with_invalids=True)
 
     # Generate comparative plots
     # plot_cross_model_classwise_comparison(results_dir, models)
     
     # # # Calculate confusion matrices and MCC
-    calculate_confusion_matrices_and_mcc(results_dir, models)
+    # calculate_confusion_matrices_and_mcc(results_dir, models)
 
     # # # # Generate heatmaps for each metric
     # # # for metric in ['f1', 'precision', 'recall']:
