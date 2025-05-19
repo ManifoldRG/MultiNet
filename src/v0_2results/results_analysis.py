@@ -665,20 +665,48 @@ def plot_model_metrics(results_dir, model_name):
         json.dump(metrics, f, indent=2)
     
     # Create the figure and axis
-    plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(12, 6))
+    ax = fig.add_subplot(111)
     
     # Create bars for each metric
-    plt.bar(x - width, normalized_amae, width, label='Normalized Brier MAE')
-    plt.bar(x, amae, width, label='Brier MAE')
-    plt.bar(x + width, normalized_quantile_filtered_amae, width, label='Normalized Quantile Filtered AMAE')
+    bars1 = ax.bar(x - width, normalized_amae, width, label='Normalized Brier MAE')
+    bars2 = ax.bar(x, amae, width, label='Brier MAE')
+    bars3 = ax.bar(x + width, normalized_quantile_filtered_amae, width, label='Normalized Quantile Filtered AMAE')
+
+    # Find min and max values for better y-axis limits
+    all_values = normalized_amae + amae + normalized_quantile_filtered_amae
+    min_val = min(v for v in all_values if v > 0)  # Ignore zeros
+    max_val = max(all_values)
+    
+    # Set y-axis limits to focus on the range where values exist
+    # Start from 95% of minimum value to show a bit of context below
+    y_min = min_val * 0.95
+    y_max = max_val * 1.05  # Add 5% padding above max value
+    
+    # Create broken axis effect
+    # Draw diagonal lines on axes to indicate the break
+    d = .015  # Size of diagonal lines
+    kwargs = dict(transform=ax.transAxes, color='k', clip_on=False)
+    ax.plot((-d, +d), (-d, +d), **kwargs)        # Bottom left diagonal
+    ax.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # Bottom right diagonal
+    
     # Customize the plot
-    plt.ylabel('Score')
-    plt.title(f'Metrics Comparison for {model_name} Across Subdatasets')
-    plt.xticks(x, subdatasets, rotation=45)
-    plt.legend()
+    ax.set_ylim(y_min, y_max)
+    ax.set_ylabel('Score')
+    ax.set_title(f'Metrics Comparison for {model_name} Across Subdatasets')
+    ax.set_xticks(x)
+    ax.set_xticklabels(subdatasets, rotation=45, ha='right')
+    ax.legend()
+    
+    # Add grid for better readability
+    ax.yaxis.grid(True, linestyle='--', alpha=0.7)
+    
+    # Format y-axis ticks to show more decimal places
+    ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.3f'))
     
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, f'{model_name}_metrics_comparison_normalized_and_brier_mae_and_quantile_filtered_amae.png'))
+    plt.savefig(os.path.join(results_dir, f'{model_name}_metrics_comparison_normalized_and_brier_mae_and_quantile_filtered_amae.png'),
+                bbox_inches='tight', dpi=300)
     plt.close()
 
 def calculate_classwise_metrics(results_dir, model_name):
@@ -1483,6 +1511,120 @@ def print_preds_gt_unique_value_counts(results_dir, datasets=None, models=None):
     plt.savefig(os.path.join(results_dir, 'normalized_brier_mae_comparison.png'))
     plt.close()
 
+def plot_cross_model_brier_mae(results_dir):
+    """Create a plot comparing Brier MAE across GPT-4o, GPT-4.1, OpenVLA, and PI0 Fast.
+    
+    Args:
+        results_dir (str): Directory containing results
+    """
+    # Load results for all models
+    models = ['gpt4o', 'gpt4_1', 'openvla', 'pi0_fast']
+    results = load_results(results_dir, models)
+    
+    # Get list of all subdatasets -- common ones
+    subdatasets = sorted(list(results[models[0]].keys()))
+    
+    # Set width of bars and positions
+    width = 0.2  # Slightly wider bars since we have 4 models
+    x = np.arange(len(subdatasets))
+    
+    # Create figure and axis with larger figure size
+    fig, ax = plt.subplots(figsize=(20, 8))
+    
+    # Dictionary to map models to their Brier MAE keys
+    brier_mae_keys = {
+        'gpt4o': 'avg_dataset_amae',
+        'gpt4_1': 'avg_dataset_amae',
+        'openvla': 'avg_dataset_brier_mae',
+        'pi0_fast': 'avg_brier_mae'
+    }
+    
+    # Plot bars for each model and track min/max values
+    all_scores = []
+    for i, model in enumerate(models):
+        model_scores = []
+        model_scores_std = []  # For error bars if available
+        
+        for dataset in subdatasets:
+            try:
+                # Handle different data structures for different models
+                if model in ['gpt4o', 'gpt4_1']:
+                    score = results[model][dataset][dataset][brier_mae_keys[model]]
+                elif model == 'pi0_fast':
+                    if dataset in results[model].keys():
+                        score = results[model][dataset][dataset][brier_mae_keys[model]]
+                    else:
+                        score = 0  # or some other default value
+                else:  # openvla
+                    if dataset in results[model][dataset]:
+                        score = results[model][dataset][dataset][brier_mae_keys[model]]
+                    else:
+                        score = results[model][dataset][brier_mae_keys[model]]
+                model_scores.append(score)
+                all_scores.append(score)
+            except (KeyError, TypeError):
+                model_scores.append(0)
+                print(f"Missing data for {model} on {dataset}")
+        
+        # Plot bars with error bars
+        bars = ax.bar(x + i*width, model_scores, width, 
+                     label=model, color=COLORS[i], alpha=0.8,
+                     edgecolor='black', linewidth=1)
+        
+        # Add value labels on top of bars
+        for idx, value in enumerate(model_scores):
+            ax.text(x[idx] + i*width, value, f'{value:.3f}',
+                   ha='center', va='bottom', rotation=45,
+                   fontsize=8)
+    
+    # Calculate y-axis limits to show main content in upper 2/3 of plot
+    non_zero_scores = [s for s in all_scores if s > 0]
+    if non_zero_scores:
+        min_val = min(non_zero_scores)
+        max_val = max(non_zero_scores)
+        # Start y-axis from 20% below the minimum non-zero value
+        y_min = max(0, min_val - (max_val - min_val) * 0.2)
+        # Add 30% padding above maximum value
+        y_max = max_val + (max_val - min_val) * 0.3
+        
+        # Set y-axis limits
+        ax.set_ylim(y_min, y_max)
+        
+        # Add broken axis indicator if not starting from 0
+        if y_min > 0:
+            d = .015  # Size of diagonal lines
+            kwargs = dict(transform=ax.transAxes, color='k', clip_on=False)
+            ax.plot((-d, +d), (-d, +d), **kwargs)
+            ax.plot((1 - d, 1 + d), (-d, +d), **kwargs)
+    
+    # Add title at the top of the plot
+    ax.set_title('Model Brier MAE Comparison Across Subdatasets', 
+                pad=20, fontsize=12)
+    
+    # Add legend to the upper right corner
+    ax.legend(loc='upper right', bbox_to_anchor=(1, 1),
+             ncol=1, fontsize=10)
+    
+    # Customize the plot
+    ax.set_ylabel('Brier MAE')
+    ax.set_xticks(x + width * (len(models)-1)/2)
+    ax.set_xticklabels(subdatasets, rotation=45, ha='right')
+    
+    # Add grid for better readability
+    ax.yaxis.grid(True, linestyle='--', alpha=0.7)
+    
+    # Add light vertical lines to separate datasets
+    for i in x:
+        ax.axvline(i - width/2, color='gray', linestyle='-', alpha=0.1)
+    
+    # Adjust layout to prevent label cutoff
+    plt.tight_layout()
+    
+    # Save the plot
+    plt.savefig(os.path.join(results_dir, 'model_comparison_brier_mae.png'),
+                bbox_inches='tight', dpi=300)
+    plt.close()
+
 if __name__ == "__main__":
     results_dir = "src/v0_2results"
     models = ['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']
@@ -1490,18 +1632,19 @@ if __name__ == "__main__":
     # datasets = ['bossfight']
     
     # plot_dataset_specific_metrics(results_dir)
-
-    # # Generate plots
-    # calculate_classwise_metrics(results_dir, 'pi0_fast')
-    # calculate_classwise_metrics(results_dir, 'gpt4o')
-    # calculate_classwise_metrics(results_dir, 'gpt4_1')
-
+    # Generate Brier MAE comparison plot
+    # plot_cross_model_brier_mae(results_dir)
 
     # plot_model_metrics(results_dir, 'pi0_fast') #Change model as needed
     # plot_model_metrics(results_dir, 'gpt4o') #Change model as needed
     # plot_model_metrics(results_dir, 'gpt4_1') #Change model as needed
     # plot_model_metrics(results_dir, 'openvla') #Change model as needed
-    # plot_model_metrics(results_dir, 'pi0_base') #Change model as needed
+      # plot_dataset_specific_metrics(results_dir)
+
+    # # Generate plots
+    # calculate_classwise_metrics(results_dir, 'pi0_fast')
+    # calculate_classwise_metrics(results_dir, 'gpt4o')
+    # calculate_classwise_metrics(results_dir, 'gpt4_1')
 
     # plot_classwise_metrics(results_dir, 'gpt4o')
     # plot_classwise_metrics(results_dir, 'gpt4_1')
