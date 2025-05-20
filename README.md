@@ -4,16 +4,16 @@
 </p>
 
 <p align="center">
-  [![Website](https://img.shields.io/badge/Website-blue?style=flat-square&logo=home)](https://multinet.ai/) [![Multinet v0.2 paper](https://img.shields.io/badge/Multinet%20v0.2%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv)](https://arxiv.org/abs/2505.05540) [![Dataset Spec paper](https://img.shields.io/badge/Dataset%20Spec-green?style=flat-square&logo=docs)](https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf) [![GenESIS framework](https://img.shields.io/badge/GenESIS-blueviolet?style=flat-square&logo=github)](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules) [![Contribute](https://img.shields.io/badge/Contribute-7289DA?style=flat-square&logo=discord)](https://discord.gg/Rk4gAq5aYr)
+  ![Website](https://img.shields.io/badge/Website%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-blue?style=flat-square&logo=home)(https://multinet.ai/) [![Multinet v0.2 paper](https://img.shields.io/badge/Multinet%20v0.2%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv)](https://arxiv.org/abs/2505.05540) [![Dataset Spec paper](https://img.shields.io/badge/Dataset%20Spec%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-green?style=flat-square&logo=docs)](https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf) [![GenESIS framework](https://img.shields.io/badge/GenESIS%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-blueviolet?style=flat-square&logo=github)](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules) [![Contribute](https://img.shields.io/badge/Contribute%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-7289DA?style=flat-square&logo=discord)](https://discord.gg/Rk4gAq5aYr)
 </p>
 
 ### This work is sponsored by, and is being done in close collaboration with [Metarch](https://metarch.ai/).
 
 ## 📢 Updates
 
-2025-05-22: Multinet v0.2 - We systematically profile state-of-the-art VLAs and VLMs to understand how they perform in procedurally generated OOD game environments! Read more about our recent release [here](https://multinet.ai/static/pages/Multinetv02.html)
-2024-11-08: We release the first version of MultiNet where we profiled SoTA VLMs and VLAs on real-world robotics tasks - Multinet v0.1! Check our [release page](https://multinet.ai/static/pages/Multinetv01.html) for more details.
-2024-03-22: Introducing Multinet! A new generalist benchmark to evaluate Vision-Language & Action models. Learn more [here](https://multinet.ai)
+- 2025-05-22: Multinet v0.2 - We systematically profile state-of-the-art VLAs and VLMs to understand how they perform in procedurally generated OOD game environments! Read more about our recent release [here](https://multinet.ai/static/pages/Multinetv02.html)
+- 2024-11-08: We release the first version of MultiNet where we profiled SoTA VLMs and VLAs on real-world robotics tasks - Multinet v0.1! Check our [release page](https://multinet.ai/static/pages/Multinetv01.html) for more details.
+- 2024-03-22: Introducing Multinet! A new generalist benchmark to evaluate Vision-Language & Action models. Learn more [here](https://multinet.ai)
 
 ## 🔍 Overview
 
