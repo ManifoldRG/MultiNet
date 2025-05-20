@@ -1895,12 +1895,104 @@ def plot_macro_recall_violin(results_dir: str, models: list[str]):
                 bbox_inches='tight', dpi=300)
     plt.close()
 
+def plot_macro_recall_heatmap(results_dir: str, models: list[str]):
+    """Create a heatmap showing macro recall scores for all models across all subdatasets.
+    
+    Args:
+        results_dir (str): Directory containing results
+        models (list[str]): List of model names to compare
+    """
+    results = load_results(results_dir)
+    
+    # Get common datasets across all models
+    common_datasets = set(results[models[0]].keys())
+    for model in models[1:]:
+        common_datasets.intersection_update(results[model].keys())
+    common_datasets = sorted(list(common_datasets))
+    
+    # Create matrix for heatmap
+    heatmap_data = np.zeros((len(common_datasets), len(models)))  # Transposed dimensions
+    
+    # Fill matrix with macro recall values
+    for i, dataset in enumerate(common_datasets):  # Switched loop order
+        for j, model in enumerate(models):
+            try:
+                if model in ['gpt4o', 'gpt4_1']:
+                    score = results[model][dataset][dataset]['macro_recall']
+                elif model == 'openvla':
+                    if dataset in results[model][dataset]:
+                        score = results[model][dataset][dataset]['macro_recall']
+                    else:
+                        score = results[model][dataset]['macro_recall']
+                elif model == 'pi0_base':
+                    score = results[model][dataset][dataset]['macro_recall']
+                elif model == 'pi0_fast':
+                    if dataset in results[model].keys():
+                        score = results[model][dataset][dataset]['macro_recall']
+                    else:
+                        score = 0
+                heatmap_data[i, j] = score
+            except (KeyError, TypeError):
+                heatmap_data[i, j] = 0
+                print(f"Missing data for {model} on {dataset}")
+    
+    # Create figure
+    plt.figure(figsize=(12, 15))  # Adjusted figure size for new orientation
+    
+    # Create heatmap with extra space at bottom for stats
+    ax = plt.gca()
+    sns.heatmap(heatmap_data, 
+                annot=True,  # Show values in cells
+                fmt='.2f',   # Format as 2 decimal places
+                cmap='YlOrRd',  # Yellow to Orange to Red colormap
+                xticklabels=models,
+                yticklabels=common_datasets,
+                cbar_kws={'label': 'Macro Recall'},
+                ax=ax,
+                annot_kws={'size': 16})  # Set heatmap value font size
+    
+    # Calculate column averages (per model)
+    col_means = np.mean(heatmap_data, axis=0)
+    
+    # Add extra space at the bottom for the stats
+    bottom = ax.get_position().y0
+    height = ax.get_position().height
+    ax.set_position([ax.get_position().x0, bottom + 0.05, ax.get_position().width, height - 0.05])
+    
+    # # Add mean stats below the heatmap
+    # for j, mean in enumerate(col_means):
+    #     plt.text(j + 0.5, len(common_datasets) + 0.5, f'μ={mean:.2f}',
+    #             horizontalalignment='center',
+    #             verticalalignment='center',
+    #             fontsize=8,
+    #             bbox=dict(facecolor='white', alpha=0.8, edgecolor='none', pad=1))
+    
+    # Customize plot
+    plt.title('Macro Recall Scores Across Models and Datasets', fontsize=20, pad=20)
+    plt.xlabel('Models', fontsize=16)
+    plt.ylabel('Datasets', fontsize=16)
+    
+    # Rotate x-axis labels for better readability
+    plt.xticks(rotation=45, ha='right', fontsize=16)
+    plt.yticks(rotation=45, fontsize=16)
+    
+    # Adjust layout to prevent text cutoff
+    plt.tight_layout()
+    
+    # Save plot
+    plt.savefig(os.path.join(results_dir, 'macro_recall_heatmap.png'),
+                bbox_inches='tight', dpi=300)
+    plt.close()
+
 if __name__ == "__main__":
     results_dir = "src/v0_2results"
     models = ['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']
     
-    # Generate violin plot for macro recall distribution
-    plot_macro_recall_violin(results_dir, models)
+    # # Generate violin plot for macro recall distribution
+    # plot_macro_recall_violin(results_dir, models)
+    
+    # Generate heatmap for macro recall scores
+    plot_macro_recall_heatmap(results_dir, models)
     
     # Generate action distribution plots
     # plot_action_distributions(results_dir, models)
