@@ -103,7 +103,7 @@ cd Multinet
 python src/eval/profiling/openvla/experiments/robot/openvla_profiling.py --profiling_dataset_folder_path <path to the translated datasets> --dataset_statistics_path src/eval/profiling/openvla/data/dataset_statistics.json --result_save_path <path to the directory where you would like to save your results>
 ```
 
-### 📊 Evaluation and submission process to the Multinet benchmark
+## 📊 Evaluation and submission process to the Multinet benchmark
 
 Here are steps to follow to evaluate your team's model on Multinet data:
 
