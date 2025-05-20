@@ -161,8 +161,10 @@ class DatasetActionStatisticsCalculator:
             #     logger.info(f"Saved remaining frames GIF for {self.dataset_name} ({len(self.current_batch_images)} frames) to {output_path}")
             #     self.current_batch_images = []
             #     self.batch_count = 0
-                
-            if shard_idx < 2: 
+
+            if shard_idx == 20:
+                print(f"Shard index: {shard_idx}")
+                print(f"timestep count: {self.timestep_count}")
                 break
 
     def get_dataset_mean_shannon_entropy(self):
@@ -304,22 +306,22 @@ if __name__ == "__main__":
         # First populate the dataset name for this row
         df.loc[dataset, 'dataset'] = dataset
 
-        # for model in results.keys():
-        #     if model in ['pi0_base', 'pi0_fast']:
-        #         if dataset == 'bigfish':
-        #             df.loc[dataset, f'{model}_macro_recall'] = results[model]['bigfish']['bigfish']['macro_recall']
-        #         else:
-        #             df.loc[dataset, f'{model}_macro_recall'] = results[model][dataset][dataset]['macro_recall']
-        #     elif model in ['gpt4o', 'gpt4_1']:
-        #         df.loc[dataset, f'{model}_macro_recall'] = results[model][dataset][dataset]['macro_recall']
-        #     elif model == 'openvla':
-        #         if dataset == 'bigfish':
-        #             df.loc[dataset, f'{model}_macro_recall'] = results[model]['bigfish']['bigfish']['macro_recall']
-        #         else:
-        #             df.loc[dataset, f'{model}_macro_recall'] = results[model][dataset]['macro_recall']
-        #     else:
-        #         raise ValueError(f"Unknown model: {model}")
-        #     print(df.head())
+        for model in results.keys():
+            if model in ['pi0_base', 'pi0_fast']:
+                if dataset == 'bigfish':
+                    df.loc[dataset, f'{model}_macro_recall'] = results[model]['bigfish']['bigfish']['macro_recall']
+                else:
+                    df.loc[dataset, f'{model}_macro_recall'] = results[model][dataset][dataset]['macro_recall']
+            elif model in ['gpt4o', 'gpt4_1']:
+                df.loc[dataset, f'{model}_macro_recall'] = results[model][dataset][dataset]['macro_recall']
+            elif model == 'openvla':
+                if dataset == 'bigfish':
+                    df.loc[dataset, f'{model}_macro_recall'] = results[model]['bigfish']['bigfish']['macro_recall']
+                else:
+                    df.loc[dataset, f'{model}_macro_recall'] = results[model][dataset]['macro_recall']
+            else:
+                raise ValueError(f"Unknown model: {model}")
+            print(df.head())
 
         dataset_folder_paths = construct_dataset_folder_paths(dataset, dataset_path_config)
 
