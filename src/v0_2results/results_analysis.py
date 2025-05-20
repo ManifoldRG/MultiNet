@@ -1389,7 +1389,6 @@ def plot_dataset_specific_metrics(results_dir):
                    bbox_inches='tight', dpi=300)
         plt.close()
 
-
 def print_preds_gt_unique_value_counts(results_dir, datasets=None, models=None):
     results = load_results(results_dir)
 
@@ -1793,15 +1792,121 @@ def plot_action_distributions(results_dir: str, models: list[str]):
             print(f"Error creating unified plot for {model}: {e}")
             continue
 
+def plot_macro_recall_violin(results_dir: str, models: list[str]):
+    """Create violin plots showing the distribution of macro recall scores across datasets for each model.
+    
+    Args:
+        results_dir (str): Directory containing results
+        models (list[str]): List of model names to compare
+    """
+    results = load_results(results_dir)
+    
+    # Get common datasets across all models
+    common_datasets = set(results[models[0]].keys())
+    for model in models[1:]:
+        common_datasets.intersection_update(results[model].keys())
+    common_datasets = sorted(list(common_datasets))
+    
+    # Collect macro recall scores for each model
+    model_scores = {model: [] for model in models}
+    
+    for model in models:
+        for dataset in common_datasets:
+            try:
+                if model in ['gpt4o', 'gpt4_1']:
+                    score = results[model][dataset][dataset]['macro_recall']
+                elif model == 'openvla':
+                    if dataset in results[model][dataset]:
+                        score = results[model][dataset][dataset]['macro_recall']
+                    else:
+                        score = results[model][dataset]['macro_recall']
+                elif model == 'pi0_base':
+                    score = results[model][dataset][dataset]['macro_recall']
+                elif model == 'pi0_fast':
+                    if dataset in results[model].keys():
+                        score = results[model][dataset][dataset]['macro_recall']
+                    else:
+                        score = 0
+                model_scores[model].append(score)
+            except (KeyError, TypeError):
+                model_scores[model].append(0)
+                print(f"Missing data for {model} on {dataset}")
+    
+    # Create figure with extra space on right for stats
+    plt.figure(figsize=(15, 8))  # Made figure wider to accommodate stats
+    
+    # Create violin plots
+    violin_parts = plt.violinplot([model_scores[model] for model in models],
+                                showmeans=True, showmedians=True)
+    
+    # Customize violin colors
+    for i, pc in enumerate(violin_parts['bodies']):
+        pc.set_facecolor(COLORS[i])
+        pc.set_alpha(0.7)
+    
+    # Customize mean and median lines
+    violin_parts['cmeans'].set_color('black')
+    violin_parts['cmedians'].set_color('red')
+    
+    # Add individual points in black
+    for i, model in enumerate(models):
+        # Add jittered points
+        x = np.random.normal(i + 1, 0.04, size=len(model_scores[model]))
+        plt.scatter(x, model_scores[model], alpha=0.4, color='black', s=30)
+    
+    # Calculate and display statistics
+    for i, model in enumerate(models):
+        scores = model_scores[model]
+        mean = np.mean(scores)
+        median = np.median(scores)
+        std = np.std(scores)
+        
+        # Position text differently for OpenVLA
+        x_pos = i + 1 + 0.3  # Slightly to the right of the violin
+        if model == 'openvla':
+            y_pos = min(scores) - 0.01  # Below the violin for OpenVLA
+            v_align = 'top'  # Align text to top when below violin
+        else:
+            y_pos = max(scores) + 0.01  # Above the violin for others
+            v_align = 'bottom'  # Align text to bottom when above violin
+        
+        # Add text annotations with clean formatting and white background
+        plt.text(x_pos, y_pos,
+                f'μ={mean:.2f}, m={median:.2f}, σ={std:.2f}',
+                horizontalalignment='right',
+                verticalalignment='top',
+                fontsize=8,
+                bbox=dict(facecolor='white', alpha=0.8, edgecolor='none', pad=1))
+    
+    # Customize plot
+    plt.title('Distribution of Macro Recall Scores Across Datasets', fontsize=14, pad=20)
+    plt.ylabel('Macro Recall Score', fontsize=12)
+    plt.xticks(range(1, len(models) + 1), models, rotation=45)
+    plt.grid(True, axis='y', alpha=0.3)
+    
+    # Adjust x-axis limits to make room for stats
+    plt.xlim(0.5, len(models) + 1.5)
+    
+    # Adjust layout to prevent text cutoff
+    plt.tight_layout()
+    
+    # Save plot
+    plt.savefig(os.path.join(results_dir, 'macro_recall_violin_plot.png'),
+                bbox_inches='tight', dpi=300)
+    plt.close()
 
 if __name__ == "__main__":
     results_dir = "src/v0_2results"
     models = ['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']
     
-    # Generate action distribution plots
-    plot_action_distributions(results_dir, models)
+    # Generate violin plot for macro recall distribution
+    plot_macro_recall_violin(results_dir, models)
     
-# plot_dataset_specific_metrics(results_dir)
+    # Generate action distribution plots
+    # plot_action_distributions(results_dir, models)
+    
+    # plot_dataset_specific_metrics(results_dir)
+
     # Generate Brier MAE comparison plot
     # plot_cross_model_brier_mae(results_dir)
 
