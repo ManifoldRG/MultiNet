@@ -11,6 +11,7 @@ from sklearn.metrics import confusion_matrix, matthews_corrcoef
 import seaborn as sns
 import pandas as pd
 from pprint import pprint
+from scipy.interpolate import make_interp_spline
 
 current_file = Path(__file__).resolve()
 project_root = next(
@@ -580,7 +581,6 @@ def plot_classwise_metrics(results_dir, model_name):
         plt.tight_layout()
         plt.savefig(os.path.join(results_dir, f'{model_name}_{dataset}_classwise_recall.png'))
         plt.close()
-    
 
 def plot_model_metrics(results_dir, model_name):
     """Create plots comparing different metrics for a single model across subdatasets
@@ -1638,15 +1638,172 @@ def plot_cross_model_brier_mae(results_dir):
                 bbox_inches='tight', dpi=300)
     plt.close()
 
+def plot_action_distributions(results_dir: str, models: list[str]):
+    """Create plots comparing prediction and ground truth action distributions for each model,
+    aggregated across all datasets.
+    
+    Args:
+        results_dir (str): Directory containing results
+        models (list[str]): List of model names to compare
+    """
+    from scipy.interpolate import make_interp_spline
+    import numpy as np
+
+    # Define colors - using more distinct colors
+    GT_COLOR = '#0072B2'  # Bright green for ground truth
+    PRED_COLOR = '#E69F00'  # Bright red for predictions
+    OVERLAP_COLOR = '#999999'  # Gray for overlap
+    GT_CURVE_COLOR = '#005C85'  # Darker green for ground truth curve
+    PRED_CURVE_COLOR = '#B35C00'  # Darker red for prediction curve
+
+    results = load_results(results_dir)
+    common_datasets = set(results[models[0]].keys())
+    for model in models[1:]:
+        common_datasets.intersection_update(results[model].keys())
+    
+    # Process each model
+    for model in models:
+        # Initialize aggregated counts
+        all_pred_counts = {}
+        all_gt_counts = {}
+        all_possible_actions = set()
+        
+        # Collect data across all datasets
+        for dataset in common_datasets:
+            try:
+                # Get predictions and ground truth based on model type
+                if model in ['gpt4o', 'gpt4_1']:
+                    predictions = np.array(results[model][dataset][dataset]['preds']).flatten()
+                    ground_truth = np.array(results[model][dataset][dataset]['gt_actions']).flatten()
+                elif model == 'pi0_fast':
+                    predictions = np.array(results[model][dataset][dataset]['all_preds']).flatten()
+                    ground_truth = np.array(results[model][dataset][dataset]['all_gt']).flatten()
+                else:
+                    if dataset in results[model][dataset]:
+                        predictions = np.array(results[model][dataset][dataset]['all_preds']).flatten()
+                        ground_truth = np.array(results[model][dataset][dataset]['all_gt']).flatten()
+                    else:
+                        predictions = np.array(results[model][dataset]['all_preds']).flatten()
+                        ground_truth = np.array(results[model][dataset]['all_gt']).flatten()
+                
+                # Get valid actions and update the set of all possible actions
+                valid_actions = ProcGenDefinitions.get_valid_action_space(dataset, "default")
+                all_possible_actions.update(valid_actions)
+                
+                # Update counts
+                for action in valid_actions:
+                    if action not in all_pred_counts:
+                        all_pred_counts[action] = 0
+                        all_gt_counts[action] = 0
+                    
+                    all_pred_counts[action] += int(np.sum(predictions == action))
+                    all_gt_counts[action] += int(np.sum(ground_truth == action))
+                
+            except Exception as e:
+                print(f"Error processing {model} on {dataset}: {e}")
+                continue
+        
+        try:
+            # Convert to sorted lists for plotting
+            all_actions = sorted(list(all_possible_actions))
+            
+            # Convert to percentages
+            total_preds = sum(all_pred_counts.values())
+            total_gt = sum(all_gt_counts.values())
+            pred_percentages = np.array([all_pred_counts.get(a, 0) / total_preds * 100 for a in all_actions])
+            gt_percentages = np.array([all_gt_counts.get(a, 0) / total_gt * 100 for a in all_actions])
+            
+            # Create figure
+            plt.figure(figsize=(15, 8))
+            
+            # Create stacked bars to show overlap
+            x = np.arange(len(all_actions))
+            
+            # Plot the smaller of the two values as overlap
+            overlap = np.minimum(pred_percentages, gt_percentages)
+            gt_only = gt_percentages - overlap
+            pred_only = pred_percentages - overlap
+            
+            # Plot stacked bars
+            plt.bar(x, overlap, label='Overlap', color=OVERLAP_COLOR, alpha=0.7)
+            plt.bar(x, gt_only, bottom=overlap, label='Ground Truth Only', color=GT_COLOR, alpha=0.7)
+            plt.bar(x, pred_only, bottom=overlap, label='Predictions Only', color=PRED_COLOR, alpha=0.7)
+            
+            # Create smooth curves
+            # Generate points for smooth curve
+            x_smooth = np.linspace(x.min(), x.max(), 300)
+            
+            # Add padding points to make the curve more natural at the edges
+            x_pad = np.concatenate(([x.min() - 1], x, [x.max() + 1]))
+            gt_pad = np.concatenate(([0], gt_percentages, [0]))
+            pred_pad = np.concatenate(([0], pred_percentages, [0]))
+            
+            # Create the spline functions
+            gt_spline = make_interp_spline(x_pad, gt_pad, k=3)
+            pred_spline = make_interp_spline(x_pad, pred_pad, k=3)
+            
+            # Generate smooth curves
+            gt_smooth = gt_spline(x_smooth)
+            pred_smooth = pred_spline(x_smooth)
+            
+            # Ensure no negative values in the smoothed curves
+            gt_smooth = np.maximum(gt_smooth, 0)
+            pred_smooth = np.maximum(pred_smooth, 0)
+            
+            # Plot the smooth curves with increased line width and solid lines
+            plt.plot(x_smooth, gt_smooth, '-', color=GT_CURVE_COLOR, label='Ground Truth Trend', 
+                    linewidth=3, zorder=5)  # Increased line width and zorder
+            plt.plot(x_smooth, pred_smooth, '-', color=PRED_CURVE_COLOR, label='Prediction Trend',
+                    linewidth=3, zorder=5)  # Increased line width and zorder
+            
+            # Customize the plot
+            plt.xlabel('Action Class')
+            plt.ylabel('Percentage of Total Actions (%)')
+            plt.title(f'Aggregated Action Distribution Comparison for {model}\nAcross All Datasets')
+            plt.xticks(x, [str(a) for a in all_actions])
+            
+            # Add value labels
+            for i in range(len(all_actions)):
+                # Only show labels for non-zero values
+                if gt_percentages[i] > 0:
+                    plt.text(i, gt_percentages[i], f'{gt_percentages[i]:.1f}%',
+                           ha='center', va='bottom', rotation=45)
+                if pred_percentages[i] > 0 and abs(pred_percentages[i] - gt_percentages[i]) > 0.1:
+                    # Show prediction percentage only if it's significantly different from ground truth
+                    plt.text(i, pred_percentages[i], f'{pred_percentages[i]:.1f}%',
+                           ha='center', va='top', rotation=45)
+            
+            # Adjust y-axis limit to show all values with padding
+            max_value = max(max(pred_percentages), max(gt_percentages))
+            plt.ylim(0, max_value * 1.3)  # Add 30% padding
+            
+            # Add grid for better readability
+            plt.grid(True, axis='y', alpha=0.3)
+            
+            # Adjust legend position to avoid overlapping with bars
+            plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            
+            # Adjust layout and save
+            plt.tight_layout()
+            plt.savefig(os.path.join(results_dir, f'unified_action_distribution_{model}.png'),
+                       bbox_inches='tight', dpi=300)
+            plt.close()
+            
+        except Exception as e:
+            print(f"Error creating unified plot for {model}: {e}")
+            continue
+
+
 if __name__ == "__main__":
     results_dir = "src/v0_2results"
     models = ['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']
-    # models = ['gpt4_1', 'gpt4o']
-    # datasets = ['bossfight']
     
-    # plot_dataset_specific_metrics(results_dir)
+    # Generate action distribution plots
+    plot_action_distributions(results_dir, models)
+    
+# plot_dataset_specific_metrics(results_dir)
     # Generate Brier MAE comparison plot
-    plot_cross_model_brier_mae(results_dir)
+    # plot_cross_model_brier_mae(results_dir)
 
     # plot_model_metrics(results_dir, 'pi0_fast') #Change model as needed
     # plot_model_metrics(results_dir, 'gpt4o') #Change model as needed
@@ -1665,7 +1822,7 @@ if __name__ == "__main__":
     # plot_classwise_metrics(results_dir, 'pi0_base')
     # plot_classwise_metrics(results_dir, 'pi0_fast')
 
-    plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='micro', with_invalids=True)
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='micro', with_invalids=True)
     # plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='micro', with_invalids=True)
     # plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='micro', with_invalids=True)
 
