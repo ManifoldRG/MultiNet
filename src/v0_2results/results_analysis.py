@@ -304,7 +304,7 @@ def get_macro_micro_metrics_std_per_dataset_from_bootstrap_sample(model, data, d
     return precision_std, recall_std, f1_std
 
 def plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='macro', with_invalids: bool = True):
-    """Create a bump chart visualization comparing model rankings across datasets"""
+    """Create grouped bar plots comparing model performance across datasets, arranged in 4 vertical subplots"""
     results = load_results(results_dir)
 
     # Get list of all subdatasets -- common ones
@@ -340,7 +340,6 @@ def plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', me
             raise ValueError(f"Invalid metric: {metric}")
 
     # Collect scores for each model
-    min_non_zero_score = float('inf')
     for model in models:
         scores = []
         scores_std = []
@@ -402,8 +401,6 @@ def plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', me
                             else:
                                 score = results[model][dataset][dataset][f'{metric_key}_without_invalids']
                 scores.append(score)
-                if score > 0 and score < min_non_zero_score:
-                    min_non_zero_score = score
             except (KeyError, TypeError):
                 scores.append(0)
         
@@ -424,109 +421,100 @@ def plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', me
     with open(metrics_file, "w") as f:
         json.dump(metrics, f, indent=2)
 
-    # Create figure with proper spacing
-    fig = plt.figure(figsize=(8, 6))  # Slightly reduce height
+    # Split datasets into groups of 4
+    num_datasets = len(subdatasets)
+    datasets_per_subplot = 4
+    num_subplots = (num_datasets + datasets_per_subplot - 1) // datasets_per_subplot
+
+    # Create figure with subplots and adjust spacing
+    fig = plt.figure(figsize=(15, 6*num_subplots))
+    # Add space at the top for the title and legend
+    gs = plt.GridSpec(num_subplots + 1, 1, height_ratios=[0.5] + [1]*num_subplots, hspace=0.4)
     
-    # Create gridspec for better control over spacing
-    gs = plt.GridSpec(3, 1, height_ratios=[0.1, 0.1, 1], hspace=0.05)  # Reduce height ratios for title/legend and spacing
-    
-    # Create axes for title, legend, and main plot
+    # Create a special axes for the title and legend
     title_ax = fig.add_subplot(gs[0])
-    legend_ax = fig.add_subplot(gs[1])
-    ax = fig.add_subplot(gs[2])
+    title_ax.axis('off')  # Hide the axes
     
-    # Hide axes for title and legend
-    title_ax.axis('off')
-    legend_ax.axis('off')
-    
-    # Add title
-    title = f'Model {metric_type.capitalize()} {metric.capitalize()} Rankings'
+    # Create subplot axes
+    axs = [fig.add_subplot(gs[i+1]) for i in range(num_subplots)]
+
+    # Plot settings
+    bar_width = 0.15
+    opacity = 0.8
+
+    # Create plots for each group of datasets
+    for subplot_idx in range(num_subplots):
+        ax = axs[subplot_idx]
+        
+        # Get the datasets for this subplot
+        start_idx = subplot_idx * datasets_per_subplot
+        end_idx = min(start_idx + datasets_per_subplot, num_datasets)
+        current_datasets = subdatasets[start_idx:end_idx]
+        
+        # Calculate x positions
+        x = np.arange(len(current_datasets))
+        
+        # Calculate maximum y value including error bars for this subplot
+        max_y = 0
+        for model in models:
+            current_scores = model_scores[model][start_idx:end_idx]
+            current_stds = model_scores_std[model][start_idx:end_idx]
+            max_with_error = max([score + std for score, std in zip(current_scores, current_stds) if score > 0])
+            max_y = max(max_y, max_with_error)
+        
+        # Add padding to y-axis limit (30% extra space)
+        y_limit = max_y * 1.3
+        
+        # Plot bars for each model
+        for i, model in enumerate(models):
+            # Get scores for current datasets
+            current_scores = model_scores[model][start_idx:end_idx]
+            current_stds = model_scores_std[model][start_idx:end_idx]
+            
+            # Plot bars with error bars
+            bars = ax.bar(x + i*bar_width, current_scores, bar_width,
+                         alpha=opacity, color=COLORS[i], label=model,
+                         yerr=current_stds, capsize=5, error_kw={'elinewidth': 2})
+            
+            # Add value labels on top of bars
+            for idx, (value, std) in enumerate(zip(current_scores, current_stds)):
+                if value > 0:  # Only show non-zero values
+                    # Calculate label position
+                    label_height = value + std
+                    if label_height > y_limit * 0.85:  # If label would be too close to top
+                        label_height = value - std  # Place label below error bar
+                        va = 'top'
+                    else:
+                        va = 'bottom'
+                    
+                    ax.text(x[idx] + i*bar_width, label_height,
+                           f'{value:.2f}', ha='center', va=va,
+                           rotation=45, fontsize=16)
+        
+        # Customize subplot
+        ax.set_ylabel(f'{metric_type.capitalize()} {metric.capitalize()}', fontsize=20)
+        ax.set_xticks(x + bar_width * (len(models)-1)/2)
+        ax.set_xticklabels(current_datasets, rotation=45, ha='right', fontsize=20)
+        ax.grid(True, axis='y', alpha=0.3)
+        ax.tick_params(axis='both', which='major', labelsize=16)
+        
+        # Set y-axis limits
+        ax.set_ylim(0, y_limit)
+
+    # Add overall title
+    title = f'Model {metric_type.capitalize()} {metric.capitalize()} Comparison'
     if not with_invalids:
         title += ' (Without Invalids)'
-    title_ax.text(0.5, 0.2, title, fontsize=10, ha='center', va='center')  # Move title text up
-    
-    # Calculate rankings for each dataset
-    rankings = []
-    for i in range(len(subdatasets)):
-        dataset_scores = [(model_scores[model][i], model) for model in models]
-        sorted_scores = sorted(dataset_scores, reverse=True)
-        rank_dict = {model: rank + 1 for rank, (_, model) in enumerate(sorted_scores)}
-        rankings.append(rank_dict)
-    
-    # Plot lines connecting rankings
-    x = np.arange(len(subdatasets))
-    
-    # First plot all lines with lower alpha
-    for model_idx, model in enumerate(models):
-        model_rankings = [rankings[i][model] for i in range(len(subdatasets))]
-        ax.plot(x, model_rankings, '-', color=COLORS[model_idx], 
-                linewidth=1.5, alpha=0.3)
-    
-    # Then plot points and labels on top
-    legend_handles = []
-    for model_idx, model in enumerate(models):
-        model_rankings = [rankings[i][model] for i in range(len(subdatasets))]
-        
-        # Plot points
-        scatter = ax.scatter(x, model_rankings, color=COLORS[model_idx], 
-                           s=50, zorder=5, alpha=0.9, label=model)
-        legend_handles.append(scatter)
-        
-        # Add score labels for all points
-        for i, (rank, score) in enumerate(zip(model_rankings, model_scores[model])):
-            # Format score based on magnitude
-            if score == 0:
-                score_text = "0"
-            elif score < 0.001:  # Very small values in scientific notation
-                score_text = f"{score:.1e}"
-            elif score < 0.01:  # Small values with 4 decimal places
-                score_text = f"{score:.4f}"
-            else:  # Regular values with 3 decimal places
-                score_text = f"{score:.3f}"
-            
-            # Position labels alternating above/below points to avoid overlap
-            vert_offset = 0.2 if i % 2 == 0 else -0.2
-            # Adjust offset based on rank to avoid legend
-            if rank == 1:
-                vert_offset = max(vert_offset, 0.2)  # Always above for rank 1
-            elif rank == len(models):
-                vert_offset = min(vert_offset, -0.2)  # Always below for last rank
-            
-            ax.annotate(score_text, 
-                       (x[i], rank),
-                       xytext=(0, vert_offset * 20),
-                       textcoords='offset points',
-                       ha='center',
-                       va='bottom' if vert_offset > 0 else 'top',
-                       fontsize=7)
-    
-    # Add legend to the legend axis
-    legend_ax.legend(legend_handles, models,
-                    loc='center',
-                    ncol=3,
-                    fontsize=8,
-                    frameon=True,
-                    borderaxespad=0)
-    
-    # Customize main plot
-    ax.invert_yaxis()  # Invert y-axis so rank 1 is at the top
-    ax.grid(True, axis='y', linestyle='--', alpha=0.2)
-    
-    # Set y-axis ticks and labels
-    ax.set_yticks(range(1, len(models) + 1))
-    ax.set_ylabel('Rank', fontsize=9)
-    
-    # Set x-axis ticks and labels
-    ax.set_xticks(x)
-    ax.set_xticklabels(subdatasets, rotation=45, ha='right')
-    
-    # Remove spines
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    
-    # Adjust spacing between subplots
-    plt.subplots_adjust(top=0.95, bottom=0.15, left=0.1, right=0.95)
-    
+    title_ax.text(0.5, 0.7, title, fontsize=24, ha='center', va='bottom')
+
+    # Create a single legend for all subplots
+    handles, labels = axs[0].get_legend_handles_labels()
+    title_ax.legend(handles, labels, 
+                   loc='center',
+                   bbox_to_anchor=(0.5, 0.2),
+                   ncol=len(models),
+                   fontsize=20)
+
     # Save the plot with high DPI
     if with_invalids:
         plt.savefig(os.path.join(results_dir, f'model_comparison_{metric_type}_{metric_key}_with_invalids.png'),
@@ -1513,6 +1501,7 @@ def print_preds_gt_unique_value_counts(results_dir, datasets=None, models=None):
 
 def plot_cross_model_brier_mae(results_dir):
     """Create a plot comparing Brier MAE across GPT-4o, GPT-4.1, OpenVLA, and PI0 Fast.
+    Split into 4 vertically stacked subplots with 4 datasets each.
     
     Args:
         results_dir (str): Directory containing results
@@ -1526,10 +1515,6 @@ def plot_cross_model_brier_mae(results_dir):
     
     # Set width of bars and positions
     width = 0.2  # Slightly wider bars since we have 4 models
-    x = np.arange(len(subdatasets))
-    
-    # Create figure and axis with larger figure size
-    fig, ax = plt.subplots(figsize=(20, 8))
     
     # Dictionary to map models to their Brier MAE keys
     brier_mae_keys = {
@@ -1539,86 +1524,114 @@ def plot_cross_model_brier_mae(results_dir):
         'pi0_fast': 'avg_brier_mae'
     }
     
-    # Plot bars for each model and track min/max values
-    all_scores = []
-    for i, model in enumerate(models):
-        model_scores = []
-        model_scores_std = []  # For error bars if available
+    # Split datasets into groups of 4
+    datasets_per_subplot = 4
+    num_subplots = (len(subdatasets) + datasets_per_subplot - 1) // datasets_per_subplot
+
+    # Create figure with subplots and adjust spacing
+    fig = plt.figure(figsize=(15, 6*num_subplots))
+    # Add space at the top for the title and legend
+    gs = plt.GridSpec(num_subplots + 1, 1, height_ratios=[0.5] + [1]*num_subplots, hspace=0.4)
+    
+    # Create a special axes for the title and legend
+    title_ax = fig.add_subplot(gs[0])
+    title_ax.axis('off')  # Hide the axes
+    
+    # Create subplot axes
+    axs = [fig.add_subplot(gs[i+1]) for i in range(num_subplots)]
+    
+    # Plot for each subplot (group of datasets)
+    for subplot_idx in range(num_subplots):
+        ax = axs[subplot_idx]
         
-        for dataset in subdatasets:
-            try:
-                # Handle different data structures for different models
-                if model in ['gpt4o', 'gpt4_1']:
-                    score = results[model][dataset][dataset][brier_mae_keys[model]]
-                elif model == 'pi0_fast':
-                    if dataset in results[model].keys():
+        # Get the datasets for this subplot
+        start_idx = subplot_idx * datasets_per_subplot
+        end_idx = min(start_idx + datasets_per_subplot, len(subdatasets))
+        current_datasets = subdatasets[start_idx:end_idx]
+        
+        # Calculate x positions
+        x = np.arange(len(current_datasets))
+        
+        # Plot bars for each model and track min/max values
+        all_scores = []
+        for i, model in enumerate(models):
+            model_scores = []
+            
+            for dataset in current_datasets:
+                try:
+                    # Handle different data structures for different models
+                    if model in ['gpt4o', 'gpt4_1']:
                         score = results[model][dataset][dataset][brier_mae_keys[model]]
-                    else:
-                        score = 0  # or some other default value
-                else:  # openvla
-                    if dataset in results[model][dataset]:
-                        score = results[model][dataset][dataset][brier_mae_keys[model]]
-                    else:
-                        score = results[model][dataset][brier_mae_keys[model]]
-                model_scores.append(score)
-                all_scores.append(score)
-            except (KeyError, TypeError):
-                model_scores.append(0)
-                print(f"Missing data for {model} on {dataset}")
+                    elif model == 'pi0_fast':
+                        if dataset in results[model].keys():
+                            score = results[model][dataset][dataset][brier_mae_keys[model]]
+                        else:
+                            score = 0  # or some other default value
+                    else:  # openvla
+                        if dataset in results[model][dataset]:
+                            score = results[model][dataset][dataset][brier_mae_keys[model]]
+                        else:
+                            score = results[model][dataset][brier_mae_keys[model]]
+                    model_scores.append(score)
+                    all_scores.append(score)
+                except (KeyError, TypeError):
+                    model_scores.append(0)
+                    print(f"Missing data for {model} on {dataset}")
+            
+            # Plot bars with error bars
+            bars = ax.bar(x + i*width, model_scores, width, 
+                         label=model, color=COLORS[i], alpha=0.8,
+                         edgecolor='black', linewidth=1)
+            
+            # Add value labels on top of bars
+            for idx, value in enumerate(model_scores):
+                if value > 0:  # Only show non-zero values
+                    ax.text(x[idx] + i*width, value, f'{value:.2f}',
+                           ha='center', va='bottom', rotation=45,
+                           fontsize=20)
         
-        # Plot bars with error bars
-        bars = ax.bar(x + i*width, model_scores, width, 
-                     label=model, color=COLORS[i], alpha=0.8,
-                     edgecolor='black', linewidth=1)
+        # Calculate y-axis limits for this subplot
+        non_zero_scores = [s for s in all_scores if s > 0]
+        if non_zero_scores:
+            min_val = min(non_zero_scores)
+            max_val = max(non_zero_scores)
+            # Start y-axis from 20% below the minimum non-zero value
+            y_min = max(0, min_val - (max_val - min_val) * 0.2)
+            # Add 30% padding above maximum value
+            y_max = max_val + (max_val - min_val) * 0.3
+            
+            # Set y-axis limits
+            ax.set_ylim(y_min, y_max)
+            
+            # Add broken axis indicator if not starting from 0
+            if y_min > 0:
+                d = .015  # Size of diagonal lines
+                kwargs = dict(transform=ax.transAxes, color='k', clip_on=False)
+                ax.plot((-d, +d), (-d, +d), **kwargs)
+                ax.plot((1 - d, 1 + d), (-d, +d), **kwargs)
         
-        # Add value labels on top of bars
-        for idx, value in enumerate(model_scores):
-            ax.text(x[idx] + i*width, value, f'{value:.3f}',
-                   ha='center', va='bottom', rotation=45,
-                   fontsize=8)
-    
-    # Calculate y-axis limits to show main content in upper 2/3 of plot
-    non_zero_scores = [s for s in all_scores if s > 0]
-    if non_zero_scores:
-        min_val = min(non_zero_scores)
-        max_val = max(non_zero_scores)
-        # Start y-axis from 20% below the minimum non-zero value
-        y_min = max(0, min_val - (max_val - min_val) * 0.2)
-        # Add 30% padding above maximum value
-        y_max = max_val + (max_val - min_val) * 0.3
+        # Customize subplot
+        ax.set_ylabel('Brier MAE', fontsize=20)
+        ax.set_xticks(x + width * (len(models)-1)/2)
+        ax.set_xticklabels(current_datasets, rotation=45, ha='right', fontsize=20)
+        ax.grid(True, axis='y', alpha=0.3)
+        ax.tick_params(axis='both', which='major', labelsize=20)
         
-        # Set y-axis limits
-        ax.set_ylim(y_min, y_max)
-        
-        # Add broken axis indicator if not starting from 0
-        if y_min > 0:
-            d = .015  # Size of diagonal lines
-            kwargs = dict(transform=ax.transAxes, color='k', clip_on=False)
-            ax.plot((-d, +d), (-d, +d), **kwargs)
-            ax.plot((1 - d, 1 + d), (-d, +d), **kwargs)
+        # Add light vertical lines to separate datasets
+        for i in x:
+            ax.axvline(i - width/2, color='gray', linestyle='-', alpha=0.1)
     
-    # Add title at the top of the plot
-    ax.set_title('Model Brier MAE Comparison Across Subdatasets', 
-                pad=20, fontsize=12)
-    
-    # Add legend to the upper right corner
-    ax.legend(loc='upper right', bbox_to_anchor=(1, 1),
-             ncol=1, fontsize=10)
-    
-    # Customize the plot
-    ax.set_ylabel('Brier MAE')
-    ax.set_xticks(x + width * (len(models)-1)/2)
-    ax.set_xticklabels(subdatasets, rotation=45, ha='right')
-    
-    # Add grid for better readability
-    ax.yaxis.grid(True, linestyle='--', alpha=0.7)
-    
-    # Add light vertical lines to separate datasets
-    for i in x:
-        ax.axvline(i - width/2, color='gray', linestyle='-', alpha=0.1)
-    
-    # Adjust layout to prevent label cutoff
-    plt.tight_layout()
+    # Add overall title
+    title_ax.text(0.5, 0.7, 'Model Brier MAE Comparison Across Subdatasets',
+                 fontsize=24, ha='center', va='bottom')
+
+    # Create a single legend for all subplots
+    handles, labels = axs[0].get_legend_handles_labels()
+    title_ax.legend(handles, labels, 
+                   loc='center',
+                   bbox_to_anchor=(0.5, 0.2),
+                   ncol=len(models),
+                   fontsize=20)
     
     # Save the plot
     plt.savefig(os.path.join(results_dir, 'model_comparison_brier_mae.png'),
@@ -1633,7 +1646,7 @@ if __name__ == "__main__":
     
     # plot_dataset_specific_metrics(results_dir)
     # Generate Brier MAE comparison plot
-    # plot_cross_model_brier_mae(results_dir)
+    plot_cross_model_brier_mae(results_dir)
 
     # plot_model_metrics(results_dir, 'pi0_fast') #Change model as needed
     # plot_model_metrics(results_dir, 'gpt4o') #Change model as needed
@@ -1653,16 +1666,16 @@ if __name__ == "__main__":
     # plot_classwise_metrics(results_dir, 'pi0_fast')
 
     plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='micro', with_invalids=True)
-    plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='micro', with_invalids=True)
-    plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='micro', with_invalids=True)
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='micro', with_invalids=True)
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='micro', with_invalids=True)
 
-    plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='micro', with_invalids=False)
-    plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='micro', with_invalids=False)
-    plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='micro', with_invalids=False)
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='micro', with_invalids=False)
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='micro', with_invalids=False)
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='micro', with_invalids=False)
 
-    plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='macro', with_invalids=True)
-    plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='macro', with_invalids=True)
-    plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='macro', with_invalids=True)
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', metric_type='macro', with_invalids=True)
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='precision', metric_type='macro', with_invalids=True)
+    # plot_cross_model_macro_micro_metric(results_dir, models, metric='f1', metric_type='macro', with_invalids=True)
 
     # Generate comparative plots
     # plot_cross_model_classwise_comparison(results_dir, models)
