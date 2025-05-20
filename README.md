@@ -1,14 +1,15 @@
 <p align="center">
-  <img src="assets/Multinetlogo.png" alt="Multinet Logo" height="100" style="vertical-align: middle;">
-  <h1 align="center" style="display: inline-block; vertical-align: middle; margin-left: 20px;">MultiNet: A Generalist Benchmark for Vision-Language & Action models</h1>
+  <img src="assets/multinet_logo_square copy.png" alt="Multinet Logo" height="100" style="vertical-align: middle;">
+  <h1 align="center" style="display: inline-block; vertical-align: middle; margin-left: 20px;">MultiNet: A Generalist Benchmark for Multimodal Action models</h1>
 </p>
 
 <p align="center">
-  <a href="https://multinet.ai">Website</a> •
-  <a href="https://multinet.ai/static/pdfs/Benchmarking%20Vision%20Language%20Action%20Models.pdf">Paper</a> •
-  <a href="https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf">Dataset Spec</a> •
-  <a href="https://github.com/ManifoldRG/MultiNet/tree/main/src/modules">GenESIS framework</a> •
-  <a href="https://discord.gg/Rk4gAq5aYr">Contribute</a>
+  [![Website](https://img.shields.io/badge/Website-blue?style=flat-square&logo=home)](https://multinet.ai)
+  [![Multinet v0.1 paper](https://img.shields.io/badge/Paper%20v0.1-green?style=flat-square&logo=read-the-docs)](https://multinet.ai/static/pdfs/Benchmarking%20Vision%20Language%20Action%20Models.pdf)
+  [![Multinet v0.2 paper](https://img.shields.io/badge/Paper%20v0.2-arXiv-B31B1B?style=flat-square&logo=arXiv)](https://arxiv.org/abs/2505.05540)
+  [![Dataset Spec paper](https://img.shields.io/badge/Dataset%20Spec-orange?style=flat-square&logo=database)](https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf)
+  [![GenESIS framework](https://img.shields.io/badge/GenESIS-blueviolet?style=flat-square&logo=github)](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules)
+  [![Contribute](https://img.shields.io/badge/Contribute%20via%20Discord-7289DA?style=flat-square&logo=discord)](https://discord.gg/Rk4gAq5aYr)
 </p>
 
 ### This work is sponsored by, and is being done in close collaboration with [Metarch](https://metarch.ai/).
