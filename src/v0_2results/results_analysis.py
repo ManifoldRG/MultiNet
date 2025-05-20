@@ -1779,8 +1779,8 @@ def plot_action_distributions(results_dir: str, models: list[str]):
             # Add grid for better readability
             plt.grid(True, axis='y', alpha=0.3)
             
-            # Adjust legend position to avoid overlapping with bars
-            plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            # Place legend inside the plot at the top right corner
+            plt.legend(loc='upper right', fontsize=14)
             
             # Adjust layout and save
             plt.tight_layout()
@@ -1984,15 +1984,160 @@ def plot_macro_recall_heatmap(results_dir: str, models: list[str]):
                 bbox_inches='tight', dpi=300)
     plt.close()
 
+def plot_pi0_action_distribution_comparison(results_dir: str):
+    """Create plots comparing prediction action distributions between pi0_fast and pi0_base.
+    
+    Args:
+        results_dir (str): Directory containing results
+    """
+    # Define colors for better visualization
+    PI0_FAST_COLOR = '#27aeef'  # Blue
+    PI0_BASE_COLOR = '#87bc45'  # Green
+    OVERLAP_COLOR = '#999999'   # Gray
+    PI0_FAST_CURVE_COLOR = '#1b8bc7'  # Darker blue
+    PI0_BASE_CURVE_COLOR = '#669934'  # Darker green
+
+    results = load_results(results_dir)
+    
+    # Get common datasets between pi0_fast and pi0_base
+    pi0_fast_datasets = set(results['pi0_fast'].keys())
+    pi0_base_datasets = set(results['pi0_base'].keys())
+    common_datasets = sorted(list(pi0_fast_datasets.intersection(pi0_base_datasets)))
+    
+    # Initialize aggregated counts
+    pi0_fast_pred_counts = {}
+    pi0_base_pred_counts = {}
+    all_possible_actions = set()
+    
+    # Collect data across all datasets
+    for dataset in common_datasets:
+        try:
+            # Get predictions for pi0_fast
+            if dataset in results['pi0_fast'].keys():
+                pi0_fast_preds = np.array(results['pi0_fast'][dataset][dataset]['all_preds']).flatten()
+            else:
+                continue
+            
+            # Get predictions for pi0_base
+            pi0_base_preds = np.array(results['pi0_base'][dataset][dataset]['all_preds']).flatten()
+            
+            # Get valid actions and update the set of all possible actions
+            valid_actions = ProcGenDefinitions.get_valid_action_space(dataset, "default")
+            all_possible_actions.update(valid_actions)
+            
+            # Update counts
+            for action in valid_actions:
+                if action not in pi0_fast_pred_counts:
+                    pi0_fast_pred_counts[action] = 0
+                    pi0_base_pred_counts[action] = 0
+                
+                pi0_fast_pred_counts[action] += int(np.sum(pi0_fast_preds == action))
+                pi0_base_pred_counts[action] += int(np.sum(pi0_base_preds == action))
+                
+        except Exception as e:
+            print(f"Error processing dataset {dataset}: {e}")
+            continue
+    
+    try:
+        # Convert to sorted lists for plotting
+        all_actions = sorted(list(all_possible_actions))
+        
+        # Convert to percentages
+        total_pi0_fast = sum(pi0_fast_pred_counts.values())
+        total_pi0_base = sum(pi0_base_pred_counts.values())
+        pi0_fast_percentages = np.array([pi0_fast_pred_counts.get(a, 0) / total_pi0_fast * 100 for a in all_actions])
+        pi0_base_percentages = np.array([pi0_base_pred_counts.get(a, 0) / total_pi0_base * 100 for a in all_actions])
+        
+        # Create figure
+        plt.figure(figsize=(15, 8))
+        
+        # Create stacked bars to show overlap
+        x = np.arange(len(all_actions))
+        
+        # Plot the smaller of the two values as overlap
+        overlap = np.minimum(pi0_fast_percentages, pi0_base_percentages)
+        pi0_fast_only = pi0_fast_percentages - overlap
+        pi0_base_only = pi0_base_percentages - overlap
+        
+        # Plot stacked bars
+        plt.bar(x, overlap, label='Overlap', color=OVERLAP_COLOR, alpha=0.7)
+        plt.bar(x, pi0_fast_only, bottom=overlap, label='PI0 Fast Only', color=PI0_FAST_COLOR, alpha=0.7)
+        plt.bar(x, pi0_base_only, bottom=overlap, label='PI0 Base Only', color=PI0_BASE_COLOR, alpha=0.7)
+        
+        # Create smooth curves
+        # Generate points for smooth curve
+        x_smooth = np.linspace(x.min(), x.max(), 300)
+        
+        # Add padding points to make the curve more natural at the edges
+        x_pad = np.concatenate(([x.min() - 1], x, [x.max() + 1]))
+        pi0_fast_pad = np.concatenate(([0], pi0_fast_percentages, [0]))
+        pi0_base_pad = np.concatenate(([0], pi0_base_percentages, [0]))
+        
+        # Create the spline functions
+        pi0_fast_spline = make_interp_spline(x_pad, pi0_fast_pad, k=3)
+        pi0_base_spline = make_interp_spline(x_pad, pi0_base_pad, k=3)
+        
+        # Generate smooth curves
+        pi0_fast_smooth = pi0_fast_spline(x_smooth)
+        pi0_base_smooth = pi0_base_spline(x_smooth)
+        
+        # Ensure no negative values in the smoothed curves
+        pi0_fast_smooth = np.maximum(pi0_fast_smooth, 0)
+        pi0_base_smooth = np.maximum(pi0_base_smooth, 0)
+        
+        # Plot the smooth curves with increased line width
+        plt.plot(x_smooth, pi0_fast_smooth, '-', color=PI0_FAST_CURVE_COLOR, label='PI0 Fast Trend', 
+                linewidth=3, zorder=5)
+        plt.plot(x_smooth, pi0_base_smooth, '-', color=PI0_BASE_CURVE_COLOR, label='PI0 Base Trend',
+                linewidth=3, zorder=5)
+        
+        # Customize the plot
+        plt.xlabel('Action Class', fontsize=16)
+        plt.ylabel('Percentage of Total Actions (%)', fontsize=16)
+        plt.title('PI0 Fast vs PI0 Base Action Distribution Comparison\nAcross All Datasets', fontsize=20)
+        plt.xticks(x, [str(a) for a in all_actions], fontsize=16)
+        plt.yticks(fontsize=16)
+        
+        # Add value labels
+        for i in range(len(all_actions)):
+            # Only show labels for non-zero values
+            if pi0_fast_percentages[i] > 0:
+                plt.text(i, pi0_fast_percentages[i], f'{pi0_fast_percentages[i]:.1f}%',
+                       ha='center', va='bottom', rotation=45, fontsize=12)
+            if pi0_base_percentages[i] > 0 and abs(pi0_base_percentages[i] - pi0_fast_percentages[i]) > 0.1:
+                plt.text(i, pi0_base_percentages[i], f'{pi0_base_percentages[i]:.1f}%',
+                       ha='center', va='top', rotation=45, fontsize=12)
+        
+        # Adjust y-axis limit to show all values with padding
+        max_value = max(max(pi0_fast_percentages), max(pi0_base_percentages))
+        plt.ylim(0, max_value * 1.3)  # Add 30% padding
+        
+        # Add grid for better readability
+        plt.grid(True, axis='y', alpha=0.3)
+        
+        # Place legend inside the plot at the top right corner
+        plt.legend(loc='upper right', fontsize=14)
+        
+        # Adjust layout and save
+        plt.tight_layout()
+        plt.savefig(os.path.join(results_dir, 'pi0_action_distribution_comparison.png'),
+                   bbox_inches='tight', dpi=300)
+        plt.close()
+        
+    except Exception as e:
+        print(f"Error creating comparison plot: {e}")
+
 if __name__ == "__main__":
     results_dir = "src/v0_2results"
     models = ['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']
     
+    plot_pi0_action_distribution_comparison(results_dir)
+
     # # Generate violin plot for macro recall distribution
     # plot_macro_recall_violin(results_dir, models)
     
-    # Generate heatmap for macro recall scores
-    plot_macro_recall_heatmap(results_dir, models)
+    # # Generate heatmap for macro recall scores
+    # plot_macro_recall_heatmap(results_dir, models)
     
     # Generate action distribution plots
     # plot_action_distributions(results_dir, models)
