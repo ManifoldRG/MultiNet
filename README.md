@@ -105,15 +105,15 @@ python src/eval/profiling/openvla/experiments/robot/openvla_profiling.py --profi
 
 ## 📊 Evaluation and submission process to the Multinet benchmark
 
-Here are steps to follow to evaluate your team's model on Multinet data:
+Here are steps to follow to evaluate your team's model on Multinet data and submit results to our benchmark:
 
 *   Download the desired dataset using the download+translate SDK that we provide by following the steps mentioned above.
-*   Open an issue on our Github with the tag `evaluate`. The issue title should be: “Add <your model name> to Multinet benchmark”. 
+*   Open an issue on our Github with the tag `evaluate`. The issue title should be: “Add < your model name > to Multinet benchmark”. 
 *  You can access the list of test episodes for a specific dataset at [src/eval/profiling/test_data](src/eval/profiling/test_data). These test episodes can then be translated from the downloaded data using the download+translate SDK by following the steps mentioned above.
 *   We break down the required components to run evals using a model into 3 categories:
-    *   **Ingestion pipeline**: Pipeline to feed the model with the test data. This can be similar to the dataloaders we have implemented in [src/data_utils](src/data_utils)
+    *   **Ingestion pipeline**: Pipeline to feed the model with the test data with necessary input processing. This can be similar to the dataloaders we have implemented in [src/data_utils](src/data_utils)
     *   **Model adaptation**: Adapt your model to ingest the test data and produce actions in the appropriate format. This can be similar to how we have implemented model adaptations for various models such as [Genesis for VLMs](src/modules/), and custom adaptations for VLAs such as [OpenVLA](https://github.com/ManifoldRG/MultiNet/blob/main/src/eval/profiling/openvla/experiments/robot/openvla_profiling.py), [Pi0 Base](https://github.com/ManifoldRG/MultiNet/blob/main/src/eval/profiling/openpi/scripts/procgen_inference.py), and [Pi0 FAST](https://github.com/ManifoldRG/MultiNet/blob/main/src/eval/profiling/openpi/scripts/procgen_inference_fast.py)
-    *   **Inference pipeline**: The inference pipeline should include a `predict_action` function that takes in the observations of a timestep/batch of timesteps as input, and produces the action(s) for a given timestep/batch of timesteps in the appropriate format.
+    *   **Inference pipeline**: The inference pipeline should include a `predict_action` function that takes in the observations of a timestep/batch of timesteps as input, produces the action(s) for a given timestep/batch of timesteps, and processes it to ensure the outputs are in the appropriate format.
         *   **You must implement deterministic inference by setting explicit seed values for all stochastic operations within the model inference pipeline. This requirement applies to any component that introduces non-determinism during the inference process.**
 *   You can then run inference on the test data to obtain zero-shot predictions for all the timesteps.
     *   Once all the predictions are obtained, they can be evaluated using the metrics we implement and report. You can find the helper functions that implement all the metrics in [src/eval_utils.py](src/eval_utils.py)
