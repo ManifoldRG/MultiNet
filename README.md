@@ -4,31 +4,31 @@
 </p>
 
 <p align="center">
-
-  [![Website](https://img.shields.io/badge/Website-blue?style=flat-square&logo=home)](https://multinet.ai)
-  [![Multinet v0.1 paper](https://img.shields.io/badge/Paper%20v0.1-green?style=flat-square&logo=read-the-docs)](https://multinet.ai/static/pdfs/Benchmarking%20Vision%20Language%20Action%20Models.pdf)
-  [![Multinet v0.2 paper](https://img.shields.io/badge/Paper%20v0.2-arXiv-B31B1B?style=flat-square&logo=arXiv)](https://arxiv.org/abs/2505.05540)
-  [![Dataset Spec paper](https://img.shields.io/badge/Dataset%20Spec-orange?style=flat-square&logo=database)](https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf)
-  [![GenESIS framework](https://img.shields.io/badge/GenESIS-blueviolet?style=flat-square&logo=github)](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules)
-  [![Contribute](https://img.shields.io/badge/Contribute%20via%20Discord-7289DA?style=flat-square&logo=discord)](https://discord.gg/Rk4gAq5aYr)
-
+  [![Website](https://img.shields.io/badge/Website-blue?style=flat-square&logo=home)](https://multinet.ai/) [![Multinet v0.2 paper](https://img.shields.io/badge/Multinet%20v0.2%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv)](https://arxiv.org/abs/2505.05540) [![Dataset Spec paper](https://img.shields.io/badge/Dataset%20Spec-green?style=flat-square&logo=docs)](https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf) [![GenESIS framework](https://img.shields.io/badge/GenESIS-blueviolet?style=flat-square&logo=github)](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules) [![Contribute](https://img.shields.io/badge/Contribute-7289DA?style=flat-square&logo=discord)](https://discord.gg/Rk4gAq5aYr)
 </p>
 
 ### This work is sponsored by, and is being done in close collaboration with [Metarch](https://metarch.ai/).
 
 ## 📢 Updates
-2024-11-08: We release the first version of MultiNet where we profiled a SoTA VLM, SoTA VLA, and a novel Generalist model on OpenX Embodiment datasets - Multinet v0.1! Check our [website](https://multinet.ai) for more details.
 
+2025-05-22: Multinet v0.2 - We systematically profile state-of-the-art VLAs and VLMs to understand how they perform in procedurally generated OOD game environments! Read more about our recent release [here](https://multinet.ai/static/pages/Multinetv02.html)
+2024-11-08: We release the first version of MultiNet where we profiled SoTA VLMs and VLAs on real-world robotics tasks - Multinet v0.1! Check our [release page](https://multinet.ai/static/pages/Multinetv01.html) for more details.
+2024-03-22: Introducing Multinet! A new generalist benchmark to evaluate Vision-Language & Action models. Learn more [here](https://multinet.ai)
 
 ## 🔍 Overview
 
-This repo provides the following capabilities:
-1. Download any or all datasets of what aims to be the largest consolidation of open-source vision-language + control/action (RL, Robotics) data
-2. Translate control data of various formats and from various sources to a unified [Tensorflow Dataset format](https://www.tensorflow.org/datasets/api_docs/python/tfds). 
-3. Evaluate the performance of GPT-4o, OpenVLA, and HuggingFace's JAT in a zero-shot setting on OpenX Embodiment datasets using the benchmark released in [Multinet v0.1](https://github.com/ManifoldRG/MultiNet/releases/tag/v0.1).
-4. A [general framework](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules) for mapping VLMs to other modality classes, with particular emphasis on action spaces. This framework allows one to adapt a wide range of models to multiple types of tasks or datasets for scaling effectively while reducing the amount of engineering effort required.  In MultiNet v0.1, GenESIS is used to evaluate GPT-4-o on the OpenX datasets.
+This repo provides the following:
+1. Ability to download any or all datasets of what aims to be the largest consolidation of open-source vision-language + control/action (RL, Robotics) data
+2. Ability to translate control data of various formats and from various sources to a unified [Tensorflow Dataset format](https://www.tensorflow.org/datasets/api_docs/python/tfds). 
+3. Evaluate the performance of SoTA VLMs and VLAs such as GPT-4.1, GPT 4o, Pi0, Pi0 with FAST, and OpenVLA in a zero-shot setting on a wide-variety of action data such as [robotics](https://multinet.ai/static/pages/Multinetv01.html) and [procedurally generated game-play](https://multinet.ai/static/pages/Multinetv02.html).
+4. A [general framework](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules) for mapping VLMs to other modality classes, with particular emphasis on action spaces. This framework allows one to adapt a wide range of models to multiple types of tasks or datasets for scaling effectively while reducing the amount of engineering effort required.  In MultiNet v0.1, GenESIS is used to evaluate GPT 4o on the OpenX datasets, and in Multinet v0.2 GenESIS is used to evaluate GPT 4o and GPT 4.1 on the Procgen dataset.
+5. Test splits of Multinet datasets and clear guidelines required to evaluate your model on them, and the results to our leaderboard in order to compare performance against SoTA VLMs and VLAs.
 
-As a part of Multinet v0.1, we also release [μGATO](https://github.com/eihli/mugato) - a small, simple, open-source implementation of what is described in DeepMind's GATO paper. This is our first step towards building a multimodal generalist action model.
+Also related to the MultiNet effort is [μGATO](https://github.com/eihli/mugato), a small, simple, open-source implementation of what is described in DeepMind's GATO paper. This project marks our initial step towards building a multimodal generalist action model.
+
+<p align="center">
+  <img src="assets/v0_2_visual.png" alt="Multinet v0.2 Figure" style="vertical-align: middle;">
+</p>
 
 <p align="center">
   <img src="assets/Multinet v0.1 release visual 3.0.png" alt="Multinet Figure" style="vertical-align: middle;">
@@ -69,26 +69,24 @@ cd Multinet/src/control_translation
 python wrapper_translate_multiple.py --dataset_name <name of dataset whose file you would like to translate> --dataset_path <path to the downloaded dataset> --output_dir <directory where you would like to store the translated files>
 ```
 
-#### To evaluate JAT (in a zero-shot setting) on the 53 OpenX Embodiment datasets it was profiled on as a part of Multinet v0.1 
+#### To evaluate GPT 4o and 4.1 (in a zero-shot setting) using the [GenESIS framework](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules) 
 
-Make sure to set the path to the translated openx datasets you want to evaluate on and the path where you want to dump your results in Multinet/src/eval/profiling/jat/scripts/profile_openx.py
-
-```bash
-cd Multinet/src/eval/profiling/jat/scripts
-python profile_openx.py
-```
-
-#### To evaluate GPT-4o (in a zero-shot setting) using the [GenESIS framework](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules) on the 22 OpenX Embodiment datasets it was profiled on as a part of Multinet v0.1 
-
-Make sure to adjust the path creation to the translated openx datasets you want to evaluate on, and the path where you want to dump your results in src/modules/dataset_modules/openx_module.py based on your local file structure 
+To get the predictions:
 
 ```bash
-cd Multinet/src/eval/eval_main.py
-python eval_main.py --disk_root_dir <path to the translated openx datasets> --dataset_name openx --model gpt-4o-2024-05-13
+cd Multinet/scripts/eval_vlm
+python send_batch_jobs_vlm.py --data_root_dir < path to the translated datasets > --dataset_family < dataset name > --model < gpt model name and version ( see "models" section in config.json: https://github.com/ManifoldRG/MultiNet/blob/v02_release_updates/src/config.json ) > --metadata_dir < path to save batch info > --batch_size < batch size >
 ```
+
 Enter the OpenAI API key when prompted.
 
-#### To evaluate OpenVLA (in a zero-shot setting) on the 20 OpenX Embodiment datasets it was profiled on as a part of Multinet v0.1 
+To evaluate the predictions:
+
+```bash
+python run_eval_vlm.py --batch_job_info_path "< path where batch info is saved from prev step >/< dataset name >_batchlist{timestamp}.json" --results_path "< path to store results >.json"
+```
+
+#### To evaluate OpenVLA (in a zero-shot setting)
 
 We set up our conda environment and ran evaluations for OpenVLA on a GCP Instance with 1 L4 GPU, driver version 550.90.07, and CUDA version 12.4. For more details about the infrastructure used, refer to our [paper](https://multinet.ai/static/pdfs/Benchmarking%20Vision%20Language%20Action%20Models.pdf). If you are using our code out-of-the-box, we recommend using the same infrastructure.
 
@@ -101,9 +99,50 @@ cd Multinet/src
 
 To run evaluations:
 
+Before running evaluations, make sure you have the correct path for the dataset statistics json files (similar to those present in )
+
 ```bash
 cd Multinet
-python src/eval/profiling/openvla/experiments/robot/openvla_profiling.py --profiling_dataset_folder_path <path to the translated datasets> --dataset_statistics_path src/eval/profiling/openvla/data/dataset_statistics.json --result_save_path <path to the directory where you would like to save your results>
+python src/eval/profiling/openvla/experiments/robot/openvla_profiling.py --profiling_dataset_folder_path <path to the translated datasets> --dataset_statistics_path < path to dataset statistics json file > --result_save_path < path to the directory where you would like to save your results >
+```
+
+#### To evaluate Pi0 Base (in a zero-shot setting)
+
+We set up our conda environment and ran evaluations for Pi0 Base and Pi0 with FAST on GCP Instances with A100 40 GB VRAM GPUs. If you are using our code out-of-the-box, we recommend using the same infrastructure.
+
+For setup, create a new conda environment and download the packages present in src/eval/profiling/openpi/pyproject.toml. [Install uv](https://docs.astral.sh/uv/getting-started/installation/) before running the following commands:
+
+```bash
+cd Multinet/src/eval/profiling/openpi
+GIT_LFS_SKIP_SMUDGE=1 uv sync
+GIT_LFS_SKIP_SMUDGE=1 uv pip install -e .
+```
+
+Before running evaluations, make sure you have the correct path for the dataset statistics json files (similar to those present in )
+
+To run evaluations for Pi0 Base on Procgen:
+
+Modify the path to the dataset statistics json in the inference script based on the correct path [here](https://github.com/ManifoldRG/MultiNet/blob/282e6c9c7b588f98b2f04e685974eb2d45f59766/src/eval/profiling/openpi/scripts/procgen_inference.py#L412)
+
+```bash
+cd Multinet/src/eval/profiling/openpi
+python procgen_inference.py --output_dir < path to the directory where you would like to save your results  > --dataset_dir < path to the root directory containing the different subdatasets of Procgen > --batch_size < batch size > 
+```
+
+To run evaluations for Pi0 with FAST on Procgen
+
+```bash
+cd Multinet/src/eval/profiling/openpi
+python procgen_inference_fast.py --output_dir < path to the directory where you would like to save your results  > --dataset_dir < path to the root directory containing the different subdatasets of Procgen > --dataset_stats_dir < path to dataset statistics json file > --batch_size < batch size > 
+```
+
+#### To evaluate JAT (in a zero-shot setting) on the 53 OpenX Embodiment datasets it was profiled on as a part of Multinet v0.1 
+
+Make sure to set the path to the translated openx datasets you want to evaluate on and the path where you want to dump your results in Multinet/src/eval/profiling/jat/scripts/profile_openx.py
+
+```bash
+cd Multinet/src/eval/profiling/jat/scripts
+python profile_openx.py
 ```
 
 ## 📊 Evaluation and submission process to the Multinet benchmark
@@ -125,5 +164,47 @@ Here are steps to follow to evaluate your team's model on Multinet data and subm
 *   Upon review by our team, we will either merge the PR or request changes/modifications/clarifications.
     *   Once further queries are resolved, the PR will be merged and Issue closed.
 *   Once the PR is merged and results are accepted, we will display the results on our [website](https://multinet.ai/)!
+
+
+## 📜 Citation
+
+If you use MultiNet in your research, please cite our work:
+
+```bibtex
+
+Multinet v0.2 - Benchmarking Vision, Language, & Action Models in Procedurally Generated, Open Ended Action Environments
+
+@misc{guruprasad2025benchmarkingvisionlanguage,
+      title={Benchmarking Vision, Language, & Action Models in Procedurally Generated, Open Ended Action Environments}, 
+      author={Pranav Guruprasad and Yangyue Wang and Sudipta Chowdhury and Harshvardhan Sikka},
+      year={2025},
+      eprint={2505.05540},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2505.05540}, 
+      }
+
+Multinet v0.1 - Benchmarking Vision, Language, & Action Models on Robotic Learning Tasks
+
+@misc{guruprasad2024benchmarkingvisionlanguage,
+      title={Benchmarking Vision, Language, & Action Models on Robotic Learning Tasks}, 
+      author={Pranav Guruprasad and Harshvardhan Sikka and Jaewoo Song and Yangyue Wang and Paul Pu Liang},
+      year={2024},
+      eprint={2411.05821},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO},
+      url={https://arxiv.org/abs/2411.05821},
+      }
+
+Multinet Vision and Dataset specification
+
+@misc{guruprasad2024benchmarking,
+      author={Guruprasad, Pranav and Sikka, Harshvardhan and Song, Jaewoo and Wang, Yangyue and Liang, Paul},
+      title={Benchmarking Vision, Language, & Action Models on Robotic Learning Tasks},
+      DOI={10.20944/preprints202411.0494.v1},
+      year={2024},
+      }    
+
+```
 
 
