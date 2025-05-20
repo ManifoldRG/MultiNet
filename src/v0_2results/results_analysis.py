@@ -2127,11 +2127,115 @@ def plot_pi0_action_distribution_comparison(results_dir: str):
     except Exception as e:
         print(f"Error creating comparison plot: {e}")
 
+def plot_class_frequency_vs_recall(results_dir: str, models: list[str]):
+    """Create a scatter plot showing the relationship between ground truth class frequency
+    and recall for each model-action class pair.
+    
+    Args:
+        results_dir (str): Directory containing results
+        models (list[str]): List of model names to compare
+    """
+    results = load_results(results_dir)
+    
+    # Get common datasets across all models
+    common_datasets = set(results[models[0]].keys())
+    for model in models[1:]:
+        common_datasets.intersection_update(results[model].keys())
+    common_datasets = sorted(list(common_datasets))
+    
+    # Create figure
+    plt.figure(figsize=(12, 8))
+    
+    # Dictionary to store all points for each model
+    model_points = {model: {'frequencies': [], 'recalls': [], 'labels': []} for model in models}
+    
+    # Collect data points for each model
+    for model in models:
+        for dataset in common_datasets:
+            try:
+                # Get class-wise metrics based on model type
+                if model in ['gpt4o', 'gpt4_1']:
+                    metrics = results[model][dataset][dataset]['class_wise_metrics']
+                    if 'gt_actions' in results[model][dataset][dataset]:
+                        gt_actions = np.array(results[model][dataset][dataset]['gt_actions']).flatten()
+                    else:
+                        continue
+                elif model == 'pi0_fast':
+                    if dataset in results[model].keys():
+                        metrics = results[model][dataset][dataset]['class_wise_metrics']
+                        gt_actions = np.array(results[model][dataset][dataset]['all_gt']).flatten()
+                    else:
+                        continue
+                else:  # openvla and pi0_base
+                    if dataset in results[model][dataset]:
+                        metrics = results[model][dataset][dataset]['class_wise_metrics']
+                        gt_actions = np.array(results[model][dataset][dataset]['all_gt']).flatten()
+                    else:
+                        metrics = results[model][dataset]['class_wise_metrics']
+                        gt_actions = np.array(results[model][dataset]['all_gt']).flatten()
+                
+                # Get valid actions for this dataset
+                valid_actions = ProcGenDefinitions.get_valid_action_space(dataset, "default")
+                total_actions = len(gt_actions)
+                
+                # Calculate frequency and get recall for each action class
+                for action in valid_actions:
+                    if str(action) in metrics:
+                        frequency = np.sum(gt_actions == action) / total_actions * 100  # Convert to percentage
+                        recall = metrics[str(action)]['recall']
+                        
+                        model_points[model]['frequencies'].append(frequency)
+                        model_points[model]['recalls'].append(recall)
+                        model_points[model]['labels'].append(f'{dataset}-{action}')
+                
+            except Exception as e:
+                print(f"Error processing {model} on {dataset}: {e}")
+                continue
+    
+    # Plot scatter points for each model
+    for i, (model, data) in enumerate(model_points.items()):
+        plt.scatter(data['frequencies'], data['recalls'], 
+                   label=model, color=COLORS[i], alpha=0.6, s=100)
+        
+        # Add trend line
+        z = np.polyfit(data['frequencies'], data['recalls'], 1)
+        p = np.poly1d(z)
+        x_trend = np.linspace(min(data['frequencies']), max(data['frequencies']), 100)
+        plt.plot(x_trend, p(x_trend), color=COLORS[i], linestyle='--', alpha=0.5)
+    
+    # Customize plot
+    plt.xlabel('Ground Truth Class Frequency (%)', fontsize=16)
+    plt.ylabel('Recall', fontsize=16)
+    plt.title('Class Frequency vs Recall by Model', fontsize=20)
+    
+    # Add grid
+    plt.grid(True, alpha=0.3)
+    
+    # Place legend inside the plot
+    plt.legend(loc='upper right', fontsize=14)
+    
+    # Add hover annotations
+    for model, data in model_points.items():
+        for i, (freq, recall, label) in enumerate(zip(data['frequencies'], 
+                                                    data['recalls'], 
+                                                    data['labels'])):
+            plt.annotate(label, (freq, recall),
+                        xytext=(5, 5), textcoords='offset points',
+                        fontsize=8, alpha=0)  # alpha=0 makes it invisible by default
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, 'class_frequency_vs_recall.png'),
+                bbox_inches='tight', dpi=300)
+    plt.close()
+
 if __name__ == "__main__":
     results_dir = "src/v0_2results"
     models = ['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']
     
-    plot_pi0_action_distribution_comparison(results_dir)
+    # Plot class frequency vs recall analysis
+    plot_class_frequency_vs_recall(results_dir, models)
+    
+    # plot_pi0_action_distribution_comparison(results_dir)
 
     # # Generate violin plot for macro recall distribution
     # plot_macro_recall_violin(results_dir, models)
