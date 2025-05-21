@@ -12,21 +12,23 @@
   <a href="https://discord.gg/Rk4gAq5aYr"><img src="https://img.shields.io/badge/Contribute%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-7289DA?style=flat-square&logo=discord" alt="Contribute"></a>
 </p>
 
-<p class="has-text-centered collaborators-description is-size-">Multinet is a collaborative initiative with contributions from leading research teams at instituitions like:</p>
-          <div class="collaborator-logos" style="display: flex; justify-content: center; align-items: center;">
-            <a href="https://www.manifoldrg.com/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
-              <img src="assets/manifoldlogo.png" alt="Manifold Research Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px; vertical-align: middle;">
-            </a>
-            <a href="https://www.mit.edu/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
-              <img src="assets/mitlogo_alt.png" alt="MIT Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px; vertical-align: middle;">
-            </a>
-            <a href="https://metarch.ai/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
-              <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px; vertical-align: middle;">
-            </a>
-            <a href="https://www.gatech.edu/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
-              <img src="assets/gtlogo_alt.png" alt="Georgia Tech Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px; vertical-align: middle;">
-            </a>
-          </div>
+### Multinet is a collaborative initiative with contributions from leading research teams at instituitions like:
+
+</p>
+    <div class="collaborator-logos" style="display: flex; justify-content: center; align-items: center;">
+      <a href="https://www.manifoldrg.com/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
+        <img src="assets/manifoldlogo.png" alt="Manifold Research Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px;">
+      </a>
+      <a href="https://www.mit.edu/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
+        <img src="assets/mitlogo_alt.png" alt="MIT Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px;">
+      </a>
+      <a href="https://metarch.ai/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
+        <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px;">
+      </a>
+      <a href="https://www.gatech.edu/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
+        <img src="assets/gtlogo_alt.png" alt="Georgia Tech Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px;">
+      </a>
+    </div>
 
 ## 📢 Updates
 
