@@ -46,7 +46,7 @@ class EvalConfig:
     model_family: str = "openvla"
     pretrained_checkpoint: Union[str, Path] = "openvla/openvla-7b"
     load_in_8bit: bool = False
-    load_in_4bit: bool = True
+    load_in_4bit: bool = False
     center_crop: bool = True
     seed: int = 7
     unnorm_key: str = "bridge_orig"  # default unnorm_key bridge_orig
@@ -117,20 +117,9 @@ def sort_files_in_folder_by_name(dataset_path: str) -> list[str]:
         raise ValueError(f"Dataset type undefined in definitions: {os.path.basename(dataset_path)}")
 
 
-def is_dataset_completed(dataset_name: str, result_file_path: Path) -> bool:
-    if not result_file_path.exists():
-        return False
-        
-    try:
-        with open(result_file_path, 'r') as f:
-            completed_datasets = json.load(f)
-        
-        if dataset_name in completed_datasets:
-            return True
-    except (json.JSONDecodeError, FileNotFoundError) as e:
-        logger.error(f"Error reading results file: {e}")
-        
-    return False
+def is_dataset_completed(dataset_name: str, result_dir: Path) -> bool:
+    result_file_path = result_dir / f'{dataset_name}_results.json'
+    return result_file_path.exists()
 
 
 def process_single_dataset(
@@ -269,26 +258,21 @@ def process_single_dataset(
         raise ValueError(f"Dataset type undefined in definitions: {dataset_name}")
 
 
-def save_results(results: dict[str, dict], result_file_path: Path) -> None:
+def save_results(results: dict[str, dict], result_dir: Path) -> None:
     # Ensure directory exists
-    result_file_path.parent.mkdir(parents=True, exist_ok=True)
+    result_dir.mkdir(parents=True, exist_ok=True)
     
-    # Load existing results if available
-    existing_results = {}
-    if result_file_path.exists():
+    # Save each dataset to its own file
+    for dataset_name, dataset_results in results.items():
+        result_file_path = result_dir / f'{dataset_name}_results.json'
+        
         try:
-            with open(result_file_path, 'r') as f:
-                existing_results = json.load(f)
-        except json.JSONDecodeError:
-            logger.error(f"Error reading existing results file, creating new file")
-    
-    # Update with new results
-    existing_results.update(results)
-    
-    # Save updated results
-    with open(result_file_path, 'w') as f:
-        json.dump(existing_results, f, indent=4, default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
-    logger.info(f"Eval results have been saved to '{result_file_path}'")
+            # Save results
+            with open(result_file_path, 'w') as f:
+                json.dump(dataset_results, f, indent=4, default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
+            logger.info(f"Eval results for {dataset_name} have been saved to '{result_file_path}'")
+        except Exception as e:
+            logger.error(f"Error saving results for {dataset_name}: {e}")
 
 
 def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_save_path: str):
@@ -301,8 +285,7 @@ def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_
         logger.error(f"No datasets found in {profiling_dataset_folder_path}")
         return
 
-    eval_results = {}
-    result_file_path = Path(result_save_path) / 'openvla_eval_results.json'
+    result_dir = Path(result_save_path)
     
     clear_gpu_memory()
     set_seed_everywhere(cfg.seed)
@@ -322,8 +305,8 @@ def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_
             logger.info(f"SKIPPING: {dataset} (not in list)")
             continue
 
-        # Skip if the dataset is already in the eval_results
-        if is_dataset_completed(dataset, result_file_path):
+        # Skip if the dataset is already evaluated
+        if is_dataset_completed(dataset, result_dir):
             logger.info(f"SKIPPING: {dataset} (already evaluated)")
             continue
 
@@ -346,9 +329,8 @@ def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_
         
             results = process_single_dataset(dataset, model, processor, cfg, tfds_shards)
 
-            # Store results
-            eval_results[dataset] = results
-            save_results(eval_results, result_file_path)
+            # Save only the current dataset's results
+            save_results({dataset: results}, result_dir)
 
             log_gpu_memory_usage()
 
@@ -367,7 +349,7 @@ def profile_openvla(cfg: EvalConfig, profiling_dataset_folder_path: str, result_
 
     clear_gpu_memory()
 
-    logger.info(f"Evaluation complete, results saved to: {result_file_path}")
+    logger.info(f"Evaluation complete, results saved to: {result_dir}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate OpenVLA on datasets")

@@ -10,5 +10,4 @@ prod:
     base: /mnt/disks/mount_dir/multinettranslated/openx_translated/
     splits: [train, val, test]
   procgen:
-    base: /mnt/disks/mount_dir/procgen_translated/
-    splits: [train, val]
+    base: /mnt/disks/mount_dir/multinettranslation/procgen_translated/multinettranslation/multinetdownloads/procgen

@@ -395,7 +395,7 @@ def main():
     procgen_dataset_list = os.listdir(args.dataset_dir) # Update path as needed
     for dataset in procgen_dataset_list:
         print(f'\n ---- EVALUATING {dataset} ---- \n')
-        tfds_shards = os.listdir(f'{args.dataset_dir}/{dataset}/test_final/') # Update path as needed
+        tfds_shards = os.listdir(f'{args.dataset_dir}/{dataset}/') # Update path as needed
         tfds_sorted_shards = sorted(
             tfds_shards,
             key=lambda x: (
@@ -405,11 +405,11 @@ def main():
             )
         )
         # Add path to shards
-        tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}/test_final/', shard) for shard in tfds_sorted_shards]
+        tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}/', shard) for shard in tfds_sorted_shards]
 
 
         # Get dataset stats and save to JSON file
-        stats_output_path = os.path.join(args.output_dir, f'procgen_dataset_stats_prod.json') #Update path as needed
+        stats_output_path = os.path.join("definitions", 'procgen_dataset_statistics.json') #Update path as needed
         if os.path.exists(stats_output_path):
             print(f'Dataset stats already exist at {stats_output_path}')
             with open(stats_output_path, 'r') as f:

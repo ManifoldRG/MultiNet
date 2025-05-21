@@ -49,7 +49,7 @@ Also related to the MultiNet effort is <a href="https://github.com/eihli/mugato"
 <br>
 
 <p align="center">
-  <img src="assets/v0_2_visual.png" alt="Multinet v0.2 Figure" style="width: 700px; height: auto; vertical-align: middle;">
+  <img src="assets/v0_2_visual.jpg" alt="Multinet v0.2 Figure" style="width: 700px; height: auto; vertical-align: middle;">
 </p>
 
 <br>
@@ -114,16 +114,28 @@ python run_eval_vlm.py --batch_job_info_path < path where batch info is saved fr
 
 We set up our conda environment and ran evaluations for OpenVLA on a GCP Instance with 1 L4 GPU, driver version 550.90.07, and CUDA version 12.4. For more details about the infrastructure used, refer to our [paper](https://multinet.ai/static/pdfs/Benchmarking%20Vision%20Language%20Action%20Models.pdf). If you are using our code out-of-the-box, we recommend using the same infrastructure.
 
-For setup, create a new conda environment and run the OpenVLA environment setup bash script (this will download both the OpenVLA requirements as well as the broader MultiNet requirements):
+For setup, once you create a new environment and install all the Miltinet-specific dependencies, follow these instructions to install OpenVLA-specific dependencies:
 
-```bash
-cd Multinet/src
-./openvla_multinet_setup.sh
+```
+# Install PyTorch. Below is a sample command to do this, but you should check the following link
+# to find installation instructions that are specific to your compute platform:
+# https://pytorch.org/get-started/locally/
+conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia -y
+
+# Install the OpenVLA dependencies
+cd Multinet/src/eval/profiling/openvla/
+pip install -e .
+
+# Install Flash Attention 2 for training (https://github.com/Dao-AILab/flash-attention)
+#   =>> If you run into difficulty, try `pip cache remove flash_attn` first
+pip install packaging ninja
+ninja --version; echo $?  # Verify Ninja --> should return exit code "0"
+pip install "flash-attn==2.5.5" --no-build-isolation
 ```
 
 To run evaluations:
 
-> **Note:** Before running evaluations, make sure you have the correct path for the dataset statistics json file (similar to this dataset stats file [here](https://github.com/ManifoldRG/MultiNet/blob/main/src/eval/profiling/openvla/data/dataset_statistics.json))
+> **Note:** Before running evaluations, make sure you have the correct path for the dataset statistics json file (similar to this dataset stats file [here](https://github.com/ManifoldRG/MultiNet/blob/main/definitions/procgen_dataset_statistics.json))
 
 ```bash
 cd Multinet
@@ -142,7 +154,7 @@ GIT_LFS_SKIP_SMUDGE=1 uv sync
 GIT_LFS_SKIP_SMUDGE=1 uv pip install -e .
 ```
 
-> **Note:** Before running evaluations, make sure you have the correct path for the dataset statistics json files (similar to the one present [here](https://github.com/ManifoldRG/MultiNet/blob/v02_release_updates/src/eval/profiling/openvla/data/dataset_statistics.json) )
+> **Note:** Before running evaluations, make sure you have the correct path for the dataset statistics json files (similar to the one present [here](https://github.com/ManifoldRG/MultiNet/blob/main/definitions/procgen_dataset_statistics.json) )
 
 To run evaluations for Pi0 Base on Procgen:
 
