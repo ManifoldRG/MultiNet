@@ -4,9 +4,10 @@
 </p>
 
 <p align="center">
-  <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/Website%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-blue?style=flat-square&logo=home" alt="Website"></a> 
+  <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/Website%20@Web%E2%A0%80%E2%A0%80-blue?style=flat-square&logo=home" alt="Website @Web"></a> 
   <a href="https://arxiv.org/abs/2505.05540"><img src="https://img.shields.io/badge/Multinet%20v0.2%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.2 paper"></a> 
-  <a href="https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf"><img src="https://img.shields.io/badge/Dataset%20Spec%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-green?style=flat-square&logo=docs" alt="Dataset Spec paper"></a> 
+  <a href="https://arxiv.org/abs/2411.05821"><img src="https://img.shields.io/badge/Multinet%20v0.2%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.1 paper"></a> 
+  <a href="https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf"><img src="https://img.shields.io/badge/Dataset%20Spec%20@Web-green?style=flat-square&logo=docs" alt="Dataset Spec paper @Web"></a> 
   <a href="https://github.com/ManifoldRG/MultiNet/tree/main/src/modules"><img src="https://img.shields.io/badge/GenESIS%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-blueviolet?style=flat-square&logo=github" alt="GenESIS framework"></a> 
   <a href="https://discord.gg/Rk4gAq5aYr"><img src="https://img.shields.io/badge/Contribute%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-7289DA?style=flat-square&logo=discord" alt="Contribute"></a>
 </p>
@@ -28,7 +29,7 @@ This repo provides the following:
 4. A [general framework](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules) for mapping VLMs to other modality classes, with particular emphasis on action spaces. This framework allows one to adapt a wide range of models to multiple types of tasks or datasets for scaling effectively while reducing the amount of engineering effort required.  In MultiNet v0.1, GenESIS is used to evaluate GPT 4o on the OpenX datasets, and in Multinet v0.2 GenESIS is used to evaluate GPT 4o and GPT 4.1 on the Procgen dataset.
 5. Test splits of Multinet datasets and clear guidelines required to evaluate your model on them, and the results to our leaderboard in order to compare performance against SoTA VLMs and VLAs.
 
-Also related to the MultiNet effort is [μGATO](https://github.com/eihli/mugato), a small, simple, open-source implementation of what is described in DeepMind's GATO paper. This project marks our initial step towards building a multimodal generalist action model.
+Also related to the MultiNet effort is <a href="https://github.com/eihli/mugato"><img src="https://img.shields.io/badge/%CE%BCGATO%E2%A0%80%E2%A0%80-dimgray?style=flat-square&logo=github" alt="μGATO on GitHub"></a>, a small, simple, open-source implementation of what is described in DeepMind's GATO paper. This project marks our initial step towards building a multimodal generalist action model.
 
 <br>
 
@@ -44,7 +45,7 @@ Also related to the MultiNet effort is [μGATO](https://github.com/eihli/mugato)
 
 ## 🚀 Getting Started
 
-#### To set up the environment for download, translation, and evaluation of GPT-4o and HuggingFace's JAT:
+#### To set up the environment for Multinet:
 
 ```bash
 conda create -n multinet python=3.10
@@ -86,7 +87,7 @@ cd Multinet/scripts/eval_vlm
 python send_batch_jobs_vlm.py --data_root_dir < path to the translated datasets > --dataset_family < dataset name > --model < gpt model name and version ( see "models" section in config.json: https://github.com/ManifoldRG/MultiNet/blob/v02_release_updates/src/config.json ) > --metadata_dir < path to save batch info > --batch_size < batch size >
 ```
 
-Enter the OpenAI API key when prompted.
+> **Note:** Enter the OpenAI API key when prompted.
 
 To evaluate the predictions:
 
@@ -107,7 +108,7 @@ cd Multinet/src
 
 To run evaluations:
 
-Before running evaluations, make sure you have the correct path for the dataset statistics json files (similar to this dataset stats file [here](https://github.com/ManifoldRG/MultiNet/blob/v02_release_updates/src/eval/profiling/openvla/data/dataset_statistics.json))
+> **Note:** Before running evaluations, make sure you have the correct path for the dataset statistics json file (similar to this dataset stats file [here](https://github.com/ManifoldRG/MultiNet/blob/v02_release_updates/src/eval/profiling/openvla/data/dataset_statistics.json))
 
 ```bash
 cd Multinet
@@ -126,11 +127,11 @@ GIT_LFS_SKIP_SMUDGE=1 uv sync
 GIT_LFS_SKIP_SMUDGE=1 uv pip install -e .
 ```
 
-Before running evaluations, make sure you have the correct path for the dataset statistics json files (similar to those present in )
+> **Note:** Before running evaluations, make sure you have the correct path for the dataset statistics json files (similar to the one present [here](https://github.com/ManifoldRG/MultiNet/blob/v02_release_updates/src/eval/profiling/openvla/data/dataset_statistics.json) )
 
 To run evaluations for Pi0 Base on Procgen:
 
-Modify the path to the dataset statistics json in the inference script based on the correct path [here](https://github.com/ManifoldRG/MultiNet/blob/282e6c9c7b588f98b2f04e685974eb2d45f59766/src/eval/profiling/openpi/scripts/procgen_inference.py#L412)
+> **Note:** For Pi0 Base, modify the path of the dataset statistics json in the inference script based on the correct path [here](https://github.com/ManifoldRG/MultiNet/blob/282e6c9c7b588f98b2f04e685974eb2d45f59766/src/eval/profiling/openpi/scripts/procgen_inference.py#L412)
 
 ```bash
 cd Multinet/src/eval/profiling/openpi
@@ -144,9 +145,9 @@ cd Multinet/src/eval/profiling/openpi
 python procgen_inference_fast.py --output_dir < path to the directory where you would like to save your results  > --dataset_dir < path to the root directory containing the different subdatasets of Procgen > --dataset_stats_dir < path to dataset statistics json file > --batch_size < batch size > 
 ```
 
-#### To evaluate JAT (in a zero-shot setting) on the 53 OpenX Embodiment datasets it was profiled on as a part of Multinet v0.1 
+#### To evaluate JAT (in a zero-shot setting) on the OpenX Embodiment datasets
 
-Make sure to set the path to the translated openx datasets you want to evaluate on and the path where you want to dump your results in Multinet/src/eval/profiling/jat/scripts/profile_openx.py
+> **Note:** Make sure to set the path to the translated openx datasets you want to evaluate on and the path where you want to save your results in Multinet/src/eval/profiling/jat/scripts/profile_openx.py
 
 ```bash
 cd Multinet/src/eval/profiling/jat/scripts
@@ -157,9 +158,12 @@ python profile_openx.py
 
 Here are steps to follow to evaluate your team's model on Multinet data and submit results to our benchmark:
 
+### 📥 Obtaining test data
 *   Download the desired dataset using the download+translate SDK that we provide by following the steps mentioned above.
 *   Open an issue on our Github with the tag `evaluate`. The issue title should be: "Add < your model name > to Multinet benchmark". 
 *  You can access the list of test episodes for a specific dataset at [src/eval/profiling/test_data](src/eval/profiling/test_data). These test episodes can then be translated from the downloaded data using the download+translate SDK by following the steps mentioned above.
+
+### ⚙️ Running evaluation
 *   We break down the required components to run evals using a model into 3 categories:
     *   **Ingestion pipeline**: Pipeline to feed the model with the test data with necessary input processing. This can be similar to the dataloaders we have implemented in [src/data_utils](src/data_utils)
     *   **Model adaptation**: Adapt your model to ingest the test data and produce actions in the appropriate format. This can be similar to how we have implemented model adaptations for various models such as [Genesis for VLMs](src/modules/), and custom adaptations for VLAs such as [OpenVLA](https://github.com/ManifoldRG/MultiNet/blob/main/src/eval/profiling/openvla/experiments/robot/openvla_profiling.py), [Pi0 Base](https://github.com/ManifoldRG/MultiNet/blob/main/src/eval/profiling/openpi/scripts/procgen_inference.py), and [Pi0 FAST](https://github.com/ManifoldRG/MultiNet/blob/main/src/eval/profiling/openpi/scripts/procgen_inference_fast.py)
@@ -168,6 +172,8 @@ Here are steps to follow to evaluate your team's model on Multinet data and subm
 *   You can then run inference on the test data to obtain zero-shot predictions for all the timesteps.
     *   Once all the predictions are obtained, they can be evaluated using the metrics we implement and report. You can find the helper functions that implement all the metrics in [src/eval_utils.py](src/eval_utils.py)
     *   The results should consist of a JSON file for each subdataset of the test dataset where the keys are the names of the metrics and the values are metric values. These JSON files should also contain the predictions of the model. You can use the results files in [src/v02_results/](src/v0_2results/) as reference.
+
+### 📤 Submission process
 *  Once the results are ready, you should open a PR that contains the code that can produce the results you report, and the final results in the correct format. Make sure to provide all necessary details for reproducibility - especially the seed values used in the inference pipeline. Associate this PR with the Issue opened in the second step mentioned above.
 *   Upon review by our team, we will either merge the PR or request changes/modifications/clarifications.
     *   Once further queries are resolved, the PR will be merged and Issue closed.
