@@ -513,7 +513,7 @@ def plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', me
     title_ax.legend(handles, labels, 
                    loc='center',
                    bbox_to_anchor=(0.5, 0.2),
-                   ncol=len(models),
+                   ncol=len(models) + 1,  # +1 for random line only
                    fontsize=20)
 
     # Save the plot with high DPI
@@ -785,6 +785,7 @@ def plot_cross_model_classwise_comparison(results_dir: str, models: list[str], w
     common_datasets = set(results[models[0]].keys())
     for model in models[1:]:
         common_datasets.intersection_update(results[model].keys())
+    common_datasets = sorted(list(common_datasets))
     
     # Plot settings
     bar_width = 0.15  # Width of each bar
@@ -827,32 +828,105 @@ def plot_cross_model_classwise_comparison(results_dir: str, models: list[str], w
         if metric_key == 'f1score':
             metric_key = 'f1'
             
-        plt.figure(figsize=(15, 8))
-        x = np.arange(len(action_class_metrics))
+        # Get total number of action classes and calculate distribution
+        all_actions = sorted(list(action_class_metrics.keys()))
+        total_actions = len(all_actions)
+        actions_per_subplot = (total_actions + 2) // 3  # Round up division to ensure all actions are covered
         
-        # Plot bars for each model
-        for i, model in enumerate(models):
-            averages = []
-            stds = []
+        # Create figure with subplots and adjust spacing
+        fig = plt.figure(figsize=(15, 18))  # Increased height for 3 subplots
+        # Add space at the top for the title and legend
+        gs = plt.GridSpec(4, 1, height_ratios=[0.3, 1, 1, 1], hspace=0.2)  # Reduced height ratio for title/legend from 0.5 to 0.1
+        
+        # Create a special axes for the title and legend
+        title_ax = fig.add_subplot(gs[0])
+        title_ax.axis('off')  # Hide the axes
+        
+        # Create subplot axes
+        axs = [fig.add_subplot(gs[i+1]) for i in range(3)]  # Always 3 subplots
+
+        # Plot for each subplot
+        for subplot_idx in range(3):
+            ax = axs[subplot_idx]
             
-            for action in sorted(action_class_metrics.keys()):
-                values = action_class_metrics[action][model][metric_key]
-                averages.append(np.mean(values))
-                stds.append(np.std(values))
+            # Calculate start and end indices for this subplot
+            start_idx = subplot_idx * actions_per_subplot
+            end_idx = min(start_idx + actions_per_subplot, total_actions)
+            current_actions = all_actions[start_idx:end_idx]
             
-            plt.bar(x + i*bar_width, averages, bar_width,
-                   label=model, color=COLORS[i], alpha=0.7,
-                   yerr=stds, capsize=5)
+            if not current_actions:  # Skip if no actions for this subplot
+                continue
+            
+            # Calculate x positions
+            x = np.arange(len(current_actions))
+            
+            # Calculate y-axis limits for this subplot first
+            all_values = []
+            for model in models:
+                values = []
+                for action in current_actions:
+                    vals = action_class_metrics[action][model][metric_key]
+                    values.extend(vals)
+                all_values.extend(values)
+            
+            non_zero_values = [v for v in all_values if v > 0]
+            if non_zero_values:
+                y_min = min(non_zero_values)
+                y_max = max(all_values)
+                # Start y-axis from 20% below the minimum non-zero value
+                y_min = max(0, y_min - (y_max - y_min) * 0.2)
+                # Add 30% padding above maximum value
+                y_max = y_max + (y_max - y_min) * 0.3
+            else:
+                y_min, y_max = 0, 1  # Default range if no non-zero values
+            
+            # Plot bars for each model
+            for i, model in enumerate(models):
+                averages = []
+                stds = []
+                
+                for action in current_actions:
+                    values = action_class_metrics[action][model][metric_key]
+                    averages.append(np.mean(values))
+                    stds.append(np.std(values))
+                
+                # Plot bars with error bars
+                bars = ax.bar(x + i*bar_width, averages, bar_width,
+                           label=model, color=COLORS[i], alpha=0.7,
+                           yerr=stds, capsize=5)
+            
+            # Set y-axis limits
+            ax.set_ylim(y_min, y_max)
+            
+            # Add broken axis indicator if not starting from 0
+            if y_min > 0:
+                d = .015  # Size of diagonal lines
+                kwargs = dict(transform=ax.transAxes, color='k', clip_on=False)
+                ax.plot((-d, +d), (-d, +d), **kwargs)
+                ax.plot((1 - d, 1 + d), (-d, +d), **kwargs)
+            
+            # Customize subplot
+            ax.set_ylabel(f'Average {metric_name}', fontsize=20)
+            ax.set_xticks(x + bar_width * (len(models)-1)/2)
+            ax.set_xticklabels([str(a) for a in current_actions], ha='right', fontsize=20)
+            ax.grid(True, axis='y', alpha=0.3)
+            ax.tick_params(axis='both', which='major', labelsize=16)
+            
+            # Format y-axis ticks to show more decimal places
+            ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.3f'))
         
-        plt.ylabel(f'Average {metric_name}')
-        plt.xlabel('Action Class ID')
-        plt.title(f'Average {metric_name} per Action Class Across All Datasets')
-        plt.xticks(x + bar_width * (len(models)-1)/2, sorted(action_class_metrics.keys()))
-        plt.legend()
-        plt.grid(True, alpha=0.3)
-        plt.ylim(0, 1.15)  # Add padding for labels
+        # Add overall title
+        title_ax.text(0.5, 0.7, f'Average {metric_name} per Action Class Across All Datasets',
+                     fontsize=24, ha='center', va='bottom')
+
+        # Create a single legend for all subplots
+        handles, labels = axs[0].get_legend_handles_labels()
+        title_ax.legend(handles, labels, 
+                       loc='center',
+                       bbox_to_anchor=(0.5, 0.2),
+                       ncol=len(models),
+                       fontsize=20)
         
-        plt.tight_layout()
         plt.savefig(os.path.join(results_dir, f'action_class_comparison_{metric_key}.png'),
                     bbox_inches='tight', dpi=300)
         plt.close()
@@ -1530,7 +1604,7 @@ def plot_cross_model_brier_mae(results_dir):
     # Create figure with subplots and adjust spacing
     fig = plt.figure(figsize=(15, 6*num_subplots))
     # Add space at the top for the title and legend
-    gs = plt.GridSpec(num_subplots + 1, 1, height_ratios=[0.5] + [1]*num_subplots, hspace=0.4)
+    gs = plt.GridSpec(num_subplots + 1, 1, height_ratios=[0.3] + [1]*num_subplots, hspace=0.2)
     
     # Create a special axes for the title and legend
     title_ax = fig.add_subplot(gs[0])
@@ -1582,12 +1656,12 @@ def plot_cross_model_brier_mae(results_dir):
                          label=model, color=COLORS[i], alpha=0.8,
                          edgecolor='black', linewidth=1)
             
-            # Add value labels on top of bars
-            for idx, value in enumerate(model_scores):
-                if value > 0:  # Only show non-zero values
-                    ax.text(x[idx] + i*width, value, f'{value:.2f}',
-                           ha='center', va='bottom', rotation=45,
-                           fontsize=20)
+            # # Add value labels on top of bars
+            # for idx, value in enumerate(model_scores):
+            #     if value > 0:  # Only show non-zero values
+            #         ax.text(x[idx] + i*width, value, f'{value:.2f}',
+            #                ha='center', va='bottom', rotation=45,
+            #                fontsize=20)
         
         # Calculate y-axis limits for this subplot
         non_zero_scores = [s for s in all_scores if s > 0]
@@ -1612,7 +1686,7 @@ def plot_cross_model_brier_mae(results_dir):
         # Customize subplot
         ax.set_ylabel('Brier MAE', fontsize=20)
         ax.set_xticks(x + width * (len(models)-1)/2)
-        ax.set_xticklabels(current_datasets, rotation=45, ha='right', fontsize=20)
+        ax.set_xticklabels(current_datasets, ha='right', fontsize=20)
         ax.grid(True, axis='y', alpha=0.3)
         ax.tick_params(axis='both', which='major', labelsize=20)
         
@@ -1874,8 +1948,8 @@ def plot_macro_recall_violin(results_dir: str, models: list[str]):
         plt.text(x_pos, y_pos,
                 f'μ={mean:.2f}, m={median:.2f}, σ={std:.2f}',
                 horizontalalignment='right',
-                verticalalignment='top',
-                fontsize=8,
+                verticalalignment=v_align,
+                fontsize=12,
                 bbox=dict(facecolor='white', alpha=0.8, edgecolor='none', pad=1))
     
     # Customize plot
@@ -2098,16 +2172,6 @@ def plot_pi0_action_distribution_comparison(results_dir: str):
         plt.xticks(x, [str(a) for a in all_actions], fontsize=16)
         plt.yticks(fontsize=16)
         
-        # Add value labels
-        for i in range(len(all_actions)):
-            # Only show labels for non-zero values
-            if pi0_fast_percentages[i] > 0:
-                plt.text(i, pi0_fast_percentages[i], f'{pi0_fast_percentages[i]:.1f}%',
-                       ha='center', va='bottom', rotation=45, fontsize=12)
-            if pi0_base_percentages[i] > 0 and abs(pi0_base_percentages[i] - pi0_fast_percentages[i]) > 0.1:
-                plt.text(i, pi0_base_percentages[i], f'{pi0_base_percentages[i]:.1f}%',
-                       ha='center', va='top', rotation=45, fontsize=12)
-        
         # Adjust y-axis limit to show all values with padding
         max_value = max(max(pi0_fast_percentages), max(pi0_base_percentages))
         plt.ylim(0, max_value * 1.3)  # Add 30% padding
@@ -2232,32 +2296,35 @@ if __name__ == "__main__":
     results_dir = "src/v0_2results"
     models = ['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']
     
-    # Plot class frequency vs recall analysis
-    plot_class_frequency_vs_recall(results_dir, models)
+    # # Plot class frequency vs recall analysis
+    # plot_class_frequency_vs_recall(results_dir, models)
     
     # plot_pi0_action_distribution_comparison(results_dir)
 
-    # # Generate violin plot for macro recall distribution
-    # plot_macro_recall_violin(results_dir, models)
+    # # # Generate violin plot for macro recall distribution
+    # # plot_macro_recall_violin(results_dir, models)
     
-    # # Generate heatmap for macro recall scores
-    # plot_macro_recall_heatmap(results_dir, models)
+    # # # Generate heatmap for macro recall scores
+    # # plot_macro_recall_heatmap(results_dir, models)
     
-    # Generate action distribution plots
+    # # Generate action distribution plots
     # plot_action_distributions(results_dir, models)
     
-    # plot_dataset_specific_metrics(results_dir)
+    # # plot_dataset_specific_metrics(results_dir)
 
-    # Generate Brier MAE comparison plot
-    # plot_cross_model_brier_mae(results_dir)
+    # # Generate Brier MAE comparison plot
+    plot_cross_model_brier_mae(results_dir)
 
     # plot_model_metrics(results_dir, 'pi0_fast') #Change model as needed
     # plot_model_metrics(results_dir, 'gpt4o') #Change model as needed
     # plot_model_metrics(results_dir, 'gpt4_1') #Change model as needed
     # plot_model_metrics(results_dir, 'openvla') #Change model as needed
-      # plot_dataset_specific_metrics(results_dir)
+    # plot_dataset_specific_metrics(results_dir)
 
-    # # Generate plots
+
+    plot_cross_model_classwise_comparison(results_dir, models)
+
+
     # calculate_classwise_metrics(results_dir, 'pi0_fast')
     # calculate_classwise_metrics(results_dir, 'gpt4o')
     # calculate_classwise_metrics(results_dir, 'gpt4_1')
