@@ -24,7 +24,7 @@
     </kbd>
   </a>
 
-  
+   
   <a href="https://www.mit.edu/" target="_blank">
     <kbd>
     <img src="assets/mitlogo.jpg" alt="MIT Logo" height="40">
