@@ -430,7 +430,7 @@ def plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', me
     # Create figure with subplots and adjust spacing
     fig = plt.figure(figsize=(15, 6*num_subplots))
     # Add space at the top for the title and legend
-    gs = plt.GridSpec(num_subplots + 1, 1, height_ratios=[0.5] + [1]*num_subplots, hspace=0.4)
+    gs = plt.GridSpec(num_subplots + 1, 1, height_ratios=[0.3] + [1]*num_subplots, hspace=0.2)
     
     # Create a special axes for the title and legend
     title_ax = fig.add_subplot(gs[0])
@@ -495,7 +495,7 @@ def plot_cross_model_macro_micro_metric(results_dir, models, metric='recall', me
         # Customize subplot
         ax.set_ylabel(f'{metric_type.capitalize()} {metric.capitalize()}', fontsize=20)
         ax.set_xticks(x + bar_width * (len(models)-1)/2)
-        ax.set_xticklabels(current_datasets, rotation=45, ha='right', fontsize=20)
+        ax.set_xticklabels(current_datasets, ha='right', fontsize=20)
         ax.grid(True, axis='y', alpha=0.3)
         ax.tick_params(axis='both', which='major', labelsize=16)
         
@@ -2292,6 +2292,165 @@ def plot_class_frequency_vs_recall(results_dir: str, models: list[str]):
                 bbox_inches='tight', dpi=300)
     plt.close()
 
+def plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='macro', with_invalids: bool = True):
+    """Create a bump chart showing model rankings across datasets.
+    
+    Args:
+        results_dir (str): Directory containing results
+        models (list[str]): List of model names to compare
+        metric (str): Which metric to plot ('recall', 'precision', or 'f1')
+        metric_type (str): Type of metric ('macro' or 'micro')
+        with_invalids (bool): Whether to include invalid predictions in metric calculation
+    """
+    results = load_results(results_dir)
+
+    # Get list of all subdatasets -- common ones
+    subdatasets = sorted(list(results[models[0]].keys()))
+    
+    # Determine metric key based on type and metric
+    if metric_type == 'macro':
+        if metric == 'precision':
+            metric_key = 'macro_precision'
+        elif metric == 'recall':
+            metric_key = 'macro_recall'
+        elif metric == 'f1':
+            metric_key = 'macro_f1'
+        else:
+            raise ValueError(f"Invalid metric: {metric}")
+    elif metric_type == 'micro':
+        if metric == 'precision':
+            metric_key = 'micro_precision'
+        elif metric == 'recall':
+            metric_key = 'micro_recall'
+        elif metric == 'f1':
+            metric_key = 'micro_f1'
+        else:
+            raise ValueError(f"Invalid metric: {metric}")
+
+    # Dictionary to store scores for each model and dataset
+    model_scores = {model: [] for model in models}
+    
+    # Collect scores for each model
+    for model in models:
+        for dataset in subdatasets:
+            try:
+                if model in ['gpt4o', 'gpt4_1']:
+                    if metric_type == 'macro':
+                        score = results[model][dataset][dataset][metric_key]
+                    elif metric_type == 'micro':
+                        if with_invalids:
+                            score = results[model][dataset][dataset][metric_key.split('_')[-1]]
+                        else:
+                            if metric_key == 'micro_recall':
+                                score = results[model][dataset][dataset][f'{metric_key.split("_")[-1]}']
+                            else:
+                                score = results[model][dataset][dataset][f'{metric_key.split("_")[-1]}_without_invalid']
+                elif model == 'openvla':
+                    if metric_type == 'macro':
+                        if dataset in results[model][dataset]:
+                            score = results[model][dataset][dataset][metric_key]
+                        else:
+                            score = results[model][dataset][metric_key]
+                    elif metric_type == 'micro':
+                        try:
+                            score = results[model][dataset][dataset][f'total_{metric_key}']
+                        except (KeyError, TypeError):
+                            score = results[model][dataset][f'total_{metric_key}']
+                elif model == 'pi0_base':
+                    if metric_type == 'macro':
+                        score = results[model][dataset][dataset][metric_key]
+                    elif metric_type == 'micro':
+                        if with_invalids:
+                            score = results[model][dataset][dataset][f'total_{metric_key}']
+                        else:
+                            if metric_key == 'micro_recall':
+                                score = results[model][dataset][dataset][f'total_{metric_key}']
+                            else:
+                                score = results[model][dataset][dataset][f'total_{metric_key}_without_invalids']
+                elif model == 'pi0_fast':
+                    if metric_type == 'macro':
+                        if dataset in results[model].keys():
+                            score = results[model][dataset][dataset][metric_key]
+                        else:
+                            score = results[model][dataset][metric_key]
+                    elif metric_type == 'micro':
+                        if with_invalids:
+                            score = results[model][dataset][dataset][f'{metric_key}']
+                        else:
+                            if metric_key == 'micro_recall':
+                                score = results[model][dataset][dataset][f'{metric_key}']
+                            else:
+                                score = results[model][dataset][dataset][f'{metric_key}_without_invalids']
+                model_scores[model].append(score)
+            except (KeyError, TypeError):
+                model_scores[model].append(0)
+
+    # Create figure
+    plt.figure(figsize=(20, 10))
+    
+    # Calculate rankings for each dataset
+    rankings = []
+    for dataset_idx in range(len(subdatasets)):
+        # Get scores for this dataset
+        dataset_scores = [(model, model_scores[model][dataset_idx]) for model in models]
+        # Sort by score in descending order
+        dataset_scores.sort(key=lambda x: x[1], reverse=True)
+        # Convert to rankings (1-based)
+        dataset_rankings = {model: rank + 1 for rank, (model, _) in enumerate(dataset_scores)}
+        rankings.append(dataset_rankings)
+
+    # Plot lines connecting rankings
+    x = np.arange(len(subdatasets))
+    for i, model in enumerate(models):
+        # Get rankings for this model
+        model_rankings = [rankings[j][model] for j in range(len(subdatasets))]
+        
+        # Plot line
+        plt.plot(x, model_rankings, '-', color=COLORS[i], linewidth=2, alpha=0.7)
+        
+        # Plot points
+        scatter = plt.scatter(x, model_rankings, s=150, color=COLORS[i], label=model, zorder=5)
+        
+        # Add model scores as annotations
+        for j, (rank, score) in enumerate(zip(model_rankings, model_scores[model])):
+            plt.annotate(f'{score:.2f}', 
+                        (x[j], rank),
+                        xytext=(0, 10), 
+                        textcoords='offset points',
+                        ha='center',
+                        va='bottom',
+                        fontsize=12)
+
+    # Customize plot
+    plt.gca().invert_yaxis()  # Invert y-axis so rank 1 is at the top
+    plt.grid(True, alpha=0.3)
+    plt.xlabel('Dataset', fontsize=16)
+    plt.ylabel('Rank', fontsize=16)
+    
+    title = f'Model Rankings by {metric_type.capitalize()} {metric.capitalize()}'
+    if not with_invalids:
+        title += ' (Without Invalids)'
+    plt.title(title, fontsize=20, pad=20)
+    
+    # Set x-axis labels
+    plt.xticks(x, subdatasets, rotation=45, ha='right', fontsize=14)
+    
+    # Set y-axis ticks
+    plt.yticks(range(1, len(models) + 1), fontsize=14)
+    
+    # Add legend inside the plot at top right
+    plt.legend(fontsize=14, loc='upper right')
+    
+    # Adjust layout and save
+    plt.tight_layout()
+    if with_invalids:
+        plt.savefig(os.path.join(results_dir, f'model_ranking_{metric_type}_{metric_key}_with_invalids.png'),
+                    bbox_inches='tight', dpi=300)
+    else:
+        plt.savefig(os.path.join(results_dir, f'model_ranking_{metric_type}_{metric_key}_without_invalids.png'),
+                    bbox_inches='tight', dpi=300)
+    plt.close()
+
 if __name__ == "__main__":
     results_dir = "src/v0_2results"
     models = ['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']
@@ -2313,7 +2472,7 @@ if __name__ == "__main__":
     # # plot_dataset_specific_metrics(results_dir)
 
     # # Generate Brier MAE comparison plot
-    plot_cross_model_brier_mae(results_dir)
+    # plot_cross_model_brier_mae(results_dir)
 
     # plot_model_metrics(results_dir, 'pi0_fast') #Change model as needed
     # plot_model_metrics(results_dir, 'gpt4o') #Change model as needed
@@ -2321,9 +2480,7 @@ if __name__ == "__main__":
     # plot_model_metrics(results_dir, 'openvla') #Change model as needed
     # plot_dataset_specific_metrics(results_dir)
 
-
-    plot_cross_model_classwise_comparison(results_dir, models)
-
+    # plot_cross_model_classwise_comparison(results_dir, models)
 
     # calculate_classwise_metrics(results_dir, 'pi0_fast')
     # calculate_classwise_metrics(results_dir, 'gpt4o')
@@ -2361,3 +2518,13 @@ if __name__ == "__main__":
     # plot_category_performance(results_dir, models)
 
     # print_preds_gt_unique_value_counts(results_dir, models=models)
+
+    plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='macro', with_invalids=True)
+    plot_model_ranking_chart(results_dir, models, metric='precision', metric_type='macro', with_invalids=True)
+    plot_model_ranking_chart(results_dir, models, metric='f1', metric_type='macro', with_invalids=True)
+    plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='micro', with_invalids=False)
+    plot_model_ranking_chart(results_dir, models, metric='precision', metric_type='micro', with_invalids=False)
+    plot_model_ranking_chart(results_dir, models, metric='f1', metric_type='micro', with_invalids=False)
+    plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='micro', with_invalids=True)
+    plot_model_ranking_chart(results_dir, models, metric='precision', metric_type='micro', with_invalids=True)
+    plot_model_ranking_chart(results_dir, models, metric='f1', metric_type='micro', with_invalids=True)
