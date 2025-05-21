@@ -31,7 +31,6 @@
     </kbd>
   </a>
 
-  
   <a href="https://metarch.ai/" target="_blank">
     <kbd>
     <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" height="40">
