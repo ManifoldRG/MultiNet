@@ -14,7 +14,7 @@
 
 ### Multinet is a collaborative initiative with contributions from leading research teams at instituitions like:
 
-<div style="display: flex; justify-content: center; align-items: flex-end; gap: 20px;">
+<p align="center">
   <a href="https://www.manifoldrg.com/" target="_blank">
     <img src="assets/manifoldlogo.png" alt="Manifold Research Logo" width="150">
   </a>
@@ -27,7 +27,7 @@
   <a href="https://www.gatech.edu/" target="_blank">
     <img src="assets/gtlogo_alt.png" alt="Georgia Tech Logo" width="150">
   </a>
-</div>
+</p>
 
 ## 📢 Updates
 
