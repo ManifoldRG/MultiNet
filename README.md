@@ -114,11 +114,28 @@ python run_eval_vlm.py --batch_job_info_path < path where batch info is saved fr
 
 We set up our conda environment and ran evaluations for OpenVLA on a GCP Instance with 1 L4 GPU, driver version 550.90.07, and CUDA version 12.4. For more details about the infrastructure used, refer to our [paper](https://multinet.ai/static/pdfs/Benchmarking%20Vision%20Language%20Action%20Models.pdf). If you are using our code out-of-the-box, we recommend using the same infrastructure.
 
-For setup, create a new conda environment and run the OpenVLA environment setup bash script (this will download both the OpenVLA requirements as well as the broader MultiNet requirements):
+For setup, follow OpenVLA environment [setup instructions](https://github.com/openverse-orca/openvla).
 
-```bash
-cd Multinet/src
-./openvla_multinet_setup.sh
+```
+# Create and activate conda environment
+conda create -n openvla python=3.10 -y
+conda activate openvla
+
+# Install PyTorch. Below is a sample command to do this, but you should check the following link
+# to find installation instructions that are specific to your compute platform:
+# https://pytorch.org/get-started/locally/
+conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia -y  # UPDATE ME!
+
+# Clone and install the openvla repo
+git clone https://github.com/openvla/openvla.git
+cd openvla
+pip install -e .
+
+# Install Flash Attention 2 for training (https://github.com/Dao-AILab/flash-attention)
+#   =>> If you run into difficulty, try `pip cache remove flash_attn` first
+pip install packaging ninja
+ninja --version; echo $?  # Verify Ninja --> should return exit code "0"
+pip install "flash-attn==2.5.5" --no-build-isolation
 ```
 
 To run evaluations:
