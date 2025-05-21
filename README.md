@@ -19,7 +19,7 @@
     <img src="assets/manifoldlogo.png" alt="Manifold Research Logo" height="40">
   </a>
   <a href="https://www.mit.edu/" target="_blank">
-    <img src="assets/mitlogo.jpg" alt="MIT Logo" height="40">
+    <img src="assets/MIT-Logo_transparent.png" alt="MIT Logo" height="40">
   </a>
   <a href="https://metarch.ai/" target="_blank">
     <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" height="40">
