@@ -114,7 +114,7 @@ python run_eval_vlm.py --batch_job_info_path < path where batch info is saved fr
 
 We set up our conda environment and ran evaluations for OpenVLA on a GCP Instance with 1 L4 GPU, driver version 550.90.07, and CUDA version 12.4. For more details about the infrastructure used, refer to our [paper](https://multinet.ai/static/pdfs/Benchmarking%20Vision%20Language%20Action%20Models.pdf). If you are using our code out-of-the-box, we recommend using the same infrastructure.
 
-For setup, follow OpenVLA environment [setup instructions](https://github.com/openverse-orca/openvla).
+For setup, follow these instructions to create a new conda environment for openvla:
 
 ```
 # Create and activate conda environment
@@ -124,7 +124,7 @@ conda activate openvla
 # Install PyTorch. Below is a sample command to do this, but you should check the following link
 # to find installation instructions that are specific to your compute platform:
 # https://pytorch.org/get-started/locally/
-conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia -y  # UPDATE ME!
+conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia -y
 
 # Clone and install the openvla repo
 git clone https://github.com/openvla/openvla.git
@@ -140,7 +140,7 @@ pip install "flash-attn==2.5.5" --no-build-isolation
 
 To run evaluations:
 
-> **Note:** Before running evaluations, make sure you have the correct path for the dataset statistics json file (similar to this dataset stats file [here](https://github.com/ManifoldRG/MultiNet/blob/main/src/eval/profiling/openvla/data/dataset_statistics.json))
+> **Note:** Before running evaluations, make sure you have the correct path for the dataset statistics json file (similar to this dataset stats file [here](https://github.com/ManifoldRG/MultiNet/blob/main/definitions/procgen_dataset_statistics.json))
 
 ```bash
 cd Multinet
@@ -159,7 +159,7 @@ GIT_LFS_SKIP_SMUDGE=1 uv sync
 GIT_LFS_SKIP_SMUDGE=1 uv pip install -e .
 ```
 
-> **Note:** Before running evaluations, make sure you have the correct path for the dataset statistics json files (similar to the one present [here](https://github.com/ManifoldRG/MultiNet/blob/v02_release_updates/src/eval/profiling/openvla/data/dataset_statistics.json) )
+> **Note:** Before running evaluations, make sure you have the correct path for the dataset statistics json files (similar to the one present [here](https://github.com/ManifoldRG/MultiNet/blob/main/definitions/procgen_dataset_statistics.json) )
 
 To run evaluations for Pi0 Base on Procgen:
 
