@@ -33,12 +33,16 @@
 
   
   <a href="https://metarch.ai/" target="_blank">
-    <img src="assets/metarch_logo_transparent.png" alt="Metarch.ai Logo" height="40">
+    <kbd>
+    <img src="assets/metarchlogo.png" alt="Metarch.ai Logo" height="40">
+    </kbd>
   </a>
 
   
   <a href="https://www.gatech.edu/" target="_blank">
-    <img src="assets/GTOneLine_Transparent.png" alt="Georgia Tech Logo" style="height:40px; border-radius:50%;">
+    <kbd>
+    <img src="assets/gtlogo_alt.png" alt="Georgia Tech Logo" style="height:40px; border-radius:50%;">
+    </kbd>
   </a>
 </p>
 
