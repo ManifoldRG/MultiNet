@@ -27,7 +27,7 @@
   
   <a href="https://www.mit.edu/" target="_blank">
     <kbd>
-    <img src="assets/mitlogo_alt.png" alt="MIT Logo" height="40">
+    <img src="assets/mitlogo.jpg" alt="MIT Logo" height="40">
     </kbd>
   </a>
 
