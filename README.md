@@ -18,15 +18,18 @@
   <a href="https://www.manifoldrg.com/" target="_blank">
     <img src="assets/manifoldlogo.png" alt="Manifold Research Logo" height="40">
   </a>
-  <br>
+
+  
   <a href="https://www.mit.edu/" target="_blank">
     <img src="assets/MIT-Logo_transparent.png" alt="MIT Logo" height="40">
   </a>
-  <br>
+
+  
   <a href="https://metarch.ai/" target="_blank">
     <img src="assets/metarch_logo_transparent.png" alt="Metarch.ai Logo" height="40">
   </a>
-  <br>
+
+  
   <a href="https://www.gatech.edu/" target="_blank">
     <img src="assets/GTOneLine_Transparent.png" alt="Georgia Tech Logo" height="40">
   </a>
