@@ -16,16 +16,16 @@
 
 <p align="center">
   <a href="https://www.manifoldrg.com/" target="_blank">
-    <img src="assets/manifoldlogo.png" alt="Manifold Research Logo" width="150">
+    <img src="assets/manifoldlogo.png" alt="Manifold Research Logo" height="40">
   </a>
   <a href="https://www.mit.edu/" target="_blank">
-    <img src="assets/mitlogo.jpg" alt="MIT Logo" width="150">
+    <img src="assets/mitlogo.jpg" alt="MIT Logo" height="40">
   </a>
   <a href="https://metarch.ai/" target="_blank">
-    <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" width="150">
+    <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" height="40">
   </a>
   <a href="https://www.gatech.edu/" target="_blank">
-    <img src="assets/gtlogo_alt.png" alt="Georgia Tech Logo" width="150">
+    <img src="assets/gtlogo_alt.png" alt="Georgia Tech Logo" height="40">
   </a>
 </p>
 
