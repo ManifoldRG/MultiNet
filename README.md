@@ -34,7 +34,7 @@
   
   <a href="https://metarch.ai/" target="_blank">
     <kbd>
-    <img src="assets/metarchlogo.png" alt="Metarch.ai Logo" height="40">
+    <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" height="40">
     </kbd>
   </a>
 
