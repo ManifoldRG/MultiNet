@@ -1,6 +1,8 @@
 <p align="center">
+  <kbd>
   <img src="assets/multinet_logo_square copy.png" alt="Multinet Logo" style="height:200px; border-radius:50%;">
   <h1 align="center" style="display: inline-block; vertical-align: middle; margin-left: 20px;">MultiNet: A Generalist Benchmark for Multimodal Action models</h1>
+  </kbd>
 </p>
 
 <p align="center">
