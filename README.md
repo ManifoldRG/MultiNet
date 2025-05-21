@@ -31,7 +31,7 @@
 
   
   <a href="https://www.gatech.edu/" target="_blank">
-    <img src="assets/GTOneLine_Transparent.png" alt="Georgia Tech Logo" style="width:100px; height:100px; border-radius:50%;">
+    <img src="assets/GTOneLine_Transparent.png" alt="Georgia Tech Logo" style="height:40px; border-radius:50%;">
   </a>
 </p>
 
