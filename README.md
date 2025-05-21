@@ -17,8 +17,11 @@
 ### Multinet is a collaborative initiative with contributions from leading research teams at instituitions like:
 
 <p align="center">
+  
   <a href="https://www.manifoldrg.com/" target="_blank">
+    <kbd>
     <img src="assets/manifoldlogo.png" alt="Manifold Research Logo" height="40">
+    </kbd>
   </a>
 
   
