@@ -23,21 +23,16 @@
     <img src="assets/manifold_logo_square.png" alt="Manifold Research Logo" height="40">
     </kbd>
   </a>
-
-   
   <a href="https://www.mit.edu/" target="_blank">
     <kbd>
     <img src="assets/mitlogo.jpg" alt="MIT Logo" height="40">
     </kbd>
   </a>
-
   <a href="https://metarch.ai/" target="_blank">
     <kbd>
     <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" height="40">
     </kbd>
   </a>
-
-  
   <a href="https://www.gatech.edu/" target="_blank">
     <kbd>
     <img src="assets/gtlogo_alt.png" alt="Georgia Tech Logo" style="height:40px; border-radius:50%;">
