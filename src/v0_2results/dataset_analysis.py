@@ -14,6 +14,8 @@ import tensorflow as tf
 import pandas as pd
 import imageio
 from PIL import Image
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 
 current_file = Path(__file__).resolve()
 project_root = next(
@@ -284,6 +286,145 @@ def collect_shards(dataset: str, dataset_folder_paths: list[str]) -> list[str]:
     return tfds_shards
 
 
+def plot_dataset_samples_by_entropy(results_dir: str, datasets: list[str]):
+    """Create a visualization of dataset samples ranked by Shannon entropy.
+    
+    Args:
+        results_dir (str): Directory containing results
+        datasets (list[str]): List of datasets to sample from
+    """
+    # Store (image, entropy) pairs
+    samples = []
+
+    # Sample one image from each dataset and calculate entropy
+    for dataset in datasets:
+        try:
+            dataset_folder_paths = construct_dataset_folder_paths(dataset, load_dataset_path_config())
+            tfds_shards = collect_shards(dataset, dataset_folder_paths)
+
+            if not tfds_shards:
+                logger.warning(f"{dataset} has no shards.")
+                continue
+
+            # Load first shard and get first image
+            shard = tf.data.Dataset.load(tfds_shards[0])
+            for elem in shard:
+                if dataset in ProcGenDefinitions.DESCRIPTIONS.keys():
+                    # For ProcGen, observations are already images
+                    img = np.array(elem['observations'])
+                    if img.shape[0] == 3:  # If channels first
+                        img = np.moveaxis(img, 0, 2)
+                    img = Image.fromarray(img.astype(np.uint8))
+
+                    # Convert to tensor and ensure float type for entropy calculation
+                    img_tensor = torch.tensor(np.array(img)).float()
+                    if len(img_tensor.shape) == 3:
+                        img_tensor = img_tensor.mean(dim=2)  # Convert to grayscale
+
+                    # Normalize to [0, 1] for entropy calculation
+                    img_tensor = img_tensor / 255.0
+
+                    # Calculate entropy
+                    hist = torch.histc(img_tensor, bins=256, min=0, max=1)
+                    prob = hist / hist.sum()
+                    prob = prob[prob > 0]  # Remove zero probabilities
+                    entropy = -torch.sum(prob * torch.log2(prob)).item()
+                    
+                    samples.append((img, entropy, dataset))
+                    break
+                else:
+                    # For other datasets, check if there's an image field
+                    if 'image' in elem:
+                        img = Image.fromarray(np.array(elem['image']))
+                        break
+            
+        except Exception as e:
+            logger.warning(f"Could not process {dataset}: {str(e)}")
+            continue
+    
+    if not samples:
+        logger.error("No valid samples were collected from any dataset")
+        return
+    
+    # Sort samples by entropy
+    samples.sort(key=lambda x: x[1])
+    
+    # Create visualization with 4x4 grid
+    n_samples = len(samples)
+    n_rows = 4
+    n_cols = 4
+    
+    # Create figure with horizontal colorbars for each row
+    fig = plt.figure(figsize=(16, 20))  # Made taller to accommodate horizontal colorbars
+    
+    # Create grid with space for colorbars below each row
+    # Using nested GridSpec to better control spacing between image-colorbar pairs
+    outer_gs = GridSpec(n_rows, 1, figure=fig, hspace=0.4)  # Control spacing between row pairs
+    
+    # Create colormap
+    cmap = plt.cm.viridis
+    
+    # Get entropy values for colormap
+    entropy_values = [s[1] for s in samples]
+    vmin, vmax = min(entropy_values), max(entropy_values)
+    logger.info(f"Overall entropy range: {vmin:.3f} to {vmax:.3f}")
+    
+    # Create grid of samples, now starting from lowest entropy at top-left
+    samples_grid = []
+    for i in range(n_rows):
+        start_idx = i * n_cols
+        end_idx = min((i + 1) * n_cols, len(samples))
+        row = samples[start_idx:end_idx]
+        samples_grid.append(row)
+    
+    # Plot images and add colorbar for each row
+    for i in range(n_rows):
+        # Create nested GridSpec for this row's images and colorbar
+        inner_gs = GridSpecFromSubplotSpec(2, n_cols, 
+                                         subplot_spec=outer_gs[i],
+                                         height_ratios=[8, 0.8],
+                                         hspace=0.1)  # Tight spacing between images and their colorbar
+        
+        # Get entropy range for this row
+        row_entropies = [s[1] for s in samples_grid[i] if s]
+        if row_entropies:
+            row_vmin, row_vmax = min(row_entropies), max(row_entropies)
+            row_norm = plt.Normalize(vmin=row_vmin, vmax=row_vmax)
+            
+            # Log row entropy range and values
+            logger.info(f"Row {i} entropy range: {row_vmin:.3f} to {row_vmax:.3f}")
+            logger.info(f"Row {i} entropy values: {[f'{e:.3f}' for e in row_entropies]}")
+            
+            # Plot images in this row
+            for j in range(n_cols):
+                if j < len(samples_grid[i]):
+                    img, entropy, dataset = samples_grid[i][j]
+                    ax = fig.add_subplot(inner_gs[0, j])
+                    ax.imshow(img)
+                    ax.set_title(f"{dataset}\nShannon entropy: {entropy:.2f}", 
+                               fontsize=16,  # Increased font size
+                               pad=8)  # Slightly reduced padding
+                    ax.axis('off')
+                    
+                    # Add colored border based on row-specific entropy range
+                    for spine in ax.spines.values():
+                        spine.set_edgecolor(cmap(row_norm(entropy)))
+                        spine.set_linewidth(3)
+                        spine.set_visible(True)
+            
+            # Add horizontal colorbar below this row
+            cax = fig.add_subplot(inner_gs[1, :])
+            cb = plt.colorbar(plt.cm.ScalarMappable(norm=row_norm, cmap=cmap), 
+                            cax=cax, orientation='horizontal',
+                            aspect=40)  # Keep colorbar thin
+            if i == n_rows - 1:  # Only label the last row's colorbar
+                cb.set_label('Entropy', fontsize=16)  # Increased from 8 to 16
+            cb.ax.tick_params(labelsize=16)  # Increased from 6 to 16
+    
+    plt.tight_layout()
+    plt.savefig(f"{results_dir}/dataset_samples_by_entropy.png", dpi=300, bbox_inches='tight')
+    plt.close()
+
 
 if __name__ == "__main__":
     # try:
@@ -294,69 +435,71 @@ if __name__ == "__main__":
     dataset_path_config = load_dataset_path_config()
     added_dataset_stats_counter = 0
     results_dir = "src/v0_2results"
-    df = pd.DataFrame(columns=['dataset', 'mean_shannon_entropy', 'mean_delentropy', 
-                               'gpt4o_macro_recall', 'gpt4_1_macro_recall',
-                               'openvla_macro_recall', 'pi0_base_macro_recall',
-                               'pi0_fast_macro_recall'])
+    # df = pd.DataFrame(columns=['dataset', 'mean_shannon_entropy', 'mean_delentropy', 
+    #                            'gpt4o_macro_recall', 'gpt4_1_macro_recall',
+    #                            'openvla_macro_recall', 'pi0_base_macro_recall',
+    #                            'pi0_fast_macro_recall'])
     
-    results = load_results(results_dir)
+    # results = load_results(results_dir)
 
+    # Create visualization of dataset samples ranked by entropy
+    plot_dataset_samples_by_entropy(results_dir, PROFILING_DATASETS)
 
-    for dataset in PROFILING_DATASETS:
-        # First populate the dataset name for this row
-        df.loc[dataset, 'dataset'] = dataset
+    # for dataset in PROFILING_DATASETS:
+    #     # First populate the dataset name for this row
+    #     df.loc[dataset, 'dataset'] = dataset
 
-        for model in results.keys():
-            if model in ['pi0_base', 'pi0_fast']:
-                if dataset == 'bigfish':
-                    df.loc[dataset, f'{model}_macro_recall'] = results[model]['bigfish']['bigfish']['macro_recall']
-                else:
-                    df.loc[dataset, f'{model}_macro_recall'] = results[model][dataset][dataset]['macro_recall']
-            elif model in ['gpt4o', 'gpt4_1']:
-                df.loc[dataset, f'{model}_macro_recall'] = results[model][dataset][dataset]['macro_recall']
-            elif model == 'openvla':
-                if dataset == 'bigfish':
-                    df.loc[dataset, f'{model}_macro_recall'] = results[model]['bigfish']['bigfish']['macro_recall']
-                else:
-                    df.loc[dataset, f'{model}_macro_recall'] = results[model][dataset]['macro_recall']
-            else:
-                raise ValueError(f"Unknown model: {model}")
-            print(df.head())
+    #     for model in results.keys():
+    #         if model in ['pi0_base', 'pi0_fast']:
+    #             if dataset == 'bigfish':
+    #                 df.loc[dataset, f'{model}_macro_recall'] = results[model]['bigfish']['bigfish']['macro_recall']
+    #             else:
+    #                 df.loc[dataset, f'{model}_macro_recall'] = results[model][dataset][dataset]['macro_recall']
+    #         elif model in ['gpt4o', 'gpt4_1']:
+    #             df.loc[dataset, f'{model}_macro_recall'] = results[model][dataset][dataset]['macro_recall']
+    #         elif model == 'openvla':
+    #             if dataset == 'bigfish':
+    #                 df.loc[dataset, f'{model}_macro_recall'] = results[model]['bigfish']['bigfish']['macro_recall']
+    #             else:
+    #                 df.loc[dataset, f'{model}_macro_recall'] = results[model][dataset]['macro_recall']
+    #         else:
+    #             raise ValueError(f"Unknown model: {model}")
+    #         print(df.head())
 
-        dataset_folder_paths = construct_dataset_folder_paths(dataset, dataset_path_config)
+    #     dataset_folder_paths = construct_dataset_folder_paths(dataset, dataset_path_config)
 
-        if dataset not in os.listdir(dataset_folder_paths[0]):
-            logger.warning(f"{dataset} not found in '{dataset_folder_paths[0]}'")
-            continue
+    #     if dataset not in os.listdir(dataset_folder_paths[0]):
+    #         logger.warning(f"{dataset} not found in '{dataset_folder_paths[0]}'")
+    #         continue
         
-        try:
-            tfds_shards = collect_shards(dataset, dataset_folder_paths)
+    #     try:
+    #         tfds_shards = collect_shards(dataset, dataset_folder_paths)
 
-            if not tfds_shards:
-                logger.warning(f"{dataset} has no shards.")
-                continue
+    #         if not tfds_shards:
+    #             logger.warning(f"{dataset} has no shards.")
+    #             continue
 
-            logger.info(f"Calculating dataset statistics for {dataset} with {len(tfds_shards)} shards.")
-            stats_calculator = DatasetActionStatisticsCalculator(tfds_shards, dataset)
-            stats_calculator.process_shards()
+    #         logger.info(f"Calculating dataset statistics for {dataset} with {len(tfds_shards)} shards.")
+    #         stats_calculator = DatasetActionStatisticsCalculator(tfds_shards, dataset)
+    #         stats_calculator.process_shards()
 
-            print(f"Processing {dataset}")
-            dataset_mean_shannon_entropy = stats_calculator.get_dataset_mean_shannon_entropy()
-            dataset_mean_delentropy = stats_calculator.get_dataset_mean_delentropy()
-            df.loc[dataset, f'mean_shannon_entropy'] = dataset_mean_shannon_entropy
-            df.loc[dataset, f'mean_delentropy'] = dataset_mean_delentropy
+    #         print(f"Processing {dataset}")
+    #         dataset_mean_shannon_entropy = stats_calculator.get_dataset_mean_shannon_entropy()
+    #         dataset_mean_delentropy = stats_calculator.get_dataset_mean_delentropy()
+    #         df.loc[dataset, f'mean_shannon_entropy'] = dataset_mean_shannon_entropy
+    #         df.loc[dataset, f'mean_delentropy'] = dataset_mean_delentropy
 
-            # If we have processed shards successfully
-            if len(stats_calculator.image_tensors) > 0:
-                # dataset_statistics[dataset] = calculate_dataset_statistics(stats_calculator, dataset)
-                added_dataset_stats_counter += 1
-            else:
-                logger.warning(f"No action tensors were gathered for dataset {dataset}")
+    #         # If we have processed shards successfully
+    #         if len(stats_calculator.image_tensors) > 0:
+    #             # dataset_statistics[dataset] = calculate_dataset_statistics(stats_calculator, dataset)
+    #             added_dataset_stats_counter += 1
+    #         else:
+    #             logger.warning(f"No action tensors were gathered for dataset {dataset}")
         
-            # save_dataset_statistics(dataset_statistics, DATASET_STATISTICS_FILE)
+    #         # save_dataset_statistics(dataset_statistics, DATASET_STATISTICS_FILE)
 
-        except Exception as e:
-            logger.exception(f"Error processing dataset {dataset}: {str(e)}")
-            raise
+    #     except Exception as e:
+    #         logger.exception(f"Error processing dataset {dataset}: {str(e)}")
+    #         raise
 
-    df.to_csv(f"{results_dir}/dataset_analysis_results.csv", index=False)
+    # df.to_csv(f"{results_dir}/dataset_analysis_results.csv", index=False)
