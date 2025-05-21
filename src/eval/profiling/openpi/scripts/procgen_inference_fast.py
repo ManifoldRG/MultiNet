@@ -574,7 +574,7 @@ def main():
             print(f"Skipping {dataset}, not a directory.")
             continue
 
-        tfds_shards = os.listdir(f'{args.dataset_dir}/{dataset}/test_final') # Update path as needed
+        tfds_shards = os.listdir(f'{args.dataset_dir}/{dataset}/') # Update path as needed
         # tfds_shards = os.listdir(f'{args.dataset_dir}/{dataset}') # Update path as needed
         tfds_sorted_shards = sorted(
             tfds_shards,
@@ -589,11 +589,11 @@ def main():
             continue
 
         # Add path to shards
-        tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}/test_final', shard) for shard in tfds_sorted_shards]
+        tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}/', shard) for shard in tfds_sorted_shards]
         # tfds_sorted_shard_paths = [os.path.join(f'{args.dataset_dir}/{dataset}', shard) for shard in tfds_sorted_shards]
 
         #Dataset stats loading/calculation
-        stats_output_path = os.path.join(args.dataset_stats_dir, 'procgen_dataset_statistics_prod.json')
+        stats_output_path = os.path.join("definitions", 'procgen_dataset_statistics.json')
         if os.path.exists(stats_output_path):
             print(f'Loading existing dataset stats from {stats_output_path}')
             with open(stats_output_path, 'r') as f:

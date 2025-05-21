@@ -25,10 +25,8 @@ DATASET_CONFIG_NAME = 'dataset_statistics_config.yaml'
 PROFILING_DATASETS = OpenXDefinitions.DESCRIPTIONS.keys() | ProcGenDefinitions.DESCRIPTIONS.keys()
 
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'prod')
-if ENVIRONMENT == 'dev':
-    DATASET_STATISTICS_FILE = 'dataset_statistics_dev.json'
-else:
-    DATASET_STATISTICS_FILE = 'dataset_statistics_prod.json'
+
+DATASET_STATISTICS_FILE = 'procgen_dataset_statistics.json'
 
 logging.basicConfig(
     format='%(asctime)s [%(levelname)-4s] | %(filename)s:%(lineno)d | %(message)s',

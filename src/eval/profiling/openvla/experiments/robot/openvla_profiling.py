@@ -46,7 +46,7 @@ class EvalConfig:
     model_family: str = "openvla"
     pretrained_checkpoint: Union[str, Path] = "openvla/openvla-7b"
     load_in_8bit: bool = False
-    load_in_4bit: bool = True
+    load_in_4bit: bool = False
     center_crop: bool = True
     seed: int = 7
     unnorm_key: str = "bridge_orig"  # default unnorm_key bridge_orig
