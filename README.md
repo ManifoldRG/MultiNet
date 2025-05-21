@@ -1,18 +1,32 @@
 <p align="center">
-  <img src="assets/multinet_logo_square copy.png" alt="Multinet Logo" height="100" style="vertical-align: middle;">
+  <img src="assets/multinet_logo_square copy.png" alt="Multinet Logo" height="200" style="vertical-align: middle;">
   <h1 align="center" style="display: inline-block; vertical-align: middle; margin-left: 20px;">MultiNet: A Generalist Benchmark for Multimodal Action models</h1>
 </p>
 
 <p align="center">
-  <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/Website-blue?style=for-the-badge&logo=home&logoColor=white" alt="Website"></a> 
-  <a href="https://arxiv.org/abs/2505.05540"><img src="https://img.shields.io/badge/Multinet%20v0.2%20paper-arXiv-B31B1B?style=for-the-badge&logo=arXiv&logoColor=white" alt="Multinet v0.2 paper"></a> 
-  <a href="https://arxiv.org/abs/2411.05821"><img src="https://img.shields.io/badge/Multinet%20v0.1%20paper-arXiv-B31B1B?style=for-the-badge&logo=arXiv&logoColor=white" alt="Multinet v0.1 paper"></a> 
-  <a href="https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf"><img src="https://img.shields.io/badge/Dataset%20Spec-green?style=for-the-badge&logo=docs&logoColor=white" alt="Dataset Spec paper"></a> 
-  <a href="https://github.com/ManifoldRG/MultiNet/tree/main/src/modules"><img src="https://img.shields.io/badge/GenESIS%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-blueviolet?style=for-the-badge&logo=github&logoColor=white" alt="GenESIS framework"></a> 
-  <a href="https://discord.gg/Rk4gAq5aYr"><img src="https://img.shields.io/badge/Contribute%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Contribute"></a>
+  <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/Website-blue?style=flat-square&logo=googlechrome" alt="Website"></a> 
+  <a href="https://arxiv.org/abs/2505.05540"><img src="https://img.shields.io/badge/Multinet%20v0.2%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.2 paper"></a> 
+  <a href="https://arxiv.org/abs/2411.05821"><img src="https://img.shields.io/badge/Multinet%20v0.1%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.1 paper"></a> 
+  <a href="https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf"><img src="https://img.shields.io/badge/Dataset%20Spec-green?style=flat-square&logo=readthedocs" alt="Dataset Spec paper"></a> 
+  <a href="https://github.com/ManifoldRG/MultiNet/tree/main/src/modules"><img src="https://img.shields.io/badge/GenESIS%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-blueviolet?style=flat-square&logo=github" alt="GenESIS framework"></a> 
+  <a href="https://discord.gg/Rk4gAq5aYr"><img src="https://img.shields.io/badge/Contribute%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-7289DA?style=flat-square&logo=discord" alt="Contribute"></a>
 </p>
 
-### This work is sponsored by, and is being done in close collaboration with [Metarch](https://metarch.ai/).
+<p class="has-text-centered collaborators-description is-size-">Multinet is a collaborative initiative with contributions from leading research teams at instituitions like:</p>
+          <div class="collaborator-logos" style="display: flex; justify-content: center; align-items: center;">
+            <a href="https://www.manifoldrg.com/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
+              <img src="assets/manifoldlogo.png" alt="Manifold Research Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px; vertical-align: middle;">
+            </a>
+            <a href="https://www.mit.edu/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
+              <img src="assets/mitlogo_alt.png" alt="MIT Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px; vertical-align: middle;">
+            </a>
+            <a href="https://metarch.ai/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
+              <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px; vertical-align: middle;">
+            </a>
+            <a href="https://www.gatech.edu/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
+              <img src="assets/gtlogo_alt.png" alt="Georgia Tech Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px; vertical-align: middle;">
+            </a>
+          </div>
 
 ## 📢 Updates
 
@@ -27,9 +41,9 @@ This repo provides the following:
 2. Ability to translate control data of various formats and from various sources to a unified [Tensorflow Dataset format](https://www.tensorflow.org/datasets/api_docs/python/tfds). 
 3. Evaluate the performance of SoTA VLMs and VLAs such as GPT-4.1, GPT 4o, Pi0, Pi0 with FAST, and OpenVLA in a zero-shot setting on a wide-variety of action data such as [robotics](https://multinet.ai/static/pages/Multinetv01.html) and [procedurally generated game-play](https://multinet.ai/static/pages/Multinetv02.html).
 4. A [general framework](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules) for mapping VLMs to other modality classes, with particular emphasis on action spaces. This framework allows one to adapt a wide range of models to multiple types of tasks or datasets for scaling effectively while reducing the amount of engineering effort required.  In MultiNet v0.1, GenESIS is used to evaluate GPT 4o on the OpenX datasets, and in Multinet v0.2 GenESIS is used to evaluate GPT 4o and GPT 4.1 on the Procgen dataset.
-5. Test splits of Multinet datasets and clear guidelines required to evaluate your model on them, and the results to our leaderboard in order to compare performance against SoTA VLMs and VLAs.
+5. Test splits of Multinet datasets and clear guidelines required to evaluate your model on them and add the results to our leaderboard in order to compare performance against SoTA VLMs and VLAs.
 
-Also related to the MultiNet effort is <a href="https://github.com/eihli/mugato"><img src="https://img.shields.io/badge/%CE%BCGATO%E2%A0%80%E2%A0%80-dimgray?style=flat-square&logo=github" alt="μGATO on GitHub"></a>, a small, simple, open-source implementation of what is described in DeepMind's GATO paper. This project marks our initial step towards building a multimodal generalist action model.
+Also related to the MultiNet effort is <a href="https://github.com/eihli/mugato"><img src="https://img.shields.io/badge/%CE%BCGATO%E2%A0%80%E2%A0%80-dimgray?style=flat-square&logo=github" alt="μGATO on GitHub" style="vertical-align: middle;"></a> - a small, simple, open-source implementation of what is described in DeepMind's GATO paper. This project marks our initial step towards building a multimodal generalist action model.
 
 <br>
 
@@ -71,7 +85,7 @@ python centralized_translation --dataset_name <name of dataset whose file you wo
 
 #### To translate multiple files/shards of your desired control dataset (downloaded using the downloader script in this repo) to the TFDS format 
 
-Make sure to modify the way the multiple files are being traversed for translation in translate_multiple.py in Multinet/src/control_translation according to your local file structure.
+> **Note:** Make sure to modify the way the multiple files are being traversed for translation in translate_multiple.py in Multinet/src/control_translation according to your local file structure.
 
 ```bash
 cd Multinet/src/control_translation
@@ -84,7 +98,7 @@ To get the predictions:
 
 ```bash
 cd Multinet/scripts/eval_vlm
-python send_batch_jobs_vlm.py --data_root_dir < path to the translated datasets > --dataset_family < dataset name > --model < gpt model name and version ( see "models" section in config.json: https://github.com/ManifoldRG/MultiNet/blob/v02_release_updates/src/config.json ) > --metadata_dir < path to save batch info > --batch_size < batch size >
+python send_batch_jobs_vlm.py --data_root_dir < path to the translated datasets > --dataset_family < dataset name > --model < gpt model name and version (see models values in https://github.com/ManifoldRG/MultiNet/blob/main/src/config.json) > --metadata_dir < path to save batch info > --batch_size < batch size >
 ```
 
 > **Note:** Enter the OpenAI API key when prompted.
@@ -92,7 +106,7 @@ python send_batch_jobs_vlm.py --data_root_dir < path to the translated datasets 
 To evaluate the predictions:
 
 ```bash
-python run_eval_vlm.py --batch_job_info_path "< path where batch info is saved from prev step >/< dataset name >_batchlist{timestamp}.json" --results_path "< path to store results >.json"
+python run_eval_vlm.py --batch_job_info_path < path where batch info is saved from prev step >/< dataset name >_batchlist{timestamp}.json --results_path < path to store results >.json
 ```
 
 #### To evaluate OpenVLA (in a zero-shot setting)
@@ -108,14 +122,14 @@ cd Multinet/src
 
 To run evaluations:
 
-> **Note:** Before running evaluations, make sure you have the correct path for the dataset statistics json file (similar to this dataset stats file [here](https://github.com/ManifoldRG/MultiNet/blob/v02_release_updates/src/eval/profiling/openvla/data/dataset_statistics.json))
+> **Note:** Before running evaluations, make sure you have the correct path for the dataset statistics json file (similar to this dataset stats file [here](https://github.com/ManifoldRG/MultiNet/blob/main/src/eval/profiling/openvla/data/dataset_statistics.json))
 
 ```bash
 cd Multinet
 python src/eval/profiling/openvla/experiments/robot/openvla_profiling.py --profiling_dataset_folder_path <path to the translated datasets> --dataset_statistics_path < path to dataset statistics json file > --result_save_path < path to the directory where you would like to save your results >
 ```
 
-#### To evaluate Pi0 Base (in a zero-shot setting)
+#### To evaluate Pi0 Base and Pi0 with FAST (in a zero-shot setting)
 
 We set up our conda environment and ran evaluations for Pi0 Base and Pi0 with FAST on GCP Instances with A100 40 GB VRAM GPUs. If you are using our code out-of-the-box, we recommend using the same infrastructure.
 
@@ -139,6 +153,8 @@ python procgen_inference.py --output_dir < path to the directory where you would
 ```
 
 To run evaluations for Pi0 with FAST on Procgen
+
+> **Note:** Make sure to replace the processing_action_tokenizer.py which is usually located in ~/.cache/huggingface/modules/transformers_modules/physical-intelligence/fast/<snapshot id>/processing_action_tokenizer.py with the [one we use](https://github.com/ManifoldRG/MultiNet/blob/main/src/eval/profiling/openpi/scripts/processing_action_tokenizer.py). We have made some changes to the original action tokenizer code to adapt it to a discrete action space.
 
 ```bash
 cd Multinet/src/eval/profiling/openpi
