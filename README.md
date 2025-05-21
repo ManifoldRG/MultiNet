@@ -14,12 +14,12 @@
 
 ### Multinet is a collaborative initiative with contributions from leading research teams at instituitions like:
 
-<div style="display: flex; justify-content: center; align-items: center; gap: 20px;">
+<div style="display: flex; justify-content: center; align-items: flex-end; gap: 20px;">
   <a href="https://www.manifoldrg.com/" target="_blank">
     <img src="assets/manifoldlogo.png" alt="Manifold Research Logo" width="150">
   </a>
   <a href="https://www.mit.edu/" target="_blank">
-    <img src="assets/mitlogo_alt.png" alt="MIT Logo" width="150">
+    <img src="assets/mitlogo.jpg" alt="MIT Logo" width="150">
   </a>
   <a href="https://metarch.ai/" target="_blank">
     <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" width="150">
