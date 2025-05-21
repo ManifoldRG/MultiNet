@@ -22,7 +22,7 @@
     <img src="assets/MIT-Logo_transparent.png" alt="MIT Logo" height="40">
   </a>
   <a href="https://metarch.ai/" target="_blank">
-    <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" height="40">
+    <img src="assets/logo_transparent (1).jpg" alt="Metarch.ai Logo" height="40">
   </a>
   <a href="https://www.gatech.edu/" target="_blank">
     <img src="assets/GTOneLine_Transparent.png" alt="Georgia Tech Logo" height="40">
