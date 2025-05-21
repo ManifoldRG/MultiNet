@@ -15,17 +15,17 @@
 ### Multinet is a collaborative initiative with contributions from leading research teams at instituitions like:
 
 <p align="center">
-  <a href="https://www.manifoldrg.com/" target="_blank" style="display: inline-block; vertical-align: middle;">
-    <img src="assets/manifoldlogo.png" alt="Manifold Research Logo" width="150">
+  <a href="https://www.manifoldrg.com/" target="_blank" style="display: inline-block;">
+    <img src="assets/manifoldlogo.png" alt="Manifold Research Logo" width="150" style="vertical-align: middle;">
   </a>
-  <a href="https://www.mit.edu/" target="_blank" style="display: inline-block; vertical-align: middle;">
-    <img src="assets/mitlogo_alt.png" alt="MIT Logo" width="150">
+  <a href="https://www.mit.edu/" target="_blank" style="display: inline-block;">
+    <img src="assets/mitlogo_alt.png" alt="MIT Logo" width="150" style="vertical-align: middle;">
   </a>
-  <a href="https://metarch.ai/" target="_blank" style="display: inline-block; vertical-align: middle;">
-    <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" width="150">
+  <a href="https://metarch.ai/" target="_blank" style="display: inline-block;">
+    <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" width="150" style="vertical-align: middle;">
   </a>
-  <a href="https://www.gatech.edu/" target="_blank" style="display: inline-block; vertical-align: middle;">
-    <img src="assets/gtlogo_alt.png" alt="Georgia Tech Logo" width="150">
+  <a href="https://www.gatech.edu/" target="_blank" style="display: inline-block;">
+    <img src="assets/gtlogo_alt.png" alt="Georgia Tech Logo" width="150" style="vertical-align: middle;">
   </a>
 </p>
 
