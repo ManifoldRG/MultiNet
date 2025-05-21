@@ -4,11 +4,11 @@
 </p>
 
 <p align="center">
-  [![Website](https://img.shields.io/badge/Website%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-blue?style=flat-square&logo=home)](https://multinet.ai/) 
-  [![Multinet v0.2 paper](https://img.shields.io/badge/Multinet%20v0.2%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv)](https://arxiv.org/abs/2505.05540) 
-  [![Dataset Spec paper](https://img.shields.io/badge/Dataset%20Spec%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-green?style=flat-square&logo=docs)](https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf) 
-  [![GenESIS framework](https://img.shields.io/badge/GenESIS%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-blueviolet?style=flat-square&logo=github)](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules) 
-  [![Contribute](https://img.shields.io/badge/Contribute%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-7289DA?style=flat-square&logo=discord)](https://discord.gg/Rk4gAq5aYr)
+  <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/Website%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-blue?style=flat-square&logo=home" alt="Website"></a> 
+  <a href="https://arxiv.org/abs/2505.05540"><img src="https://img.shields.io/badge/Multinet%20v0.2%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.2 paper"></a> 
+  <a href="https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf"><img src="https://img.shields.io/badge/Dataset%20Spec%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-green?style=flat-square&logo=docs" alt="Dataset Spec paper"></a> 
+  <a href="https://github.com/ManifoldRG/MultiNet/tree/main/src/modules"><img src="https://img.shields.io/badge/GenESIS%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-blueviolet?style=flat-square&logo=github" alt="GenESIS framework"></a> 
+  <a href="https://discord.gg/Rk4gAq5aYr"><img src="https://img.shields.io/badge/Contribute%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-7289DA?style=flat-square&logo=discord" alt="Contribute"></a>
 </p>
 
 ### This work is sponsored by, and is being done in close collaboration with [Metarch](https://metarch.ai/).
@@ -107,7 +107,7 @@ cd Multinet/src
 
 To run evaluations:
 
-Before running evaluations, make sure you have the correct path for the dataset statistics json files (similar to those present in )
+Before running evaluations, make sure you have the correct path for the dataset statistics json files (similar to this dataset stats file [here](https://github.com/ManifoldRG/MultiNet/blob/v02_release_updates/src/eval/profiling/openvla/data/dataset_statistics.json))
 
 ```bash
 cd Multinet
