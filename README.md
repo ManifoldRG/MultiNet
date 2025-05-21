@@ -49,7 +49,7 @@ Also related to the MultiNet effort is <a href="https://github.com/eihli/mugato"
 <br>
 
 <p align="center">
-  <img src="assets/v0_2_visual.png" alt="Multinet v0.2 Figure" style="width: 700px; height: auto; vertical-align: middle;">
+  <img src="assets/v0_2_visual.jpg" alt="Multinet v0.2 Figure" style="width: 700px; height: auto; vertical-align: middle;">
 </p>
 
 <br>
