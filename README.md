@@ -25,7 +25,7 @@
     <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" height="40">
   </a>
   <a href="https://www.gatech.edu/" target="_blank">
-    <img src="assets/gtlogo_alt.png" alt="Georgia Tech Logo" height="40">
+    <img src="assets/GTOneLine_Transparent.png" alt="Georgia Tech Logo" height="40">
   </a>
 </p>
 
