@@ -14,21 +14,20 @@
 
 ### Multinet is a collaborative initiative with contributions from leading research teams at instituitions like:
 
+<p align="center">
+  <a href="https://www.manifoldrg.com/" target="_blank" style="display: inline-block; vertical-align: middle;">
+    <img src="assets/manifoldlogo.png" alt="Manifold Research Logo" width="150">
+  </a>
+  <a href="https://www.mit.edu/" target="_blank" style="display: inline-block; vertical-align: middle;">
+    <img src="assets/mitlogo_alt.png" alt="MIT Logo" width="150">
+  </a>
+  <a href="https://metarch.ai/" target="_blank" style="display: inline-block; vertical-align: middle;">
+    <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" width="150">
+  </a>
+  <a href="https://www.gatech.edu/" target="_blank" style="display: inline-block; vertical-align: middle;">
+    <img src="assets/gtlogo_alt.png" alt="Georgia Tech Logo" width="150">
+  </a>
 </p>
-    <div class="collaborator-logos" style="display: flex; justify-content: center; align-items: center;">
-      <a href="https://www.manifoldrg.com/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
-        <img src="assets/manifoldlogo.png" alt="Manifold Research Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px;">
-      </a>
-      <a href="https://www.mit.edu/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
-        <img src="assets/mitlogo_alt.png" alt="MIT Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px;">
-      </a>
-      <a href="https://metarch.ai/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
-        <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px;">
-      </a>
-      <a href="https://www.gatech.edu/" target="_blank" rel="noopener noreferrer" class="collaborator-link">
-        <img src="assets/gtlogo_alt.png" alt="Georgia Tech Logo" class="collaborator-logo" style="max-height: 45px; max-width: 150px; width: auto; height: auto; margin: 5px;">
-      </a>
-    </div>
 
 ## 📢 Updates
 
@@ -50,13 +49,13 @@ Also related to the MultiNet effort is <a href="https://github.com/eihli/mugato"
 <br>
 
 <p align="center">
-  <img src="assets/v0_2_visual.png" alt="Multinet v0.2 Figure" style="vertical-align: middle;">
+  <img src="assets/v0_2_visual.png" alt="Multinet v0.2 Figure" style="width: 700px; height: auto; vertical-align: middle;">
 </p>
 
 <br>
 
 <p align="center">
-  <img src="assets/Multinet v0.1 release visual 3.0.png" alt="Multinet Figure" style="vertical-align: middle;">
+  <img src="assets/Multinet v0.1 release visual 3.0.png" alt="Multinet Figure" style="width: 700px; height: auto; vertical-align: middle;">
 </p>
 
 ## 🚀 Getting Started
