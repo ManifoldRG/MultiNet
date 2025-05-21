@@ -20,12 +20,12 @@
   
   <a href="https://www.manifoldrg.com/" target="_blank">
     <kbd>
-    <img src="assets/manifold_transparent_white.png" alt="Manifold Research Logo" height="40">
+    <img src="assets/manifold_logo_square.png" alt="Manifold Research Logo" height="40">
     </kbd>
   </a>
   <a href="https://www.mit.edu/" target="_blank">
     <kbd>
-    <img src="assets/MIT-Logo_transparent.png" alt="MIT Logo" height="40">
+    <img src="assets/mitlogo.jpg" alt="MIT Logo" height="40">
     </kbd>
   </a>
   <a href="https://metarch.ai/" target="_blank">
