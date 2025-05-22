@@ -2420,8 +2420,18 @@ def plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='
             except (KeyError, TypeError):
                 model_scores[model].append(0)
 
-    # Create figure
-    plt.figure(figsize=(20, 10))
+    # Create figure with extra space at top for title and legend
+    fig = plt.figure(figsize=(20, 12))  # Increased height for legend space
+    
+    # Create two subplots with appropriate height ratios - reduced space for legend
+    gs = plt.GridSpec(2, 1, height_ratios=[0.6, 4], hspace=0.2)  # Reduced top ratio and hspace
+    
+    # Create top subplot for title and legend
+    ax_top = fig.add_subplot(gs[0])
+    ax_top.axis('off')  # Hide axes
+    
+    # Create bottom subplot for the main plot
+    ax_main = fig.add_subplot(gs[1])
     
     # Calculate rankings for each dataset
     rankings = []
@@ -2436,45 +2446,58 @@ def plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='
 
     # Plot lines connecting rankings
     x = np.arange(len(subdatasets))
+    legend_handles = []
     for i, model in enumerate(models):
         # Get rankings for this model
         model_rankings = [rankings[j][model] for j in range(len(subdatasets))]
         
         # Plot line
-        plt.plot(x, model_rankings, '-', color=COLORS[i], linewidth=2, alpha=0.7)
+        line = ax_main.plot(x, model_rankings, '-', color=COLORS[i], linewidth=3, alpha=0.7)[0]
         
         # Plot points
-        scatter = plt.scatter(x, model_rankings, s=150, color=COLORS[i], label=model, zorder=5)
+        scatter = ax_main.scatter(x, model_rankings, s=200, color=COLORS[i], label=model, zorder=5)
+        legend_handles.append(scatter)
         
         # Add model scores as annotations
         for j, (rank, score) in enumerate(zip(model_rankings, model_scores[model])):
-            plt.annotate(f'{score:.2f}', 
-                        (x[j], rank),
-                        xytext=(0, 10), 
-                        textcoords='offset points',
-                        ha='center',
-                        va='bottom',
-                        fontsize=12)
+            ax_main.annotate(f'{score:.2f}', 
+                         (x[j], rank),
+                         xytext=(0, 10), 
+                         textcoords='offset points',
+                         ha='center',
+                         va='bottom',
+                         fontsize=14)
 
-    # Customize plot
-    plt.gca().invert_yaxis()  # Invert y-axis so rank 1 is at the top
-    plt.grid(True, alpha=0.3)
-    plt.xlabel('Dataset', fontsize=16)
-    plt.ylabel('Rank', fontsize=16)
+    # Customize main plot
+    ax_main.invert_yaxis()  # Invert y-axis so rank 1 is at the top
+    ax_main.grid(True, alpha=0.3)
+    ax_main.set_xlabel('Dataset', fontsize=18)
+    ax_main.set_ylabel('Rank', fontsize=18)
     
+    # Remove top and right spines
+    ax_main.spines['top'].set_visible(False)
+    ax_main.spines['right'].set_visible(False)
+    
+    # Add title to top subplot
     title = f'Model Rankings by {metric_type.capitalize()} {metric.capitalize()}'
     if not with_invalids:
         title += ' (Without Invalids)'
-    plt.title(title, fontsize=20, pad=20)
+    ax_top.text(0.5, 0.6, title, fontsize=22, ha='center', va='bottom')  # Adjusted y position
+    
+    # Add legend to top subplot - adjusted position
+    ax_top.legend(legend_handles, models,
+                 loc='center',
+                 bbox_to_anchor=(0.5, 0.1),  # Adjusted y position
+                 ncol=len(models),
+                 fontsize=18)
     
     # Set x-axis labels
-    plt.xticks(x, subdatasets, rotation=45, ha='right', fontsize=14)
+    ax_main.set_xticks(x)
+    ax_main.set_xticklabels(subdatasets, rotation=45, ha='right', fontsize=16)
     
     # Set y-axis ticks
-    plt.yticks(range(1, len(models) + 1), fontsize=14)
-    
-    # Add legend inside the plot at top right
-    plt.legend(fontsize=14, loc='upper right')
+    ax_main.set_yticks(range(1, len(models) + 1))
+    ax_main.tick_params(axis='both', which='major', labelsize=16)
     
     # Adjust layout and save
     plt.tight_layout()
@@ -2675,7 +2698,7 @@ if __name__ == "__main__":
 
     # print_preds_gt_unique_value_counts(results_dir, models=models)
 
-    # plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='macro', with_invalids=True)
+    plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='macro', with_invalids=True)
     # plot_model_ranking_chart(results_dir, models, metric='precision', metric_type='macro', with_invalids=True)
     # plot_model_ranking_chart(results_dir, models, metric='f1', metric_type='macro', with_invalids=True)
     # plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='micro', with_invalids=False)
