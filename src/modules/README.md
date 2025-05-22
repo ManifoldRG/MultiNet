@@ -205,7 +205,6 @@ These are the main variables and functions that each module type should support 
             * ```python
                 def retrieve_batch_results(self, batch_job_id: str) -> list[Any]
                 ```
-    * *Note on `OpenAIModule`*: This module now extensively supports OpenAI's Batch API for asynchronous processing and manages concurrent histories. While it's still the primary source module example, its capabilities have significantly expanded beyond single-threaded synchronous calls. The original note about it assuming non-batch data is no longer fully accurate, as it can initiate and manage batch jobs. It also handles context window management and token counting for these operations.
 
 <br/>
 
