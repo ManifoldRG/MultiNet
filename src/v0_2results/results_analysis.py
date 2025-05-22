@@ -1835,16 +1835,16 @@ def plot_action_distributions(results_dir: str, models: list[str]):
             plt.title(f'Aggregated Action Distribution Comparison for {model}\nAcross All Datasets')
             plt.xticks(x, [str(a) for a in all_actions])
             
-            # Add value labels
-            for i in range(len(all_actions)):
-                # Only show labels for non-zero values
-                if gt_percentages[i] > 0:
-                    plt.text(i, gt_percentages[i], f'{gt_percentages[i]:.1f}%',
-                           ha='center', va='bottom', rotation=45)
-                if pred_percentages[i] > 0 and abs(pred_percentages[i] - gt_percentages[i]) > 0.1:
-                    # Show prediction percentage only if it's significantly different from ground truth
-                    plt.text(i, pred_percentages[i], f'{pred_percentages[i]:.1f}%',
-                           ha='center', va='top', rotation=45)
+            # # Add value labels
+            # for i in range(len(all_actions)):
+            #     # Only show labels for non-zero values
+            #     if gt_percentages[i] > 0:
+            #         plt.text(i, gt_percentages[i], f'{gt_percentages[i]:.1f}%',
+            #                ha='center', va='bottom', rotation=45)
+            #     if pred_percentages[i] > 0 and abs(pred_percentages[i] - gt_percentages[i]) > 0.1:
+            #         # Show prediction percentage only if it's significantly different from ground truth
+            #         plt.text(i, pred_percentages[i], f'{pred_percentages[i]:.1f}%',
+            #                ha='center', va='top', rotation=45)
             
             # Adjust y-axis limit to show all values with padding
             max_value = max(max(pred_percentages), max(gt_percentages))
@@ -2451,10 +2451,134 @@ def plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='
                     bbox_inches='tight', dpi=300)
     plt.close()
 
+def plot_invalid_percentages(results_dir: str, models: list[str]):
+    """Create a plot comparing invalid prediction percentages across models and datasets.
+    
+    Args:
+        results_dir (str): Directory containing results
+        models (list[str]): List of model names to compare
+    """
+    results = load_results(results_dir)
+    
+    # Get list of all subdatasets -- common ones
+    subdatasets = sorted(list(results[models[0]].keys()))
+    
+    # Dictionary mapping models to their invalid percentage keys
+    invalid_keys = {
+        'gpt4o': 'percentage_invalids',
+        'gpt4_1': 'percentage_invalids',
+        'openvla': 'invalid_percentage',
+        'pi0_base': 'invalid_predictions_percentage',
+        'pi0_fast': 'invalid_predictions_percentage'
+    }
+    
+    # Collect invalid percentages for each model
+    model_percentages = {model: [] for model in models}
+    
+    for model in models:
+        for dataset in subdatasets:
+            try:
+                if model in ['gpt4o', 'gpt4_1']:
+                    percentage = results[model][dataset][dataset][invalid_keys[model]]
+                elif model == 'openvla':
+                    if dataset in results[model][dataset]:
+                        percentage = results[model][dataset][dataset][invalid_keys[model]]
+                    else:
+                        percentage = results[model][dataset][invalid_keys[model]]
+                elif model == 'pi0_base':
+                    percentage = results[model][dataset][dataset][invalid_keys[model]]
+                elif model == 'pi0_fast':
+                    if dataset in results[model].keys():
+                        percentage = results[model][dataset][dataset][invalid_keys[model]]
+                    else:
+                        percentage = 0
+                model_percentages[model].append(percentage)
+            except (KeyError, TypeError):
+                model_percentages[model].append(0)
+                print(f"Missing data for {model} on {dataset}")
+
+    # Split datasets into groups of 4
+    datasets_per_subplot = 4
+    num_subplots = (len(subdatasets) + datasets_per_subplot - 1) // datasets_per_subplot
+
+    # Create figure with subplots and adjust spacing
+    fig = plt.figure(figsize=(15, 6*num_subplots))
+    # Add space at the top for the title and legend
+    gs = plt.GridSpec(num_subplots + 1, 1, height_ratios=[0.3] + [1]*num_subplots, hspace=0.2)
+    
+    # Create a special axes for the title and legend
+    title_ax = fig.add_subplot(gs[0])
+    title_ax.axis('off')  # Hide the axes
+    
+    # Create subplot axes
+    axs = [fig.add_subplot(gs[i+1]) for i in range(num_subplots)]
+
+    # Plot settings
+    bar_width = 0.15
+    opacity = 0.8
+
+    # Plot for each subplot
+    for subplot_idx in range(num_subplots):
+        ax = axs[subplot_idx]
+        
+        # Get the datasets for this subplot
+        start_idx = subplot_idx * datasets_per_subplot
+        end_idx = min(start_idx + datasets_per_subplot, len(subdatasets))
+        current_datasets = subdatasets[start_idx:end_idx]
+        
+        # Calculate x positions
+        x = np.arange(len(current_datasets))
+        
+        # Plot bars for each model
+        for i, model in enumerate(models):
+            # Get percentages for current datasets
+            current_percentages = model_percentages[model][start_idx:end_idx]
+            
+            # Plot bars
+            bars = ax.bar(x + i*bar_width, current_percentages, bar_width,
+                         alpha=opacity, color=COLORS[i], label=model)
+            
+            # Add value labels on top of bars
+            for idx, value in enumerate(current_percentages):
+                if value > 0:  # Only show non-zero values
+                    ax.text(x[idx] + i*bar_width, value,
+                           f'{value:.1f}%', ha='center', va='bottom',
+                           rotation=45, fontsize=16)
+        
+        # Customize subplot
+        ax.set_ylabel('Invalid Predictions (%)', fontsize=20)
+        ax.set_xticks(x + bar_width * (len(models)-1)/2)
+        ax.set_xticklabels(current_datasets, ha='right', fontsize=20)
+        ax.grid(True, axis='y', alpha=0.3)
+        ax.tick_params(axis='both', which='major', labelsize=16)
+        
+        # Set y-axis limits with padding
+        ax.set_ylim(0, max([max(model_percentages[model][start_idx:end_idx]) for model in models]) * 1.3)
+
+    # Add overall title
+    title_ax.text(0.5, 0.7, 'Invalid Prediction Percentages Across Models and Datasets',
+                 fontsize=24, ha='center', va='bottom')
+
+    # Create a single legend for all subplots
+    handles, labels = axs[0].get_legend_handles_labels()
+    title_ax.legend(handles, labels, 
+                   loc='center',
+                   bbox_to_anchor=(0.5, 0.2),
+                   ncol=len(models),
+                   fontsize=20)
+
+    # Save the plot
+    plt.savefig(os.path.join(results_dir, 'invalid_predictions_percentage_comparison.png'),
+                bbox_inches='tight', dpi=300)
+    plt.close()
+
 if __name__ == "__main__":
     results_dir = "src/v0_2results"
     models = ['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']
     
+    # Plot invalid prediction percentages
+    # plot_invalid_percentages(results_dir, models)
+
     # # Plot class frequency vs recall analysis
     # plot_class_frequency_vs_recall(results_dir, models)
     
@@ -2466,7 +2590,7 @@ if __name__ == "__main__":
     # # # Generate heatmap for macro recall scores
     # # plot_macro_recall_heatmap(results_dir, models)
     
-    # # Generate action distribution plots
+    # Generate action distribution plots
     # plot_action_distributions(results_dir, models)
     
     # # plot_dataset_specific_metrics(results_dir)
@@ -2480,7 +2604,7 @@ if __name__ == "__main__":
     # plot_model_metrics(results_dir, 'openvla') #Change model as needed
     # plot_dataset_specific_metrics(results_dir)
 
-    # plot_cross_model_classwise_comparison(results_dir, models)
+    plot_cross_model_classwise_comparison(results_dir, models)
 
     # calculate_classwise_metrics(results_dir, 'pi0_fast')
     # calculate_classwise_metrics(results_dir, 'gpt4o')
@@ -2519,12 +2643,12 @@ if __name__ == "__main__":
 
     # print_preds_gt_unique_value_counts(results_dir, models=models)
 
-    plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='macro', with_invalids=True)
-    plot_model_ranking_chart(results_dir, models, metric='precision', metric_type='macro', with_invalids=True)
-    plot_model_ranking_chart(results_dir, models, metric='f1', metric_type='macro', with_invalids=True)
-    plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='micro', with_invalids=False)
-    plot_model_ranking_chart(results_dir, models, metric='precision', metric_type='micro', with_invalids=False)
-    plot_model_ranking_chart(results_dir, models, metric='f1', metric_type='micro', with_invalids=False)
-    plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='micro', with_invalids=True)
-    plot_model_ranking_chart(results_dir, models, metric='precision', metric_type='micro', with_invalids=True)
-    plot_model_ranking_chart(results_dir, models, metric='f1', metric_type='micro', with_invalids=True)
+    # plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='macro', with_invalids=True)
+    # plot_model_ranking_chart(results_dir, models, metric='precision', metric_type='macro', with_invalids=True)
+    # plot_model_ranking_chart(results_dir, models, metric='f1', metric_type='macro', with_invalids=True)
+    # plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='micro', with_invalids=False)
+    # plot_model_ranking_chart(results_dir, models, metric='precision', metric_type='micro', with_invalids=False)
+    # plot_model_ranking_chart(results_dir, models, metric='f1', metric_type='micro', with_invalids=False)
+    # plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='micro', with_invalids=True)
+    # plot_model_ranking_chart(results_dir, models, metric='precision', metric_type='micro', with_invalids=True)
+    # plot_model_ranking_chart(results_dir, models, metric='f1', metric_type='micro', with_invalids=True)
