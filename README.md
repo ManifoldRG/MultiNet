@@ -14,7 +14,7 @@
   <a href="https://discord.gg/Rk4gAq5aYr"><img src="https://img.shields.io/badge/Contribute%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-7289DA?style=flat-square&logo=discord" alt="Contribute"></a>
 </p>
 
-### Multinet is a collaborative initiative with contributions from leading research teams at instituitions like:
+### MultiNet is a collaborative initiative with contributions from leading research teams at institutions like:
 
 <p align="center">
   
