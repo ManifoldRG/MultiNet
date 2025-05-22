@@ -1572,15 +1572,27 @@ def print_preds_gt_unique_value_counts(results_dir, datasets=None, models=None):
     plt.savefig(os.path.join(results_dir, 'normalized_brier_mae_comparison.png'))
     plt.close()
 
-def plot_cross_model_brier_mae(results_dir):
-    """Create a plot comparing Brier MAE across GPT-4o, GPT-4.1, OpenVLA, and PI0 Fast.
+def plot_cross_model_brier_mae(results_dir, metric_type='brier_mae'):
+    """Create a plot comparing different MAE metrics across GPT-4o, GPT-4.1, OpenVLA, and PI0 Fast.
     Split into 4 vertically stacked subplots with 4 datasets each.
     
     Args:
         results_dir (str): Directory containing results
+        metric_type (str): Type of metric to plot. One of:
+            - 'brier_mae'
+            - 'quantile_filtered_normalized_brier_mae'
+            - 'normalized_brier_mae'
+            - 'max_relative_mae'
     """
-    # Load results for all models
+    # Load results for all models and ensure consistent order with COLORS
     models = ['gpt4o', 'gpt4_1', 'openvla', 'pi0_fast']
+    model_colors = {
+        'gpt4o': COLORS[0],     # Red
+        'gpt4_1': COLORS[4],    # Purple
+        'openvla': COLORS[1],   # Yellow
+        'pi0_base': COLORS[2],  # Green
+        'pi0_fast': COLORS[3]   # Blue
+    }
     results = load_results(results_dir, models)
     
     # Get list of all subdatasets -- common ones
@@ -1589,14 +1601,37 @@ def plot_cross_model_brier_mae(results_dir):
     # Set width of bars and positions
     width = 0.2  # Slightly wider bars since we have 4 models
     
-    # Dictionary to map models to their Brier MAE keys
-    brier_mae_keys = {
-        'gpt4o': 'avg_dataset_amae',
-        'gpt4_1': 'avg_dataset_amae',
-        'openvla': 'avg_dataset_brier_mae',
-        'pi0_fast': 'avg_brier_mae'
+    # Dictionary to map models to their metric keys
+    metric_keys = {
+        'brier_mae': {
+            'gpt4o': 'avg_dataset_amae',
+            'gpt4_1': 'avg_dataset_amae',
+            'openvla': 'avg_dataset_brier_mae',
+            'pi0_fast': 'avg_brier_mae'
+        },
+        'quantile_filtered_normalized_brier_mae': {
+            'gpt4o': 'normalized_quantile_filtered_amae',
+            'gpt4_1': 'normalized_quantile_filtered_amae',
+            'openvla': 'average_quantile_filtered_normalized_brier_mae',
+            'pi0_fast': 'avg_quantile_filtered_normalized_brier_mae'
+        },
+        'normalized_brier_mae': {
+            'gpt4o': 'normalized_amae',
+            'gpt4_1': 'normalized_amae',
+            'openvla': 'average_normalized_brier_mae',
+            'pi0_fast': 'avg_normalized_brier_mae'
+        },
+        'max_relative_mae': {
+            'gpt4o': 'max_relative_mae',
+            'gpt4_1': 'max_relative_mae',
+            'openvla': 'max_rel_brier_mae',
+            'pi0_fast': 'max_rel_brier_mae'
+        }
     }
-    
+
+    # Get the appropriate keys for the selected metric
+    current_metric_keys = metric_keys[metric_type]
+
     # Split datasets into groups of 4
     datasets_per_subplot = 4
     num_subplots = (len(subdatasets) + datasets_per_subplot - 1) // datasets_per_subplot
@@ -1634,27 +1669,26 @@ def plot_cross_model_brier_mae(results_dir):
                 try:
                     # Handle different data structures for different models
                     if model in ['gpt4o', 'gpt4_1']:
-                        score = results[model][dataset][dataset][brier_mae_keys[model]]
+                        score = results[model][dataset][dataset][current_metric_keys[model]]
                     elif model == 'pi0_fast':
                         if dataset in results[model].keys():
-                            score = results[model][dataset][dataset][brier_mae_keys[model]]
+                            score = results[model][dataset][dataset][current_metric_keys[model]]
                         else:
                             score = 0  # or some other default value
                     else:  # openvla
                         if dataset in results[model][dataset]:
-                            score = results[model][dataset][dataset][brier_mae_keys[model]]
+                            score = results[model][dataset][dataset][current_metric_keys[model]]
                         else:
-                            score = results[model][dataset][brier_mae_keys[model]]
+                            score = results[model][dataset][current_metric_keys[model]]
                     model_scores.append(score)
                     all_scores.append(score)
                 except (KeyError, TypeError):
                     model_scores.append(0)
                     print(f"Missing data for {model} on {dataset}")
             
-            # Plot bars with error bars
+            # Plot bars with error bars using consistent colors
             bars = ax.bar(x + i*width, model_scores, width, 
-                         label=model, color=COLORS[i], alpha=0.8,
-                         edgecolor='black', linewidth=1)
+                         label=model, color=model_colors[model], alpha=0.8)
             
             # # Add value labels on top of bars
             # for idx, value in enumerate(model_scores):
@@ -1684,18 +1718,19 @@ def plot_cross_model_brier_mae(results_dir):
                 ax.plot((1 - d, 1 + d), (-d, +d), **kwargs)
         
         # Customize subplot
-        ax.set_ylabel('Brier MAE', fontsize=20)
+        metric_label = metric_type.replace('_', ' ').title()
+        ax.set_ylabel(metric_label, fontsize=20)
         ax.set_xticks(x + width * (len(models)-1)/2)
         ax.set_xticklabels(current_datasets, ha='right', fontsize=20)
         ax.grid(True, axis='y', alpha=0.3)
         ax.tick_params(axis='both', which='major', labelsize=20)
         
-        # Add light vertical lines to separate datasets
-        for i in x:
-            ax.axvline(i - width/2, color='gray', linestyle='-', alpha=0.1)
+        # # Add light vertical lines to separate datasets
+        # for i in x:
+        #     ax.axvline(i - width/2, color='gray', linestyle='-', alpha=0.1)
     
     # Add overall title
-    title_ax.text(0.5, 0.7, 'Model Brier MAE Comparison Across Subdatasets',
+    title_ax.text(0.5, 0.7, f'Model {metric_label} Comparison Across Subdatasets',
                  fontsize=24, ha='center', va='bottom')
 
     # Create a single legend for all subplots
@@ -1707,7 +1742,7 @@ def plot_cross_model_brier_mae(results_dir):
                    fontsize=20)
     
     # Save the plot
-    plt.savefig(os.path.join(results_dir, 'model_comparison_brier_mae.png'),
+    plt.savefig(os.path.join(results_dir, f'model_comparison_{metric_type}.png'),
                 bbox_inches='tight', dpi=300)
     plt.close()
 
@@ -2576,6 +2611,12 @@ if __name__ == "__main__":
     results_dir = "src/v0_2results"
     models = ['gpt4o', 'openvla', 'pi0_base', 'pi0_fast', 'gpt4_1']
     
+    # Plot all MAE metrics
+    # plot_cross_model_brier_mae(results_dir, metric_type='brier_mae')
+    # plot_cross_model_brier_mae(results_dir, metric_type='quantile_filtered_normalized_brier_mae')
+    # plot_cross_model_brier_mae(results_dir, metric_type='normalized_brier_mae')
+    # plot_cross_model_brier_mae(results_dir, metric_type='max_relative_mae')
+
     # Plot invalid prediction percentages
     # plot_invalid_percentages(results_dir, models)
 
@@ -2595,16 +2636,7 @@ if __name__ == "__main__":
     
     # # plot_dataset_specific_metrics(results_dir)
 
-    # # Generate Brier MAE comparison plot
-    # plot_cross_model_brier_mae(results_dir)
-
-    # plot_model_metrics(results_dir, 'pi0_fast') #Change model as needed
-    # plot_model_metrics(results_dir, 'gpt4o') #Change model as needed
-    # plot_model_metrics(results_dir, 'gpt4_1') #Change model as needed
-    # plot_model_metrics(results_dir, 'openvla') #Change model as needed
-    # plot_dataset_specific_metrics(results_dir)
-
-    plot_cross_model_classwise_comparison(results_dir, models)
+    # plot_cross_model_classwise_comparison(results_dir, models)
 
     # calculate_classwise_metrics(results_dir, 'pi0_fast')
     # calculate_classwise_metrics(results_dir, 'gpt4o')
