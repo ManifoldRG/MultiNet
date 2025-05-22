@@ -8,9 +8,12 @@
   <a href="https://discord.gg/Rk4gAq5aYr">Discord</a>
 </p>
 
-MultiNet project uses the framework called **GenESIS**: **Gen**eralizable and **E**xtendable **S**tratified **I**nference **S**ystem to adapt a wide range of models into multiple types of tasks or datasets for scaling effectively while reducing the engineering efforts as much as possible. The core insights of GenESIS are 1) <u>Interchangeability</u>: Any models or datasets should interchangeably support each other, 2) <u>Abstraction</u>: Each module should share the same architecture and logic to enable the user to understand and test each module easily, and 3) <u>Encapsulation</u>: The programmer does not have to know the details on other modules and is allowed to concentrate on the models or datasets that are targeted. In this way, any models or datasets can easily be added to the MultiNet benchmark without affecting the existing implementations.
+The MultiNet project is built upon GenESIS (Generalizable and Extendable Stratified Inference System), a modular framework made to streamline the integration of diverse AI models across a multitude of tasks and datasets. It allows new models and datasets to be added to the MultiNet benchmark efficiently and without disrupting existing components. At its core, GenESIS aims to maximize scalability and engineering efficiency through the following principles:
+* <u>Interchangeability</u>: Models and datasets are designed to be mutually supportive and easily swappable.
+* <u>Abstraction</u>: Common architectural patterns and logic are shared across modules, simplifying development, understanding, and testing. This is significantly advanced by the use of base module classes.
+* <u>Encapsulation</u>: Developers can concentrate on their specific model or dataset without requiring deep knowledge of unrelated modules.
 
-GenESIS has evolved to provide more robust support for various evaluation workflows, including both traditional iterative evaluation and asynchronous batch processing, particularly leveraging modern API capabilities like OpenAI's Batch API. This is facilitated by a refined architecture built upon base module classes.
+The latest version of GenESIS features base module classes, which improves maintainability and reduces the overhead engineering time needed to evaluate future dataset additions. It also adds batch inference capability, which reduces chance of process failure during evaluation, and vastly increases evaluation speed.
 
 <img src="../../assets/framework-figure.png" alt="The figure of the inference framework."/>
 
@@ -209,3 +212,12 @@ These are the main variables and functions that each module type should support 
 <br/>
 
 ---
+
+## Contributing
+
+We welcome contributions to the GenESIS framework and the MultiNet project! If you'd like to contribute, please feel free to:
+
+1.  **Open an Issue:** For bug reports, feature requests, or discussions about potential changes, please open an issue on our GitHub repository.
+2.  **Submit a Pull Request:** If you've made improvements or added new features, please submit a pull request. We will review it.
+
+We appreciate any help in improving Multinet! If you find any part of the codebase confusing or unclear, please don't hesitate to reach out by opening an issue—it helps us improve documentation and code clarity for everyone.
