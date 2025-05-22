@@ -1,11 +1,12 @@
 # GenESIS: Generalizable Extendable Stratified Inference System
 
 <p align="center">
-  <a href="https://multinet.ai">Website</a> •
-  <a href="https://multinet.ai/static/pdfs/Benchmarking%20Vision%20Language%20Action%20Models.pdf">Paper</a> •
-  <a href="https://multinet.ai/static/pdfs/MultiNet%20Dataset%20Spec%20Paper.pdf">Dataset Spec</a> •
-  <a href="https://github.com/ManifoldRG/MultiNet/">Multinet</a> •
-  <a href="https://discord.gg/Rk4gAq5aYr">Discord</a>
+  <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/Website-blue?style=flat-square&logo=googlechrome" alt="Website"></a> 
+  <a href="https://arxiv.org/abs/2505.05540"><img src="https://img.shields.io/badge/Multinet%20v0.2%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.2 paper"></a> 
+  <a href="https://arxiv.org/abs/2411.05821"><img src="https://img.shields.io/badge/Multinet%20v0.1%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.1 paper"></a> 
+  <a href="https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf"><img src="https://img.shields.io/badge/Dataset%20Spec-green?style=flat-square&logo=readthedocs" alt="Dataset Spec paper"></a> 
+  <a href="https://github.com/ManifoldRG/MultiNet/tree/main/src/modules"><img src="https://img.shields.io/badge/GenESIS%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-blueviolet?style=flat-square&logo=github" alt="GenESIS framework"></a> 
+  <a href="https://discord.gg/Rk4gAq5aYr"><img src="https://img.shields.io/badge/Contribute%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-7289DA?style=flat-square&logo=discord" alt="Contribute"></a>
 </p>
 
 The MultiNet project is built upon GenESIS (Generalizable and Extendable Stratified Inference System), a modular framework made to streamline the integration of diverse AI models across a multitude of tasks and datasets. It allows new models and datasets to be added to the MultiNet benchmark efficiently and without disrupting existing components. At its core, GenESIS aims to maximize scalability and engineering efficiency through the following principles:
@@ -45,16 +46,7 @@ GenESIS consists of three hierarchical components called "modules". As we move f
         * `OpenXModule` (`src/modules/dataset_modules/openx_module.py`): Handles OpenX datasets, using OpenXDataloader, calculating MSE and success rates. It implements both streaming evaluation (as `OpenXModule`) and batch API-based evaluation (as `OpenXBatchModule`).
         * `ProcgenModule` (`src/modules/dataset_modules/procgen_module.py`): Manages Procgen environments, supporting discrete action spaces and calculating metrics like Brier scores and F1-scores. It also implements both streaming (`ProcGenModule`) and batch (`ProcGenBatchModule`) patterns.
 
-2.  **Modality Module**: Connects dataset and source modules, handling data conversion across modalities (images, texts, arrays, etc.).
-    * **Responsibilities (not limited to):**
-        * Converting data from the dataset module into types the source module can handle, tagging data for clarity.
-        * Converting model output from the source module back to its original type for evaluation by the dataset module.
-    * **Example:**
-        * `VLMModule` (`src/modules/modality_modules/vlm_module.py`): Processes image and text data. For other data types, it typically converts them to strings. It supports:
-            * Synchronous inference via `infer_step`.
-            * Asynchronous batch job management by wrapping source module capabilities, offering methods like `send_batch_job` (to submit a job and get a `batch_job_id`), `get_batch_job_status`, and `retrieve_batch_results`. These are used by `DatasetBatchModule` implementations.
-
-3.  **Source Module**: Contains the actual AI model or API client to generate outputs.
+2.  **Source Module**: Contains the actual AI model or API client to generate outputs.
     * **Responsibilities (not limited to):**
         * Executing the inference step to generate model output.
         * Managing multi-turn context (updating context memory, ensuring inputs fit within model context window).
@@ -66,6 +58,15 @@ GenESIS consists of three hierarchical components called "modules". As we move f
             * Manages concurrent prompt histories (via an `idx` parameter in methods like `add_data`) to support batch operations efficiently.
             * Includes mechanisms for token calculation (text and image) and context truncation.
             * Tracks token usage against daily limits for batch queue operations.
+
+3.  **Modality Module**: Connects dataset and source modules, handling data conversion across modalities (images, texts, arrays, etc.).
+    * **Responsibilities (not limited to):**
+        * Converting data from the dataset module into types the source module can handle, tagging data for clarity.
+        * Converting model output from the source module back to its original type for evaluation by the dataset module.
+    * **Example:**
+        * `VLMModule` (`src/modules/modality_modules/vlm_module.py`): Processes image and text data. For other data types, it typically converts them to strings. It supports:
+            * Synchronous inference via `infer_step`.
+            * Asynchronous batch job management by wrapping source module capabilities, offering methods like `send_batch_job` (to submit a job and get a `batch_job_id`), `get_batch_job_status`, and `retrieve_batch_results`. These are used by `DatasetBatchModule` implementations.
 
 <br>
 
