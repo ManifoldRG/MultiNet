@@ -1285,10 +1285,13 @@ def calculate_confusion_matrices_and_mcc(results_dir: str, models: list[str]):
                 # Row normalize the confusion matrix for plotting (can reuse cm_normalized_for_percentages)
                 sns.heatmap(cm_normalized_for_percentages, annot=True, fmt='.2f', cmap='YlOrRd',
                            xticklabels=[str(a) for a in valid_actions], # Use stringified valid_actions for labels
-                           yticklabels=[str(a) for a in valid_actions])
-                plt.title(f'Confusion Matrix for {model} on {dataset}\nMCC: {mcc:.3f}')
-                plt.xlabel('Predicted')
-                plt.ylabel('True')
+                           yticklabels=[str(a) for a in valid_actions],
+                           annot_kws={'size': 14})
+                plt.title(f'Confusion Matrix for {model} on {dataset}\nMCC: {mcc:.3f}', fontsize=20)
+                plt.xlabel('Predicted', fontsize=20)
+                plt.ylabel('True', fontsize=20)
+                plt.xticks(fontsize=20)
+                plt.yticks(fontsize=20)
                 plt.tight_layout()
                 plt.savefig(os.path.join(results_dir, f'confusion_matrix_{model}_{dataset}.png'))
                 plt.close()
@@ -1320,11 +1323,14 @@ def calculate_confusion_matrices_and_mcc(results_dir: str, models: list[str]):
             row_sums[row_sums == 0] = 1 
             union_cm_normalized = union_cm.astype('float') / row_sums
             sns.heatmap(union_cm_normalized, annot=True, fmt='.2f', cmap='YlOrRd',
-                       xticklabels=[str(a) for a in union_labels], # Use stringified union_labels
-                       yticklabels=[str(a) for a in union_labels])
-            plt.title(f'Union Confusion Matrix for {model}\nMCC: {union_mcc:.3f}')
-            plt.xlabel('Predicted')
-            plt.ylabel('True')
+                       xticklabels=[str(a) for a in union_labels],
+                       yticklabels=[str(a) for a in union_labels],
+                       annot_kws={'size': 14})
+            plt.title(f'Union Confusion Matrix for {model}\nMCC: {union_mcc:.3f}', fontsize=20)
+            plt.xlabel('Predicted', fontsize=20)
+            plt.ylabel('True', fontsize=20)
+            plt.xticks(fontsize=20)
+            plt.yticks(fontsize=20)
             plt.tight_layout()
             plt.savefig(os.path.join(results_dir, f'union_confusion_matrix_{model}.png'))
             plt.close()
@@ -1719,7 +1725,7 @@ def plot_cross_model_brier_mae(results_dir, metric_type='brier_mae'):
         
         # Customize subplot
         metric_label = metric_type.replace('_', ' ').title()
-        ax.set_ylabel(metric_label, fontsize=20)
+        ax.set_ylabel("Brier MAE", fontsize=20)
         ax.set_xticks(x + width * (len(models)-1)/2)
         ax.set_xticklabels(current_datasets, ha='right', fontsize=20)
         ax.grid(True, axis='y', alpha=0.3)
@@ -1865,10 +1871,10 @@ def plot_action_distributions(results_dir: str, models: list[str]):
                     linewidth=3, zorder=5)  # Increased line width and zorder
             
             # Customize the plot
-            plt.xlabel('Action Class')
-            plt.ylabel('Percentage of Total Actions (%)')
-            plt.title(f'Aggregated Action Distribution Comparison for {model}\nAcross All Datasets')
-            plt.xticks(x, [str(a) for a in all_actions])
+            plt.xlabel('Action Class', fontsize=20)
+            plt.ylabel('Percentage of Total Actions (%)', fontsize=20)
+            plt.title(f'Aggregated Action Distribution Comparison for {model}\nAcross All Datasets', fontsize=24)
+            plt.xticks(x, [str(a) for a in all_actions], fontsize=20)
             
             # # Add value labels
             # for i in range(len(all_actions)):
@@ -1889,7 +1895,7 @@ def plot_action_distributions(results_dir: str, models: list[str]):
             plt.grid(True, axis='y', alpha=0.3)
             
             # Place legend inside the plot at the top right corner
-            plt.legend(loc='upper right', fontsize=14)
+            plt.legend(loc='upper right', fontsize=20)
             
             # Adjust layout and save
             plt.tight_layout()
@@ -1903,6 +1909,7 @@ def plot_action_distributions(results_dir: str, models: list[str]):
 
 def plot_macro_recall_violin(results_dir: str, models: list[str]):
     """Create violin plots showing the distribution of macro recall scores across datasets for each model.
+    Optimized for research paper with 2-column layout.
     
     Args:
         results_dir (str): Directory containing results
@@ -1941,65 +1948,43 @@ def plot_macro_recall_violin(results_dir: str, models: list[str]):
                 model_scores[model].append(0)
                 print(f"Missing data for {model} on {dataset}")
     
-    # Create figure with extra space on right for stats
-    plt.figure(figsize=(15, 8))  # Made figure wider to accommodate stats
+    # Create figure optimized for 2-column layout
+    plt.figure(figsize=(7, 5))  # Adjusted for typical 2-column width
     
-    # Create violin plots
+    # Create violin plots with increased width
     violin_parts = plt.violinplot([model_scores[model] for model in models],
-                                showmeans=True, showmedians=True)
+                                showmeans=True, showmedians=True,
+                                widths=0.8)  # Increased width for better visibility
     
-    # Customize violin colors
+    # Customize violin colors with higher contrast
     for i, pc in enumerate(violin_parts['bodies']):
         pc.set_facecolor(COLORS[i])
-        pc.set_alpha(0.7)
+        pc.set_alpha(0.8)  # Increased opacity
     
-    # Customize mean and median lines
+    # Customize mean and median lines for better visibility
     violin_parts['cmeans'].set_color('black')
+    violin_parts['cmeans'].set_linewidth(2)
     violin_parts['cmedians'].set_color('red')
+    violin_parts['cmedians'].set_linewidth(2)
     
-    # Add individual points in black
+    # Add individual points with smaller size
     for i, model in enumerate(models):
-        # Add jittered points
         x = np.random.normal(i + 1, 0.04, size=len(model_scores[model]))
-        plt.scatter(x, model_scores[model], alpha=0.4, color='black', s=30)
-    
-    # Calculate and display statistics
-    for i, model in enumerate(models):
-        scores = model_scores[model]
-        mean = np.mean(scores)
-        median = np.median(scores)
-        std = np.std(scores)
-        
-        # Position text differently for OpenVLA
-        x_pos = i + 1 + 0.3  # Slightly to the right of the violin
-        if model == 'openvla':
-            y_pos = min(scores) - 0.01  # Below the violin for OpenVLA
-            v_align = 'top'  # Align text to top when below violin
-        else:
-            y_pos = max(scores) + 0.01  # Above the violin for others
-            v_align = 'bottom'  # Align text to bottom when above violin
-        
-        # Add text annotations with clean formatting and white background
-        plt.text(x_pos, y_pos,
-                f'μ={mean:.2f}, m={median:.2f}, σ={std:.2f}',
-                horizontalalignment='right',
-                verticalalignment=v_align,
-                fontsize=12,
-                bbox=dict(facecolor='white', alpha=0.8, edgecolor='none', pad=1))
+        plt.scatter(x, model_scores[model], alpha=0.4, color='black', s=15)
     
     # Customize plot
-    plt.title('Distribution of Macro Recall Scores Across Datasets', fontsize=14, pad=20)
-    plt.ylabel('Macro Recall Score', fontsize=12)
-    plt.xticks(range(1, len(models) + 1), models, rotation=45)
-    plt.grid(True, axis='y', alpha=0.3)
+    plt.title('Distribution of Macro Recall Scores', fontsize=11, pad=10)
+    plt.ylabel('Macro Recall Score', fontsize=10)
+    plt.xticks(range(1, len(models) + 1), models, ha='right', fontsize=10)
+    plt.grid(True, axis='y', alpha=0.3, linestyle='--')
     
-    # Adjust x-axis limits to make room for stats
-    plt.xlim(0.5, len(models) + 1.5)
+    # Adjust y-axis for better data visibility
+    plt.ylim(0, max([max(scores) for scores in model_scores.values()]) * 1.1)
     
-    # Adjust layout to prevent text cutoff
+    # Adjust layout
     plt.tight_layout()
     
-    # Save plot
+    # Save plot with high DPI for publication quality
     plt.savefig(os.path.join(results_dir, 'macro_recall_violin_plot.png'),
                 bbox_inches='tight', dpi=300)
     plt.close()
@@ -2303,15 +2288,15 @@ def plot_class_frequency_vs_recall(results_dir: str, models: list[str]):
         plt.plot(x_trend, p(x_trend), color=COLORS[i], linestyle='--', alpha=0.5)
     
     # Customize plot
-    plt.xlabel('Ground Truth Class Frequency (%)', fontsize=16)
-    plt.ylabel('Recall', fontsize=16)
-    plt.title('Class Frequency vs Recall by Model', fontsize=20)
+    plt.xlabel('Ground Truth Class Frequency (%)', fontsize=20)
+    plt.ylabel('Recall', fontsize=20)
+    plt.title('Class Frequency vs Recall by Model', fontsize=24)
     
     # Add grid
     plt.grid(True, alpha=0.3)
     
     # Place legend inside the plot
-    plt.legend(loc='upper right', fontsize=14)
+    plt.legend(loc='upper right', fontsize=20)
     
     # Add hover annotations
     for model, data in model_points.items():
@@ -2649,13 +2634,17 @@ if __name__ == "__main__":
     # plot_pi0_action_distribution_comparison(results_dir)
 
     # # # Generate violin plot for macro recall distribution
-    # # plot_macro_recall_violin(results_dir, models)
+    plot_macro_recall_violin(results_dir, models)
     
     # # # Generate heatmap for macro recall scores
     # # plot_macro_recall_heatmap(results_dir, models)
     
     # Generate action distribution plots
     # plot_action_distributions(results_dir, models)
+
+
+    # Calculate confusion matrices and MCC
+    # calculate_confusion_matrices_and_mcc(results_dir, models)
     
     # # plot_dataset_specific_metrics(results_dir)
 
@@ -2685,9 +2674,6 @@ if __name__ == "__main__":
 
     # Generate comparative plots
     # plot_cross_model_classwise_comparison(results_dir, models)
-    
-    # # # Calculate confusion matrices and MCC
-    # calculate_confusion_matrices_and_mcc(results_dir, models)
 
     # # # # Generate heatmaps for each metric
     # # # for metric in ['f1', 'precision', 'recall']:
@@ -2698,7 +2684,7 @@ if __name__ == "__main__":
 
     # print_preds_gt_unique_value_counts(results_dir, models=models)
 
-    plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='macro', with_invalids=True)
+    # plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='macro', with_invalids=True)
     # plot_model_ranking_chart(results_dir, models, metric='precision', metric_type='macro', with_invalids=True)
     # plot_model_ranking_chart(results_dir, models, metric='f1', metric_type='macro', with_invalids=True)
     # plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='micro', with_invalids=False)

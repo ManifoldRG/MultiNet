@@ -401,8 +401,8 @@ def plot_dataset_samples_by_entropy(results_dir: str, datasets: list[str]):
                     img, entropy, dataset = samples_grid[i][j]
                     ax = fig.add_subplot(inner_gs[0, j])
                     ax.imshow(img)
-                    ax.set_title(f"{dataset}\nShannon entropy: {entropy:.2f}", 
-                               fontsize=16,  # Increased font size
+                    ax.set_title(f"{dataset}\nentropy: {entropy:.2f}", 
+                               fontsize=20,  # Increased font size
                                pad=8)  # Slightly reduced padding
                     ax.axis('off')
                     
@@ -418,8 +418,8 @@ def plot_dataset_samples_by_entropy(results_dir: str, datasets: list[str]):
                             cax=cax, orientation='horizontal',
                             aspect=40)  # Keep colorbar thin
             if i == n_rows - 1:  # Only label the last row's colorbar
-                cb.set_label('Entropy', fontsize=16)  # Increased from 8 to 16
-            cb.ax.tick_params(labelsize=16)  # Increased from 6 to 16
+                cb.set_label('Entropy', fontsize=20)  # Increased from 8 to 16
+            cb.ax.tick_params(labelsize=20)  # Increased from 6 to 16
     
     plt.tight_layout()
     plt.savefig(f"{results_dir}/dataset_samples_by_entropy.png", dpi=300, bbox_inches='tight')
