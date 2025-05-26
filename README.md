@@ -1,6 +1,6 @@
 <p align="center">
   <kbd>
-  <img src="assets/multinet_logo_square copy.png" alt="Multinet Logo" style="height:200px; border-radius:50%;">
+  <img src="assets/anonymized_logo.jpg" alt="Multinet Logo" style="height:200px; border-radius:50%;">
   <h1 align="center" style="display: inline-block; vertical-align: middle; margin-left: 20px;">MultiNet: A Generalist Benchmark for Multimodal Action models</h1>
   </kbd>
 </p>
@@ -18,26 +18,7 @@
 
 <p align="center">
   
-  <a href="https://www.manifoldrg.com/" target="_blank">
-    <kbd>
-    <img src="assets/manifold_logo_square.png" alt="Manifold Research Logo" height="40">
-    </kbd>
-  </a>
-  <a href="https://www.mit.edu/" target="_blank">
-    <kbd>
-    <img src="assets/mitlogo.jpg" alt="MIT Logo" height="40">
-    </kbd>
-  </a>
-  <a href="https://metarch.ai/" target="_blank">
-    <kbd>
-    <img src="assets/metarchlogo.jpg" alt="Metarch.ai Logo" height="40">
-    </kbd>
-  </a>
-  <a href="https://www.gatech.edu/" target="_blank">
-    <kbd>
-    <img src="assets/gtlogo_alt.png" alt="Georgia Tech Logo" style="height:40px; border-radius:50%;">
-    </kbd>
-  </a>
+XXXX
 </p>
 
 ## 📢 Updates
@@ -60,13 +41,13 @@ Also related to the MultiNet effort is <a href="https://github.com/eihli/mugato"
 <br>
 
 <p align="center">
-  <img src="assets/v0_2_visual.jpg" alt="Multinet v0.2 Figure" style="width: 700px; height: auto; vertical-align: middle;">
+  <img src="assets/anonymized_v0_1_visual.jpg" alt="Multinet v0.2 Figure" style="width: 700px; height: auto; vertical-align: middle;">
 </p>
 
 <br>
 
 <p align="center">
-  <img src="assets/Multinet v0.1 release visual 3.0.png" alt="Multinet Figure" style="width: 700px; height: auto; vertical-align: middle;">
+  <img src="assets/anonymized_v0_1_visual.jpg" alt="Multinet Figure" style="width: 700px; height: auto; vertical-align: middle;">
 </p>
 
 ## 🚀 Getting Started
