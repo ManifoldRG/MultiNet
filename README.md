@@ -205,7 +205,8 @@ Here are steps to follow to evaluate your team's model on Multinet data and subm
 
 If you use MultiNet in your research, please cite our work:
 
-```bibtex
+XXXX
+<!-- ```bibtex
 
 Multinet v0.2 - Benchmarking Vision, Language, & Action Models in Procedurally Generated, Open Ended Action Environments
 
@@ -238,8 +239,8 @@ Multinet Vision and Dataset specification
       title={Benchmarking Vision, Language, & Action Models on Robotic Learning Tasks},
       DOI={10.20944/preprints202411.0494.v1},
       year={2024},
-      }    
+      }
 
 ```
 
-
+ -->
