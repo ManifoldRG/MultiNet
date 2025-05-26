@@ -7,7 +7,7 @@ from typing import Optional
 
 current_file = Path(__file__).resolve()
 project_root = next(
-    (p for p in current_file.parents if p.name == "MultiNet"),
+    (p for p in current_file.parents if p.name == "OurFramework-D6D3"),
     current_file.parent
 )
 sys.path.append(str(project_root))
