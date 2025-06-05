@@ -834,16 +834,16 @@ def plot_cross_model_classwise_comparison(results_dir: str, models: list[str], w
         actions_per_subplot = (total_actions + 2) // 3  # Round up division to ensure all actions are covered
         
         # Create figure with subplots and adjust spacing
-        fig = plt.figure(figsize=(15, 18))  # Increased height for 3 subplots
+        fig = plt.figure(figsize=(20, 24))  # Increased figure size
         # Add space at the top for the title and legend
-        gs = plt.GridSpec(4, 1, height_ratios=[0.3, 1, 1, 1], hspace=0.2)  # Reduced height ratio for title/legend from 0.5 to 0.1
+        gs = plt.GridSpec(4, 1, height_ratios=[0.4, 1, 1, 1], hspace=0.3)  # Increased spacing between subplots
         
         # Create a special axes for the title and legend
         title_ax = fig.add_subplot(gs[0])
         title_ax.axis('off')  # Hide the axes
         
         # Create subplot axes
-        axs = [fig.add_subplot(gs[i+1]) for i in range(3)]  # Always 3 subplots
+        axs = [fig.add_subplot(gs[i+1]) for i in range(3)]
 
         # Plot for each subplot
         for subplot_idx in range(3):
@@ -862,12 +862,24 @@ def plot_cross_model_classwise_comparison(results_dir: str, models: list[str], w
             
             # Calculate y-axis limits for this subplot first
             all_values = []
+            max_with_error = 0  # Track maximum value including error bars
             for model in models:
                 values = []
                 for action in current_actions:
                     vals = action_class_metrics[action][model][metric_key]
                     values.extend(vals)
                 all_values.extend(values)
+                
+                # Calculate max value including error bars for this model
+                averages = []
+                stds = []
+                for action in current_actions:
+                    values = action_class_metrics[action][model][metric_key]
+                    averages.append(np.mean(values))
+                    stds.append(np.std(values))
+                if averages:  # Only if we have values
+                    max_val_with_error = max(v + s for v, s in zip(averages, stds))
+                    max_with_error = max(max_with_error, max_val_with_error)
             
             non_zero_values = [v for v in all_values if v > 0]
             if non_zero_values:
@@ -875,8 +887,12 @@ def plot_cross_model_classwise_comparison(results_dir: str, models: list[str], w
                 y_max = max(all_values)
                 # Start y-axis from 20% below the minimum non-zero value
                 y_min = max(0, y_min - (y_max - y_min) * 0.2)
-                # Add 30% padding above maximum value
-                y_max = y_max + (y_max - y_min) * 0.3
+                
+                # Set y_max to ensure max error bar is at about 2/3 of plot height
+                # First calculate the required y_max that would put max_with_error at 2/3 height
+                required_y_max = max_with_error / 0.8  # 2/3 = 0.67
+                # Add some padding above that
+                y_max = required_y_max * 1.1  # 10% padding above the 2/3 point
             else:
                 y_min, y_max = 0, 1  # Default range if no non-zero values
             
@@ -894,6 +910,26 @@ def plot_cross_model_classwise_comparison(results_dir: str, models: list[str], w
                 bars = ax.bar(x + i*bar_width, averages, bar_width,
                            label=model, color=COLORS[i], alpha=0.7,
                            yerr=stds, capsize=5)
+                
+                # Add value labels on top of bars
+                for idx, (value, std) in enumerate(zip(averages, stds)):
+                    if value > 0:  # Only show non-zero values
+                        # Calculate label position
+                        label_height = value + std
+                        if label_height > y_max * 0.85:  # If label would be too close to top
+                            label_height = value - std  # Place label below error bar
+                            va = 'bottom'
+                        else:
+                            va = 'bottom'
+                        
+                        # Add white background to text for better readability
+                        ax.text(x[idx] + i*bar_width, label_height,
+                               f'{value:.2f}',
+                               ha='center',
+                               va=va,
+                               fontsize=20,
+                               rotation=45,
+                               bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, pad=0.5))
             
             # Set y-axis limits
             ax.set_ylim(y_min, y_max)
@@ -906,18 +942,24 @@ def plot_cross_model_classwise_comparison(results_dir: str, models: list[str], w
                 ax.plot((1 - d, 1 + d), (-d, +d), **kwargs)
             
             # Customize subplot
-            ax.set_ylabel(f'Average {metric_name}', fontsize=20)
+            ax.set_ylabel(f'Average {metric_name}', fontsize=32)
             ax.set_xticks(x + bar_width * (len(models)-1)/2)
-            ax.set_xticklabels([str(a) for a in current_actions], ha='right', fontsize=20)
+            ax.set_xticklabels([str(a) for a in current_actions], ha='right', fontsize=28)
             ax.grid(True, axis='y', alpha=0.3)
-            ax.tick_params(axis='both', which='major', labelsize=16)
+            ax.tick_params(axis='both', which='major', labelsize=28)
             
-            # Format y-axis ticks to show more decimal places
-            ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.3f'))
+            # Make spines thicker
+            ax.spines['left'].set_linewidth(2)
+            ax.spines['bottom'].set_linewidth(2)
+            ax.spines['right'].set_linewidth(2)
+            ax.spines['top'].set_linewidth(2)
+            
+            # Format y-axis ticks to show two decimal places
+            ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.2f'))  # Changed from %.3f to %.2f
         
         # Add overall title
         title_ax.text(0.5, 0.7, f'Average {metric_name} per Action Class Across All Datasets',
-                     fontsize=24, ha='center', va='bottom')
+                     fontsize=36, ha='center', va='bottom')  # Increased font size
 
         # Create a single legend for all subplots
         handles, labels = axs[0].get_legend_handles_labels()
@@ -925,10 +967,12 @@ def plot_cross_model_classwise_comparison(results_dir: str, models: list[str], w
                        loc='center',
                        bbox_to_anchor=(0.5, 0.2),
                        ncol=len(models),
-                       fontsize=20)
+                       fontsize=32,  # Increased font size
+                       handlelength=1.5,  # Increased handle length
+                       columnspacing=1.0)  # Increased spacing between columns
         
         plt.savefig(os.path.join(results_dir, f'action_class_comparison_{metric_key}.png'),
-                    bbox_inches='tight', dpi=300)
+                    bbox_inches='tight', dpi=600)  # Increased DPI
         plt.close()
 
 def plot_action_difficulty_heatmap(results_dir: str, models: list[str], metric: str = 'f1'):
@@ -2406,10 +2450,10 @@ def plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='
                 model_scores[model].append(0)
 
     # Create figure with extra space at top for title and legend
-    fig = plt.figure(figsize=(20, 12))  # Increased height for legend space
+    fig = plt.figure(figsize=(12, 7))  # Reduced height since we need less space for legend
     
-    # Create two subplots with appropriate height ratios - reduced space for legend
-    gs = plt.GridSpec(2, 1, height_ratios=[0.6, 4], hspace=0.2)  # Reduced top ratio and hspace
+    # Create two subplots with appropriate height ratios
+    gs = plt.GridSpec(2, 1, height_ratios=[0.4, 4], hspace=0.2)  # Reduced top ratio and spacing
     
     # Create top subplot for title and legend
     ax_top = fig.add_subplot(gs[0])
@@ -2432,66 +2476,68 @@ def plot_model_ranking_chart(results_dir, models, metric='recall', metric_type='
     # Plot lines connecting rankings
     x = np.arange(len(subdatasets))
     legend_handles = []
+    
+    # Plot points and lines
     for i, model in enumerate(models):
-        # Get rankings for this model
         model_rankings = [rankings[j][model] for j in range(len(subdatasets))]
         
         # Plot line
         line = ax_main.plot(x, model_rankings, '-', color=COLORS[i], linewidth=3, alpha=0.7)[0]
         
         # Plot points
-        scatter = ax_main.scatter(x, model_rankings, s=200, color=COLORS[i], label=model, zorder=5)
+        scatter = ax_main.scatter(x, model_rankings, s=150, color=COLORS[i], label=model, zorder=5)
         legend_handles.append(scatter)
-        
-        # Add model scores as annotations
-        for j, (rank, score) in enumerate(zip(model_rankings, model_scores[model])):
-            ax_main.annotate(f'{score:.2f}', 
-                         (x[j], rank),
-                         xytext=(0, 10), 
-                         textcoords='offset points',
-                         ha='center',
-                         va='bottom',
-                         fontsize=14)
 
     # Customize main plot
     ax_main.invert_yaxis()  # Invert y-axis so rank 1 is at the top
     ax_main.grid(True, alpha=0.3)
-    ax_main.set_xlabel('Dataset', fontsize=18)
-    ax_main.set_ylabel('Rank', fontsize=18)
+    ax_main.set_ylabel('Rank', fontsize=24)  # Kept only y-axis label
     
     # Remove top and right spines
     ax_main.spines['top'].set_visible(False)
     ax_main.spines['right'].set_visible(False)
     
+    # Make remaining spines thicker
+    ax_main.spines['left'].set_linewidth(2)
+    ax_main.spines['bottom'].set_linewidth(2)
+    
     # Add title to top subplot
     title = f'Model Rankings by {metric_type.capitalize()} {metric.capitalize()}'
     if not with_invalids:
         title += ' (Without Invalids)'
-    ax_top.text(0.5, 0.6, title, fontsize=22, ha='center', va='bottom')  # Adjusted y position
+    ax_top.text(0.5, 0.9, title, fontsize=28, ha='center', va='bottom')  # Moved title higher up
     
-    # Add legend to top subplot - adjusted position
+    # Add legend to top subplot in one line
     ax_top.legend(legend_handles, models,
                  loc='center',
-                 bbox_to_anchor=(0.5, 0.1),  # Adjusted y position
-                 ncol=len(models),
-                 fontsize=18)
+                 bbox_to_anchor=(0.5, 0.1),  # Kept legend position lower
+                 ncol=len(models),  # All models in one line
+                 fontsize=20,  # Reduced font size
+                 columnspacing=0.8,  # Reduced spacing between columns
+                 handletextpad=0.5)  # Reduced space between handle and text
     
-    # Set x-axis labels
+    # Set x-axis labels with 45-degree rotation
     ax_main.set_xticks(x)
     ax_main.set_xticklabels(subdatasets, rotation=45, ha='right', fontsize=16)
     
-    # Set y-axis ticks
-    ax_main.set_yticks(range(1, len(models) + 1))
-    ax_main.tick_params(axis='both', which='major', labelsize=16)
+    # Add some padding at the bottom for rotated labels
+    plt.subplots_adjust(bottom=0.2)  # Add space for rotated labels
     
-    # Adjust layout and save
+    # Set y-axis ticks with smaller font
+    ax_main.set_yticks(range(1, len(models) + 1))
+    ax_main.tick_params(axis='both', which='major', labelsize=20)
+    
+    # Make tick marks thicker and longer
+    ax_main.tick_params(axis='both', which='major', width=2, length=10)
+    
+    # Adjust layout and save with higher DPI
     plt.tight_layout()
     if with_invalids:
         plt.savefig(os.path.join(results_dir, f'model_ranking_{metric_type}_{metric_key}_with_invalids.png'),
-                    bbox_inches='tight', dpi=300)
+                    bbox_inches='tight', dpi=600)
     else:
         plt.savefig(os.path.join(results_dir, f'model_ranking_{metric_type}_{metric_key}_without_invalids.png'),
-                    bbox_inches='tight', dpi=300)
+                    bbox_inches='tight', dpi=600)
     plt.close()
 
 def plot_invalid_percentages(results_dir: str, models: list[str]):
@@ -2634,7 +2680,7 @@ if __name__ == "__main__":
     # plot_pi0_action_distribution_comparison(results_dir)
 
     # # # Generate violin plot for macro recall distribution
-    plot_macro_recall_violin(results_dir, models)
+    # plot_macro_recall_violin(results_dir, models)
     
     # # # Generate heatmap for macro recall scores
     # # plot_macro_recall_heatmap(results_dir, models)
@@ -2648,7 +2694,7 @@ if __name__ == "__main__":
     
     # # plot_dataset_specific_metrics(results_dir)
 
-    # plot_cross_model_classwise_comparison(results_dir, models)
+    plot_cross_model_classwise_comparison(results_dir, models)
 
     # calculate_classwise_metrics(results_dir, 'pi0_fast')
     # calculate_classwise_metrics(results_dir, 'gpt4o')
