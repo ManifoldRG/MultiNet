@@ -40,7 +40,7 @@
   </a>
 </p>
 
-### Need to Run Evaluations on Production Multimodal, Computer Use, or Robotics AI System? [We can help!](https://forms.gle/DuMyjoZrEYR641ro6)
+### _Need to Run Evaluations on Production Multimodal, Computer Use, or Robotics AI System? [We can help!](https://forms.gle/DuMyjoZrEYR641ro6)_
 
 ## 📢 Updates
 
