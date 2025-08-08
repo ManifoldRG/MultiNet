@@ -22,6 +22,7 @@ import torch as _torch
 import tensorflow as _tf
 import tensorflow_datasets as _tfds
 import json
+import argparse
 
 
 # ============================================================================
@@ -386,7 +387,6 @@ class OvercookedAIDownloader(BaseDownloader):
     
     def __init__(self, cache_dir: Path):
         super().__init__("overcooked_ai", DatasetType.GAMEPLAY, cache_dir)
-        # Convert GitHub blob URL to raw download URL
         self.download_url = "https://raw.githubusercontent.com/HumanCompatibleAI/overcooked_ai/master/src/human_aware_rl/static/human_data/cleaned/2020_hh_trials_test.pickle"
         self.pickle_file = self.cache_dir / "2020_hh_trials_test.pickle"
     
@@ -469,6 +469,7 @@ class OpenXDownloader(BaseDownloader):
         self.dataset_id = self.MORPHOLOGY_TO_DATASET[morphology]
 
     def _shard_and_save(self, ds, dataset_name: str, start_from_shard: int, shard_size: int) -> Optional[int]:
+        #function to shard and save dataset so as to not run out of memory and download the dataset in chunks (episode by episode)
         for i, shard in enumerate(ds.batch(shard_size), start=start_from_shard):
             if os.path.exists(os.path.join(str(self.cache_dir), dataset_name, 'shard_'+str(i))) == True:
                 self.logger.info(f'Shard {i} of {dataset_name} already downloaded')
@@ -476,8 +477,8 @@ class OpenXDownloader(BaseDownloader):
                 
             # Check RAM usage
             ram_usage = _psutil.virtual_memory().percent
-            # If RAM usage is more than 90% free up memory and restart the sharding+saving procedure from the same shard
-            if ram_usage > 90:
+            # If RAM usage is more than 80% free up memory and restart the sharding+saving procedure from the same shard
+            if ram_usage > 80:
                 self.logger.warning(f"RAM usage is {ram_usage}%. Restarting from shard {i}...")
                 # Clean up resources after pausing the sharding+saving procedure
                 del shard
@@ -529,8 +530,6 @@ class OpenXDownloader(BaseDownloader):
             
             dataset_folder = f"{self.dataset_id}_{split_name}"
             shard_func_catch = 0
-            print(len(b))
-            c
             while True:
                 if shard_func_catch is not None:
                     shard_func_catch = self._shard_and_save(b, dataset_folder, shard_func_catch, 1)
@@ -625,15 +624,24 @@ class BFCLDownloader(BaseDownloader):
                 self.logger.error("BFCL v3 answers file is empty")
                 return False
             
-            # Verify JSON format by trying to parse
-            
+            # Verify JSON Lines format by trying to parse each line
             try:
+                # Verify questions file (JSON Lines format)
                 with open(self.questions_file, 'r') as f:
-                    json.load(f)
+                    for line_num, line in enumerate(f, 1):
+                        line = line.strip()
+                        if line:  # Skip empty lines
+                            json.loads(line)
+                
+                # Verify answers file (JSON Lines format)
                 with open(self.answers_file, 'r') as f:
-                    json.load(f)
+                    for line_num, line in enumerate(f, 1):
+                        line = line.strip()
+                        if line:  # Skip empty lines
+                            json.loads(line)
+                            
             except json.JSONDecodeError as e:
-                self.logger.error(f"Invalid JSON format in BFCL v3 files: {e}")
+                self.logger.error(f"Invalid JSON Lines format in BFCL v3 files at line {line_num}: {e}")
                 return False
             
             self.logger.info("BFCL v3 dataset verification passed")
@@ -763,7 +771,6 @@ Total Size: {total_size:.1f} MB
 
 def main():
     """Command line interface."""
-    import argparse
     
     parser = argparse.ArgumentParser(description="Dataset Downloader")
     parser.add_argument("--cache-dir", type=Path, default=Path("./dataset_cache"),
