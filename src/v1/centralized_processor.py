@@ -36,12 +36,13 @@ class ProcessResult:
 
 
 @dataclass
-class TestSplit:
-    """Information about created test split."""
-    original_size: int
-    test_size: int
-    test_ratio: float
-    identifiers_file: Path
+class ProcessingStatus:
+    """Status information returned by individual processors."""
+    success: bool
+    test_split_created: bool = False
+    test_identifiers_saved: bool = False
+    files_processed: int = 0
+    error_message: Optional[str] = None
 
 
 # ============================================================================
@@ -63,8 +64,8 @@ class BaseProcessor(abc.ABC):
         np.random.seed(42)
     
     @abc.abstractmethod
-    def process(self) -> bool:
-        """Process the dataset. Return True if successful."""
+    def process(self) -> ProcessingStatus:
+        """Process the dataset. Return ProcessingStatus with details of what was done."""
         pass
     
     def verify_input(self) -> bool:
@@ -87,11 +88,20 @@ class BaseProcessor(abc.ABC):
             if not self.verify_input():
                 return ProcessResult(self.name, False, self.output_dir, error="Input verification failed")
             
-            if not self.process():
-                return ProcessResult(self.name, False, self.output_dir, error="Processing failed")
+            status = self.process()
+            
+            if not status.success:
+                error_msg = status.error_message or "Processing failed"
+                return ProcessResult(self.name, False, self.output_dir, error=error_msg)
             
             self.logger.info(f"✓ {self.name} processed successfully")
-            return ProcessResult(self.name, True, self.output_dir, test_split_created=True, test_identifiers_saved=True)
+            return ProcessResult(
+                name=self.name,
+                success=True,
+                output_path=self.output_dir,
+                test_split_created=status.test_split_created,
+                test_identifiers_saved=status.test_identifiers_saved
+            )
             
         except Exception as e:
             self.logger.error(f"✗ {self.name} failed: {e}")
@@ -116,14 +126,14 @@ class BaseProcessor(abc.ABC):
 class PIQAProcessor(BaseProcessor):
     """PIQA dataset processor with 20% test split creation."""
     
-    def process(self) -> bool:
+    def process(self) -> ProcessingStatus:
         """Process PIQA dataset and create test split."""
         try:
             # Locate PIQA files
             piqa_dir = self.input_dir / "physicaliqa-train-dev"
             if not piqa_dir.exists():
                 self.logger.error("PIQA physicaliqa-train-dev directory not found")
-                return False
+                return ProcessingStatus(success=False, error_message="PIQA physicaliqa-train-dev directory not found")
             
             train_file = piqa_dir / "train.jsonl"
             train_labels = piqa_dir / "train-labels.lst"
@@ -167,17 +177,17 @@ class PIQAProcessor(BaseProcessor):
             self.save_test_identifiers(test_ids, "piqa_test_identifiers.json")
             
             self.logger.info(f"Created test split: {len(test_data)} samples from {len(train_data)} total")
-            return True
+            return ProcessingStatus(success=True, test_split_created=True, test_identifiers_saved=True)
             
         except Exception as e:
             self.logger.error(f"Error processing PIQA: {e}")
-            return False
+            return ProcessingStatus(success=False, error_message=str(e))
 
 
 class ODinWProcessor(BaseProcessor):
     """ODinW dataset processor for bbox extraction and object-caption pairs."""
     
-    def process(self) -> bool:
+    def process(self) -> ProcessingStatus:
         """Process ODinW datasets and create bbox images with object-caption pairs."""
         try:
             datasets_processed = 0
@@ -238,7 +248,7 @@ class ODinWProcessor(BaseProcessor):
                         image_file = test_path / image_info["file_name"]
                         
                         if not image_file.exists():
-                            print(f"Image file does not exist: {image_file}")
+                            self.logger.warning(f"Image file does not exist: {image_file}")
                             continue
                         
                         # Load image
@@ -330,14 +340,14 @@ class ODinWProcessor(BaseProcessor):
             
             if datasets_processed == 0:
                 self.logger.error("No ODinW datasets were processed")
-                return False
+                return ProcessingStatus(success=False, error_message="No ODinW datasets were processed")
             
             self.logger.info(f"Successfully processed {datasets_processed} ODinW datasets")
-            return True
+            return ProcessingStatus(success=True, test_split_created=True, test_identifiers_saved=True)
             
         except Exception as e:
             self.logger.error(f"Error processing ODinW: {e}")
-            return False
+            return ProcessingStatus(success=False, error_message=str(e))
 
     def _find_test_folder(self, dataset_dir: Path) -> Optional[Path]:
         """Recursively search for a test folder within the dataset directory."""
@@ -348,7 +358,7 @@ class ODinWProcessor(BaseProcessor):
             # Check if current directory is a test folder
             if current_dir.name == "test" and current_dir.is_dir():
                 # Verify it contains images or annotations
-                if any(current_dir.glob("*.jpg")) or any(current_dir.glob("*.png")) or (current_dir / "_annotations_coco.json").exists():
+                if any(current_dir.glob("*.jpg")) or any(current_dir.glob("*.png")) or (current_dir / "_annotations.coco.json").exists():
                     return current_dir
             
             # Search subdirectories
@@ -360,25 +370,87 @@ class ODinWProcessor(BaseProcessor):
             
             return None
         
-        return search_recursive(dataset_dir)
+        # Find all potential test folders first
+        all_test_folders = []
+        
+        def collect_test_folders(current_dir: Path, max_depth: int = 5):
+            if max_depth <= 0:
+                return
+            
+            if current_dir.name == "test" and current_dir.is_dir():
+                # Verify it contains images or annotations
+                if any(current_dir.glob("*.jpg")) or any(current_dir.glob("*.png")) or (current_dir / "_annotations.coco.json").exists():
+                    all_test_folders.append(current_dir)
+            
+            for subdir in current_dir.iterdir():
+                if subdir.is_dir():
+                    collect_test_folders(subdir, max_depth - 1)
+        
+        # Collect all test folders
+        collect_test_folders(dataset_dir)
+        
+        if not all_test_folders:
+            return None
+        
+        if len(all_test_folders) == 1:
+            return all_test_folders[0]
+        
+        # Apply prioritization rules when multiple test folders exist
+        prioritized_folders = []
+        
+        # Rule 1: Prefer 'large' over 'tiled'
+        large_folders = [f for f in all_test_folders if 'large' in str(f)]
+        tiled_folders = [f for f in all_test_folders if 'tiled' in str(f)]
+        
+        if large_folders and tiled_folders:
+            # Both exist, prefer large
+            prioritized_folders = large_folders
+            self.logger.info(f"Preferring large folders: {large_folders} for {dataset_dir.name}")
+        elif large_folders:
+            prioritized_folders = large_folders
+            self.logger.info(f"Preferring large folders: {large_folders} for {dataset_dir.name}")
+        elif tiled_folders:
+            prioritized_folders = tiled_folders
+            self.logger.info(f"Preferring tiled folders: {tiled_folders} for {dataset_dir.name}")
+        else:
+            prioritized_folders = all_test_folders
+            self.logger.info(f"No large or tiled folders found, preferring all test folders: {all_test_folders} for {dataset_dir.name}")
+        # Rule 2: Prefer folders with 'raw' in name, then non-augmented over augmented versions
+        raw_folders = [f for f in prioritized_folders if 'raw' in str(f).lower()]
+        
+        if raw_folders:
+            self.logger.info(f"Preferring raw folders: {raw_folders} for {dataset_dir.name}")
+            return raw_folders[0]  # Return first raw folder found
+        
+        # If no raw folders, prefer non-augmented over augmented
+        augmented_keywords = ['aug', 'augmented', 'augment']
+        augmented_folders = [f for f in prioritized_folders if any(keyword in str(f).lower() for keyword in augmented_keywords)]
+        non_augmented_folders = [f for f in prioritized_folders if not any(keyword in str(f).lower() for keyword in augmented_keywords)]
+        
+        if non_augmented_folders:
+            self.logger.info(f"Preferring non-augmented folders: {non_augmented_folders} for {dataset_dir.name}")
+            return non_augmented_folders[0]  # Prefer non-augmented
+        else:
+            self.logger.info(f"No non-augmented folders found, preferring prioritized folders: {prioritized_folders} for {dataset_dir.name}")
+            return prioritized_folders[0]  # Return first from remaining folders
 
 
 class SQA3DProcessor(BaseProcessor):
     """SQA3D dataset processor for test split extraction."""
     
-    def process(self) -> bool:
+    def process(self) -> ProcessingStatus:
         """Process SQA3D dataset and extract test split."""
         try:
             # Locate SQA3D files
             sqa_task_dir = self.input_dir / "sqa_task"
             if not sqa_task_dir.exists():
                 self.logger.error("SQA3D sqa_task directory not found")
-                return False
+                return ProcessingStatus(success=False, error_message="SQA3D sqa_task directory not found")
             
             balanced_dir = sqa_task_dir / "balanced"
             if not balanced_dir.exists():
                 self.logger.error("SQA3D balanced directory not found")
-                return False
+                return ProcessingStatus(success=False, error_message="SQA3D balanced directory not found")
             
             # Look for test data
             # Look for specific test files
@@ -398,17 +470,17 @@ class SQA3DProcessor(BaseProcessor):
                 self.logger.warning("Test files (v1_balanced_questions_test_scannetv2.json or v1_balanced_sqa_annotations_test_scannetv2.json) not found in SQA3D")
         
             self.logger.info("Successfully processed SQA3D dataset")
-            return True
+            return ProcessingStatus(success=True, test_split_created=False, test_identifiers_saved=False)
             
         except Exception as e:
             self.logger.error(f"Error processing SQA3D: {e}")
-            return False
+            return ProcessingStatus(success=False, error_message=str(e))
 
 
 class OvercookedAIProcessor(BaseProcessor):
     """Overcooked AI dataset processor - placeholder implementation."""
     
-    def process(self) -> bool:
+    def process(self) -> ProcessingStatus:
         """Process Overcooked AI dataset - placeholder for future implementation."""
         try:
             # TODO: Implement state processing and visual observation rendering
@@ -419,20 +491,20 @@ class OvercookedAIProcessor(BaseProcessor):
             if pickle_file.exists():
                 shutil.copy2(pickle_file, self.output_dir / "2020_hh_trials_test.pickle")
                 self.logger.info("Copied Overcooked AI pickle file - processing placeholder")
-                return True
+                return ProcessingStatus(success=True, test_split_created=False, test_identifiers_saved=False)
             else:
                 self.logger.error("Overcooked AI pickle file not found")
-                return False
+                return ProcessingStatus(success=False, error_message="Overcooked AI pickle file not found")
                 
         except Exception as e:
             self.logger.error(f"Error processing Overcooked AI: {e}")
-            return False
+            return ProcessingStatus(success=False, error_message=str(e))
 
 
 class OpenXProcessor(BaseProcessor):
     """OpenX dataset processor with translation and test split creation."""
     
-    def process(self) -> bool:
+    def process(self) -> ProcessingStatus:
         """Process OpenX datasets with translation and test split creation."""
         try:
             # Import torchrlds function with robust path handling
@@ -456,13 +528,19 @@ class OpenXProcessor(BaseProcessor):
                 torchrlds = translation_module.torchrlds
             
             datasets_processed = 0
+            test_splits_created = 0
+            identifiers_saved = 0
             
             # Check if input directory exists and log its structure
             if not self.input_dir.exists():
                 self.logger.error(f"OpenX input directory does not exist: {self.input_dir}")
-                return False
+                return ProcessingStatus(success=False, error_message=f"OpenX input directory does not exist: {self.input_dir}")
             
             self.logger.info(f"Processing OpenX morphology from: {self.input_dir}")
+            
+            datasets_processed = 0
+            test_splits_created = 0
+            identifiers_saved = 0
             
             # Since self.input_dir is already specific to one morphology (e.g., openx_single_arm),
             # we should look for dataset directories directly, not more openx_ directories
@@ -478,8 +556,8 @@ class OpenXProcessor(BaseProcessor):
                 
                 if has_explicit_test_val:
                     self.logger.info(f"Dataset {dataset_dir.name} already has explicit test/val split - copying as-is")
-                    # Just copy the existing test/val data
-                    dataset_output = self.output_dir / self.name / dataset_dir.name
+                    # Just copy the existing test/val data - no new test split created
+                    dataset_output = self.output_dir
                     dataset_output.mkdir(parents=True, exist_ok=True)
                     
                     # Copy all shard files to output
@@ -497,6 +575,7 @@ class OpenXProcessor(BaseProcessor):
                             self.logger.warning(f"Failed to translate shard {shard_file}: {e}")
                     
                     datasets_processed += 1
+                    # No test split created for datasets that already have test/val
                     continue
                 
                 elif is_train_only:
@@ -517,7 +596,7 @@ class OpenXProcessor(BaseProcessor):
                 test_shard_numbers = [int(f.name.split('_')[-1]) for f in test_shards]
                 
                 # Create output directories
-                dataset_output = self.output_dir / self.name / dataset_dir.name
+                dataset_output = self.output_dir
                 test_output = dataset_output / "test"
                 test_output.mkdir(parents=True, exist_ok=True)
                 
@@ -549,23 +628,29 @@ class OpenXProcessor(BaseProcessor):
                 
                 self.logger.info(f"Processed {dataset_dir.name}: {len(shard_files)} shards, {test_size} test shards")
                 datasets_processed += 1
+                test_splits_created += 1  # This dataset had a test split created
+                identifiers_saved += 1
             
             if datasets_processed == 0:
                 self.logger.error("No OpenX datasets were processed")
-                return False
+                return ProcessingStatus(success=False, error_message="No OpenX datasets were processed")
             
             self.logger.info(f"Successfully processed {datasets_processed} OpenX datasets")
-            return True
+            return ProcessingStatus(
+                success=True, 
+                test_split_created=(test_splits_created > 0),
+                test_identifiers_saved=(identifiers_saved > 0)
+            )
             
         except Exception as e:
             self.logger.error(f"Error processing OpenX: {e}")
-            return False
+            return ProcessingStatus(success=False, error_message=str(e))
 
 
 class BFCLProcessor(BaseProcessor):
     """BFCL dataset processor with 20% test split creation."""
     
-    def process(self) -> bool:
+    def process(self) -> ProcessingStatus:
         """Process BFCL dataset and create test split."""
         try:
             # Load questions file
@@ -574,7 +659,7 @@ class BFCLProcessor(BaseProcessor):
             
             if not questions_file.exists():
                 self.logger.error("BFCL questions file not found")
-                return False
+                return ProcessingStatus(success=False, error_message="BFCL questions file not found")
             
             # Load data
             questions_data = []
@@ -630,11 +715,11 @@ class BFCLProcessor(BaseProcessor):
             self.save_test_identifiers(test_ids, "bfcl_test_identifiers.json")
             
             self.logger.info(f"Created test split: {len(test_questions)} samples from {len(questions_data)} total")
-            return True
+            return ProcessingStatus(success=True, test_split_created=True, test_identifiers_saved=True)
             
         except Exception as e:
             self.logger.error(f"Error processing BFCL: {e}")
-            return False
+            return ProcessingStatus(success=False, error_message=str(e))
 
 
 # ============================================================================
