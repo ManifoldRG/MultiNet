@@ -32,6 +32,7 @@ class ProcessResult:
     output_path: Path
     test_split_created: bool = False
     test_identifiers_saved: bool = False
+    files_processed: int = 0
     error: Optional[str] = None
 
 
@@ -64,8 +65,8 @@ class BaseProcessor(abc.ABC):
         np.random.seed(42)
     
     @abc.abstractmethod
-    def process(self) -> ProcessingStatus:
-        """Process the dataset. Return ProcessingStatus with details of what was done."""
+    def process(self) -> ProcessResult:
+        """Process the dataset. Return ProcessResult with details of what was done."""
         pass
     
     def verify_input(self) -> bool:
@@ -88,20 +89,14 @@ class BaseProcessor(abc.ABC):
             if not self.verify_input():
                 return ProcessResult(self.name, False, self.output_dir, error="Input verification failed")
             
-            status = self.process()
+            result = self.process()
             
-            if not status.success:
-                error_msg = status.error_message or "Processing failed"
+            if not result.success:
+                error_msg = result.error or "Processing failed"
                 return ProcessResult(self.name, False, self.output_dir, error=error_msg)
             
             self.logger.info(f"✓ {self.name} processed successfully")
-            return ProcessResult(
-                name=self.name,
-                success=True,
-                output_path=self.output_dir,
-                test_split_created=status.test_split_created,
-                test_identifiers_saved=status.test_identifiers_saved
-            )
+            return result
             
         except Exception as e:
             self.logger.error(f"✗ {self.name} failed: {e}")
@@ -126,14 +121,14 @@ class BaseProcessor(abc.ABC):
 class PIQAProcessor(BaseProcessor):
     """PIQA dataset processor with 20% test split creation."""
     
-    def process(self) -> ProcessingStatus:
+    def process(self) -> ProcessResult:
         """Process PIQA dataset and create test split."""
         try:
             # Locate PIQA files
             piqa_dir = self.input_dir / "physicaliqa-train-dev"
             if not piqa_dir.exists():
                 self.logger.error("PIQA physicaliqa-train-dev directory not found")
-                return ProcessingStatus(success=False, error_message="PIQA physicaliqa-train-dev directory not found")
+                return ProcessResult(self.name, False, self.output_dir, error="PIQA physicaliqa-train-dev directory not found")
             
             train_file = piqa_dir / "train.jsonl"
             train_labels = piqa_dir / "train-labels.lst"
@@ -177,17 +172,23 @@ class PIQAProcessor(BaseProcessor):
             self.save_test_identifiers(test_ids, "piqa_test_identifiers.json")
             
             self.logger.info(f"Created test split: {len(test_data)} samples from {len(train_data)} total")
-            return ProcessingStatus(success=True, test_split_created=True, test_identifiers_saved=True)
+            return ProcessResult(
+                name=self.name,
+                success=True,
+                output_path=self.output_dir,
+                test_split_created=True,
+                test_identifiers_saved=True
+            )
             
         except Exception as e:
             self.logger.error(f"Error processing PIQA: {e}")
-            return ProcessingStatus(success=False, error_message=str(e))
+            return ProcessResult(self.name, False, self.output_dir, error=str(e))
 
 
 class ODinWProcessor(BaseProcessor):
     """ODinW dataset processor for bbox extraction and object-caption pairs."""
     
-    def process(self) -> ProcessingStatus:
+    def process(self) -> ProcessResult:
         """Process ODinW datasets and create bbox images with object-caption pairs."""
         try:
             datasets_processed = 0
@@ -340,14 +341,14 @@ class ODinWProcessor(BaseProcessor):
             
             if datasets_processed == 0:
                 self.logger.error("No ODinW datasets were processed")
-                return ProcessingStatus(success=False, error_message="No ODinW datasets were processed")
+                return ProcessResult(self.name, False, self.output_dir, error="No ODinW datasets were processed")
             
             self.logger.info(f"Successfully processed {datasets_processed} ODinW datasets")
-            return ProcessingStatus(success=True, test_split_created=True, test_identifiers_saved=True)
+            return ProcessResult(self.name, True, self.output_dir, test_split_created=True, test_identifiers_saved=True)
             
         except Exception as e:
             self.logger.error(f"Error processing ODinW: {e}")
-            return ProcessingStatus(success=False, error_message=str(e))
+            return ProcessResult(self.name, False, self.output_dir, error=str(e))
 
     def _find_test_folder(self, dataset_dir: Path) -> Optional[Path]:
         """Recursively search for a test folder within the dataset directory."""
@@ -438,19 +439,19 @@ class ODinWProcessor(BaseProcessor):
 class SQA3DProcessor(BaseProcessor):
     """SQA3D dataset processor for test split extraction."""
     
-    def process(self) -> ProcessingStatus:
+    def process(self) -> ProcessResult:
         """Process SQA3D dataset and extract test split."""
         try:
             # Locate SQA3D files
             sqa_task_dir = self.input_dir / "sqa_task"
             if not sqa_task_dir.exists():
                 self.logger.error("SQA3D sqa_task directory not found")
-                return ProcessingStatus(success=False, error_message="SQA3D sqa_task directory not found")
+                return ProcessResult(self.name, False, self.output_dir, error="SQA3D sqa_task directory not found")
             
             balanced_dir = sqa_task_dir / "balanced"
             if not balanced_dir.exists():
                 self.logger.error("SQA3D balanced directory not found")
-                return ProcessingStatus(success=False, error_message="SQA3D balanced directory not found")
+                return ProcessResult(self.name, False, self.output_dir, error="SQA3D balanced directory not found")
             
             # Look for test data
             # Look for specific test files
@@ -470,17 +471,17 @@ class SQA3DProcessor(BaseProcessor):
                 self.logger.warning("Test files (v1_balanced_questions_test_scannetv2.json or v1_balanced_sqa_annotations_test_scannetv2.json) not found in SQA3D")
         
             self.logger.info("Successfully processed SQA3D dataset")
-            return ProcessingStatus(success=True, test_split_created=False, test_identifiers_saved=False)
+            return ProcessResult(self.name, True, self.output_dir, test_split_created=False, test_identifiers_saved=False)
             
         except Exception as e:
             self.logger.error(f"Error processing SQA3D: {e}")
-            return ProcessingStatus(success=False, error_message=str(e))
+            return ProcessResult(self.name, False, self.output_dir, error=str(e))
 
 
 class OvercookedAIProcessor(BaseProcessor):
     """Overcooked AI dataset processor - placeholder implementation."""
     
-    def process(self) -> ProcessingStatus:
+    def process(self) -> ProcessResult:
         """Process Overcooked AI dataset - placeholder for future implementation."""
         try:
             # TODO: Implement state processing and visual observation rendering
@@ -491,20 +492,20 @@ class OvercookedAIProcessor(BaseProcessor):
             if pickle_file.exists():
                 shutil.copy2(pickle_file, self.output_dir / "2020_hh_trials_test.pickle")
                 self.logger.info("Copied Overcooked AI pickle file - processing placeholder")
-                return ProcessingStatus(success=True, test_split_created=False, test_identifiers_saved=False)
+                return ProcessResult(self.name, True, self.output_dir, test_split_created=False, test_identifiers_saved=False)
             else:
                 self.logger.error("Overcooked AI pickle file not found")
-                return ProcessingStatus(success=False, error_message="Overcooked AI pickle file not found")
+                return ProcessResult(self.name, False, self.output_dir, error="Overcooked AI pickle file not found")
                 
         except Exception as e:
             self.logger.error(f"Error processing Overcooked AI: {e}")
-            return ProcessingStatus(success=False, error_message=str(e))
+            return ProcessResult(self.name, False, self.output_dir, error=str(e))
 
 
 class OpenXProcessor(BaseProcessor):
     """OpenX dataset processor with translation and test split creation."""
     
-    def process(self) -> ProcessingStatus:
+    def process(self) -> ProcessResult:
         """Process OpenX datasets with translation and test split creation."""
         try:
             # Import torchrlds function with robust path handling
@@ -534,7 +535,7 @@ class OpenXProcessor(BaseProcessor):
             # Check if input directory exists and log its structure
             if not self.input_dir.exists():
                 self.logger.error(f"OpenX input directory does not exist: {self.input_dir}")
-                return ProcessingStatus(success=False, error_message=f"OpenX input directory does not exist: {self.input_dir}")
+                return ProcessResult(self.name, False, self.output_dir, error=f"OpenX input directory does not exist: {self.input_dir}")
             
             self.logger.info(f"Processing OpenX morphology from: {self.input_dir}")
             
@@ -633,24 +634,26 @@ class OpenXProcessor(BaseProcessor):
             
             if datasets_processed == 0:
                 self.logger.error("No OpenX datasets were processed")
-                return ProcessingStatus(success=False, error_message="No OpenX datasets were processed")
+                return ProcessResult(self.name, False, self.output_dir, error="No OpenX datasets were processed")
             
             self.logger.info(f"Successfully processed {datasets_processed} OpenX datasets")
-            return ProcessingStatus(
-                success=True, 
+            return ProcessResult(
+                self.name, 
+                True, 
+                self.output_dir,
                 test_split_created=(test_splits_created > 0),
                 test_identifiers_saved=(identifiers_saved > 0)
             )
             
         except Exception as e:
             self.logger.error(f"Error processing OpenX: {e}")
-            return ProcessingStatus(success=False, error_message=str(e))
+            return ProcessResult(self.name, False, self.output_dir, error=str(e))
 
 
 class BFCLProcessor(BaseProcessor):
     """BFCL dataset processor with 20% test split creation."""
     
-    def process(self) -> ProcessingStatus:
+    def process(self) -> ProcessResult:
         """Process BFCL dataset and create test split."""
         try:
             # Load questions file
@@ -659,7 +662,7 @@ class BFCLProcessor(BaseProcessor):
             
             if not questions_file.exists():
                 self.logger.error("BFCL questions file not found")
-                return ProcessingStatus(success=False, error_message="BFCL questions file not found")
+                return ProcessResult(self.name, False, self.output_dir, error="BFCL questions file not found")
             
             # Load data
             questions_data = []
@@ -715,11 +718,11 @@ class BFCLProcessor(BaseProcessor):
             self.save_test_identifiers(test_ids, "bfcl_test_identifiers.json")
             
             self.logger.info(f"Created test split: {len(test_questions)} samples from {len(questions_data)} total")
-            return ProcessingStatus(success=True, test_split_created=True, test_identifiers_saved=True)
+            return ProcessResult(self.name, True, self.output_dir, test_split_created=True, test_identifiers_saved=True)
             
         except Exception as e:
             self.logger.error(f"Error processing BFCL: {e}")
-            return ProcessingStatus(success=False, error_message=str(e))
+            return ProcessResult(self.name, False, self.output_dir, error=str(e))
 
 
 # ============================================================================
