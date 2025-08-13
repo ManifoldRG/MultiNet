@@ -491,7 +491,7 @@ class OvercookedAIProcessor(BaseProcessor):
             # For now, just copy the pickle file
             pickle_file = self.input_dir / "2020_hh_trials_test.pickle"
             if pickle_file.exists():
-                shutil.copy2(pickle_file, self.output_dir / "2020_hh_trials_test.pickle")
+                shutil.copy2(pickle_file, self.output_dir / "test" / "2020_hh_trials_test.pickle")
                 self.logger.info("Copied Overcooked AI pickle file - processing placeholder")
                 return ProcessResult(self.name, True, self.output_dir, test_split_created=False, test_identifiers_saved=False)
             else:
