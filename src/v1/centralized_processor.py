@@ -155,8 +155,9 @@ class PIQAProcessor(BaseProcessor):
             test_indices = random.sample(range(len(train_data)), test_size)
             test_ids = [train_data[i]['id'] for i in test_indices]
             
-            # Split data
-            test_data = [train_data[i] for i in test_indices]
+            # Split data using IDs for reproducibility
+            test_ids_set = set(test_ids)
+            test_data = [data_point for data_point in train_data if data_point['id'] in test_ids_set]
             
             # Create output directories
             test_output = self.output_dir / "test"
