@@ -570,7 +570,7 @@ class OpenXProcessor(BaseProcessor):
                             translated = torchrlds(str(shard_file), "openx", limit_schema=False)
                             
                             if translated is not None:
-                                output_file = dataset_output / f"translated_{shard_file.name}"
+                                output_file = dataset_output / "test" / f"translated_{shard_file.name}"
                                 tf.data.Dataset.save(translated, str(output_file))
                                 
                         except Exception as e:
