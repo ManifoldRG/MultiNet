@@ -18,6 +18,20 @@ from typing import Dict, List, Optional, Set, Union
 import numpy as np
 import tensorflow as tf
 from PIL import Image
+import base64
+import io
+import csv
+import pickle
+import pygame
+import pandas as pd
+import subprocess
+
+# Add the submodule to the path
+import sys
+sys.path.append(str(Path(__file__).parent.parent / 'third_party' / 'overcooked_ai' / 'src'))
+
+from overcooked_ai_py.mdp.overcooked_mdp import OvercookedState, Recipe
+from overcooked_ai_py.visualization.state_visualizer import StateVisualizer
 
 
 # ============================================================================
@@ -480,24 +494,191 @@ class SQA3DProcessor(BaseProcessor):
 
 
 class OvercookedAIProcessor(BaseProcessor):
-    """Overcooked AI dataset processor - placeholder implementation."""
-    
-    def process(self) -> ProcessResult:
-        """Process Overcooked AI dataset - placeholder for future implementation."""
+    """Overcooked AI dataset processor for rendering states as visual observations."""
+
+    def _state_from_string(self, state_str):
+        """
+        Parses a state string and returns a dictionary suitable for OvercookedState.from_dict.
+        """
+        state_str = state_str.strip()
+        state_grid_rows = [row.strip() for row in state_str.split('\n')]
+        
+        players_data = []
+        objects_data = []
+
+        for y, row_chars in enumerate(state_grid_rows):
+            for x, char in enumerate(row_chars):
+                if char.isdigit():
+                    # Assuming player 1 is '1', player 2 is '2', etc.
+                    # Default orientation for now, as it's not in the compact string
+                    players_data.append({
+                        "position": [x, y],
+                        "orientation": [0, -1], # Default to North
+                        "held_object": None # Assuming no held objects in this compact string
+                    })
+                elif char == 'O':
+                    objects_data.append({"name": "onion", "position": [x, y]})
+                elif char == 'T':
+                    objects_data.append({"name": "tomato", "position": [x, y]})
+                elif char == 'D':
+                    objects_data.append({"name": "dish", "position": [x, y]})
+                # Add other object types if they appear in the state string
+
+        # Construct the dictionary in the format expected by OvercookedState.from_dict
+        state_dict = {
+            "players": players_data,
+            "objects": objects_data,
+            "bonus_orders": [], # Not present in compact string, default empty
+            "all_orders": [],   # Not present in compact string, default empty
+            "timestep": 0       # Not present in compact string, default 0
+        }
+        return state_dict
+
+    def _state_to_base64(self, state_obj, layout):
+        """
+        Converts a game state object (dict or string) to a base64 encoded image.
+        """
+        layout_grid = eval(layout)
+        
+        # Create a cleaned_layout_grid by removing player numbers
+        cleaned_layout_grid = []
+        for row in layout_grid:
+            cleaned_row = []
+            for char in row:
+                if char.isdigit():
+                    cleaned_row.append(' ') # Replace player numbers with empty space
+                else:
+                    cleaned_row.append(char)
+            cleaned_layout_grid.append(cleaned_row)
+
+        if isinstance(state_obj, str):
+            try:
+                # Pickled states are often stored as json strings
+                state_dict = json.loads(state_obj)
+            except json.JSONDecodeError:
+                # CSV states might be stored as custom strings
+                state_dict = self._state_from_string(state_obj)
+        else:
+            # Already a dict
+            state_dict = state_obj
+        
+        state = OvercookedState.from_dict(state_dict)
+        
+        visualizer = StateVisualizer(grid=cleaned_layout_grid) # Use cleaned_layout_grid for visualizer
+        img_surface = visualizer.render_state(state, grid=cleaned_layout_grid)
+        
+        img_byte_arr = io.BytesIO()
+        pygame.image.save(img_surface, img_byte_arr, "screenshot.png")
+        img_byte_arr.seek(0)
+        img_bytes = img_byte_arr.read()
+        return base64.b64encode(img_bytes).decode('utf-8')
+
+    def _load_data_with_pandas_fallback(self, input_file):
+        """
+        Loads data from a pickle file, falling back to a temporary environment
+        with an older pandas version if there's a version mismatch.
+        """
         try:
-            # TODO: Implement state processing and visual observation rendering
-            # This should handle Sean's work for rendering states as visual observations
+            # Try loading with the current pandas version
+            with open(input_file, 'rb') as infile:
+                data = pickle.load(infile)
+            if isinstance(data, pd.DataFrame):
+                return data.to_dict('records')
+            return data
+        except (ValueError, ImportError) as e:
+            self.logger.warning(f"Failed to load pickle with current pandas version: {e}")
+            self.logger.info("Attempting to load with older pandas version in a temporary environment.")
+
+            temp_dir = Path("./temp_pandas_env")
+            try:
+                # Create a temporary directory for the venv and intermediate file
+                temp_dir.mkdir(exist_ok=True)
+                venv_dir = temp_dir / ".venv"
+                intermediate_csv = temp_dir / "intermediate.csv"
+
+                # Create venv
+                subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True)
+
+                # Install older pandas
+                pip_executable = str(venv_dir / "bin" / "pip")
+                subprocess.run([pip_executable, "install", "pandas==1.5.3", "numpy<1.24"], check=True)
+
+                # Run helper script
+                helper_script = Path(__file__).parent.parent / "utils" / "unpickle_helper.py"
+                python_executable = str(venv_dir / "bin" / "python")
+                subprocess.run([python_executable, str(helper_script), str(input_file), str(intermediate_csv)], check=True)
+
+                # Load data from intermediate CSV
+                with open(intermediate_csv, 'r') as infile:
+                    reader = csv.DictReader(infile)
+                    return list(reader)
+            finally:
+                # Clean up the temporary environment
+                if temp_dir.exists():
+                    shutil.rmtree(temp_dir)
+
+    def process(self) -> ProcessResult:
+        """Process Overcooked AI dataset and convert states to images."""
+        try:
+            # Find the input file
+            input_file = next(self.input_dir.glob("*.pickle"), None)
+            is_pickle = True
+            if not input_file:
+                input_file = next(self.input_dir.glob("*.csv"), None)
+                is_pickle = False
+
+            if not input_file:
+                return ProcessResult(self.name, False, self.output_dir, error="No pickle or CSV file found in input directory")
+
+            Recipe.configure({})
+
+            # Load data
+            if is_pickle:
+                # The Overcooked AI dataset was pickled with an old version of pandas (
+                # 1.x),
+                # which is incompatible with the current version (2.x). To handle this,
+                # we use a fallback mechanism that creates a temporary virtual environment
+                # with the old pandas version to unpickle the data and convert it to a
+                # version-agnostic format (CSV).
+                data = self._load_data_with_pandas_fallback(input_file)
+            else: # It's a CSV file
+                with open(input_file, 'r') as infile:
+                    reader = csv.DictReader(infile)
+                    data = list(reader)
+
+            # Process data
+            processed_data = []
+            for i, row in enumerate(data):
+                new_row = row.copy()
+                new_row['state'] = self._state_to_base64(new_row['state'], new_row['layout'])
+                processed_data.append(new_row)
+
+            # Save data
+            output_prefix = self.output_dir / "test" / input_file.stem
+            output_prefix.parent.mkdir(parents=True, exist_ok=True)
             
-            # For now, just copy the pickle file
-            pickle_file = self.input_dir / "2020_hh_trials_test.pickle"
-            if pickle_file.exists():
-                shutil.copy2(pickle_file, self.output_dir / "test" / "2020_hh_trials_test.pickle")
-                self.logger.info("Copied Overcooked AI pickle file - processing placeholder")
-                return ProcessResult(self.name, True, self.output_dir, test_split_created=False, test_identifiers_saved=False)
-            else:
-                self.logger.error("Overcooked AI pickle file not found")
-                return ProcessResult(self.name, False, self.output_dir, error="Overcooked AI pickle file not found")
-                
+            csv_output_path = output_prefix.with_suffix('.csv')
+            pickle_output_path = output_prefix.with_suffix('.pickle')
+
+            if processed_data:
+                fieldnames = processed_data[0].keys()
+                with open(csv_output_path, 'w', newline='') as outfile:
+                    writer = csv.DictWriter(outfile, fieldnames=fieldnames)
+                    writer.writeheader()
+                    writer.writerows(processed_data)
+                self.logger.info(f"Data saved to {csv_output_path}")
+
+            with open(pickle_output_path, 'wb') as outfile:
+                pickle.dump(processed_data, outfile)
+            self.logger.info(f"Data saved to {pickle_output_path}")
+
+            return ProcessResult(
+                name=self.name,
+                success=True,
+                output_path=self.output_dir,
+                files_processed=len(processed_data)
+            )
+
         except Exception as e:
             self.logger.error(f"Error processing Overcooked AI: {e}")
             return ProcessResult(self.name, False, self.output_dir, error=str(e))
