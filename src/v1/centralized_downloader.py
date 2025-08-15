@@ -374,12 +374,58 @@ class SQA3DDownloader(BaseDownloader):
                 self.logger.error("All files in sqa_task/balanced are empty")
                 return False
             
+            # Extract scene IDs and save to text file
+            self._extract_and_save_scene_ids()
+            
             self.logger.info(f"SQA3D dataset verification passed - found {len(data_files)} files in sqa_task/balanced")
             return True
             
         except Exception as e:
             self.logger.error(f"Error verifying SQA3D dataset: {e}")
             return False
+
+    def _extract_and_save_scene_ids(self):
+        """Extract unique scene IDs from SQA3D test questions file and save to text file."""
+        try:
+            self.logger.info("Extracting scene IDs from SQA3D test questions...")
+            
+            balanced_dir = self.cache_dir / "sqa_task" / "balanced"
+            scene_ids = set()
+            
+            # Process only the test questions file
+            test_questions_file = balanced_dir / "v1_balanced_questions_test_scannetv2.json"
+            
+            if not test_questions_file.exists():
+                self.logger.error(f"Test questions file not found: {test_questions_file}")
+                return
+            
+            self.logger.info(f"Processing {test_questions_file.name} for scene IDs...")
+            
+            with open(test_questions_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Extract scene_ids from questions
+            if 'questions' in data:
+                for question in data['questions']:
+                    if 'scene_id' in question:
+                        scene_ids.add(question['scene_id'])
+            
+            # Sort the scene IDs for consistent output
+            sorted_scene_ids = sorted(scene_ids)
+            
+            # Save scene IDs to text file
+            scene_ids_file = self.cache_dir / "test_scene_ids.txt"
+            with open(scene_ids_file, 'w', encoding='utf-8') as f:
+                for scene_id in sorted_scene_ids:
+                    f.write(f"{scene_id}\n")
+            
+            self.logger.info(f"Successfully extracted {len(sorted_scene_ids)} unique scene IDs from test questions")
+            self.logger.info(f"Scene IDs saved to: {scene_ids_file}")
+            
+        except Exception as e:
+            self.logger.error(f"Error extracting scene IDs: {e}")
+            # Don't fail verification if scene ID extraction fails
+            pass
 
 
 class OvercookedAIDownloader(BaseDownloader):
