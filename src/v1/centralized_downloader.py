@@ -514,10 +514,12 @@ class OpenXDownloader(BaseDownloader):
         self.morphology = morphology
         self.dataset_id = self.MORPHOLOGY_TO_DATASET[morphology]
         self.select_eps = select_eps
+        self.selected_flag = -1
+        self.selected_indices = []
     def _shard_and_save(self, ds, dataset_name: str, start_from_shard: int, shard_size: int) -> Optional[int]:
         #function to shard and save dataset so as to not run out of memory and download the dataset in chunks (episode by episode)
         
-        if self.select_eps:
+        if self.select_eps and self.selected_flag == -1:
             # Randomly select 400 episodes from the dataset if total episodes>4000
             total_episodes = len(ds)
             print(f"Total episodes: {total_episodes}")
@@ -527,7 +529,8 @@ class OpenXDownloader(BaseDownloader):
                 selected_indices.sort()  # Sort for efficient iteration
 
                 self.logger.info(f"Selected 400 random episodes out of {total_episodes} total episodes")
-                
+                self.selected_flag = 1
+                self.selected_indices = selected_indices
                
         for i, shard in enumerate(ds.batch(shard_size), start=start_from_shard):
             if os.path.exists(os.path.join(str(self.cache_dir), dataset_name, 'shard_'+str(i))) == True:
@@ -535,7 +538,7 @@ class OpenXDownloader(BaseDownloader):
                 continue
 
             if self.select_eps and total_episodes > 4000:
-                if i not in selected_indices:
+                if i not in self.selected_indices:
                     print(f"Skipping shard {i} because it is not in the selected episodes")
                     continue
                 
