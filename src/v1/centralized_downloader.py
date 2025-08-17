@@ -519,7 +519,7 @@ class OpenXDownloader(BaseDownloader):
         self.selected_indices = []
         self.total_episodes = 0
         random.seed(42)
-        
+
     def _shard_and_save(self, ds, dataset_name: str, start_from_shard: int, shard_size: int) -> Optional[int]:
         #function to shard and save dataset so as to not run out of memory and download the dataset in chunks (episode by episode)
         
@@ -544,6 +544,14 @@ class OpenXDownloader(BaseDownloader):
             if self.select_eps and self.total_episodes > 4000:
                 if i not in self.selected_indices:
                     print(f"Skipping shard {i} because it is not in the selected episodes")
+                    ram_usage = _psutil.virtual_memory().percent
+                    if ram_usage > 80:
+                        self.logger.warning(f"RAM usage is {ram_usage}%. Restarting from shard {i}...")
+                        # Clean up resources after pausing the sharding+saving procedure
+                        del shard
+                        del ds
+                        _gc.collect()
+                        return i
                     continue
                 
             # Check RAM usage
