@@ -516,6 +516,7 @@ class OpenXDownloader(BaseDownloader):
         self.select_eps = select_eps
         self.selected_flag = -1
         self.selected_indices = []
+        self.total_episodes = 0
     def _shard_and_save(self, ds, dataset_name: str, start_from_shard: int, shard_size: int) -> Optional[int]:
         #function to shard and save dataset so as to not run out of memory and download the dataset in chunks (episode by episode)
         
@@ -523,6 +524,7 @@ class OpenXDownloader(BaseDownloader):
             # Randomly select 400 episodes from the dataset if total episodes>4000
             total_episodes = len(ds)
             print(f"Total episodes: {total_episodes}")
+            self.total_episodes = total_episodes
             if total_episodes > 4000:
                 import random
                 selected_indices = random.sample(range(total_episodes), 400)
@@ -537,7 +539,7 @@ class OpenXDownloader(BaseDownloader):
                 self.logger.info(f'Shard {i} of {dataset_name} already downloaded')
                 continue
 
-            if self.select_eps and total_episodes > 4000:
+            if self.select_eps and self.total_episodes > 4000:
                 if i not in self.selected_indices:
                     print(f"Skipping shard {i} because it is not in the selected episodes")
                     continue
@@ -557,7 +559,7 @@ class OpenXDownloader(BaseDownloader):
             flattened_dataset = shard.flat_map(lambda x: x['steps'])
             dataset_dict = {i: item for i, item in enumerate(flattened_dataset.as_numpy_iterator())}
             os.makedirs(os.path.join(str(self.cache_dir), dataset_name), exist_ok=True)
-            if self.select_eps and total_episodes > 4000:
+            if self.select_eps and self.total_episodes > 4000:
                 # Save the selected shard number to a text file
                 selected_shards_file = os.path.join(str(self.cache_dir), dataset_name, "selected_shards.txt")
                 with open(selected_shards_file, 'a') as f:
