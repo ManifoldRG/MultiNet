@@ -23,6 +23,7 @@ import tensorflow as _tf
 import tensorflow_datasets as _tfds
 import json
 import argparse
+import random
 
 
 # ============================================================================
@@ -517,6 +518,8 @@ class OpenXDownloader(BaseDownloader):
         self.selected_flag = -1
         self.selected_indices = []
         self.total_episodes = 0
+        random.seed(42)
+        
     def _shard_and_save(self, ds, dataset_name: str, start_from_shard: int, shard_size: int) -> Optional[int]:
         #function to shard and save dataset so as to not run out of memory and download the dataset in chunks (episode by episode)
         
@@ -526,7 +529,6 @@ class OpenXDownloader(BaseDownloader):
             print(f"Total episodes: {total_episodes}")
             self.total_episodes = total_episodes
             if total_episodes > 4000:
-                import random
                 selected_indices = random.sample(range(total_episodes), 400)
                 selected_indices.sort()  # Sort for efficient iteration
 
