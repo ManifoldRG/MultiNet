@@ -23,6 +23,7 @@ import tensorflow as _tf
 import tensorflow_datasets as _tfds
 import json
 import argparse
+import random
 
 
 # ============================================================================
@@ -507,19 +508,51 @@ class OpenXDownloader(BaseDownloader):
         "multi_embodiment": "robot_vqa",
     }
 
-    def __init__(self, morphology: str, cache_dir: Path):
+    def __init__(self, morphology: str, cache_dir: Path, select_eps: bool = False):
         super().__init__(f"openx_{morphology}", DatasetType.ROBOTICS, cache_dir)
         if morphology not in self.MORPHOLOGY_TO_DATASET:
             raise ValueError(f"Unknown OpenX morphology: {morphology}")
         self.morphology = morphology
         self.dataset_id = self.MORPHOLOGY_TO_DATASET[morphology]
+        self.select_eps = select_eps
+        self.selected_flag = -1
+        self.selected_indices = []
+        self.total_episodes = 0
+        random.seed(42)
 
     def _shard_and_save(self, ds, dataset_name: str, start_from_shard: int, shard_size: int) -> Optional[int]:
         #function to shard and save dataset so as to not run out of memory and download the dataset in chunks (episode by episode)
+        
+        if self.select_eps and self.selected_flag == -1:
+            # Randomly select 400 episodes from the dataset if total episodes>4000
+            total_episodes = len(ds)
+            print(f"Total episodes: {total_episodes}")
+            self.total_episodes = total_episodes
+            if total_episodes > 4000:
+                selected_indices = random.sample(range(total_episodes), 400)
+                selected_indices.sort()  # Sort for efficient iteration
+
+                self.logger.info(f"Selected 400 random episodes out of {total_episodes} total episodes")
+                self.selected_flag = 1
+                self.selected_indices = selected_indices
+               
         for i, shard in enumerate(ds.batch(shard_size), start=start_from_shard):
             if os.path.exists(os.path.join(str(self.cache_dir), dataset_name, 'shard_'+str(i))) == True:
                 self.logger.info(f'Shard {i} of {dataset_name} already downloaded')
                 continue
+
+            if self.select_eps and self.total_episodes > 4000:
+                if i not in self.selected_indices:
+                    print(f"Skipping shard {i} because it is not in the selected episodes")
+                    ram_usage = _psutil.virtual_memory().percent
+                    if ram_usage > 80:
+                        self.logger.warning(f"RAM usage is {ram_usage}%. Restarting from shard {i}...")
+                        # Clean up resources after pausing the sharding+saving procedure
+                        del shard
+                        del ds
+                        _gc.collect()
+                        return i
+                    continue
                 
             # Check RAM usage
             ram_usage = _psutil.virtual_memory().percent
@@ -536,6 +569,11 @@ class OpenXDownloader(BaseDownloader):
             flattened_dataset = shard.flat_map(lambda x: x['steps'])
             dataset_dict = {i: item for i, item in enumerate(flattened_dataset.as_numpy_iterator())}
             os.makedirs(os.path.join(str(self.cache_dir), dataset_name), exist_ok=True)
+            if self.select_eps and self.total_episodes > 4000:
+                # Save the selected shard number to a text file
+                selected_shards_file = os.path.join(str(self.cache_dir), dataset_name, "selected_shards.txt")
+                with open(selected_shards_file, 'a') as f:
+                    f.write(f"{i}\n")
             _torch.save(dataset_dict, f"{os.path.join(str(self.cache_dir), dataset_name)}/shard_{i}")
 
             # Print current RAM usage
@@ -560,6 +598,7 @@ class OpenXDownloader(BaseDownloader):
             self.logger.info(f'Downloading {self.dataset_id}...')
             
             # Try splits in order: test, val, train
+            
             try:
                 b = builder.as_dataset(split='test')
                 split_name = 'test'
@@ -705,8 +744,9 @@ class BFCLDownloader(BaseDownloader):
 class DatasetDownloader:
     """Main manager for downloading datasets."""
     
-    def __init__(self, cache_dir: Path = Path("./dataset_cache")):
+    def __init__(self, cache_dir: Path = Path("./dataset_cache"), select_eps: bool = False):
         self.cache_dir = cache_dir
+        self.select_eps = select_eps
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self._setup_logging()
         
@@ -718,13 +758,13 @@ class DatasetDownloader:
             "overcooked_ai": lambda: OvercookedAIDownloader(self.cache_dir),
             "bfcl_v3": lambda: BFCLDownloader(self.cache_dir),
             # OpenX morphologies
-            "openx_single_arm": lambda: OpenXDownloader("single_arm", self.cache_dir),
-            "openx_mobile_manipulation": lambda: OpenXDownloader("mobile_manipulation", self.cache_dir),
-            "openx_quadrupedal": lambda: OpenXDownloader("quadrupedal", self.cache_dir),
-            "openx_bimanual": lambda: OpenXDownloader("bimanual", self.cache_dir),
-            "openx_human": lambda: OpenXDownloader("human", self.cache_dir),
-            "openx_wheeled_robot": lambda: OpenXDownloader("wheeled_robot", self.cache_dir),
-            "openx_multi_embodiment": lambda: OpenXDownloader("multi_embodiment", self.cache_dir),
+            "openx_single_arm": lambda: OpenXDownloader("single_arm", self.cache_dir, self.select_eps),
+            "openx_mobile_manipulation": lambda: OpenXDownloader("mobile_manipulation", self.cache_dir, self.select_eps),
+            "openx_quadrupedal": lambda: OpenXDownloader("quadrupedal", self.cache_dir, self.select_eps),
+            "openx_bimanual": lambda: OpenXDownloader("bimanual", self.cache_dir, self.select_eps),
+            "openx_human": lambda: OpenXDownloader("human", self.cache_dir, self.select_eps),
+            "openx_wheeled_robot": lambda: OpenXDownloader("wheeled_robot", self.cache_dir, self.select_eps),
+            "openx_multi_embodiment": lambda: OpenXDownloader("multi_embodiment", self.cache_dir, self.select_eps),
         }
     
     def _setup_logging(self):
@@ -825,10 +865,11 @@ def main():
     parser.add_argument("--download", nargs="+", help="Download datasets")
     parser.add_argument("--download-all", action="store_true", help="Download all")
     parser.add_argument("--status", help="Check dataset status")
+    parser.add_argument("--select_eps", type=bool, default=False, help="Select episodes to download")
     
     args = parser.parse_args()
     
-    downloader = DatasetDownloader(args.cache_dir)
+    downloader = DatasetDownloader(args.cache_dir, args.select_eps)
     
     if args.list:
         print("Available datasets:")
