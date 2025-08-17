@@ -534,7 +534,7 @@ class OpenXDownloader(BaseDownloader):
                 self.logger.info(f'Shard {i} of {dataset_name} already downloaded')
                 continue
 
-            if self.select_eps and total_episodes > 3:
+            if self.select_eps and total_episodes > 4000:
                 if i not in selected_indices:
                     print(f"Skipping shard {i} because it is not in the selected episodes")
                     continue
