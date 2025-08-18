@@ -61,7 +61,7 @@ def ply_to_top_down_png(ply_file, output_dir, img_size=(1920, 1080), bg_color=(0
     opt.background_color = np.asarray(bg_color[:3])  # Only use RGB components
     opt.point_size = 5.0  # Slightly smaller points
     opt.mesh_show_back_face = True
-    opt.light_on = True
+    opt.light_on = False
     opt.point_show_normal = True  # Re-enable normals but keep other settings modest
 
     # Create the output directory if it doesn't exist
