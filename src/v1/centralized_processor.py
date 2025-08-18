@@ -458,8 +458,6 @@ class SQA3DProcessor(BaseProcessor):
     def process(self) -> ProcessResult:
         """Process SQA3D dataset and extract test split."""
         try:
-            files_processed = 0
-            
             # Locate SQA3D files
             sqa_task_dir = self.input_dir / "sqa_task"
             if not sqa_task_dir.exists():
