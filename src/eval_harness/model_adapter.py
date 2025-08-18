@@ -45,7 +45,6 @@ class ModelAdapter(ABC):
             model_name: Human-readable name for the model
             model_type: Type of task this adapter handles
             supported_datasets: List of datasets this model supports
-            **kwargs: Additional model-specific parameters
         """
         self.model_name = model_name
         self.model_type = model_type
