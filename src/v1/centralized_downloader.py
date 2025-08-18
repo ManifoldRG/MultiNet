@@ -499,8 +499,8 @@ class OpenXDownloader(BaseDownloader):
 
     
     MORPHOLOGY_TO_DATASET = {
-        "single_arm": "droid",
-        "mobile_manipulation": "aloha_mobile", 
+        "single_arm": "bridge",
+        "mobile_manipulation": "fractal20220817_data", 
         "quadrupedal": "utokyo_saytap_converted_externally_to_rlds",
         "bimanual": "utokyo_xarm_bimanual_converted_externally_to_rlds",
         "human": "io_ai_tech",
