@@ -10,12 +10,12 @@ def setup_headless_rendering():
     """
     # Set environment variables for headless CPU rendering
     # These must be set before any Open3D visualization operations
-    os.environ['EGL_PLATFORM'] = 'surfaceless'  # For Ubuntu 20.04+ with Mesa v20.2+
-    os.environ['LIBGL_ALWAYS_SOFTWARE'] = '1'   # Force software rendering
-    os.environ['GALLIUM_DRIVER'] = 'llvmpipe'   # Use software renderer
+    os.environ['EGL_PLATFORM'] = 'surfaceless'  
+    os.environ['LIBGL_ALWAYS_SOFTWARE'] = '1'  
+    os.environ['GALLIUM_DRIVER'] = 'llvmpipe'
     
     # Set up virtual display environment
-    os.environ['DISPLAY'] = ':99'
+    os.environ['DISPLAY'] = ':1'
     
 def ply_to_top_down_png_headless(ply_file, output_dir, img_size=(1920, 1080), bg_color=(1, 1, 1)):
     """
@@ -96,17 +96,13 @@ def ply_to_top_down_png_headless(ply_file, output_dir, img_size=(1920, 1080), bg
         # Set up camera for top-down view
         # Calculate camera distance based on geometry size
         max_extent = np.max(extent)
-        camera_distance = max_extent * 2.5  # Adjust multiplier as needed
+        camera_distance = max_extent
         
         # Position camera above the geometry looking down
         camera_pos = center + np.array([0, 0, camera_distance])
         
-        # Set up the camera
-        renderer.setup_camera(60.0, center, camera_pos, [0, 1, 0])  # 60 degree field of view
-        
-        # Add lighting
-        renderer.scene.scene.set_sun_light([0, 0, -1], [1, 1, 1], 50000)
-        renderer.scene.scene.enable_sun_light(True)
+        # Set up the camera to match fallback method's view
+        renderer.setup_camera(60, center, camera_pos, [0, 1, 0])
         
         # Create the output directory if it doesn't exist
         if not os.path.exists(output_dir):
@@ -180,6 +176,7 @@ def ply_to_top_down_png_fallback(ply_file, output_dir, img_size=(1920, 1080), bg
         opt.background_color = np.asarray(bg_color)
         opt.point_size = 5.0
         opt.mesh_show_back_face = True
+        opt.light_on = False
 
         # Create the output directory if it doesn't exist
         if not os.path.exists(output_dir):
