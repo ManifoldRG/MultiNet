@@ -491,6 +491,7 @@ class SQA3DProcessor(BaseProcessor):
                 self.logger.warning("Test files (v1_balanced_questions_test_scannetv2.json or v1_balanced_sqa_annotations_test_scannetv2.json) not found in SQA3D")
         
             # Process PLY files
+            files_processed = 0
             self.logger.info("Processing PLY files...")
             ply_result = self.process_ply()
             
