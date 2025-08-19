@@ -131,9 +131,6 @@ def ply_to_top_down_png_fallback(ply_file, output_dir, img_size=(1920, 1080), bg
     """
     Fallback method using traditional Open3D Visualizer with enhanced headless setup.
     """
-    # Additional environment setup for fallback
-    os.environ['MESA_GL_VERSION_OVERRIDE'] = '3.3'
-    os.environ['MESA_GLSL_VERSION_OVERRIDE'] = '330'
     
     try:
         # Load the geometry
