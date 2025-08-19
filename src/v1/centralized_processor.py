@@ -34,6 +34,11 @@ from overcooked_ai_py.mdp.overcooked_mdp import OvercookedState, Recipe
 from overcooked_ai_py.visualization.state_visualizer import StateVisualizer
 
 
+# Add parent directory to path for absolute import when running directly
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils.ply_to_2d import ply_to_top_down_png_headless
+
+
 # ============================================================================
 # Core Types
 # ============================================================================
@@ -485,11 +490,94 @@ class SQA3DProcessor(BaseProcessor):
             else:
                 self.logger.warning("Test files (v1_balanced_questions_test_scannetv2.json or v1_balanced_sqa_annotations_test_scannetv2.json) not found in SQA3D")
         
+            # Process PLY files
+            files_processed = 0
+            self.logger.info("Processing PLY files...")
+            ply_result = self.process_ply()
+            
+            if not ply_result.success:
+                self.logger.error(f"PLY processing failed: {ply_result.error}")
+                return ProcessResult(self.name, False, self.output_dir, error=f"PLY processing failed: {ply_result.error}")
+            
+            files_processed += ply_result.files_processed
+            self.logger.info(f"Successfully processed {ply_result.files_processed} PLY files")
+            
             self.logger.info("Successfully processed SQA3D dataset")
-            return ProcessResult(self.name, True, self.output_dir, test_split_created=False, test_identifiers_saved=False)
+            return ProcessResult(
+                self.name, 
+                True, 
+                self.output_dir, 
+                test_split_created=False, 
+                test_identifiers_saved=False,
+                files_processed=files_processed
+            )
             
         except Exception as e:
             self.logger.error(f"Error processing SQA3D: {e}")
+            return ProcessResult(self.name, False, self.output_dir, error=str(e))
+
+        
+    
+    def process_ply(self) -> ProcessResult:
+        """Process PLY files from scans directory and convert them to top-down PNG images."""
+        try:
+            # Check if scans directory exists
+            scans_dir = self.input_dir / "scans"
+            if not scans_dir.exists():
+                self.logger.error(f"Scans directory not found: {scans_dir}")
+                return ProcessResult(self.name, False, self.output_dir, error="Scans directory not found")
+            
+            # Create test output directory
+            test_output = self.output_dir / "test"
+            test_output.mkdir(parents=True, exist_ok=True)
+            
+            processed_files = 0
+            scans = list(scans_dir.iterdir())
+            
+            if not scans:
+                self.logger.warning("No scan directories found")
+                return ProcessResult(self.name, True, self.output_dir, files_processed=0)
+            
+            for scan in scans:
+                if not scan.is_dir():
+                    continue
+                    
+                self.logger.info(f"Processing scan: {scan.name}")
+                
+                # Create output directory for this scan
+                scan_output = test_output / scan.name
+                scan_output.mkdir(parents=True, exist_ok=True)
+                
+                # Find PLY files in this scan
+                ply_files = list(scan.glob("*.ply"))
+                clean_ply_files = [f for f in ply_files if f.name.endswith("_clean.ply")]
+                
+                if not clean_ply_files:
+                    self.logger.warning(f"No _clean.ply files found in {scan.name}")
+                    continue
+                
+                # Process each _clean.ply file
+                for ply_file in clean_ply_files:
+                    try:
+                        self.logger.info(f"Processing PLY file: {ply_file.name}")
+                        # Convert PLY to top-down PNG
+                        ply_to_top_down_png_headless(str(ply_file), str(scan_output))
+                        processed_files += 1
+                        self.logger.info(f"Successfully processed {ply_file.name}")
+                    except Exception as e:
+                        self.logger.error(f"Failed to process {ply_file.name}: {e}")
+                        continue
+            
+            self.logger.info(f"Successfully processed {processed_files} PLY files")
+            return ProcessResult(
+                name=self.name,
+                success=True,
+                output_path=self.output_dir,
+                files_processed=processed_files
+            )
+            
+        except Exception as e:
+            self.logger.error(f"Error processing PLY files: {e}")
             return ProcessResult(self.name, False, self.output_dir, error=str(e))
 
 
