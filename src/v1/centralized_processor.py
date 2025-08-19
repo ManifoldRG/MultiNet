@@ -32,7 +32,11 @@ sys.path.append(str(Path(__file__).parent.parent / 'third_party' / 'overcooked_a
 
 from overcooked_ai_py.mdp.overcooked_mdp import OvercookedState, Recipe
 from overcooked_ai_py.visualization.state_visualizer import StateVisualizer
-from ..utils.ply_to_2d import ply_to_top_down_png
+
+
+# Add parent directory to path for absolute import when running directly
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from utils.ply_to_2d import ply_to_top_down_png_headless
 
 
 # ============================================================================
@@ -556,7 +560,7 @@ class SQA3DProcessor(BaseProcessor):
                     try:
                         self.logger.info(f"Processing PLY file: {ply_file.name}")
                         # Convert PLY to top-down PNG
-                        ply_to_top_down_png(str(ply_file), str(scan_output))
+                        ply_to_top_down_png_headless(str(ply_file), str(scan_output))
                         processed_files += 1
                         self.logger.info(f"Successfully processed {ply_file.name}")
                     except Exception as e:
