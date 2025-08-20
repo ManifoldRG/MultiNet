@@ -219,19 +219,37 @@ class ODinWProcessor(BaseProcessor):
                 
                 self.logger.info(f"Processing ODinW dataset: {dataset_dir.name}")
                 
-                # Recursively search for test folders
-                test_path = self._find_test_folder(dataset_dir)
-                if test_path is None:
-                    self.logger.warning(f"No test folder found for {dataset_dir.name}")
+                if dataset_dir.name == "PascalVOC" or dataset_dir.name=="selfdrivingCar":
+                    print(f'Ignoring {dataset_dir.name} as it does not have a test split or is too large')
                     continue
-                
-                self.logger.info(f"Found test folder at: {test_path.relative_to(dataset_dir)}")
-                
-                # Find annotations file
-                annotations_file = test_path / "_annotations.coco.json"
-                if not annotations_file.exists():
-                    self.logger.warning(f"No COCO annotations found for {dataset_dir.name}")
-                    continue
+                elif dataset_dir.name == "dice":
+                    self.logger.info(f"Processing ODinW dataset: {dataset_dir.name}")
+                    test_path = dataset_dir / "mediumColor" / "export"
+                    print(f"Found test folder at: {test_path.relative_to(dataset_dir)}")
+                    annotations_file = test_path / "test_annotations_without_background.json"
+                elif dataset_dir.name == "boggleBoards":
+                    self.logger.info(f"Processing ODinW dataset: {dataset_dir.name}")
+                    test_path = dataset_dir / "416x416AutoOrient" / "export"
+                    print(f"Found test folder at: {test_path.relative_to(dataset_dir)}")
+                    annotations_file = test_path / "test_annotations_without_background.json"
+                elif dataset_dir.name == "pistols":
+                    self.logger.info(f"Processing ODinW dataset: {dataset_dir.name}")
+                    test_path = dataset_dir / "export"
+                    print(f"Found test folder at: {test_path.relative_to(dataset_dir)}")
+                    annotations_file = test_path / "test_annotations_without_background.json"
+                else:
+                    self.logger.info(f"Processing ODinW dataset: {dataset_dir.name}")
+                    # Recursively search for test folders
+                    test_path = self._find_test_folder(dataset_dir)
+                    if test_path is None:
+                        self.logger.warning(f"No test folder found for {dataset_dir.name}")
+                        continue
+                    self.logger.info(f"Found test folder at: {test_path.relative_to(dataset_dir)}")
+                    # Find annotations file
+                    annotations_file = test_path / "_annotations.coco.json"
+                    if not annotations_file.exists():
+                        self.logger.warning(f"No COCO annotations found for {dataset_dir.name}")
+                        continue
                 
                 # Load annotations
                 with open(annotations_file, 'r') as f:
