@@ -923,7 +923,7 @@ class OpenXProcessor(BaseProcessor):
                         
 
                     else:
-                        self.logger.info(f"Dataset {dataset_dir.name} has less than 1000 episodes - copying as-is")
+                        self.logger.info(f"Dataset {dataset_dir.name} has less than 1000 episodes - translating as-is")
                     
 
                     
