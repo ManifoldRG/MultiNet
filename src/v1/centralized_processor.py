@@ -929,12 +929,18 @@ class OpenXProcessor(BaseProcessor):
                     
                     for shard_file in shard_files:
                         try:
+                            # Check if translated file already exists
+                            output_file = dataset_output / "test" / f"translated_{shard_file.name}"
+                            if output_file.exists():
+                                self.logger.info(f"Translated shard already exists, skipping: {output_file}")
+                                continue
+                            
                             # Translate using torchrlds function
                             translated = torchrlds(str(shard_file), "openx", limit_schema=False)
                             
                             if translated is not None:
-                                output_file = dataset_output / "test" / f"translated_{shard_file.name}"
                                 tf.data.Dataset.save(translated, str(output_file))
+                                self.logger.info(f"Successfully translated: {shard_file.name}")
                                 
                         except Exception as e:
                             self.logger.warning(f"Failed to translate shard {shard_file}: {e}")
@@ -969,13 +975,16 @@ class OpenXProcessor(BaseProcessor):
                 # Process and translate only test split shards
                 for shard_file in test_shards:
                     try:
+                        # Check if translated file already exists
+                        output_file = test_output / f"translated_{shard_file.name}"
+                        if output_file.exists():
+                            self.logger.info(f"Translated shard already exists, skipping: {output_file}")
+                            continue
+                        
                         # Translate using torchrlds function
                         translated = torchrlds(str(shard_file), "openx", limit_schema=False)
                         
                         if translated is not None:
-                            output_file = test_output / f"translated_{shard_file.name}"
-                            
-                            # Save translated test data
                             tf.data.Dataset.save(translated, str(output_file))
                             
                     except Exception as e:
