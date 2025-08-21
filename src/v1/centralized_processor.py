@@ -346,13 +346,13 @@ class ODinWProcessor(BaseProcessor):
                         self.logger.warning(f"Failed to process annotation {annotation.get('id', 'unknown')}: {e}")
                         continue
                 
-                # Handle test set creation if more than 10,000 pairs
+                # Handle test set creation if more than 500 pairs
                 test_pairs = []
                 test_split_created = False
                 
-                if len(object_caption_pairs) > 10000:
-                    # Create 10% test split
-                    test_size = int(0.1 * len(object_caption_pairs))
+                if len(object_caption_pairs) > 500:
+                    # Create test split of 500 pairs
+                    test_size = 500
                     test_indices = random.sample(range(len(object_caption_pairs)), test_size)
                     
                     # Split the pairs
@@ -368,7 +368,6 @@ class ODinWProcessor(BaseProcessor):
                         "test_indices": sorted(test_indices),
                         "test_size": len(test_pairs),
                         "total_size": len(object_caption_pairs),
-                        "test_ratio": 0.1,
                         "dataset": dataset_dir.name,
                         # Extract key identifiers for easy access
                         "test_bbox_images": [pair["bbox_image"] for pair in test_pairs],
