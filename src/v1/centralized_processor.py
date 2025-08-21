@@ -894,14 +894,39 @@ class OpenXProcessor(BaseProcessor):
                 has_explicit_test_val = dataset_dir.name.endswith('_test') or dataset_dir.name.endswith('_val')
                 is_train_only = dataset_dir.name.endswith('_train')
                 
-                if has_explicit_test_val:
-                    self.logger.info(f"Dataset {dataset_dir.name} already has explicit test/val split - copying as-is")
+                if has_explicit_test_val or dataset_dir.name == "fractal20220817_data_train":
+                    self.logger.info(f"Dataset {dataset_dir.name} already has explicit test/val split or is fractal which was sampled at download - copying as-is")
                     # Just copy the existing test/val data - no new test split created
                     dataset_output = self.output_dir
                     dataset_output.mkdir(parents=True, exist_ok=True)
                     
                     # Copy all shard files to output
                     shard_files = list(dataset_dir.glob("shard_*"))
+
+                    #Check if test split has more than 1000 episodes, if yes sample 400 episodes randomly and create test split identifiers
+                    if len(shard_files) > 1000:
+                        self.logger.info(f"Dataset {dataset_dir.name} has more than 1000 episodes - sampling 400 episodes")
+                        shard_files = random.sample(shard_files, 400)
+                        test_shard_numbers = [int(f.name.split('_')[-1]) for f in shard_files]
+
+                        #Create test split identifiers
+                        identifiers_file = dataset_output / "test_shard_identifiers.json"
+                        with open(identifiers_file, 'w') as f:
+                            json.dump({
+                                "test_shard_numbers": test_shard_numbers,
+                                "total_shards": len(shard_files),
+                                "test_shards": len(shard_files),
+                                "dataset": dataset_dir.name,
+                                "morphology": self.name
+                            }, f, indent=2)
+                        
+                        
+
+                    else:
+                        self.logger.info(f"Dataset {dataset_dir.name} has less than 1000 episodes - copying as-is")
+                    
+
+                    
                     for shard_file in shard_files:
                         try:
                             # Translate using torchrlds function
@@ -931,6 +956,7 @@ class OpenXProcessor(BaseProcessor):
                     continue
                 
                 # Create 10% test split for datasets without explicit test/val
+            
                 test_size = max(1, int(0.1 * len(shard_files)))
                 test_shards = random.sample(shard_files, test_size)
                 test_shard_numbers = [int(f.name.split('_')[-1]) for f in test_shards]
