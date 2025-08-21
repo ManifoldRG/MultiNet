@@ -219,9 +219,14 @@ class ODinWProcessor(BaseProcessor):
                 
                 self.logger.info(f"Processing ODinW dataset: {dataset_dir.name}")
                 
-                if dataset_dir.name == "PascalVOC" or dataset_dir.name=="selfdrivingCar":
-                    print(f'Ignoring {dataset_dir.name} as it does not have a test split or is too large')
+                if dataset_dir.name == "PascalVOC":
+                    print(f'Ignoring {dataset_dir.name} as it does not have a test split')
                     continue
+                elif dataset_dir.name == "selfdrivingCar":
+                    self.logger.info(f"Processing ODinW dataset: {dataset_dir.name}")
+                    test_path = dataset_dir / "fixedLarge" / "export"
+                    print(f"Found test folder at: {test_path.relative_to(dataset_dir)}")
+                    annotations_file = test_path / "test_annotations_without_background.json"
                 elif dataset_dir.name == "dice":
                     self.logger.info(f"Processing ODinW dataset: {dataset_dir.name}")
                     test_path = dataset_dir / "mediumColor" / "export"
@@ -287,7 +292,7 @@ class ODinWProcessor(BaseProcessor):
                         image_file = test_path / image_info["file_name"]
                         
                         if not image_file.exists():
-                            self.logger.warning(f"Image file does not exist: {image_file}")
+                            raise FileNotFoundError(f"Image file does not exist: {image_file}")
                             continue
                         
                         # Load image
@@ -341,9 +346,46 @@ class ODinWProcessor(BaseProcessor):
                         self.logger.warning(f"Failed to process annotation {annotation.get('id', 'unknown')}: {e}")
                         continue
                 
-                # Save object-caption pairs
-                with open(dataset_output / "object_caption_pairs.json", 'w') as f:
-                    json.dump(object_caption_pairs, f, indent=2)
+                # Handle test set creation if more than 10,000 pairs
+                test_pairs = []
+                test_split_created = False
+                
+                if len(object_caption_pairs) > 10000:
+                    # Create 10% test split
+                    test_size = int(0.1 * len(object_caption_pairs))
+                    test_indices = random.sample(range(len(object_caption_pairs)), test_size)
+                    
+                    # Split the pairs
+                    test_pairs = [object_caption_pairs[i] for i in test_indices]
+                    test_split_created = True
+                    
+                    # Save test pairs separately
+                    with open(dataset_output / "test_object_caption_pairs.json", 'w') as f:
+                        json.dump(test_pairs, f, indent=2)
+                    
+                    # Save test identifiers for reproducibility with same info as object_data
+                    test_identifiers = {
+                        "test_indices": sorted(test_indices),
+                        "test_size": len(test_pairs),
+                        "total_size": len(object_caption_pairs),
+                        "test_ratio": 0.1,
+                        "dataset": dataset_dir.name,
+                        # Extract key identifiers for easy access
+                        "test_bbox_images": [pair["bbox_image"] for pair in test_pairs],
+                        "test_annotation_ids": [pair["annotation_id"] for pair in test_pairs],
+                        "test_bbox_ids": [pair["bbox_id"] for pair in test_pairs],
+                        
+                    }
+                    with open(dataset_output / "test_identifiers.json", 'w') as f:
+                        json.dump(test_identifiers, f, indent=2)
+                    
+                    self.logger.info(f"Created test split for {dataset_dir.name}: {len(test_pairs)} test pairs")
+                
+                # Save object-caption pairs (all pairs if no test split was created)
+                if test_split_created == False:
+                    with open(dataset_output / "object_caption_pairs.json", 'w') as f:
+                        json.dump(object_caption_pairs, f, indent=2)
+                
                 
                 # Save categories for classification
                 categories_data = {
@@ -363,13 +405,23 @@ class ODinWProcessor(BaseProcessor):
                     "total_annotations": len(annotations),
                     "total_bbox_extracted": bbox_count,
                     "total_categories": len(categories),
+                    "test_split_created": test_split_created,
+                    "test_pairs": len(test_pairs) if test_split_created else 0,
                     "category_distribution": {}
                 }
                 
-                # Calculate category distribution
-                for pair in object_caption_pairs:
-                    cat_name = pair["category_name"]
-                    summary["category_distribution"][cat_name] = summary["category_distribution"].get(cat_name, 0) + 1
+                
+                # Add test category distribution if test split was created
+                if test_split_created:
+                    summary["test_category_distribution"] = {}
+                    for pair in test_pairs:
+                        cat_name = pair["category_name"]
+                        summary["test_category_distribution"][cat_name] = summary["test_category_distribution"].get(cat_name, 0) + 1
+                else:
+                    # Calculate category distribution (using all pairs for consistency)
+                    for pair in object_caption_pairs:
+                        cat_name = pair["category_name"]
+                        summary["category_distribution"][cat_name] = summary["category_distribution"].get(cat_name, 0) + 1
                 
                 with open(dataset_output / "summary.json", 'w') as f:
                     json.dump(summary, f, indent=2)
