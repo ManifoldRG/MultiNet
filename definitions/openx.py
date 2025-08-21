@@ -1,14 +1,105 @@
 import numpy as np
 class OpenXDefinitions:
     DESCRIPTIONS = {
-        "fractal20220817_data": {},
+        "fractal20220817_data": {
+            "pick rxbar chocolate from bottom drawer and place on counter":[
+                "Open the bottom drawer, retrieve the chocolate RX bar, and put it down on the counter surface."
+            ],
+            "pick pepsi can":[
+                "Grasp the Pepsi can."
+            ],
+            "place redbull can upright":[
+                "Starting with a Red Bull can in any orientation, position it so it stands upright on its base."
+            ],
+            "knock water bottle over":[
+                "Apply force to tip the water bottle from its upright position onto its side."
+            ],
+            "close bottom drawer":[
+                "Starting with an open bottom drawer, push it closed until it's fully shut."
+            ],
+             "open middle drawer": [
+                "Starting with a closed middle drawer, pull the handle to slide the drawer open."
+            ],
+            "move apple near water bottle": [
+                "Pick up the apple and relocate it to a position close to the water bottle."
+            ],
+            "move pepsi can near redbull can": [
+                "Lift the Pepsi can and place it in proximity to the Red Bull can."
+            ],
+            "pick banana from white bowl": [
+                "Starting with a banana inside a white bowl, reach in and pick up the banana from the bowl."
+            ]
+        },
         "kuka": {
             "pick anything": [
                 "Choose a grasp point, and then execute the desired grasp strategy.",
                 "Update the grasp strategy continuously based on the most recent observations."
             ]
         },
-        "bridge": {},
+        "bridge": {
+            "Pick up the red pan and place it on the left front corner of the table":[
+                "Lift the red pan and move it to the left front corner."
+            ],
+            "pick the blue spatula and place it to the edge of the table.":[
+                "Starting with a blue spatula in the table, grab and place it at the edge of the table.."
+            ],
+            "Push the orange cloth to the far left edge of the table":[
+                "Push the orange cloth until it reaches the far left edge."
+            ],
+            "wipe pot with sponge": [
+                "Starting with a pot and a sponge, use the sponge to wipe the outer surface of the pot."
+            ],
+            "pick up sponge and wipe plate": [
+                "Starting with a dirty plate and a sponge, pick up the sponge and perform wiping motions across the plate’s surface."
+            ],
+            "fold cloth in half":[
+                "Starting with unfolded cloth, fold the cloth in half."
+            ],
+            "open drawer of a box":[
+                "Starting with a closed drawer, open the drawer of a box."
+            ],
+            "close drawer of a box":[
+                "Starting with an open drawer, close the drawer of a box."
+            ],
+            "open fridge":[
+                "Starting with a closed fridge door, open the fridge door."
+            ],
+            "close fridge":[
+                "Starting with an open fridge door, close the fridge door."
+            ],
+            "open microwave":[
+                "Pull the microwave handle to open the door."
+            ],
+            "close microwave":[
+                "Push the microwave door to close it."
+            ],
+            "open large4fbox flaps":[
+                "Given the closed cardboard box flaps, lift the cardboard box flaps upward to open."
+            ],
+            "close large4fbox flaps":[
+                "Given the open cardboard box flaps, fold the cardboard box flaps inward to close."
+            ],
+            "twist knob start vertical clockwise90":[
+                "The lever starts in a vertical orientation.",
+                "Rotate the knob rotate clockwise by 90 degrees.",
+            ],
+            "flip pot upright which is in sink":[
+                "Starting with a pot in different orientation, flip the pot upright while it is in the sink."
+            ],
+            "flip cup upright":[
+                "Starting with a cup in different orientation, flip the cup to an upright position."
+            ],
+            "zip zipper bag":[
+                "Strating with an open zipper, grab the zipper tab and pull it across to fully close the bag."
+            ],
+            "unzip zipper bag":[
+                "Grab the zipper tab and pull it back across to open the bag."
+            ],
+            "turn lever vertical to front":[
+                "The lever starts in a vertical orientation.",
+                "Rotate the lever forward until it faces front.",
+            ]
+        },
         "taco_play": {},
         "jaco_play": {},
         "berkeley_cable_routing": {
@@ -80,9 +171,77 @@ class OpenXDefinitions:
         "usc_cloth_sim_converted_externally_to_rlds": {},
         "utokyo_pr2_opening_fridge_converted_externally_to_rlds": {}, 
         "utokyo_pr2_tabletop_manipulation_converted_externally_to_rlds": {},
-        "utokyo_saytap_converted_externally_to_rlds": {},
+        "utokyo_saytap_converted_externally_to_rlds": {
+            "bound in place": [
+                "Execute bounding movements while remaining stationary, lifting all feet off the ground simultaneously."
+            ],
+            "trot in place": [
+                "Perform a trotting gait without forward movement, alternating diagonal leg pairs."
+            ],
+            "trot forward fast": [
+                "Move forward using a rapid trotting gait with quick, rhythmic steps."
+            ],
+            "trot backward fast": [
+                "Execute backward locomotion at high speed using trotting movement patterns."
+            ],
+            "trot forward slowly": [
+                "Advance forward with a controlled, deliberate trotting pace."
+            ],
+            "trot backward slowly": [
+                "Move in reverse direction using a measured trotting gait."
+            ],
+            "move backward fast in pacing gait": [
+                "Travel backward rapidly using a pacing gait where legs on the same side move together."
+            ],
+            "move backward slowly in pacing gait": [
+                "Execute slow rearward movement with synchronized same-side leg coordination."
+            ],
+            "move forward slowly in pacing gait": [
+                "Progress forward at a gentle pace using lateral leg pairing movements."
+            ],
+            "move forward fast in pacing gait": [
+                "Accelerate forward while maintaining pacing gait coordination patterns."
+            ],
+            "pace in place": [
+                "Demonstrate pacing gait mechanics without changing position."
+            ],
+            "bound forward slowly": [
+                "Use bounding motion to move forward at a controlled speed."
+            ],
+            "bound forward fast": [
+                "Execute rapid forward bounds."
+            ],
+            "bound backward fast": [
+                "Perform quick rearward bounding movements."
+            ],
+            "bound backward slowly": [
+                "Move backward using deliberate, controlled bounding motions."
+            ],
+            "stand still": [
+                "Maintain a stationary position without any movement."
+            ],
+            "raise your front left leg": [
+                "Lift the front left leg off the ground while maintaining balance."
+            ],
+            "raise your front right leg": [
+                "Lift the front right leg off the ground while maintaining balance."
+            ],
+            "raise your rear left leg": [
+                "Lift the rear left leg off the ground while maintaining balance."
+            ],
+            "raise your rear right leg": [
+                "Lift the rear right leg off the ground while maintaining balance."
+            ]
+        },
         "utokyo_xarm_pick_and_place_converted_externally_to_rlds": {},
-        "utokyo_xarm_bimanual_converted_externally_to_rlds": {},
+        "utokyo_xarm_bimanual_converted_externally_to_rlds": {
+            "Unfold a wrinkled towel": [
+                "Starting with a wrinkled or folded towel, spread it out and smooth the fabric to remove wrinkles and creases."
+            ],
+            "Reach a towel": [
+                "Extend your arm to grab the towel."
+            ]
+            },
         "berkeley_mvp_converted_externally_to_rlds": {},
         "berkeley_rpt_converted_externally_to_rlds": {},
         "kaist_nonprehensile_converted_externally_to_rlds": {},
@@ -167,9 +326,28 @@ class OpenXDefinitions:
         },
         "conq_hose_manipulation": {},
         "dobbe": {},
-        "io_ai_tech": {},
+        "io_ai_tech": {
+            "pick teacup from desk": [
+                "Grasp the teacup handle and lift it from the desk surface."
+            ],
+            "pick pear from plate": [
+                "Pick the pear from its position on the plate."
+            ],
+            "pick eraser": [
+                "Grab the eraser and pick it up."
+            ],
+            "place apple on desk": [
+                "Set the apple down onto the desk surface in a stable position."
+            ],
+            "pick bottle": [
+                "Reach for and grab the bottle."
+            ],
+            "place bottle": [
+                "Position the bottle down in the table."
+            ]
+        },
         "robo_set": {},
-        "plex_robosuite": {}
+        "plex_robosuite": {},
     }
 
     ACTION_SPACES = {
@@ -421,7 +599,18 @@ class OpenXDefinitions:
         },
         "utokyo_saytap_converted_externally_to_rlds": {
             "default": {
-                0: None
+                0: ("Motor joint position for front right hip"),
+                1: ("Motor joint position for front right thigh"),
+                2: ("Motor joint position for front right calf"),
+                3: ("Motor joint position for front left hip"),
+                4: ("Motor joint position for front left thigh"),
+                5: ("Motor joint position for front left calf"),
+                6: ("Motor joint position for front right hip"),
+                7: ("Motor joint position for front right thigh"),
+                8: ("Motor joint position for front right calf"),
+                9: ("Motor joint position for front left hip"),
+                10:("Motor joint position for front left thigh"),
+                11:("Motor joint position for front left calf"),
             }
         },
         "utokyo_xarm_pick_and_place_converted_externally_to_rlds": {
@@ -585,7 +774,8 @@ class OpenXDefinitions:
 
         "berkeley_gnm_sac_son": {
             "default": {
-                0: None
+                0: ("Linear velocity of the robot"),
+                1: ("Angular velocity of the robot")
             }
         },
 
