@@ -605,12 +605,12 @@ class OpenXDefinitions:
                 3: ("Motor joint position for front left hip"),
                 4: ("Motor joint position for front left thigh"),
                 5: ("Motor joint position for front left calf"),
-                6: ("Motor joint position for front right hip"),
-                7: ("Motor joint position for front right thigh"),
-                8: ("Motor joint position for front right calf"),
-                9: ("Motor joint position for front left hip"),
-                10:("Motor joint position for front left thigh"),
-                11:("Motor joint position for front left calf"),
+                6: ("Motor joint position for rear right hip"),
+                7: ("Motor joint position for rear right thigh"),
+                8: ("Motor joint position for rear right calf"),
+                9: ("Motor joint position for rear left hip"),
+                10:("Motor joint position for rear left thigh"),
+                11:("Motor joint position for rear left calf"),
             }
         },
         "utokyo_xarm_pick_and_place_converted_externally_to_rlds": {
