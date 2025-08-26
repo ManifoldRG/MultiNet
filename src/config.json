@@ -21,6 +21,7 @@
         "locomujoco": "control"
     },
     "models": {
+        "gpt-5-2025-08-07": ["vlm", "openai"],
         "gpt-4o-2024-05-13": ["vlm", "openai"],
         "gpt-4o-2024-08-06": ["vlm", "openai"],
         "gpt-4.1-2025-04-14": ["vlm", "openai"],
