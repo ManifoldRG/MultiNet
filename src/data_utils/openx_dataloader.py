@@ -103,13 +103,22 @@ class OpenXDataset(Dataset):
                 else:
                     text_observation = elem['action_instruct'].numpy().decode('utf-8')
 
+            #Check for RoboVQA and include additional features
+            text_answer = None
+            if 'raw_text_question' in elem['observation'] and 'raw_text_answer' in elem['observation']:
+                #Pick only the last image from the list of images depicting the progression of the scene - this is the image reqd for the question
+                image_observation = elem['observation']['images'][-1].numpy().astype(np.uint8)
+                text_observation = elem['observation']['raw_text_question'].numpy().decode('utf-8')
+                text_answer = elem['observation']['raw_text_answer'].numpy().decode('utf-8')
+
             # Extract relevant features from the example
             step_data = {
                 'text_observation': text_observation,
                 'image_observation': image_observation,
                 'action': concatenated_action_float,
                 'reward': elem['reward'].numpy(),
-                'is_last': elem['is_last'].numpy()
+                'is_last': elem['is_last'].numpy(),
+                'text_answer': text_answer
             }
             step_data.update(float_obs)                
             current_shard.append(step_data)
@@ -210,6 +219,7 @@ class OpenXDataset(Dataset):
         concatenated_action_float = []
         reward = []
         is_last = []
+        text_answer = []
 
         for timestep in episode:
             text_observation.append(timestep['text_observation'])
@@ -222,6 +232,8 @@ class OpenXDataset(Dataset):
             timestep.pop('reward')
             is_last.append(timestep['is_last'])
             timestep.pop('is_last')
+            text_answer.append(timestep['text_answer'])
+            timestep.pop('text_answer')
 
             for key, value in timestep.items():
                 if key not in etc_observations:
@@ -233,7 +245,8 @@ class OpenXDataset(Dataset):
             'image_observation': image_observation,
             'action': concatenated_action_float,
             'reward': reward,
-            'is_last': is_last
+            'is_last': is_last,
+            'text_answer': text_answer
         }
         result.update(etc_observations)
 
