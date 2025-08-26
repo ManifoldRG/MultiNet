@@ -2,6 +2,8 @@ from src.modules.dataset_modules.base_dataset_module import DatasetModule, Datas
 from definitions.openx import OpenXDefinitions
 from src.data_utils.openx_dataloader import get_openx_dataloader
 from definitions.openx_prompt import format_instruction_prompt
+from src.eval_utils import quantile_filter, calculate_mean, min_max_normalize, calculate_mse, calculate_mae
+from src.eval_utils import calculate_max_relative_mae, calculate_proportion_beyond_mae_threshold
 from pathlib import Path
 from typing import Any, Union
 import numpy as np
@@ -13,6 +15,85 @@ def _validate_text_output(output: Any, shape: tuple[int]) -> np.array:
     if output is None or not isinstance(output, list) or len(output) != shape[0] or any(isinstance(x, (str, np.string_, set)) for x in output):
         return False
     return True
+
+def _validate_outputs_and_calculate_metrics(outputs, labels, action_stats):
+    """Validate outputs and calculate MSE and MAE metrics for OpenX."""
+    mses, maes = [], []
+    total_invalid_preds = 0
+    
+    for i, output in enumerate(outputs):
+        if _validate_text_output(output, shape=labels[i].shape):
+            output = [float(item) for item in output]
+            mses.append(calculate_mse(output, labels[i]))
+            maes.append(calculate_mae(output, labels[i]))
+        else:
+            # max value of MSE/MAE for invalid outputs
+            max_vals = np.array(action_stats['max'])
+            min_vals = np.array(action_stats['min'])
+            mse = calculate_mse(max_vals, min_vals)
+            mae = calculate_mae(max_vals, min_vals)
+            mses.append(mse)
+            maes.append(mae)
+            total_invalid_preds += 1
+    
+    return mses, maes, total_invalid_preds
+
+def _calculate_final_metrics(timestep_mses, timestep_maes, action_success):
+    """Calculate comprehensive final metrics for OpenX evaluation."""
+    result = {}
+    
+    # Calculate MSE metrics
+    total_dataset_mse = sum(timestep_mses)
+    num_timesteps = len(timestep_mses)
+    avg_dataset_mse = total_dataset_mse / num_timesteps if num_timesteps > 0 else 0.0
+    
+    # Calculate normalized MSE
+    if num_timesteps > 1:
+        normalized_mses = min_max_normalize(timestep_mses)
+        normalized_amse = calculate_mean(normalized_mses)
+    else:
+        normalized_amse = 0.0
+    
+    # Calculate MAE metrics
+    total_dataset_mae = sum(timestep_maes)
+    avg_dataset_mae = calculate_mean(timestep_maes)
+    
+    if num_timesteps > 1:
+        normalized_maes = min_max_normalize(timestep_maes)
+        normalized_amae = calculate_mean(normalized_maes)
+        
+        # Calculate quantile filtered MAE metrics
+        quantile_filtered_maes = quantile_filter(timestep_maes)
+        normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
+        normalized_quantile_filtered_amae = calculate_mean(normalized_quantile_filtered_maes)
+        
+        # Calculate additional MAE metrics
+        max_rel_mae = calculate_max_relative_mae(timestep_maes)
+        prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(timestep_maes)
+    else:
+        normalized_amae = 0.0
+        normalized_quantile_filtered_amae = 0.0
+        max_rel_mae = 0.0
+        prop_beyond_threshold_mae = 0.0
+    
+    # Calculate action success rate
+    action_success_rate = None
+    if len(action_success) > 0:
+        action_success_rate = (sum(action_success) / len(action_success)) * 100
+    
+    result['action_success_rate'] = action_success_rate
+    result['total_dataset_amse'] = total_dataset_mse
+    result['total_dataset_amae'] = total_dataset_mae
+    result['num_timesteps'] = num_timesteps
+    result['avg_dataset_amse'] = avg_dataset_mse
+    result['avg_dataset_amae'] = avg_dataset_mae
+    result['normalized_amse'] = normalized_amse
+    result['normalized_amae'] = normalized_amae
+    result['normalized_quantile_filtered_amae'] = normalized_quantile_filtered_amae
+    result['max_relative_mae'] = max_rel_mae
+    result['proportion_beyond_threshold_mae'] = prop_beyond_threshold_mae
+    
+    return result
 
 # Finding the translated TFDS shards.
 def _find_shards(dataset: str, disk_root_dir: str) -> list[str]:
@@ -34,7 +115,7 @@ class OpenXModule(DatasetModule):
         self.format_instruction_prompt_fn = format_instruction_prompt  
     
     def _find_shards(self, dataset: str) -> list[str]:
-        return _find_shards(self, dataset, self.disk_root_dir)
+        return _find_shards(dataset, self.disk_root_dir)
     
     # Evaluation of one dataset.
     def _run_eval_dataset(self, dataset: str) -> dict[str, Union[list, float]]:
@@ -56,6 +137,7 @@ class OpenXModule(DatasetModule):
             action_success = []
             timestep_mse = []
             total_invalid_preds = 0
+            timestep_mae = []
             
             for batch in dataloader:
                 # Action stats need to be retrieved only once for each dataset, after they have been populated.
@@ -68,18 +150,8 @@ class OpenXModule(DatasetModule):
                 for cur_inputs, k_shots_examples, instructions, labels, idxs, output_types, is_lasts in self._process_batch(batch, dataset):
                     outputs = self.modality_module.infer_step(cur_inputs, k_shots_examples, instructions, output_types)  # (B)
                     
-                    mses = []
-                    for i, output in enumerate(outputs):
-                        if _validate_text_output(output, shape=labels[i].shape):
-                            output = [float(item) for item in output]
-                            mses.append(np.mean((np.array(labels[i]) - np.array(output)) ** 2))
-                        else:
-                            # max value of MSE for invalid outputs
-                            max_vals = np.array(self.action_stats['max'])
-                            min_vals = np.array(self.action_stats['min'])
-                            mse = np.mean((max_vals - min_vals) ** 2)
-                            mses.append(mse)
-                            total_invalid_preds += 1
+                    mses, maes, invalid_preds = _validate_outputs_and_calculate_metrics(outputs, labels, self.action_stats)
+                    total_invalid_preds += invalid_preds
                             
                     # This only works for continuous vector actions. (Okay for OpenX)
                     assert len(mses) == len(idxs), "The calculated MSEs are not matched with the processed inputs."
@@ -87,6 +159,7 @@ class OpenXModule(DatasetModule):
                     for i, idx in enumerate(idxs):
                         #episode_mses[idx].append(mses[i])
                         timestep_mse.append(mses[i])
+                        timestep_mae.append(maes[i])
                         # If any episodes are the last, recording the success rate.
                         if is_lasts[i]:
                             #print(outputs[i])
@@ -104,44 +177,10 @@ class OpenXModule(DatasetModule):
                 #episode_count += batch_size
                 #total_success_counts += success_counts
 
-            action_success_rate = (sum(action_success) / len(action_success)) * 100
-            total_dataset_mse = sum(timestep_mse)
-            print(f"\nTotal MSE across {len(timestep_mse)} timesteps: {total_dataset_mse:.4f}")
-            num_timesteps = len(timestep_mse)
-            avg_dataset_mse = total_dataset_mse / num_timesteps
+        
 
-            # Calculate average AMSE over all episodes
-            #avg_dataset_amse = total_dataset_amse / episode_count
-            
-            # Calculate min-max normalized AMSE
-            min_mse = min(timestep_mse)
-            max_mse = max(timestep_mse)
-            normalized_mse = (timestep_mse - min_mse) / (max_mse - min_mse) if max_mse != min_mse else 0
-            normalized_amse = sum(normalized_mse) / len(normalized_mse)
-
-            end_time = time.time()
-            eval_time = end_time - start_time
-
-            '''result['action_success_rate'] = (sum(total_success_counts) / len(total_success_counts)) * 100
-            result['avg_mse_list'] = avg_mse_list
-            result['episode_count'] = episode_count
-            result['total_dataset_amse'] = total_dataset_amse
-
-            # Calculating average AMSE over all episodes
-            avg_dataset_amse = total_dataset_amse / episode_count
-            
-            # Calculating min-max normalized AMSE
-            min_amse = min(avg_mse_list)
-            max_amse = max(avg_mse_list)
-            result['normalized_amse'] = (avg_dataset_amse - min_amse) / (max_amse - min_amse) if max_amse != min_amse else 0
-            result['eval_time'] = eval_time'''
-
-            result['action_success_rate'] = action_success_rate
-            result['total_dataset_amse'] = total_dataset_mse
-            result['num_timesteps'] = num_timesteps
-            result['avg_dataset_amse'] = avg_dataset_mse
-            result['normalized_amse'] = normalized_amse
-            result['eval_time'] = eval_time
+            result = _calculate_final_metrics(timestep_mse, timestep_mae, action_success)
+            result['eval_time'] = time.time() - start_time
             result['total_invalid_preds'] = total_invalid_preds
             
         except KeyError:
@@ -159,7 +198,7 @@ class OpenXBatchModule(DatasetBatchModule):
         self.format_instruction_prompt_fn = format_instruction_prompt
     
     def _find_shards(self, dataset: str) -> list[str]:
-        return _find_shards(self, dataset, self.disk_root_dir)
+        return _find_shards(dataset, self.disk_root_dir)
     
     def _run_eval_dataset(self, dataset_batch_info_paths: Union[str, list[str]]):
         result = {}
@@ -169,6 +208,7 @@ class OpenXBatchModule(DatasetBatchModule):
         #episode_count = 0
         action_success = []
         timestep_mse = []
+        timestep_mae = []
         start_time = time.time()
         total_invalid_preds = 0
         
@@ -202,18 +242,8 @@ class OpenXBatchModule(DatasetBatchModule):
                 raise Exception(f'Batch not completed for batch {ds} batch num {batch_num} '
                                 f'with batch id {batch_id}. Status: {status}. Stopping eval.')
             
-            mses = []
-            for i, output in enumerate(outputs):
-                if _validate_text_output(output, shape=labels[i].shape):
-                    output = [float(item) for item in output]
-                    mses.append(np.mean((np.array(labels[i]) - np.array(output)) ** 2))
-                else:
-                    # max value of MSE for invalid outputs
-                    max_vals = np.array(self.action_stats['max'])
-                    min_vals = np.array(self.action_stats['min'])
-                    mse = np.mean((max_vals - min_vals) ** 2)
-                    mses.append(mse)
-                    total_invalid_preds += 1
+            mses, maes, invalid_preds = _validate_outputs_and_calculate_metrics(outputs, labels, self.action_stats)
+            total_invalid_preds += invalid_preds
                     
             # This only works for continuous vector actions. (Okay for OpenX)
             assert len(mses) == num_inputs, "The calculated MSEs are not matched with the processed inputs."
@@ -221,6 +251,7 @@ class OpenXBatchModule(DatasetBatchModule):
             for i in range(num_inputs):
                 #episode_mses[idx].append(mses[i])
                 timestep_mse.append(mses[i])
+                timestep_mae.append(maes[i])
                 # If any episodes are the last, recording the success rate.
                 if is_lasts[i]:
                     #print(outputs[i])
@@ -230,46 +261,10 @@ class OpenXBatchModule(DatasetBatchModule):
                         action_success.append(1)
                     else:
                         action_success.append(0)
-        action_success_rate = None
-        if len(action_success) > 0:
-            action_success_rate = (sum(action_success) / len(action_success)) * 100
-        total_dataset_mse = sum(timestep_mse)
-        print(f"\nTotal MSE across {len(timestep_mse)} timesteps: {total_dataset_mse:.4f}")
-        num_timesteps = len(timestep_mse)
-        avg_dataset_mse = total_dataset_mse / num_timesteps
-
-        # Calculate average AMSE over all episodes
-        #avg_dataset_amse = total_dataset_amse / episode_count
         
-        # Calculate min-max normalized AMSE
-        min_mse = min(timestep_mse)
-        max_mse = max(timestep_mse)
-        normalized_mse = (timestep_mse - min_mse) / (max_mse - min_mse) if max_mse != min_mse else 0
-        normalized_amse = sum(normalized_mse) / len(normalized_mse)
 
-        end_time = time.time()
-        eval_time = end_time - start_time
-
-        '''result['action_success_rate'] = (sum(total_success_counts) / len(total_success_counts)) * 100
-        result['avg_mse_list'] = avg_mse_list
-        result['episode_count'] = episode_count
-        result['total_dataset_amse'] = total_dataset_amse
-
-        # Calculating average AMSE over all episodes
-        avg_dataset_amse = total_dataset_amse / episode_count
-        
-        # Calculating min-max normalized AMSE
-        min_amse = min(avg_mse_list)
-        max_amse = max(avg_mse_list)
-        result['normalized_amse'] = (avg_dataset_amse - min_amse) / (max_amse - min_amse) if max_amse != min_amse else 0
-        result['eval_time'] = eval_time'''
-
-        result['action_success_rate'] = action_success_rate
-        result['total_dataset_amse'] = total_dataset_mse
-        result['num_timesteps'] = num_timesteps
-        result['avg_dataset_amse'] = avg_dataset_mse
-        result['normalized_amse'] = normalized_amse
-        result['eval_time'] = eval_time
+        result = _calculate_final_metrics(timestep_mse, timestep_mae, action_success)
+        result['eval_time'] = time.time() - start_time
         result['total_invalid_preds'] = total_invalid_preds
         
         return result
