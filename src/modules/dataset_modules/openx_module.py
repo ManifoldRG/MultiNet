@@ -2,8 +2,7 @@ from src.modules.dataset_modules.base_dataset_module import DatasetModule, Datas
 from definitions.openx import OpenXDefinitions
 from src.data_utils.openx_dataloader import get_openx_dataloader
 from definitions.openx_prompt import format_instruction_prompt
-from src.eval_utils import quantile_filter, calculate_mean, min_max_normalize, calculate_mse, calculate_mae
-from src.eval_utils import calculate_max_relative_mae, calculate_proportion_beyond_mae_threshold
+from src.eval_utils import quantile_filter, calculate_mean, min_max_normalize, calculate_mse, calculate_mae, calculate_max_relative_mae, calculate_proportion_beyond_mae_threshold 
 from pathlib import Path
 from typing import Any, Union
 import numpy as np
@@ -98,7 +97,7 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, action_success):
 # Finding the translated TFDS shards.
 def _find_shards(dataset: str, disk_root_dir: str) -> list[str]:
     try:
-        dataset_dir = glob(f"{disk_root_dir}/mount_dir*/openx_*/{dataset}")[0]
+        dataset_dir = glob(f"/mnt/disks/mount_dir/MultiNet/src/v1/processed/{dataset}/test/")[0]
         shard_files = glob(f"{dataset_dir}/translated_shard_*")
         tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
         return tfds_shards
