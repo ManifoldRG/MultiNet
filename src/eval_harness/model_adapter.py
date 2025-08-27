@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional, Union, Tuple
 import numpy as np
 import torch
 
-
+# TODO: the individual inherited adapters may not be fully implemented
 class ModelAdapter(ABC):
     """
     Abstract base class for model adapters in the MultiNet evaluation harness.
@@ -240,7 +240,7 @@ class MultipleChoiceAdapter(ModelAdapter):
     """
     Adapter for Multiple Choice Question (MCQ) tasks.
     
-    Used for: MMLU-Pro, GOQA Diamond, PIQA, MMBench, MMMU Pro
+    Used for: PIQA
     Task type: Choose one option from multiple choices
     Output: Choice index (0 to num_choices-1)
     """
@@ -287,7 +287,7 @@ class TextGenerationAdapter(ModelAdapter):
     """
     Adapter for text generation tasks.
     
-    Used for: A-OKVQA (direct answers), Visual Comet (reasoning), SQA3D (one-word answers)
+    Used for: SQA3D
     Task type: Generate text response to visual question or reasoning prompt
     Output: Text string
     """
@@ -328,56 +328,11 @@ class TextGenerationAdapter(ModelAdapter):
         pass
 
 
-class CountingAdapter(ModelAdapter):
-    """
-    Adapter for counting tasks.
-    
-    Used for: CountBench
-    Task type: Count number of objects in image
-    Output: Integer count
-    """
-    
-    def __init__(
-        self,
-        model_name: str,
-        supported_datasets: List[str],
-        max_count: int = 100
-    ):
-        super().__init__(
-            model_name=model_name,
-            model_type="counting",
-            supported_datasets=supported_datasets
-        )
-        self.max_count = max_count
-    
-    @abstractmethod
-    def predict_action(
-        self,
-        observation: Dict[str, Any],
-        instruction: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        **kwargs
-    ) -> int:
-        """
-        Predict count.
-        
-        Args:
-            observation: Observation containing 'image' and optional 'question'
-            instruction: Optional task instruction (e.g., "count the red objects")
-            dataset_name: Name of the dataset
-            **kwargs: Additional prediction parameters
-            
-        Returns:
-            Integer count prediction
-        """
-        pass
-
-
 class GroundingAdapter(ModelAdapter):
     """
     Adapter for entity grounding tasks.
     
-    Used for: Flickr30k Entities, ODinW
+    Used for: ODinW
     Task type: Match entities to bounding boxes or image regions
     Output: Entity-to-bbox mapping (indices or selections)
     """
@@ -424,7 +379,7 @@ class DiscreteActionAdapter(ModelAdapter):
     """
     Adapter for discrete action tasks.
     
-    Used for: Procgen, BabyAI, JARVIS-VLA, Hokoff
+    Used for: OvercookedAI
     Task type: Select one discrete action from fixed action space
     Output: Action index (0 to action_space_size-1)
     """
@@ -471,7 +426,7 @@ class ContinuousActionAdapter(ModelAdapter):
     """
     Adapter for continuous action tasks.
     
-    Used for: OpenX Embodiment, Locomujoco, AGIBot
+    Used for: OpenX
     Task type: Predict continuous action vector
     Output: Continuous action array (e.g., robot joint positions/velocities)
     """
@@ -513,29 +468,32 @@ class ContinuousActionAdapter(ModelAdapter):
         """
         pass
 
-
-class ClassificationAdapter(ModelAdapter):
+class ToolUseAdapter(ModelAdapter):
     """
-    Adapter for classification tasks.
+    Adapter for function calling and tool use tasks.
     
-    Used for: Something-Something v2
-    Task type: Classify input into one of multiple categories
-    Output: Class index or class name
+    Used for: BFCL (Berkeley Function Calling Leaderboard)
+    Task type: Evaluate LLM's ability to invoke external functions, APIs, or tools
+    Output: Function calls, tool invocations, or abstention decisions
+    
+    BFCL evaluates:
+    - Serial and parallel function calls across programming languages
+    - Memory and dynamic decision-making in multi-step scenarios
+    - Long-horizon reasoning and stateful agentic behavior
+    - Ability to abstain when appropriate
     """
     
     def __init__(
         self,
         model_name: str,
-        supported_datasets: List[str],
-        num_classes: int
+        supported_datasets: List[str]
     ):
         super().__init__(
             model_name=model_name,
-            model_type="classification",
+            model_type="tool_use",
             supported_datasets=supported_datasets
         )
-        self.num_classes = num_classes
-    
+
     @abstractmethod
     def predict_action(
         self,
@@ -543,17 +501,22 @@ class ClassificationAdapter(ModelAdapter):
         instruction: Optional[str] = None,
         dataset_name: Optional[str] = None,
         **kwargs
-    ) -> Union[int, str]:
+    ) -> Union[str, Dict[str, Any], None]:
         """
-        Predict class.
-        
+        Predict function calls or tool invocations.
+
         Args:
-            observation: Observation containing 'video_frames', 'image', or other input
-            instruction: Optional task instruction
+            observation: Observation containing:
+                - 'available_functions': List of available functions/tools
+                - 'state': Current environment state (for stateful scenarios)
+            instruction: User query or instruction requiring tool use
             dataset_name: Name of the dataset
             **kwargs: Additional prediction parameters
             
         Returns:
-            Predicted class index or class name
+            Function call response, which can be:
+            - Function call string (e.g., JSON with function name and arguments)
+            - Dictionary with function call details
         """
         pass
+    

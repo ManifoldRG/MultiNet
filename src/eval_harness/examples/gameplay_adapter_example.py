@@ -4,6 +4,10 @@ Gameplay Model Adapter Example
 This example demonstrates how to implement the DiscreteActionAdapter interface
 for discrete action gameplay tasks like Procgen, BabyAI, JARVIS-VLA, Hokoff.
 """
+import os, sys
+# Adding the root directory to the system path
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.append(ROOT_DIR)
 
 import numpy as np
 from PIL import Image
