@@ -56,7 +56,7 @@ class OpenXDataset(Dataset):
                 #Input processing
                 elem['observation'] = dict(sorted(elem['observation'].items()))
                 for key, tensor in elem['observation'].items():
-                    if 'language' not in key and 'image' not in key and 'pointcloud' not in key and 'rgb' not in key and 'instruction' not in key:
+                    if 'action' not in key and 'act' not in key and'language' not in key and 'image' not in key and 'pointcloud' not in key and 'rgb' not in key and 'instruction' not in key:
                         if (tensor.dtype == tf.float32 or tensor.dtype==tf.float64) and tensor.shape.ndims>=1 and not tf.reduce_any(tf.math.is_inf(tensor)):
                             float_obs[key] = tensor.numpy()
 
