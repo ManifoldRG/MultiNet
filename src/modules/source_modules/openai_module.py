@@ -79,7 +79,7 @@ class OpenAIModule:
     def _get_max_tokens_param(self) -> str:
         """
         Returns the appropriate parameter name for max tokens based on the model.
-        Newer models (gpt-5, gpt-4.1) use 'max_completion_tokens', older models use 'max_tokens'.
+        Newer models (gpt-5) use 'max_completion_tokens', older models use 'max_tokens'.
         """
         if self.model.startswith('gpt-5') or self.model.startswith('gpt-4.1'):
             return "max_completion_tokens"
