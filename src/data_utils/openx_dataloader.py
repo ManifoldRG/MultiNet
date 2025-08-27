@@ -29,7 +29,10 @@ class OpenXDataset(Dataset):
         dataset = tf.data.Dataset.load(shard)
 
         #Process the input data for each element in the shard
-        for elem_idx, elem in enumerate(dataset):                
+        for elem_idx, elem in enumerate(dataset):
+            if self.dataset_name == "openx_multi_embodiment":
+                elem["action"] = None
+                elem['reward'] = None                
             concatenated_action_float = elem['action']
             float_action_tensors = []
             if isinstance(elem['action'], dict):
@@ -99,7 +102,7 @@ class OpenXDataset(Dataset):
                     text_observation = elem['natural_language_instruction'].numpy().decode('utf-8')
             elif 'action_instruct' in elem:
                 if isinstance(elem['action_instruct'], bytes):
-                    text_observation = elem['action_inst'].decode('utf-8')
+                    text_observation = elem['action_instruct'].decode('utf-8')
                 else:
                     text_observation = elem['action_instruct'].numpy().decode('utf-8')
 
@@ -111,12 +114,15 @@ class OpenXDataset(Dataset):
                 text_observation = elem['observation']['raw_text_question'].numpy().decode('utf-8')
                 text_answer = elem['observation']['raw_text_answer'].numpy().decode('utf-8')
 
+            if self.dataset_name == "openx_multi_embodiment":
+                text_observation_multi_embodiment = f"Task and Context: {text_observation.split(' Q: ',1)[0].strip()}\n Question: {text_observation.split(' Q: ',1)[1].strip()}"
+
             # Extract relevant features from the example
             step_data = {
-                'text_observation': text_observation,
+                'text_observation': text_observation if self.dataset_name != "openx_multi_embodiment" else text_observation_multi_embodiment,
                 'image_observation': image_observation,
                 'action': concatenated_action_float,
-                'reward': elem['reward'].numpy(),
+                'reward': elem['reward'].numpy() if self.dataset_name != "openx_multi_embodiment" else elem['reward'],
                 'is_last': elem['is_last'].numpy(),
                 'text_answer': text_answer
             }
@@ -239,14 +245,14 @@ class OpenXDataset(Dataset):
                 if key not in etc_observations:
                     etc_observations[key] = []
                 etc_observations[key].append(value)
-
-        result = {
+                
+            result = {
             'text_observation': text_observation,
             'image_observation': image_observation,
             'action': concatenated_action_float,
             'reward': reward,
             'is_last': is_last,
-            'text_answer': text_answer
+            'text_answer':  text_answer
         }
         result.update(etc_observations)
 
