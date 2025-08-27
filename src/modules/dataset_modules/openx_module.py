@@ -218,6 +218,23 @@ class OpenXBatchModule(DatasetBatchModule):
             paths = dataset_batch_info_paths
         else:
             raise ValueError(f"data_batch_info_paths should be a path to a folder or a list of filepaths")
+        
+        # Get action stats - we need to populate this from the dataset
+        # since batch evaluation doesn't have access to the dataloader
+        dataset_name = None
+        for fp in paths:
+            if Path(fp).exists():
+                batch_info = np.load(fp, allow_pickle=True)
+                dataset_name = batch_info['dataset_name'].item()
+                break
+        
+        if dataset_name and self.action_stats is None:
+            # Create a temporary dataloader just to get action stats
+            tfds_shards = self._find_shards(dataset_name)
+            if len(tfds_shards) > 0:
+                dataloader_obj, _ = self.get_dataloader_fn(tfds_shards, batch_size=1, dataset_name=dataset_name, by_episode=False)
+                self.action_stats = dataloader_obj.action_stats
+        
             
         for fp in paths:
             if not Path(fp).exists():
