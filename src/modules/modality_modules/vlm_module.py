@@ -137,7 +137,12 @@ class VLMModule:
 
     # Converting the key-value pair in the input into a text form.
     def _convert_into_text(self, key: str, value: Any) -> str:
-        value_str = str(value)
+        if isinstance(value, str):
+            # For strings, use the value directly to preserve newlines and special characters
+            value_str = value
+        else:
+            # For non-string types, convert to string
+            value_str = str(value)
         return f"{key}: {value_str}"
 
     # Converting the text output into the requested form of data type.
