@@ -13,6 +13,7 @@ import time
 import warnings
 
 CONTEXT_SIZE_MAP = {
+    'gpt-5-2025-08-07': 400000,
     'gpt-4.1-2025-04-14': 1000000,
     'gpt-4o': 128000,
     'gpt-4o-2024-05-13': 128000,
@@ -30,6 +31,7 @@ CONTEXT_SIZE_MAP = {
 }
 
 BATCH_QUEUE_TOKEN_DAY_LIMIT = {
+    'gpt-5-2025-08-07': 15000000000,
     'gpt-4.1-2025-04-14': 15000000000,
     'gpt-4o': 15000000000,
     'gpt-4o-2024-05-13': 15000000000,
@@ -73,6 +75,16 @@ class OpenAIModule:
     
     def clear_batch_job_ids(self):
         self._batch_job_ids = []
+    
+    def _get_max_tokens_param(self) -> str:
+        """
+        Returns the appropriate parameter name for max tokens based on the model.
+        Newer models (gpt-5) use 'max_completion_tokens', older models use 'max_tokens'.
+        """
+        if self.model.startswith('gpt-5') or self.model.startswith('gpt-4.1'):
+            return "max_completion_tokens"
+        else:
+            return "max_tokens"
     
     @property
     def max_concurrent_prompts(self):
@@ -169,11 +181,16 @@ class OpenAIModule:
             system_message.append({'role': 'system', 'content': system_prompt})
 
         messages = system_message + self.history[0][start_idx:]
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            max_tokens=self.max_output_tokens_per_query
-        )
+        
+        # Use appropriate token parameter based on model
+        max_tokens_param = self._get_max_tokens_param()
+        api_params = {
+            "model": self.model,
+            "messages": messages,
+            max_tokens_param: self.max_output_tokens_per_query
+        }
+        
+        response = self.client.chat.completions.create(**api_params)
 
         return response.choices[0].message.content
     
@@ -206,16 +223,19 @@ class OpenAIModule:
             system_messages.append([{'role': 'system', 'content': prompt}])
 
         file_name = "batch_queries.jsonl"
+        max_tokens_param = self._get_max_tokens_param()
+        
         with open(file_name, 'w') as file:
             for i, start_idx in enumerate(start_idxs):
                 messages = self.history[i][start_idx:]
+                
                 task = {
                     "custom_id": f"task-{i}",
                     "method": "POST",
                     "url": "/v1/chat/completions",
                     "body": {
                         "model": self.model,
-                        "max_tokens": self.max_output_tokens_per_query,
+                        max_tokens_param: self.max_output_tokens_per_query,
                         "response_format": { 
                             "type": "text"
                         },

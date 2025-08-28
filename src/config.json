@@ -8,6 +8,7 @@
         "vqa_v2": "vision-language",
         "datacomp": "vision-language",
         "finewebedu": "vision-language",
+        "robot_vqa": "control",
         "dm_lab_rlu": "control",
         "atari": "control",
         "babyai": "control",
@@ -21,6 +22,7 @@
         "locomujoco": "control"
     },
     "models": {
+        "gpt-5-2025-08-07": ["vlm", "openai"],
         "gpt-4o-2024-05-13": ["vlm", "openai"],
         "gpt-4o-2024-08-06": ["vlm", "openai"],
         "gpt-4.1-2025-04-14": ["vlm", "openai"],

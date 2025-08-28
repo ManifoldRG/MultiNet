@@ -192,7 +192,7 @@ class DatasetModule(ABC):
 
                     # Processing additional observations.
                     for key, value in batch.items():
-                        if key not in ['action', 'reward', 'is_last', 'image_observation', 'text_observation'] and value[b][t] is not None:
+                        if 'action' not in key and 'act' not in key and key not in ['reward', 'is_last', 'image_observation', 'text_observation'] and value[b][t] is not None:
                             cur_inputs[-1].append((key, value[b][t]))
 
                     cur_inputs[-1].append(('text_observation', text_obs[b][t]))

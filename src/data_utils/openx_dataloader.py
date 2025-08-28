@@ -29,7 +29,10 @@ class OpenXDataset(Dataset):
         dataset = tf.data.Dataset.load(shard)
 
         #Process the input data for each element in the shard
-        for elem_idx, elem in enumerate(dataset):                
+        for elem_idx, elem in enumerate(dataset):
+            if self.dataset_name == "robot_vqa":
+                elem["action"] = None
+                elem['reward'] = None                
             concatenated_action_float = elem['action']
             float_action_tensors = []
             if isinstance(elem['action'], dict):
@@ -56,7 +59,7 @@ class OpenXDataset(Dataset):
                 #Input processing
                 elem['observation'] = dict(sorted(elem['observation'].items()))
                 for key, tensor in elem['observation'].items():
-                    if 'language' not in key and 'image' not in key and 'pointcloud' not in key and 'rgb' not in key and 'instruction' not in key:
+                    if 'action' not in key and 'act' not in key and'language' not in key and 'image' not in key and 'pointcloud' not in key and 'rgb' not in key and 'instruction' not in key:
                         if (tensor.dtype == tf.float32 or tensor.dtype==tf.float64) and tensor.shape.ndims>=1 and not tf.reduce_any(tf.math.is_inf(tensor)):
                             float_obs[key] = tensor.numpy()
 
@@ -103,13 +106,25 @@ class OpenXDataset(Dataset):
                 else:
                     text_observation = elem['action_instruct'].numpy().decode('utf-8')
 
+            #Check for RoboVQA and include additional features
+            text_answer = None
+            if 'raw_text_question' in elem['observation'] and 'raw_text_answer' in elem['observation']:
+                #Pick only the last image from the list of images depicting the progression of the scene - this is the image reqd for the question
+                image_observation = elem['observation']['images'][-1].numpy().astype(np.uint8)
+                text_observation = elem['observation']['raw_text_question'].numpy().decode('utf-8')
+                text_answer = elem['observation']['raw_text_answer'].numpy().decode('utf-8')
+
+            if self.dataset_name == "robot_vqa":
+                text_observation_multi_embodiment = f"Task and Context: {text_observation.split(' Q: ',1)[0].strip()}\n Question: {text_observation.split(' Q: ',1)[1].strip()}"
+
             # Extract relevant features from the example
             step_data = {
-                'text_observation': text_observation,
+                'text_observation': text_observation if self.dataset_name != "robot_vqa" else text_observation_multi_embodiment,
                 'image_observation': image_observation,
                 'action': concatenated_action_float,
-                'reward': elem['reward'].numpy(),
-                'is_last': elem['is_last'].numpy()
+                'reward': elem['reward'].numpy() if self.dataset_name != "robot_vqa" else elem['reward'],
+                'is_last': elem['is_last'].numpy(),
+                'text_answer': text_answer
             }
             step_data.update(float_obs)                
             current_shard.append(step_data)
@@ -241,6 +256,7 @@ class OpenXDataset(Dataset):
         concatenated_action_float = []
         reward = []
         is_last = []
+        text_answer = []
 
         for timestep in episode:
             text_observation.append(timestep['text_observation'])
@@ -253,6 +269,8 @@ class OpenXDataset(Dataset):
             timestep.pop('reward')
             is_last.append(timestep['is_last'])
             timestep.pop('is_last')
+            text_answer.append(timestep['text_answer'])
+            timestep.pop('text_answer')
 
             for key, value in timestep.items():
                 if key not in etc_observations:
@@ -264,7 +282,8 @@ class OpenXDataset(Dataset):
             'image_observation': image_observation,
             'action': concatenated_action_float,
             'reward': reward,
-            'is_last': is_last
+            'is_last': is_last,
+            'text_answer': text_answer
         }
         result.update(etc_observations)
 
