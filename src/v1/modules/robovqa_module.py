@@ -96,7 +96,7 @@ class RoboVQABatchModule(DatasetBatchModule):
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_info_dir: str, batch_size: int = 1, k_shots: int = 0):
         super().__init__(disk_root_dir, modality, source, model, batch_info_dir, batch_size, k_shots)
         self.get_dataloader_fn = get_openx_dataloader  # Reusing OpenX dataloader
-        self.dataset_family = 'robo_vqa'
+        self.dataset_family = 'robot_vqa'
         self.similarity_model = None
         self.disk_root_dir = 'processed_datasets/'
         self._datasets = []
