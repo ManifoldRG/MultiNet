@@ -8,7 +8,7 @@
         "vqa_v2": "vision-language",
         "datacomp": "vision-language",
         "finewebedu": "vision-language",
-        "robovqa": "control",
+        "robo_vqa": "control",
         "dm_lab_rlu": "control",
         "atari": "control",
         "babyai": "control",
