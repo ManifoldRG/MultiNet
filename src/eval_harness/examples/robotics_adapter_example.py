@@ -26,7 +26,7 @@ class SimpleRoboticsAdapter(ContinuousActionAdapter):
     def __init__(self, action_dim: int = 7):
         super().__init__(
             model_name="SimpleRoboticsModel",
-            supported_datasets=["openx", "locomujoco", "agibot"],
+            supported_datasets=["openx"],
             action_dim=action_dim,
         )
         self.model = None
@@ -99,7 +99,7 @@ class SimpleRoboticsAdapter(ContinuousActionAdapter):
         batch_size = len(images) if images else len(continuous_obs) if continuous_obs else 1
         
         # For this example, process sequentially
-        # Real implementation could use true batch processing for efficiency
+        # Real implementation could use batch processing
         results = []
         for i in range(batch_size):
             try:
