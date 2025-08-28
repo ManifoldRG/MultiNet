@@ -58,7 +58,7 @@ if __name__=="__main__":
         dataset_module = ProcGenBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     elif args.dataset_family == 'openx':
         dataset_module = OpenXBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
-    elif args.dataset_family == 'robovqa':
+    elif args.dataset_family == 'robo_vqa':
         dataset_module = RoboVQABatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     else:
         print(f"The dataset family {args.dataset_family} is not supported.")
