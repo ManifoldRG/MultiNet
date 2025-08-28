@@ -1,4 +1,4 @@
-from src.modules.dataset_modules.base_dataset_module import DatasetBatchModule
+from src.modules.dataset_modules.base_dataset_module import DatasetBatchModule, BatchInfo
 from src.data_utils.openx_dataloader import get_openx_dataloader
 from src.modules.source_modules.openai_module import OpenAIModule
 from pathlib import Path
@@ -83,7 +83,7 @@ def _calculate_final_metrics(exact_matches, similarity_scores):
 def _find_shards(dataset, disk_root_dir: str) -> list[str]:
     try:
         # Look for RoboVQA dataset directory pattern
-        dataset_dir = f"{disk_root_dir}/{dataset}/test"
+        dataset_dir = f"{disk_root_dir}/openx_multi_embodiment/test"
         shard_files = glob(f"{dataset_dir}/translated_shard_*")
         tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
         return tfds_shards
@@ -117,9 +117,9 @@ class RoboVQABatchModule(DatasetBatchModule):
     @property
     def datasets(self):
         if len(self._datasets) == 0:
-            tfds_shards = self._find_shards("openx_multi_embodiment")
+            tfds_shards = self._find_shards(self.dataset_family)
             if len(tfds_shards) != 0:
-                self._datasets.append("openx_multi_embodiment")
+                self._datasets.append(self.dataset_family)
         return self._datasets
         
     
@@ -157,7 +157,7 @@ class RoboVQABatchModule(DatasetBatchModule):
     
     
     def send_batch_jobs_for_all_datasets(self):
-        self._send_batch_jobs_for_dataset('openx_multi_embodiment')
+        self._send_batch_jobs_for_dataset(self.dataset_family)
         self.action_stats = None
         print(self.batch_list)
         return self.batch_list
@@ -242,11 +242,23 @@ class RoboVQABatchModule(DatasetBatchModule):
             # Simple system prompt for VQA
             system_prompt.append(
                 """
-                You are a precise assistant that answers questions about robotic tasks based on the given **image** and **text context**. 
-                - Read both the image and the text carefully to understand *task* and *context*. 
-                - Answer exactly what is asked in the *Question*: for action/s related questions, respond with concise and necessary **action phrases**, and for action possiblities related questions, respond with "yes" or "no".
-                - Respond like a human would respond the given question in given context for given task.
-                - Use commonsense along information present in the image and text context. 
+                You are a specialized Visual-Language Model Assistant that answers questions about robotics tasks based on the given image and text context. Your primary function is to interpret visual and textual data to provide precise answers to the asked question.
+
+                Core directive:
+                Analyze the provided Image and Text Context to answer the asked Question. Your answer must be grounded in the provided context and informed by general commonsense. Adhere strictly to the output formatting rules.
+
+                Inputs:
+                    1. Image: A visual representation of the robot's current environment.
+                    2. Text Context: A string of text describing the overall task, goal, or recent history of actions.
+                    3. Question: A specific query about the environment or the next possible action.
+
+                Output formatting rules:
+                Your response must be one of the following three types, and nothing else. Do not add conversational filler, explanations, or apologies.
+                
+                    1. Action Execution Query (e.g., "What should I do?", "What is the next step?"):
+                        - Respond with a concise action phrase.
+                    2. Feasibility/Possibility Query (e.g., "Can I grasp the handle?", "Is the drawer open?"):
+                        - Respond with a single word: Yes or No.
                 """
                 )
             
@@ -263,7 +275,7 @@ class RoboVQABatchModule(DatasetBatchModule):
         labels = [str(label) for label in labels]
         output_types = ['text'] * len(labels)
 
-        from src.modules.dataset_modules.base_dataset_module import BatchInfo
+        
         batch_job = BatchInfo(
             self.dataset_family, dataset_name, batch_num, batch_id, 
             output_types, token_count, is_lasts, labels, num_timesteps, 
