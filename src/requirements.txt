@@ -33,7 +33,7 @@ dm-env==1.6
 dm-tree==0.1.8
 docker-pycreds==0.4.0
 docstring_parser==0.16
-etils==1.7.0
+etils
 exceptiongroup==1.2.1
 execnet==2.1.1
 executing==2.0.1
@@ -131,7 +131,7 @@ pluggy==1.5.0
 promise==2.3
 prompt_toolkit==3.0.47
 proto-plus==1.24.0
-protobuf==3.20.3
+protobuf
 psutil==6.0.0
 ptyprocess==0.7.0
 pure_eval==0.2.3
