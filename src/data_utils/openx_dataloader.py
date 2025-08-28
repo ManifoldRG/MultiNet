@@ -30,7 +30,7 @@ class OpenXDataset(Dataset):
 
         #Process the input data for each element in the shard
         for elem_idx, elem in enumerate(dataset):
-            if self.dataset_name == "robovqa":
+            if self.dataset_name == "robo_vqa":
                 elem["action"] = None
                 elem['reward'] = None                
             concatenated_action_float = elem['action']
@@ -114,15 +114,15 @@ class OpenXDataset(Dataset):
                 text_observation = elem['observation']['raw_text_question'].numpy().decode('utf-8')
                 text_answer = elem['observation']['raw_text_answer'].numpy().decode('utf-8')
 
-            if self.dataset_name == "robovqa":
+            if self.dataset_name == "robo_vqa":
                 text_observation_multi_embodiment = f"Task and Context: {text_observation.split(' Q: ',1)[0].strip()}\n Question: {text_observation.split(' Q: ',1)[1].strip()}"
 
             # Extract relevant features from the example
             step_data = {
-                'text_observation': text_observation if self.dataset_name != "robovqa" else text_observation_multi_embodiment,
+                'text_observation': text_observation if self.dataset_name != "robo_vqa" else text_observation_multi_embodiment,
                 'image_observation': image_observation,
                 'action': concatenated_action_float,
-                'reward': elem['reward'].numpy() if self.dataset_name != "robovqa" else elem['reward'],
+                'reward': elem['reward'].numpy() if self.dataset_name != "robo_vqa" else elem['reward'],
                 'is_last': elem['is_last'].numpy(),
                 'text_answer': text_answer
             }
