@@ -60,8 +60,7 @@ class EvaluationConfig:
         gameplay_datasets = ['overcookedai']
         robotics_datasets = ['openx']
         mcq_datasets = ['piqa']
-        text_gen_datasets = ['sqa3d']
-        counting_datasets = ['countbench']
+        text_gen_datasets = ['sqa3d', 'robovqa']
         grounding_datasets = ['odinw']
         tool_use_datasets = ['bfclv3']
         
@@ -73,8 +72,6 @@ class EvaluationConfig:
             return 'multiple_choice'
         elif self.dataset in text_gen_datasets:
             return 'text_generation'
-        elif self.dataset in counting_datasets:
-            return 'counting'
         elif self.dataset in grounding_datasets:
             return 'grounding'
         elif self.dataset in tool_use_datasets:
@@ -170,17 +167,17 @@ def main():
     
     # Required arguments
     parser.add_argument('--dataset', type=str, required=True,
-                       help="Dataset name (procgen, babyai, jarvis-vla, hokoff, openx, etc.)")
+                       help="Dataset name (overcookedai, openx, piqa, sqa3d, robovqa, odinw, bfclv3)")
     parser.add_argument('--model_adapter_module_path', type=str, required=True,
                        help="Path to Python module containing ModelAdapter implementation")
     parser.add_argument('--output_path', type=str, required=True,
                        help="Directory to save predictions and results")
-    parser.add_argument('--disk_root_dir', type=str, required=True,
-                       help="Root directory containing translated dataset files")
 
     # Optional arguments
-    parser.add_argument('--data_split', type=str, default='public', choices=['public', 'eval'],
-                       help="Data split to use ('public' for public samples, 'eval' for private eval data)")
+    parser.add_argument('--disk_root_dir', type=str, default='/mnt/disks/mount_dir/MultiNet/src/v1/processed',
+                       help="Root directory containing translated dataset files")
+    parser.add_argument('--data_split', type=str, default='public', choices=['public', 'private'],
+                       help="Data split to use ('public' for public samples, 'private' for private eval data)")
     parser.add_argument('--batch_size', type=int, default=1,
                        help="Batch size for evaluation")
     parser.add_argument('--max_samples', type=int, default=None,
@@ -204,11 +201,16 @@ def main():
     print("STEP 1: LOADING DATASET")
     print(f"{'='*60}")
     
-    if not config.disk_root_dir:
-        raise ValueError("disk_root_dir must be provided to locate TFDS shards")
-
     if config.dataset == 'openx':
-        shard_paths = find_shards('openx', config.disk_root_dir)
+        shard_paths = find_shards('openx', config.disk_root_dir, split=config.data_split)
+        if len(shard_paths) == 0:
+            error_msg = f"No shards found for dataset {config.dataset} in split {config.data_split}. "
+            if config.data_split == 'private':
+                error_msg += "Please check if the private data is available under 'disk_root_dir/openx_*/test/'."
+            else:
+                error_msg += "Please check if the public data is available under 'disk_root_dir/openx_*/public/'."
+            raise ValueError(error_msg)
+
         dataset, data_loader = get_openx_dataloader(
             shard_paths, batch_size=config.batch_size, dataset_name='openx', num_workers=0, by_episode=False
         )
