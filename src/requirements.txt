@@ -131,7 +131,7 @@ pluggy==1.5.0
 promise==2.3
 prompt_toolkit==3.0.47
 proto-plus==1.24.0
-protobuf
+protobuf==6.32.0
 psutil==6.0.0
 ptyprocess==0.7.0
 pure_eval==0.2.3
@@ -175,7 +175,7 @@ sympy==1.12.1
 tensorboard==2.16.2
 tensorboard-data-server==0.7.2
 tensordict==0.4.0
-tensorflow==2.16.2
+tensorflow[and-cuda]==2.16.2
 tensorflow-datasets==4.9.6
 tensorflow-io-gcs-filesystem==0.37.1
 tensorflow-metadata==1.15.0

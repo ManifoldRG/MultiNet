@@ -20,12 +20,14 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../../.." && pwd)"
 # Activate virtual environment
 source "$PROJECT_ROOT/.venv/bin/activate"
 
-# Define datasets to test
+# Define datasets to test - 6 OpenX datasets (excluding openx_multi_embodiment in dataset_cache)
 DATASETS=(
     "openx_single_arm"
     "openx_bimanual"
     "openx_quadrupedal"
     "openx_mobile_manipulation"
+    "openx_human"
+    "openx_wheeled_robot"
 )
 
 # Function to run inference on a single dataset
@@ -33,36 +35,43 @@ run_dataset_test() {
     local dataset_name="$1"
     local dataset_path="$PROJECT_ROOT/src/v1/processed_datasets/$dataset_name"
     local output_dir="$TEMP_DIR/$dataset_name"
-    
+
     echo "[$dataset_name] Starting test..."
-    
+
     if [ ! -d "$dataset_path" ]; then
         echo "[$dataset_name] ERROR: Dataset directory not found: $dataset_path"
         return 1
     fi
-    
+
+    # Check if dataset has any shards (skip empty datasets)
+    local test_dir="$dataset_path/test"
+    if [ -d "$test_dir" ] && [ -z "$(ls -A "$test_dir" 2>/dev/null)" ]; then
+        echo "[$dataset_name] SKIPPED: Dataset directory is empty"
+        return 0
+    fi
+
     mkdir -p "$output_dir"
-    
+
     # Running with GPU acceleration enabled
     # Using memory-limited settings to avoid GPU OOM
-    timeout 300 python "$SCRIPT_DIR/openx_inference.py" \
+    timeout 1800 python "$SCRIPT_DIR/openx_inference.py" \
         --output_dir "$output_dir" \
         --dataset_dir "$dataset_path" \
-        --batch_size 1 \
-        --num_shards 1 \
+        --batch_size 16 \
+        --num_shards 5 \
         > "$output_dir/stdout.log" 2> "$output_dir/stderr.log"
-    
+
     local exit_code=$?
-    
+
     if [ $exit_code -eq 0 ]; then
         echo "[$dataset_name] SUCCESS: Test completed"
     elif [ $exit_code -eq 124 ]; then
-        echo "[$dataset_name] TIMEOUT: Test timed out after 5 minutes"
+        echo "[$dataset_name] TIMEOUT: Test timed out after 30 minutes"
     else
         echo "[$dataset_name] ERROR: Test failed with exit code $exit_code"
         echo "[$dataset_name] Check logs at: $output_dir/stderr.log"
     fi
-    
+
     return $exit_code
 }
 
@@ -80,15 +89,15 @@ echo ""
 generate_summary() {
     echo "Results Summary:"
     echo "================"
-    
+
     local success_count=0
     local total_count=${#DATASETS[@]}
-    
+
     for dataset in "${DATASETS[@]}"; do
         local output_dir="$TEMP_DIR/$dataset"
         local status="UNKNOWN"
         local details=""
-        
+
         if [ -f "$output_dir/stdout.log" ]; then
             # Check for various success indicators
             if grep -q "Processing batch\|Batch.*completed\|finished processing\|SUCCESS" "$output_dir/stdout.log" 2>/dev/null; then
@@ -100,7 +109,7 @@ generate_summary() {
                     status="MODEL_LOAD_ERROR"
                     details="Model checkpoint loading failed"
                 elif grep -q "dimension\|shape\|tensor" "$output_dir/stderr.log" 2>/dev/null; then
-                    status="DIMENSION_ERROR" 
+                    status="DIMENSION_ERROR"
                     details="Tensor dimension mismatch"
                 elif grep -q "action.*dict\|dict.*action" "$output_dir/stderr.log" 2>/dev/null; then
                     status="ACTION_FORMAT_ERROR"
@@ -113,7 +122,7 @@ generate_summary() {
         else
             status="NO_OUTPUT"
         fi
-        
+
         # Print status with color coding
         case $status in
             SUCCESS)        echo "✓ $dataset: SUCCESS" ;;
@@ -125,7 +134,7 @@ generate_summary() {
             *)              echo "? $dataset: $status" ;;
         esac
     done
-    
+
     echo ""
     echo "Summary: $success_count/$total_count datasets completed successfully"
     echo ""
@@ -135,7 +144,7 @@ generate_summary() {
 show_error_details() {
     echo "Error Details:"
     echo "=============="
-    
+
     for dataset in "${DATASETS[@]}"; do
         local output_dir="$TEMP_DIR/$dataset"
         if [ -f "$output_dir/stderr.log" ] && [ -s "$output_dir/stderr.log" ]; then
