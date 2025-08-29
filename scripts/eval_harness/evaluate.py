@@ -57,7 +57,7 @@ class EvaluationConfig:
         """Determine task type based on dataset name."""
         # TODO: update this to have better task type descriptions
         # TODO: create dataset_info.json file and move this logic there
-        gameplay_datasets = ['overcookedai']
+        gameplay_datasets = ['overcooked_ai']
         robotics_datasets = ['openx']
         mcq_datasets = ['piqa']
         text_gen_datasets = ['sqa3d', 'robovqa']
@@ -167,7 +167,7 @@ def main():
     
     # Required arguments
     parser.add_argument('--dataset', type=str, required=True,
-                       help="Dataset name (overcookedai, openx, piqa, sqa3d, robovqa, odinw, bfclv3)")
+                       help="Dataset name (overcooked_ai, openx, piqa, sqa3d, robovqa, odinw, bfclv3)")
     parser.add_argument('--model_adapter_module_path', type=str, required=True,
                        help="Path to Python module containing ModelAdapter implementation")
     parser.add_argument('--output_path', type=str, required=True,
