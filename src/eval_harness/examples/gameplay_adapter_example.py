@@ -2,7 +2,7 @@
 Gameplay Model Adapter Example
 
 This example demonstrates how to implement the DiscreteActionAdapter interface
-for discrete action gameplay tasks like Procgen, BabyAI, JARVIS-VLA, Hokoff.
+for discrete action gameplay tasks like Procgen, OvercookedAI.
 """
 import os, sys
 # Adding the root directory to the system path
@@ -26,7 +26,7 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
     def __init__(self, action_space_size: int = 15):
         super().__init__(
             model_name="SimpleGameplayModel",
-            supported_datasets=["procgen", "babyai", "jarvis_vla", "hokoff"],
+            supported_datasets=["procgen", "overcooked_ai"],
             action_space_size=action_space_size,
         )
         self.model = None
@@ -48,7 +48,7 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
         observation: Dict[str, Any],
         instruction: Optional[str] = None,
         dataset_name: Optional[str] = None,
-        return_probabilities: bool = False,
+        return_probabilities: bool = True,
         **kwargs
     ) -> Union[int, Dict[str, Any]]:
         """Predict discrete action for gameplay."""
@@ -102,6 +102,7 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
         observations: List[Dict[str, Any]],
         instructions: Optional[List[str]] = None,
         dataset_name: Optional[str] = None,
+        return_probabilities: bool = True,
         **kwargs
     ) -> List[Union[int, Dict[str, Any]]]:
         """Predict actions for a batch of gameplay observations."""
@@ -113,7 +114,7 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
         # Real implementation could use true batch processing for efficiency
         results = []
         for obs, instruction in zip(observations, instructions):
-            result = self.predict_action(obs, instruction, dataset_name, **kwargs)
+            result = self.predict_action(obs, instruction, dataset_name, return_probabilities, **kwargs)
             results.append(result)
             
         return results
@@ -151,7 +152,7 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
         """Get target image size for different datasets."""
         size_map = {
             "procgen": (64, 64),
-            "babyai": (84, 84), 
+            "overcooked_ai": (84, 84), # Note: this is not the actual size
         }
         return size_map.get(dataset_name, (64, 64))
         
@@ -217,10 +218,10 @@ class MockGameplayModel:
 def test_gameplay_adapter():
     """Test the gameplay adapter implementation."""
     
-    print("=== Testing SimpleGameplayAdapter ===\n")
+    print("=== Testing SimpleGameplayAdapter for OvercookedAI ===\n")
     
     # Create adapter
-    adapter = SimpleGameplayAdapter(action_space_size=15)
+    adapter = SimpleGameplayAdapter(action_space_size=6)
     
     # Initialize
     adapter.initialize()
@@ -230,23 +231,24 @@ def test_gameplay_adapter():
     print(f"Model info: {info}\n")
     
     # Test standard gameplay (Procgen)
-    print("--- Testing Procgen gameplay ---")
-    game_image = Image.new('RGB', (64, 64), color='blue')
-    procgen_observation = {
+    print("--- Testing OvercookedAI gameplay ---")
+    game_image = Image.new('RGB', (84, 84), color='blue')
+    overcooked_ai_observation = {
         'image': game_image,
         'state': np.array([0.1, -0.5, 0.8])
     }
     
     action = adapter.predict_action(
-        procgen_observation,
-        dataset_name="procgen"
+        overcooked_ai_observation,
+        dataset_name="overcooked_ai",
+        return_probabilities=False
     )
-    print(f"Procgen action: {action}")
+    print(f"OvercookedAI action: {action}")
     
     # Test with probabilities
     result = adapter.predict_action(
-        procgen_observation,
-        dataset_name="procgen",
+        overcooked_ai_observation,
+        dataset_name="overcooked_ai",
         return_probabilities=True
     )
     print(f"With probabilities: action={result['action']}, top_prob={result['probabilities'].max():.3f}")
@@ -254,13 +256,13 @@ def test_gameplay_adapter():
 
     # Test batch processing
     print("\n--- Testing batch gameplay ---")
-    batch_observations = [procgen_observation, procgen_observation]
-    batch_instructions = [None, "hit the gas"]
+    batch_observations = [overcooked_ai_observation, overcooked_ai_observation]
+    batch_instructions = [None, "fulfill the order"]
     
     batch_results = adapter.batch_predict_actions(
         batch_observations,
         batch_instructions,
-        dataset_name="procgen"
+        dataset_name="overcooked_ai"
     )
     print(f"Batch results: {batch_results}")
     
@@ -271,14 +273,14 @@ def test_gameplay_adapter():
     try:
         # Test missing image
         bad_obs = {'state': np.array([1, 2, 3])}
-        adapter.predict_action(bad_obs, dataset_name="procgen")
+        adapter.predict_action(bad_obs, dataset_name="overcooked_ai")
     except ValueError as e:
         print(f"Expected error for missing image: {e}")
         
     # Test multiple predictions to show consistency
     print("\n--- Testing prediction consistency ---")
     for i in range(3):
-        action = adapter.predict_action(procgen_observation, dataset_name="procgen")
+        action = adapter.predict_action(overcooked_ai_observation, dataset_name="overcooked_ai")
         print(f"Prediction {i+1}: {action}")
         
     print("\n=== Gameplay adapter test completed! ===")
