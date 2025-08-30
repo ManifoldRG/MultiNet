@@ -151,11 +151,8 @@ class OvercookedDataset(Dataset):
             episode_id = timestep['trial_id']
             episodes_dict[episode_id].append(timestep)
         
-        # Sort episodes and timesteps within episodes
-        for episode_id in sorted(episodes_dict.keys()):
+        for episode_id in episodes_dict.keys():
             episode_timesteps = episodes_dict[episode_id]
-            # Sort by time_elapsed to ensure proper ordering
-            episode_timesteps.sort(key=lambda x: float(x['time_elapsed']))
             # Mark the last timestep in each episode
             if episode_timesteps:
                 episode_timesteps[-1]['is_last_in_episode'] = True
@@ -181,9 +178,9 @@ class OvercookedDataset(Dataset):
         text_observation = timestep_data['layout_name'] #Use the layout name as the text observation
         try:
             joint_action = ast.literal_eval(joint_action_str)
-        except (ValueError, SyntaxError):
-            # Fallback if parsing fails
-            joint_action = [[0, 0], [0, 0]]  # Default no-op actions
+        except (ValueError, SyntaxError) as e:
+            # Raise an error instead of using fallback
+            raise ValueError(f"Failed to parse joint_action '{joint_action_str}': {e}")
         
         # Convert joint action to discrete action index
         # Handle different formats:
