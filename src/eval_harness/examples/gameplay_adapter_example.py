@@ -20,7 +20,7 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
     Example adapter for gameplay tasks with discrete action spaces.
     
     This shows how to implement a model for games with discrete actions
-    like Procgen environments.
+    like OvercookedAI environments.
     """
     
     def __init__(self, action_space_size: int = 15):
@@ -68,10 +68,10 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
             raise ValueError("Gameplay task requires 'image' in observation")
             
         # Preprocess observation
-        processed_obs = self.preprocess_observation(observation, dataset_name or "procgen")
+        processed_obs = self.preprocess_observation(observation, dataset_name or "overcooked")
         
         # Run inference
-        if dataset_name == "procgen" and instruction:
+        if dataset_name == "overcooked" and instruction:
             # Instruction-following gameplay
             action_idx, probabilities = self.model.predict_with_instruction(
                 processed_obs['image'], instruction, state
@@ -152,9 +152,9 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
         """Get target image size for different datasets."""
         size_map = {
             "procgen": (64, 64),
-            "overcooked_ai": (84, 84), # Note: this is not the actual size
+            "overcooked_ai": (675, 375)
         }
-        return size_map.get(dataset_name, (64, 64))
+        return size_map.get(dataset_name, (675, 375))
         
     def reset(self):
         """Reset gameplay state."""
@@ -230,9 +230,9 @@ def test_gameplay_adapter():
     info = adapter.get_model_info()
     print(f"Model info: {info}\n")
     
-    # Test standard gameplay (Procgen)
+    # Test standard gameplay (OvercookedAI)
     print("--- Testing OvercookedAI gameplay ---")
-    game_image = Image.new('RGB', (84, 84), color='blue')
+    game_image = Image.new('RGB', (675, 375), color=(255, 255, 255))
     overcooked_ai_observation = {
         'image': game_image,
         'state': np.array([0.1, -0.5, 0.8])
