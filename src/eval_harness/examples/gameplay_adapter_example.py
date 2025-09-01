@@ -149,9 +149,11 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
         
     def _get_target_size(self, dataset_name: str) -> tuple[int, int]:
         """Get target image size for different datasets."""
+
+        # width height pair
         size_map = {
             "procgen": (64, 64),
-            "overcooked_ai": (675, 375) # Note:Not all OvercookedAI images are this size
+            "overcooked_ai": (675, 375) # Note: Not all OvercookedAI images are this size
         }
         return size_map.get(dataset_name, (675, 375))
         
