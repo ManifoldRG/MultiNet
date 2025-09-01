@@ -61,11 +61,10 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
             raise NotImplementedError(f"Dataset {dataset_name} not supported")
             
         # Extract components from observation
-        image = observation.get('image', None)
-        state = observation.get('state', None)
+        image = observation.get('image_observation', None)
         
         if image is None:
-            raise ValueError("Gameplay task requires 'image' in observation")
+            raise ValueError("Gameplay task requires 'image_observation' in observation")
             
         # Preprocess observation
         processed_obs = self.preprocess_observation(observation, dataset_name or "overcooked")
@@ -74,12 +73,12 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
         if dataset_name == "overcooked" and instruction:
             # Instruction-following gameplay
             action_idx, probabilities = self.model.predict_with_instruction(
-                processed_obs['image'], instruction, state
+                processed_obs['image_observation'], instruction
             )
         else:
             # No instructions provided
             action_idx, probabilities = self.model.predict_action(
-                processed_obs['image'], state
+                processed_obs['image_observation']
             )
         
         # Validate action is in range
@@ -130,8 +129,8 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
         processed_obs = observation.copy()
         
         # Preprocess image
-        if 'image' in processed_obs:
-            image = processed_obs['image']
+        if 'image_observation' in processed_obs:
+            image = processed_obs['image_observation']
             
             # Convert to PIL if needed
             if isinstance(image, np.ndarray):
@@ -144,7 +143,7 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
             if image.size != target_size:
                 image = image.resize(target_size, Image.Resampling.LANCZOS)
                 
-            processed_obs['image'] = image
+            processed_obs['image_observation'] = image
                         
         return processed_obs
         
@@ -152,7 +151,7 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
         """Get target image size for different datasets."""
         size_map = {
             "procgen": (64, 64),
-            "overcooked_ai": (675, 375)
+            "overcooked_ai": (675, 375) # Note:Not all OvercookedAI images are this size
         }
         return size_map.get(dataset_name, (675, 375))
         
@@ -233,9 +232,11 @@ def test_gameplay_adapter():
     # Test standard gameplay (OvercookedAI)
     print("--- Testing OvercookedAI gameplay ---")
     game_image = Image.new('RGB', (675, 375), color=(255, 255, 255))
+
     overcooked_ai_observation = {
-        'image': game_image,
-        'state': np.array([0.1, -0.5, 0.8])
+        'image_observation': game_image,
+        'text_observation': "fulfill the order",
+        'time_left': 100
     }
     
     action = adapter.predict_action(
@@ -257,7 +258,7 @@ def test_gameplay_adapter():
     # Test batch processing
     print("\n--- Testing batch gameplay ---")
     batch_observations = [overcooked_ai_observation, overcooked_ai_observation]
-    batch_instructions = [None, "fulfill the order"]
+    batch_instructions = [None, overcooked_ai_observation['text_observation']]
     
     batch_results = adapter.batch_predict_actions(
         batch_observations,
