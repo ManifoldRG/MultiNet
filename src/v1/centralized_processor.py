@@ -714,7 +714,13 @@ class OvercookedAIProcessor(BaseProcessor):
                 state_dict = json.loads(state_obj)
             except json.JSONDecodeError:
                 # CSV states might be stored as custom strings
-                state_dict = self._state_from_string(state_obj)
+                # Base64 strings are typically long and don't contain newlines
+                if len(state_obj) > 100 and '\n' not in state_obj and state_obj.isalnum() or any(c in state_obj for c in '+/='):
+                    # This appears to be base64 data already
+                    return state_obj
+                else:
+                    # Try to parse as custom grid string
+                    state_dict = self._state_from_string(state_obj)
         else:
             # Already a dict
             state_dict = state_obj
