@@ -50,7 +50,7 @@ class PIQADataset(Dataset):
         
         # Create processed sample
         processed_sample = {
-            'text_observation': question_text,
+            'question': question_text,
             'goal': goal,
             'sol1': sol1,
             'sol2': sol2,
