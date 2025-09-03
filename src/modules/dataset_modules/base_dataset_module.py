@@ -13,11 +13,12 @@ import os
 import warnings
 
 class DatasetModule(ABC):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0) -> None:
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, dataset_name: str, batch_size: int = 1, k_shots: int = 0) -> None:
         self._definitions_class = None
         self.get_dataloader_fn = None 
         self.dataset_family = None
         self.format_instruction_prompt_fn = None
+        self.dataset_name = dataset_name
 
         self.disk_root_dir = disk_root_dir
         self.batch_size = batch_size
@@ -43,10 +44,13 @@ class DatasetModule(ABC):
     @property
     def datasets(self):
         if len(self._datasets) == 0:
-            for dataset in list(self.descriptions.keys()):
-                tfds_shards = self._find_shards(dataset)
-                if len(tfds_shards) != 0:
-                    self._datasets.append(dataset)
+            if self.dataset_name is not None:
+                self._datasets.append(self.dataset_name)
+            else:
+                for dataset in list(self.descriptions.keys()):
+                    tfds_shards = self._find_shards(dataset)
+                    if len(tfds_shards) != 0:
+                        self._datasets.append(dataset)
         return self._datasets
         
     @property

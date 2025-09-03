@@ -5,7 +5,8 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.append(ROOT_DIR)
 
 from src.modules.dataset_modules.procgen_module import ProcGenBatchModule
-from src.modules.dataset_modules.openx_module import OpenXBatchModule
+from src.modules.dataset_modules.openx_module import OpenXBatchModule, OpenXModule
+
 
 import argparse
 import json
@@ -13,20 +14,27 @@ import numpy as np
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_job_info_path', type=str, required=True, help="The path to the batch job information.")
-    parser.add_argument('--results_path', type=str, required=True, help="A JSON file path to save the results.")
+    parser.add_argument('--batch_process', type=bool, default=False, help="Whether to run inference using the batch processing api")
+    parser.add_argument('--batch_job_info_path', type=str, help="The path to the batch job information.")
+    parser.add_argument('--results_path', required=True, type=str, help="A JSON file path to save the results.")
+    parser.add_argument('--model', type=str, required=True, help="The name of the model to evaluate.")
+    parser.add_argument('--batch_size', type=int, default=1, help="The batch size used for evaluation.")
+    parser.add_argument('--k_shots', type=int, default=0, help="Setting how many few-shots examples should be used.")
+    parser.add_argument('--dataset_name', type=str, required=True, help="The name of the dataset to evaluate.")
     args = parser.parse_args()
     
-    with open(args.batch_job_info_path, 'r') as f:
-        batch_info_dict = json.load(f)
+    if args.batch_process:
+        assert args.batch_job_info_path is not None, "The batch job information path is required when running batch processing."
+        with open(args.batch_job_info_path, 'r') as f:
+            batch_info_dict = json.load(f)
     
-    a_fp = next(iter(batch_info_dict.values()))[0]
-    assert os.path.exists(a_fp), f"The batch job information file does not exist: {a_fp}"
-    
-    batch_info = np.load(a_fp, allow_pickle=True)
+        a_fp = next(iter(batch_info_dict.values()))[0]
+        assert os.path.exists(a_fp), f"The batch job information file does not exist: {a_fp}"
+        
+        batch_info = np.load(a_fp, allow_pickle=True)
 
-    dataset_family = batch_info['dataset_family'].item()
-    model = batch_info['model'].item()
+        dataset_family = batch_info['dataset_family'].item()
+        model = batch_info['model'].item()
     
     # Argument validation.
     # TODO: Update config.json everytime a new dataset or model is added into the new version.
@@ -47,9 +55,11 @@ if __name__=="__main__":
         
     # TODO: More branches will be added during the implementation.
     dataset_module = None
-    if dataset_family == 'procgen':
+    if dataset_family == 'procgen' and args.batch_process:
         dataset_module = ProcGenBatchModule('.', modality, source, model, 1, 0)
-    elif dataset_family == 'openx':
+    elif dataset_family == 'openx' and args.batch_process:
         dataset_module = OpenXBatchModule('.', modality, source, model, 1, 0)
+    elif dataset_family == 'openx' and not args.batch_process:
+        dataset_module = OpenXModule('.', modality, source, model, args.dataset_name, 1, 0)
     
     dataset_module.run_eval(os.path.abspath(args.results_path), batch_info_dict)
