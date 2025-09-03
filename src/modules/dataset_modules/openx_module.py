@@ -113,6 +113,7 @@ class OpenXModule(DatasetModule):
         self.dataset_family = 'openx'
         self.dataset_name = dataset_name
         self.format_instruction_prompt_fn = format_instruction_prompt  
+        self.batch_size = batch_size
     
     def _find_shards(self, dataset: str) -> list[str]:
         return _find_shards(dataset, self.disk_root_dir)
