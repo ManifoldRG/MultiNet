@@ -77,14 +77,14 @@ class DatasetModule(ABC):
         return res.reshape(list(targets.shape)+[nb_classes])
 
     # Main evaluation function.
-    def run_eval(self) -> None:
+    def run_eval(self, results_path: str) -> None:
         # Since OpenX consists of multiple datasets, a modality module should be initialized per every evaluation step for each dataset.
 
         total_results = {}
         for dataset in self.datasets:
             
-            if os.path.exists('<path to results>'):
-                with open('<path to results>', 'r') as f:
+            if os.path.exists(results_path):
+                with open(results_path, 'r') as f:
                     completed_datasets = json.load(f)
             
                 if dataset in completed_datasets:
@@ -94,9 +94,9 @@ class DatasetModule(ABC):
             result = self._run_eval_dataset(dataset)
             total_results[dataset] = result
             
-            if os.path.exists('<path to results>'):
+            if os.path.exists(results_path):
                 # If it exists, load the existing data
-                with open('<path to results>', 'r') as f:
+                with open(results_path, 'r') as f:
                     existing_results = json.load(f)
                 # Append new data to existing data
                 existing_results.update(total_results)
@@ -105,7 +105,7 @@ class DatasetModule(ABC):
                 existing_results = total_results
 
             # Write the updated or new results to the file
-            with open('<path to results>', 'w') as f:
+            with open(results_path, 'w') as f:
                 json.dump(existing_results, f, indent=4, default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
             self.action_stats = None
 
