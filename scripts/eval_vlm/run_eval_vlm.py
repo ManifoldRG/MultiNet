@@ -44,17 +44,19 @@ if __name__=="__main__":
         dataset_family = batch_info['dataset_family'].item()
         model = batch_info['model'].item()
 
+        # Setting the configurations of the current evaluation job.
+        modality, source = config['models'][model]
+
+         # Setting the extra information depending on the model.
+        if source == 'openai':
+            os.environ["OPENAI_API_KEY"] = input("Enter the OpenAI API key: ")
+
         assert dataset_family in config['datasets'].keys(), f"Specify the correct dataset name supported:\n{list(config['datasets'].keys())}"
         assert model in config["models"].keys(), f"Specify the correct model index supported.\n{list(config['models'].keys())}"
     
+    
 
-
-    # Setting the configurations of the current evaluation job.
-    modality, source = config['models'][model]
-
-    # Setting the extra information depending on the model.
-    if source == 'openai':
-        os.environ["OPENAI_API_KEY"] = input("Enter the OpenAI API key: ")
+   
         
     # TODO: More branches will be added during the implementation.
     dataset_module = None
@@ -63,6 +65,7 @@ if __name__=="__main__":
     elif dataset_family == 'openx' and args.batch_process:
         dataset_module = OpenXBatchModule(args.disk_root_dir, modality, source, model, 1, 0)
     elif dataset_family == 'openx' and not args.batch_process:
-        dataset_module = OpenXModule(args.disk_root_dir, modality, source, model, args.dataset_name, 1, 0)
+        os.environ["OPENAI_API_KEY"] = input("Enter the OpenAI API key: ")
+        dataset_module = OpenXModule(args.disk_root_dir, 'vlm', 'openai', args.model, args.dataset_name, 1, 0)
     
     dataset_module.run_eval(os.path.abspath(args.results_path), batch_info_dict)
