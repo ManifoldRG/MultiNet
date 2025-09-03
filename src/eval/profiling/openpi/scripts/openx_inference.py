@@ -52,7 +52,7 @@ class ActionComponents:
     TERMINATE_EPISODE_DIM = 1
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
@@ -171,28 +171,58 @@ class OpenXInference:
     def _prepare_state(self, batch: dict, batch_size: int) -> jax.Array:
         """Prepare state vector for model input with robust dimension handling."""
         state_components = []
-        excluded_keys = {'image_observation', 'text_observation', 'action', 'reward', 'is_last'}
+        excluded_keys = {'image_observation', 'text_observation', 'action', 'reward', 'is_last', 'text_answer'}
+        
+        logger.info(f"Batch keys: {list(batch.keys())}")
 
-        for key, values in batch.items():
-            if key not in excluded_keys and isinstance(values, list):
-                if (len(values) > 0 and isinstance(values[0], np.ndarray)
-                    and values[0].dtype in [np.float32, np.float64]):
-                    try:
-                        state_array = np.stack(values)
-                        # Flatten multi-dimensional arrays to 2D (batch, features)
-                        if len(state_array.shape) > 2:
-                            state_array = state_array.reshape(batch_size, -1)
-                        elif len(state_array.shape) == 1:
-                            state_array = state_array[:, np.newaxis]
+        # First check for 'state' key specifically (from current dataloader)
+        if 'state' in batch:
+            state_values = batch['state']
+            if isinstance(state_values, list) and len(state_values) > 0:
+                try:
+                    # Handle list of numpy arrays from state key
+                    state_arrays = []
+                    for state_val in state_values:
+                        if isinstance(state_val, np.ndarray) and state_val.dtype in [np.float32, np.float64]:
+                            # Flatten to 1D if needed
+                            flat_state = state_val.flatten()
+                            state_arrays.append(flat_state)
+                    
+                    if state_arrays:
+                        # Stack into (batch_size, features) shape
+                        state_array = np.stack(state_arrays)
                         state_components.append(state_array)
-                        logger.debug(f"Added state component '{key}' with shape {state_array.shape}")
-                    except ValueError as e:
-                        logger.warning(f"Skipping state component '{key}' due to dimension mismatch: {e}")
-                        continue
+                        logger.info(f"Using 'state' key with shape {state_array.shape}")
+                except Exception as e:
+                    logger.warning(f"Failed to process 'state' key: {e}")
 
-        # For simplicity and to avoid dimension mismatches, always use minimal dummy state
-        logger.info("Using minimal dummy state to avoid dimension mismatch issues")
-        state = jax.numpy.zeros((batch_size, 1))
+        # Fallback: process other non-excluded keys that contain state data
+        if not state_components:
+            for key, values in batch.items():
+                if key not in excluded_keys and isinstance(values, list):
+                    if (len(values) > 0 and isinstance(values[0], np.ndarray)
+                        and values[0].dtype in [np.float32, np.float64]):
+                        try:
+                            state_array = np.stack(values)
+                            # Flatten multi-dimensional arrays to 2D (batch, features)
+                            if len(state_array.shape) > 2:
+                                state_array = state_array.reshape(batch_size, -1)
+                            elif len(state_array.shape) == 1:
+                                state_array = state_array[:, np.newaxis]
+                            state_components.append(state_array)
+                            logger.info(f"Added state component '{key}' with shape {state_array.shape}")
+                        except ValueError as e:
+                            logger.warning(f"Skipping state component '{key}' due to dimension mismatch: {e}")
+                            continue
+
+        # Use real state data if available, otherwise fallback to minimal dummy state
+        if state_components:
+            # Concatenate all state components
+            state = np.concatenate(state_components, axis=-1)
+            logger.info(f"Using real state data with shape {state.shape}")
+        else:
+            logger.warning("No valid state data found, using minimal dummy state")
+            state = jax.numpy.zeros((batch_size, 1))
 
         # Add open gripper information
         open_gripper = batch.get('open_gripper', [False] * batch_size)
