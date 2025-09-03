@@ -23,6 +23,13 @@ if __name__=="__main__":
     parser.add_argument('--dataset_name', type=str, required=True, help="The name of the dataset to evaluate.")
     parser.add_argument('--disk_root_dir', type=str, required=True, help="The root directory of the translated data.")
     args = parser.parse_args()
+
+    # Argument validation.
+    # TODO: Update config.json everytime a new dataset or model is added into the new version.
+    config_path = os.path.join(ROOT_DIR, 'src', 'config.json')
+    assert os.path.exists(config_path), f"The config file does not exist: {config_path}"
+    with open(config_path, 'r') as f:
+        config = json.load(f)
     
     if args.batch_process:
         assert args.batch_job_info_path is not None, "The batch job information path is required when running batch processing."
@@ -36,16 +43,11 @@ if __name__=="__main__":
 
         dataset_family = batch_info['dataset_family'].item()
         model = batch_info['model'].item()
-    
-    # Argument validation.
-    # TODO: Update config.json everytime a new dataset or model is added into the new version.
-    config_path = os.path.join(ROOT_DIR, 'src', 'config.json')
-    assert os.path.exists(config_path), f"The config file does not exist: {config_path}"
-    with open(config_path, 'r') as f:
-        config = json.load(f)
 
-    assert dataset_family in config['datasets'].keys(), f"Specify the correct dataset name supported:\n{list(config['datasets'].keys())}"
-    assert model in config["models"].keys(), f"Specify the correct model index supported.\n{list(config['models'].keys())}"
+        assert dataset_family in config['datasets'].keys(), f"Specify the correct dataset name supported:\n{list(config['datasets'].keys())}"
+        assert model in config["models"].keys(), f"Specify the correct model index supported.\n{list(config['models'].keys())}"
+    
+
 
     # Setting the configurations of the current evaluation job.
     modality, source = config['models'][model]
