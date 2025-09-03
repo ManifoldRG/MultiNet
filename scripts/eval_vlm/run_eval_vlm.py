@@ -21,6 +21,7 @@ if __name__=="__main__":
     parser.add_argument('--batch_size', type=int, default=1, help="The batch size used for evaluation.")
     parser.add_argument('--k_shots', type=int, default=0, help="Setting how many few-shots examples should be used.")
     parser.add_argument('--dataset_name', type=str, required=True, help="The name of the dataset to evaluate.")
+    parser.add_argument('--disk_root_dir', type=str, required=True, help="The root directory of the translated data.")
     args = parser.parse_args()
     
     if args.batch_process:
@@ -56,10 +57,10 @@ if __name__=="__main__":
     # TODO: More branches will be added during the implementation.
     dataset_module = None
     if dataset_family == 'procgen' and args.batch_process:
-        dataset_module = ProcGenBatchModule('.', modality, source, model, 1, 0)
+        dataset_module = ProcGenBatchModule(args.disk_root_dir, modality, source, model, 1, 0)
     elif dataset_family == 'openx' and args.batch_process:
-        dataset_module = OpenXBatchModule('.', modality, source, model, 1, 0)
+        dataset_module = OpenXBatchModule(args.disk_root_dir, modality, source, model, 1, 0)
     elif dataset_family == 'openx' and not args.batch_process:
-        dataset_module = OpenXModule('.', modality, source, model, args.dataset_name, 1, 0)
+        dataset_module = OpenXModule(args.disk_root_dir, modality, source, model, args.dataset_name, 1, 0)
     
     dataset_module.run_eval(os.path.abspath(args.results_path), batch_info_dict)
