@@ -45,6 +45,9 @@ if __name__=="__main__":
         dataset_family = batch_info['dataset_family'].item()
         model = batch_info['model'].item()
 
+        assert dataset_family in config['datasets'].keys(), f"Specify the correct dataset name supported:\n{list(config['datasets'].keys())}"
+        assert model in config["models"].keys(), f"Specify the correct model index supported.\n{list(config['models'].keys())}"
+
         # Setting the configurations of the current evaluation job.
         modality, source = config['models'][model]
 
@@ -52,8 +55,6 @@ if __name__=="__main__":
         if source == 'openai':
             os.environ["OPENAI_API_KEY"] = input("Enter the OpenAI API key: ")
 
-        assert dataset_family in config['datasets'].keys(), f"Specify the correct dataset name supported:\n{list(config['datasets'].keys())}"
-        assert model in config["models"].keys(), f"Specify the correct model index supported.\n{list(config['models'].keys())}"
 
         # TODO: More branches will be added during the implementation.
         dataset_module = None
