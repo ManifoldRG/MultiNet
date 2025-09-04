@@ -97,7 +97,7 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, action_success):
 # Finding the translated TFDS shards.
 def _find_shards(dataset: str, disk_root_dir: str) -> list[str]:
     try:
-        dataset_dir = glob(f"/mnt/disks/mount_dir/MultiNet/src/v1/processed/{dataset}/test/")[0]
+        dataset_dir = glob(f"{disk_root_dir}/{dataset}/test/")[0]
         shard_files = glob(f"{dataset_dir}/translated_shard_*")
         tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
         return tfds_shards
@@ -106,12 +106,14 @@ def _find_shards(dataset: str, disk_root_dir: str) -> list[str]:
         return []
     
 class OpenXModule(DatasetModule):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0) -> None:
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, dataset_name: str, batch_size: int = 1, k_shots: int = 0) -> None:
         super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
         self._definitions_class = OpenXDefinitions
         self.get_dataloader_fn = get_openx_dataloader
         self.dataset_family = 'openx'
+        self.dataset_name = dataset_name
         self.format_instruction_prompt_fn = format_instruction_prompt  
+        self.batch_size = batch_size
     
     def _find_shards(self, dataset: str) -> list[str]:
         return _find_shards(dataset, self.disk_root_dir)
