@@ -1,14 +1,2 @@
 build/
 __pycache__
-.env
-batch_queries.jsonl
-batchinfo/
-dataset_cache/
-processed_datasets/
-robot_vqa_batch_info/
-run_robovqa_eval.sh
-test_dataloader.ipynb
-robot_vqa_batch*.json
-overcooked_*.json
-run_*.sh
-overcooked_results/
