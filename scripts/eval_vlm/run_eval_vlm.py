@@ -6,6 +6,7 @@ sys.path.append(ROOT_DIR)
 
 from src.modules.dataset_modules.procgen_module import ProcGenBatchModule
 from src.modules.dataset_modules.openx_module import OpenXBatchModule
+from src.v1.modules.overcooked_module import OvercookedBatchModule
 
 import argparse
 import json
@@ -51,5 +52,7 @@ if __name__=="__main__":
         dataset_module = ProcGenBatchModule('.', modality, source, model, 1, 0)
     elif dataset_family == 'openx':
         dataset_module = OpenXBatchModule('.', modality, source, model, 1, 0)
+    elif dataset_family == 'overcooked_ai':
+        dataset_module = OvercookedBatchModule(".", modality, source, model, 1, 0)
     
     dataset_module.run_eval(os.path.abspath(args.results_path), batch_info_dict)

@@ -1,78 +1,14 @@
 class OverCookedDefinitions:
     DESCRIPTIONS = {
         "overcooked_ai": {
-            "cramped_corridor": {
-                "coordinate in tight spaces to deliver soups": [
-                    "Navigate narrow corridors with your partner.",
-                    "Coordinate movement to avoid blocking each other.",
-                    "Collect onions and place them in pots.",
-                    "Wait for soup to cook, then deliver to serving area.",
-                    "Optimize task division in constrained space.",
-                ]
-            },
-            "asymmetric_advantages_tomato": {
-                "leverage role specialization for tomato soup": [
-                    "Utilize asymmetric layout advantages for each player.",
-                    "Specialize in different cooking tasks based on position.",
-                    "Collect tomatoes and place them in pots.",
-                    "Coordinate soup cooking and delivery timing.",
-                    "Adapt strategy based on partner's role.",
-                ]
-            },
-            "counter_circuit": {
-                "coordinate around circular kitchen layout": [
-                    "Navigate circular counter arrangement efficiently.",
-                    "Plan movement patterns to avoid collisions.",
-                    "Collect ingredients and manage cooking stations.",
-                    "Deliver completed soups to serving locations.",
-                    "Maintain smooth workflow around the circuit.",
-                ]
-            },
-            "soup_coordination": {
-                "coordinate complex soup preparation": [
-                    "Coordinate multi-step soup cooking process.",
-                    "Divide ingredient collection and cooking tasks.",
-                    "Time soup preparation and delivery efficiently.",
-                    "Communicate implicitly through actions.",
-                    "Maximize soup delivery rate through coordination.",
-                ]
-            },
-            "marshmallow_experiment": {
-                "balance immediate vs delayed rewards": [
-                    "Choose between immediate small rewards or delayed larger rewards.",
-                    "Coordinate timing of soup deliveries.",
-                    "Plan long-term cooking strategy with partner.",
-                    "Resist suboptimal short-term actions.",
-                    "Optimize cumulative reward over time.",
-                ]
-            },
-            "inverse_marshmallow_experiment": {
-                "prioritize immediate rewards over delayed ones": [
-                    "Focus on quick soup deliveries over complex coordination.",
-                    "Take immediate cooking opportunities.",
-                    "Minimize waiting time between actions.",
-                    "Adapt to partner's immediate action preferences.",
-                    "Balance speed with coordination efficiency.",
-                ]
-            },
-            "marshmallow_experiment_coordination": {
-                "coordinate delayed gratification strategies": [
-                    "Coordinate complex timing for maximum rewards.",
-                    "Plan multi-soup cooking sequences with partner.",
-                    "Balance individual patience with team coordination.",
-                    "Execute synchronized cooking and delivery.",
-                    "Optimize long-term team performance.",
-                ]
-            },
-            "you_shall_not_pass": {
-                "navigate blocking scenarios": [
-                    "Overcome movement blocking situations.",
-                    "Coordinate to unblock stuck partner.",
-                    "Plan alternative routes when blocked.",
-                    "Communicate intent through positioning.",
-                    "Resolve deadlock situations cooperatively.",
-                ]
-            },
+            "cramped_corridor": "coordinate in cramped corridor layout",
+            "asymmetric_advantages_tomato": "coordinate in asymmetric advatages layout",
+            "counter_circuit": "coordinate around counter circuit layout",
+            "soup_coordination": "coordinate for soup preparation tasks",
+            "marshmallow_experiment": "complete marshmallow experiment scenario",
+            "inverse_marshmallow_experiment": "complete inverse marshmallow experiment scenario",
+            "marshmallow_experiment_coordination": "coordinate marshmallow experiment tasks",
+            "you_shall_not_pass": "navigate you shall not pass scenario"
         }
     }
 

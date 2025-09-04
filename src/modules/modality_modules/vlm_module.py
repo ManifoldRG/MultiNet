@@ -5,10 +5,10 @@ import ast
 
 
 class VLMModule:
-    def __init__(self, source: str, model: str, max_concurrent_prompts: int = None) -> None:
+    def __init__(self, source: str, model: str, max_concurrent_prompts: int = None, max_output_tokens_per_query: int = None) -> None:
         self.source_module = None
         if source == 'openai': 
-            self.source_module = OpenAIModule(model, max_concurrent_prompts)
+            self.source_module = OpenAIModule(model, max_concurrent_prompts, max_output_tokens_per_query)
 
         assert self.source_module is not None, "The source module has not been set correcly. Check required."
     

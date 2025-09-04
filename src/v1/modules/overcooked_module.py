@@ -1,10 +1,29 @@
 from src.modules.dataset_modules.base_dataset_module import (
+    DatasetModule,
     DatasetBatchModule,
     BatchInfo,
 )
 from definitions.overcooked import OverCookedDefinitions
 from src.data_utils.overcooked_dataloader import get_overcooked_dataloader
 from definitions.overcooked_prompt import format_instruction_prompt
+from src.eval_utils import (
+    quantile_filter,
+    calculate_brier_mae,
+    min_max_normalize,
+    calculate_brier_mse,
+    calculate_mean,
+)
+from src.eval_utils import (
+    calculate_max_relative_mae,
+    calculate_proportion_beyond_mae_threshold,
+)
+from src.eval_utils import (
+    get_micro_precision_from_counts,
+    get_micro_recall_from_counts,
+    get_micro_f1,
+    calculate_tp_fp_fn_counts,
+)
+from src.modules.modality_modules.vlm_module import VLMModule
 
 from pathlib import Path
 from typing import Union
@@ -16,65 +35,187 @@ import string
 from typing import Any
 
 
-def _validate_output(output: Any) -> bool:
-    if output is None:
+MAX_BRIER_MAE_ERROR = 2.0
+MAX_BRIER_MSE_ERROR = 2.0
+NOOP_ACTION = 28
+
+
+def _validate_text_output(output, num_actions) -> bool:
+    if not isinstance(output, list) or not all([isinstance(d, dict) for d in output]):
         return False
-    out = int(output.strip())
-    if isinstance(out, int) and len(out) > 0:
-        return True
-    return False
+
+    keys, vals = set(), []
+    for d in output:
+        for k, v in d.items():
+            try:
+                k = float(k)
+                v = float(v)
+                k = int(np.round(k))
+            except ValueError:
+                return False
+
+            # Check if the key is a digit and within the action space and if it is not a duplicate
+            if not 0 <= k < num_actions or k in keys:
+                return False
+            keys.add(k)
+            vals.append(v)
+
+    # Check if the sum of the probabilities is 1, avoiding floating point errors
+    if abs(sum(vals) - 1.0) > 1e-5:
+        return False
+
+    return True
 
 
-def _validate_outputs_and_calculate_metrics(outputs: list[int], labels: list[int]):
-    """Validate outputs and calculate text similarity metrics for RoboVQA."""
-    exact_matches = []
+def _validate_outputs_and_calculate_metrics(outputs, one_hot_labels, num_actions):
+    brier_mses, brier_maes, preds = [], [], []
     total_invalid_preds = 0
+    # Validate outputs and calculate Brier MSEs
+    for o, output in enumerate(outputs):
+        if _validate_text_output(output, num_actions):
+            output = {int(k): float(v) for d in output for k, v in d.items()}
+            probs = [0.0] * num_actions
+            for i in range(len(probs)):
+                if i in output:
+                    probs[i] = output[i]
 
-    for i, output in enumerate(outputs):
-        if _validate_output(output):
-            label = labels[i]
+            mae = calculate_brier_mae(probs, one_hot_labels[o])
+            brier_maes.append(mae)
 
-            # Calculate exact match
-            exact_match = 1.0 if output == label else 0.0
-            exact_matches.append(exact_match)
+            mse = calculate_brier_mse(probs, one_hot_labels[o])
+            brier_mses.append(mse)
 
+            preds.append(np.argmax(probs))
         else:
-            # Invalid output - assign worst possible scores
-            exact_matches.append(0.0)
+            # max possible Brier MSE is 2.0
+            brier_maes.append(MAX_BRIER_MAE_ERROR)
+            brier_mses.append(MAX_BRIER_MSE_ERROR)
+
             total_invalid_preds += 1
 
-    return exact_matches, total_invalid_preds
+            preds.append(-1)
+    return brier_mses, brier_maes, total_invalid_preds, preds
 
 
-def _calculate_final_metrics(exact_matches):
-    """Calculate comprehensive final metrics for RoboVQA evaluation."""
+def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_actions):
     result = {}
 
-    # Calculate accuracy metrics
-    total_samples = len(exact_matches)
-    exact_match_accuracy = (
-        sum(exact_matches) / total_samples if total_samples > 0 else 0.0
+    # Calculate MAE metrics
+    average_dataset_mae = calculate_mean(timestep_maes)
+    normalized_maes = min_max_normalize(timestep_maes)
+    average_normalized_mae = calculate_mean(normalized_maes)
+
+    # Calculate quantile filtered MAE metrics
+    quantile_filtered_maes = quantile_filter(timestep_maes)
+    normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
+    average_normalized_quantile_filtered_mae = calculate_mean(
+        normalized_quantile_filtered_maes
     )
 
-    result["exact_match_accuracy"] = exact_match_accuracy
-    result["total_samples"] = total_samples
+    max_rel_mae = calculate_max_relative_mae(timestep_maes)
+    prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(timestep_maes)
 
+    # Calculate f1
+    possible_actions = list(range(num_actions))
+    tp, fp, fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
+        preds, trues, possible_actions
+    )
+    precision = get_micro_precision_from_counts(tp, fp)
+    precision_without_invalid = get_micro_precision_from_counts(tp, valid_fp)
+    recall = get_micro_recall_from_counts(tp, fn)
+    f1 = get_micro_f1(precision, recall)
+    f1_without_invalid = get_micro_f1(precision_without_invalid, recall)
+
+    # Calculate MSE metrics
+    total_dataset_amse = sum(timestep_mses)
+    num_timesteps = len(timestep_mses)
+    avg_dataset_amse = total_dataset_amse / num_timesteps if num_timesteps > 0 else 0.0
+
+    normalized_mses = min_max_normalize(timestep_mses)
+    normalized_amse = calculate_mean(normalized_mses)
+
+    result["total_dataset_amse"] = total_dataset_amse
+    result["total_dataset_amae"] = sum(timestep_maes)
+    result["num_timesteps"] = num_timesteps
+    result["avg_dataset_amse"] = avg_dataset_amse
+    result["avg_dataset_amae"] = average_dataset_mae
+    result["normalized_amse"] = normalized_amse
+    result["normalized_amae"] = average_normalized_mae
+    result["normalized_quantile_filtered_amae"] = (
+        average_normalized_quantile_filtered_mae
+    )
+    result["max_relative_mae"] = max_rel_mae
+    result["proportion_beyond_threshold_mae"] = prop_beyond_threshold_mae
+    result["recall"] = recall
+    result["precision"] = precision
+    result["precision_without_invalid"] = precision_without_invalid
+    result["f1"] = f1
+    result["f1_without_invalid"] = f1_without_invalid
+    result["total_invalids"] = int(invalid_fp)
+    result["percentage_invalids"] = (invalid_fp / len(preds)) * 100
+    result["preds"] = [int(pred) for pred in preds]
+    result["gt_actions"] = [int(true) for true in trues]
     return result
 
 
-# Finding the translated TFDS shards.
-def _find_shards(dataset, disk_root_dir: str) -> list[str]:
+def _get_vlm_instruction(
+    dataset: str,
+    env_name: str,
+    definitions_class,
+    descriptions,
+    action_exclusiveness,
+    additional_instructions,
+    format_instruction_prompt_fn,
+    _get_action_space_fn,
+):
+    """Get VLM instruction for a given dataset and environment name"""
+    assert (
+        dataset in descriptions
+    ), f"The layout {dataset} is not included in overcooked."
+
+    if env_name in descriptions:
+        env_desc = " ".join(descriptions[dataset][env_name])
+    else:
+        env_desc = env_name.capitalize() + "."
+
+    action_space = _get_action_space_fn(dataset, env_name)
+
+    if dataset not in action_exclusiveness:
+        dataset = "default"
+
+    additional_inst = None
+    if dataset in additional_instructions:
+        if env_name in additional_instructions[dataset]:
+            additional_inst = " ".join(additional_instructions[dataset][env_name])
+        else:
+            additional_inst = None
+
+    instruction = format_instruction_prompt_fn(
+        env_name,
+        env_desc,
+        str(definitions_class.ACTION_MEANINGS),
+        action_space,
+        additional_inst,
+    )
+    return instruction
+
+
+# Finding the pickle file
+def _find_pickle_file(dataset, disk_root_dir: str) -> list[str]:
     try:
         # Construct the dataset directory path
         dataset_dir = Path(disk_root_dir) / "overcooked_ai" / "test"
-        # Use glob to find all .pickle files
-        shard_files = glob(str(dataset_dir / "*.pickle"))
-        return shard_files[0]
+        # Use glob to find .pickle file
+        pickle_file = glob(str(dataset_dir / "*.pickle"))
+        return pickle_file[0]
     except Exception as e:
         print(
             f"Cannot identify the directory to the dataset. Skipping this dataset. Error: {e}"
         )
         return []
+
+
+
 
 
 class OvercookedBatchModule(DatasetBatchModule):
@@ -95,15 +236,21 @@ class OvercookedBatchModule(DatasetBatchModule):
         self.get_dataloader_fn = get_overcooked_dataloader
         self.dataset_family = "overcooked_ai"
         self.disk_root_dir = "processed_datasets/"
-        self._datasets = []
         self.format_instruction_prompt_fn = format_instruction_prompt
+        self.source = "openai"
 
     @property
-    def action_meanings(self):
-        return self._definitions_class.ACTION_MEANINGS
+    def modality_module(self):
+        self._modality_module = VLMModule(
+            self.source,
+            self.model,
+            max_concurrent_prompts=400,
+            max_output_tokens_per_query=512,
+        )
+        return self._modality_module
 
     def _find_shards(self, dataset: str) -> list[str]:
-        return _find_shards(dataset, self.disk_root_dir)
+        return _find_pickle_file(dataset, self.disk_root_dir)
 
     def _send_batch_job(self, batch, dataset_name, batch_num):
         (
@@ -143,33 +290,29 @@ class OvercookedBatchModule(DatasetBatchModule):
         self.batch_list[dataset_name].append(str(fp))
 
     def _send_batch_jobs_for_dataset(self, dataset):
-        tfds_shards = self._find_shards(dataset)
-        if len(tfds_shards) == 0:
+        oc_pickle = self._find_shards(dataset)
+        if len(oc_pickle) == 0:
             return {}
 
         # Creating the dataloader, getting both the object and the iterable
         dataloader_obj, dataloader = self.get_dataloader_fn(
-            tfds_shards, batch_size=self.batch_size, by_episode=False
+            oc_pickle, batch_size=self.batch_size, by_episode=False
         )
 
         print(f"Sending batch jobs for dataset: {dataset}...")
         for i, batch in enumerate(dataloader):
-            print("Batch job sent")
+            print("Sending Batch Jobs....")
             self._send_batch_job(batch, dataset, i)
+            print("Batch Jobs sent!")
 
         print(f"Finished sending jobs for {dataset}.")
         return self.batch_list[dataset]
 
-    def send_batch_jobs_for_all_datasets(self):
-        self._send_batch_jobs_for_dataset(self.dataset_family)
-        self.action_stats = None
-        print(self.batch_list)
-        return self.batch_list
-
     def _run_eval_dataset(self, dataset_batch_info_paths: Union[str, list[str]]):
         result = {}
 
-        exact_matches = []
+        timestep_mses, timestep_maes, timestep_preds, timestep_trues = [], [], [], []
+        total_invalid_preds = 0
         start_time = time.time()
         total_invalid_preds = 0
 
@@ -180,7 +323,7 @@ class OvercookedBatchModule(DatasetBatchModule):
             paths = dataset_batch_info_paths
         else:
             raise ValueError(
-                "data_batch_info_paths should be a path to a folder or a list of filepaths"
+                f"data_batch_info_paths should be a path to a folder or a list of filepaths"
             )
 
         for fp in paths:
@@ -189,67 +332,74 @@ class OvercookedBatchModule(DatasetBatchModule):
 
             batch_info = np.load(fp, allow_pickle=True)
 
-            # output_types = list(batch_info['output_types'])
+            print(batch_info)
+
+            output_types = list(batch_info["output_types"])
             ds = batch_info["dataset_name"].item()
             batch_num = batch_info["batch_num"].item()
             batch_id = batch_info["batch_id"].item()
-            labels = [int(label) for label in batch_info["labels"]]
+            labels = batch_info["labels"]
             num_inputs = batch_info["num_inputs"].item()
+            is_lasts = [bool(is_last) for is_last in batch_info["is_lasts"]]
 
             status = self.modality_module.get_batch_job_status(batch_id)
             if status == "completed":
-                outputs = self.modality_module.retrieve_batch_results(batch_id)
+                outputs = self.modality_module.retrieve_batch_results(
+                    batch_id, output_types
+                )
             else:
                 raise Exception(
                     f"Batch not completed for batch {ds} batch num {batch_num} "
                     f"with batch id {batch_id}. Status: {status}. Stopping eval."
                 )
 
-            matches, invalid_preds = _validate_outputs_and_calculate_metrics(
-                outputs, labels
+            action_space = self._get_action_space(ds, "default")
+            num_actions = 0
+            for action_idx, (_, action_dict) in action_space.items():
+                num_actions += 1
+            print(action_space)
+            print(f"NUMBER OF ACTIONS POSSIBLE: {num_actions}")
+            print(labels)
+
+            # Check if labels are within the action space, otherwise set to NoOp action
+            labels = np.array(
+                [label if label < num_actions else NOOP_ACTION for label in labels]
             )
+            one_hot_labels = self._get_one_hot(labels, num_actions)
+
+            if not isinstance(outputs, list):
+                outputs = [None] * len(labels)
+
+            brier_mses, brier_maes, invalid_preds, preds = (
+                _validate_outputs_and_calculate_metrics(
+                    outputs, one_hot_labels, num_actions
+                )
+            )
+            timestep_mses.extend(brier_mses)
+            timestep_maes.extend(brier_maes)
             total_invalid_preds += invalid_preds
+            timestep_preds.extend(preds)
+            timestep_trues.extend(labels)
 
-            assert (
-                len(matches) == num_inputs
-            ), "The length of calculated metrics list do not match with the length number of processed inputs."
-
-            exact_matches.extend(matches)
-
-        result = _calculate_final_metrics(exact_matches)
+        result = _calculate_final_metrics(
+            timestep_mses, timestep_maes, timestep_preds, timestep_trues, num_actions
+        )
         result["eval_time"] = time.time() - start_time
         result["total_invalid_preds"] = total_invalid_preds
 
         return result
 
     def _get_vlm_instruction(self, dataset: str, env_name: str):
-        assert (
-            dataset in self.descriptions
-        ), f"The layout {dataset} is not included in overcooked."
-
-        if env_name in self.descriptions:
-            env_desc = " ".join(self.descriptions[dataset][env_name])
-        else:
-            env_desc = env_name.capitalize() + "."
-
-        action_space = self._get_action_space(dataset, env_name)
-
-        if dataset not in self.action_exclusiveness:
-            dataset = "default"
-
-        additional_inst = None
-        if dataset in self.additional_instructions:
-            if env_name in self.additional_instructions[dataset]:
-                additional_inst = " ".join(
-                    self.additional_instructions[dataset][env_name]
-                )
-            else:
-                additional_inst = None
-
-        instruction = self.format_instruction_prompt_fn(
-            env_name, env_desc, str(self.action_meanings), action_space, additional_inst
+        return _get_vlm_instruction(
+            dataset,
+            env_name,
+            self._definitions_class,
+            self.descriptions,
+            self.action_exclusiveness,
+            self.additional_instructions,
+            self.format_instruction_prompt_fn,
+            self._get_action_space,
         )
-        return instruction
 
     def _process_batch(self, batch: dict[str, list[Any]], dataset: str):
         # Getting the maxmimum length of episodes.
