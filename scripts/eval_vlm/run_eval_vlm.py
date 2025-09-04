@@ -6,6 +6,7 @@ sys.path.append(ROOT_DIR)
 
 from src.modules.dataset_modules.procgen_module import ProcGenBatchModule
 from src.modules.dataset_modules.openx_module import OpenXBatchModule, OpenXModule
+from v1.modules.robovqa_module import RoboVQABatchModule
 
 
 import argparse
@@ -62,6 +63,8 @@ if __name__=="__main__":
             dataset_module = ProcGenBatchModule(args.disk_root_dir, modality, source, model, 1, 0)
         elif dataset_family == 'openx' and args.batch_process:
             dataset_module = OpenXBatchModule(args.disk_root_dir, modality, source, model, 1, 0)
+        elif dataset_family == "robot_vqa" and args.batch_process:
+            dataset_module = RoboVQABatchModule(args.disk_root_dir, modality, source, model, 1, 0)
         dataset_module.run_eval(os.path.abspath(args.results_path), batch_info_dict)
     
     

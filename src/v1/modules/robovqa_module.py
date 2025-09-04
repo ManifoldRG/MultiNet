@@ -83,7 +83,7 @@ def _calculate_final_metrics(exact_matches, similarity_scores):
 def _find_shards(dataset, disk_root_dir: str) -> list[str]:
     try:
         # Look for RoboVQA dataset directory pattern
-        dataset_dir = f"{disk_root_dir}/openx_multi_embodiment/test"
+        dataset_dir = f"{disk_root_dir}/{dataset}/test"
         shard_files = glob(f"{dataset_dir}/translated_shard_*")
         tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
         return tfds_shards
@@ -98,12 +98,15 @@ class RoboVQABatchModule(DatasetBatchModule):
         self.get_dataloader_fn = get_openx_dataloader  # Reusing OpenX dataloader
         self.dataset_family = 'robot_vqa'
         self.similarity_model = None
-        self.disk_root_dir = 'processed_datasets/'
+        self.disk_root_dir = disk_root_dir
         self._datasets = []
+        self.batch_size = batch_size
+        self.dataset = "openx_multi_embodiment"
+        self.model = model
 
     
-    def _find_shards(self, dataset: str) -> list[str]:
-        return _find_shards(dataset, self.disk_root_dir)
+    def _find_shards(self) -> list[str]:
+        return _find_shards(self.dataset, self.disk_root_dir)
     
     
     @property
@@ -117,7 +120,7 @@ class RoboVQABatchModule(DatasetBatchModule):
     @property
     def datasets(self):
         if len(self._datasets) == 0:
-            tfds_shards = self._find_shards(self.dataset_family)
+            tfds_shards = self._find_shards()
             if len(tfds_shards) != 0:
                 self._datasets.append(self.dataset_family)
         return self._datasets
@@ -125,7 +128,7 @@ class RoboVQABatchModule(DatasetBatchModule):
     
     @property
     def modality_module(self):
-        self._modality_module = OpenAIModule(model = "gpt-5-2025-08-07", max_concurrent_prompts=400)
+        self._modality_module = OpenAIModule(model = self.model, max_concurrent_prompts=400)
         return self._modality_module
         
     
@@ -134,7 +137,7 @@ class RoboVQABatchModule(DatasetBatchModule):
         """
         Custom version for RoboVQA that bypasses the action_stats logic.
         """
-        tfds_shards = self._find_shards(dataset)
+        tfds_shards = self._find_shards()
         if len(tfds_shards) == 0:
             return {}
 
@@ -201,7 +204,7 @@ class RoboVQABatchModule(DatasetBatchModule):
                                 f'with batch id {batch_id}. Status: {status}. Stopping eval.')
             if self.similarity_model is None:
                 print("Loading similarity model...")
-                self.similarity_model = SentenceTransformer("all-MiniLM-L6-v2")
+                self.similarity_model = SentenceTransformer("all-MiniLM-L6-v2", device = "cpu") # causes version mismatch with recent cuda version and torch in the conda env
             matches, similarity_score, invalid_preds = _validate_outputs_and_calculate_metrics(self.similarity_model, outputs, labels)
             total_invalid_preds += invalid_preds
                     
