@@ -24,6 +24,7 @@ from src.eval_utils import (
     calculate_tp_fp_fn_counts,
 )
 from src.modules.modality_modules.vlm_module import VLMModule
+from src.modules.source_modules.openai_module import OpenAIModule
 
 from pathlib import Path
 from typing import Union
@@ -204,9 +205,10 @@ def _get_vlm_instruction(
 def _find_pickle_file(dataset, disk_root_dir: str) -> list[str]:
     try:
         # Construct the dataset directory path
-        dataset_dir = Path(disk_root_dir) / "overcooked_ai" / "test"
+        dataset_dir = f"{disk_root_dir}/{dataset}/test"
+        print(dataset_dir)
         # Use glob to find .pickle file
-        pickle_file = glob(str(dataset_dir / "*.pickle"))
+        pickle_file = glob(f"{dataset_dir}/*.pickle")
         return pickle_file[0]
     except Exception as e:
         print(
@@ -215,7 +217,225 @@ def _find_pickle_file(dataset, disk_root_dir: str) -> list[str]:
         return []
 
 
+class OvercookedModule(DatasetModule, OpenAIModule):
+    def __init__(
+        self,
+        disk_root_dir: str,
+        modality: str,
+        source: str,
+        model: str,
+        dataset_name: str,
+        batch_size: int = 1,
+        k_shots: int = 0,
+    ) -> None:
+        DatasetModule.__init__(self, disk_root_dir, modality, source, model, batch_size, k_shots)
+        OpenAIModule.__init__(self, model)
+        
+        self._definitions_class = OverCookedDefinitions
+        self.get_dataloader_fn = get_overcooked_dataloader
+        self.format_instruction_prompt_fn = format_instruction_prompt
+        self.dataset_name = dataset_name
+        self.batch_size = batch_size
 
+        
+    @property
+    def modality_module(self):
+        self._modality_module = VLMModule(
+            self.source,
+            self.model,
+            max_concurrent_prompts=400,
+            max_output_tokens_per_query=512,
+        )
+        
+        self._modality_module.source_module = self
+        
+        return self._modality_module
+
+    # Finding the translated pickle files.
+    def _find_shards(self) -> list[str]:
+        return _find_pickle_file(self.dataset_name, self.disk_root_dir)
+    
+    
+    def _get_response_from_api(self, system_prompt: str=None) -> str:
+        
+        start_idx = self._find_starting_point(system_prompt, self.max_output_tokens_per_query)
+        system_message = []
+        if system_prompt is not None:
+            system_message.append({'role': 'system', 'content': system_prompt})
+
+        messages = system_message + self.history[0][start_idx:]
+        
+        api_params = {
+            "model": self.model,
+            "messages": messages,
+        }
+        
+        response = self.client.chat.completions.create(**api_params)
+
+        return response.choices[0].message.content
+    
+
+    def _run_eval_dataset(self, dataset: str) -> dict:
+        result = {}
+
+        try:
+            oc_pickle = self._find_shards()
+            if len(oc_pickle) == 0:
+                return {}
+
+            start_time = time.time()
+
+            # Creating the dataloader.
+            dataloader_obj, dataloader = self.get_dataloader_fn(
+                oc_pickle,
+                batch_size=self.batch_size,
+            )
+            
+            result = {}
+
+            timestep_mses, timestep_maes, timestep_preds, timestep_trues = (
+                [],
+                [],
+                [],
+                [],
+            )
+            total_invalid_preds = 0
+            start_time = time.time()
+
+            action_space = self._get_action_space(dataset, "default")
+            num_actions = 0
+            for action_idx, (_, action_dict) in action_space.items():
+                num_actions += len(action_dict)
+
+            for batch in dataloader:
+                # Action stats need to be retrieved only once for each dataset, after they have been populated.
+                if self.action_stats is None:
+                    self.action_stats = dataloader_obj.action_stats
+
+                # Consuming the batch until all timesteps in the batch.
+                for (
+                    cur_inputs,
+                    k_shots_examples,
+                    instructions,
+                    labels,
+                    idxs,
+                    output_types,
+                    is_lasts,
+                ) in self._process_batch(batch, dataset):
+                    outputs = self.modality_module.infer_step(
+                        cur_inputs, k_shots_examples, instructions, output_types
+                    )  # (B)
+
+                    # Check if labels are within the action space, otherwise set to NoOp action
+                    labels = np.array(
+                        [
+                            label if label < num_actions else NOOP_ACTION
+                            for label in labels
+                        ]
+                    )
+                    one_hot_labels = self._get_one_hot(labels, num_actions)
+
+                    if not isinstance(outputs, list):
+                        outputs = [None] * len(labels)
+
+                    brier_mses, brier_maes, invalid_preds, preds = (
+                        _validate_outputs_and_calculate_metrics(
+                            outputs, one_hot_labels, num_actions
+                        )
+                    )
+                    timestep_mses.extend(brier_mses)
+                    timestep_maes.extend(brier_maes)
+                    total_invalid_preds += invalid_preds
+                    timestep_preds.extend(preds)
+                    timestep_trues.extend(labels)
+
+            result = _calculate_final_metrics(
+                timestep_mses,
+                timestep_maes,
+                timestep_preds,
+                timestep_trues,
+                num_actions,
+            )
+            result["eval_time"] = time.time() - start_time
+            result["total_invalid_preds"] = total_invalid_preds
+
+        except KeyError as e:
+            print(f"KeyError occurred: {e}")
+            print(
+                f"The VLMModule cannot be initialized since there is no dataset called {dataset}. Moving on to the next one..."
+            )
+            return {}
+
+        return result
+
+    def _process_batch(self, batch: dict[str, list[Any]], dataset: str):
+        text_obs = batch["text_observation"]
+
+        max_timesteps = max(0, len(text_obs))
+
+        for t in range(max_timesteps):
+            (
+                cur_inputs,
+                k_shots_examples,
+                instructions,
+                labels,
+                idxs,
+                output_types,
+                is_lasts,
+            ) = [], [], [], [], [], [], []
+
+
+            if t < len(text_obs):
+                # This batch is consumed.
+                idxs.append(t)
+                cur_inputs.append([])
+
+                # First, setting the instructions and output types.
+                env_name = text_obs[t].strip().strip(string.punctuation).lower()
+                instruction = self._get_vlm_instruction("overcooked_ai", env_name)
+                instructions.append(instruction)
+
+                output_type = self._get_output_type("overcooked_ai", env_name)
+                output_types.append(output_type)
+
+                labels.append(batch["action"][t])
+                is_lasts.append(batch["is_last"][t])
+
+                if (
+                    "image_observation" in batch
+                    and batch["image_observation"][t] is not None
+                ):
+                    image_obs = batch["image_observation"][t]
+                    if len(image_obs.shape) == 4:
+                        image_obs = [
+                            ("image_observation", image) for image in image_obs
+                        ]
+                        cur_inputs[-1] += image_obs
+                    else:
+                        cur_inputs[-1].append(("image_observation", image_obs))
+
+                cur_inputs[-1].append(("text_observation", text_obs[t]))
+            yield (
+                cur_inputs,
+                k_shots_examples,
+                instructions,
+                labels,
+                idxs,
+                output_types,
+                is_lasts,
+            )
+
+    def _get_vlm_instruction(self, dataset: str, env_name: str):
+        return _get_vlm_instruction(
+            dataset,
+            env_name,
+            self._definitions_class,
+            self.descriptions,
+            self.action_exclusiveness,
+            self.additional_instructions,
+            self.format_instruction_prompt_fn,
+            self._get_action_space,
+        )
 
 
 class OvercookedBatchModule(DatasetBatchModule):
@@ -234,10 +454,13 @@ class OvercookedBatchModule(DatasetBatchModule):
         )
         self._definitions_class = OverCookedDefinitions
         self.get_dataloader_fn = get_overcooked_dataloader
-        self.dataset_family = "overcooked_ai"
-        self.disk_root_dir = "processed_datasets/"
+        self.disk_root_dir = disk_root_dir
         self.format_instruction_prompt_fn = format_instruction_prompt
-        self.source = "openai"
+        self.source = source
+        self.batch_size = batch_size
+        self.dataset_family = "overcooked_ai"
+        self.dataset_name = "overcooked_ai"
+        self._datasets = ["overcooked_ai"]
 
     @property
     def modality_module(self):
@@ -249,7 +472,7 @@ class OvercookedBatchModule(DatasetBatchModule):
         )
         return self._modality_module
 
-    def _find_shards(self, dataset: str) -> list[str]:
+    def _find_shards(self, dataset:str) -> list[str]:
         return _find_pickle_file(dataset, self.disk_root_dir)
 
     def _send_batch_job(self, batch, dataset_name, batch_num):
@@ -307,6 +530,7 @@ class OvercookedBatchModule(DatasetBatchModule):
 
         print(f"Finished sending jobs for {dataset}.")
         return self.batch_list[dataset]
+
 
     def _run_eval_dataset(self, dataset_batch_info_paths: Union[str, list[str]]):
         result = {}
