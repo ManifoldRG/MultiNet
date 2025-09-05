@@ -1,6 +1,7 @@
-from src.modules.dataset_modules.base_dataset_module import DatasetBatchModule, BatchInfo
+from src.modules.dataset_modules.base_dataset_module import DatasetBatchModule, BatchInfo, DatasetModule
 from src.data_utils.openx_dataloader import get_openx_dataloader
 from src.modules.source_modules.openai_module import OpenAIModule
+from definitions.robovqa_prompt import ROBOVQA_PROMPT
 from pathlib import Path
 import numpy as np
 import time
@@ -83,7 +84,7 @@ def _calculate_final_metrics(exact_matches, similarity_scores):
 def _find_shards(dataset, disk_root_dir: str) -> list[str]:
     try:
         # Look for RoboVQA dataset directory pattern
-        dataset_dir = f"{disk_root_dir}/openx_multi_embodiment/test"
+        dataset_dir = f"{disk_root_dir}/{dataset}/test"
         shard_files = glob(f"{dataset_dir}/translated_shard_*")
         tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
         return tfds_shards
@@ -92,18 +93,20 @@ def _find_shards(dataset, disk_root_dir: str) -> list[str]:
         return []
     
     
-class RoboVQABatchModule(DatasetBatchModule):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_info_dir: str, batch_size: int = 1, k_shots: int = 0):
-        super().__init__(disk_root_dir, modality, source, model, batch_info_dir, batch_size, k_shots)
-        self.get_dataloader_fn = get_openx_dataloader  # Reusing OpenX dataloader
-        self.dataset_family = 'robot_vqa'
-        self.similarity_model = None
-        self.disk_root_dir = 'processed_datasets/'
-        self._datasets = []
 
+class RoboVQAModule(DatasetModule):
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, dataset_name: str,  batch_size: int = 1, k_shots: int = 0):
+        super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
+        self.get_dataloader_fn = get_openx_dataloader
+        self.dataset = dataset_name
+        self.batch_size = batch_size
+        self.model = model
+        self.similarity_model = None
+        self.dataset_family = "robot_vqa"
+        
     
     def _find_shards(self, dataset: str) -> list[str]:
-        return _find_shards(dataset, self.disk_root_dir)
+        return _find_shards("openx_multi_embodiment", self.disk_root_dir)
     
     
     @property
@@ -125,7 +128,142 @@ class RoboVQABatchModule(DatasetBatchModule):
     
     @property
     def modality_module(self):
-        self._modality_module = OpenAIModule(model = "gpt-5-2025-08-07", max_concurrent_prompts=400)
+        self._modality_module = OpenAIModule(model = self.model, max_concurrent_prompts=400)
+        return self._modality_module
+    
+    
+    
+    def _run_eval_dataset(self, dataset: str) -> dict:
+        """Run evaluation for a single dataset using single inference."""
+        tfds_shards = self._find_shards(dataset)
+        if len(tfds_shards) == 0:
+            return {}
+        # Create dataloader
+        dataloader_obj, dataloader = self.get_dataloader_fn(
+            tfds_shards,
+            batch_size=self.batch_size,
+            dataset_name=dataset,
+            by_episode=False
+        )
+        
+        exact_matches = []
+        similarity_scores = []
+        start_time = time.time()
+        total_invalid_preds = 0
+        
+        # Initialize similarity model if not already done
+        if self.similarity_model is None:
+            print("Loading similarity model...")
+            self.similarity_model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
+        
+        print(f"Running evaluation for dataset: {dataset}...")
+        
+        for batch_idx, batch in enumerate(dataloader):
+            # Process each timestep in the batch
+            text_obs = batch['text_observation']
+            num_timesteps = len(text_obs)
+            
+            batch_outputs = []
+            batch_labels = []
+            
+            for t in range(num_timesteps):
+                # Prepare input for single inference
+                formatted_input = []
+                
+                # Get the question text and format it
+                question_text = text_obs[t]
+                
+                # Add image if present
+                if 'image_observation' in batch and batch['image_observation'][t] is not None:
+                    image_obs = batch['image_observation'][t]
+                    formatted_input.append(('image', image_obs))
+                
+                # Add the question text
+                formatted_input.append(('text', question_text))
+                
+                # Run single inference
+                try:
+                    # Clear history before each inference to ensure clean context
+                    self.modality_module.clear_history()
+                    
+                    # Perform inference
+                    output = self.modality_module.infer_step(
+                        inputs=formatted_input,
+                        system_prompt=ROBOVQA_PROMPT
+                    )
+                    
+                    batch_outputs.append(output)
+                except Exception as e:
+                    print(f"Error during inference at batch {batch_idx}, timestep {t}: {e}")
+                    batch_outputs.append("")  # Add empty string for failed inference
+                
+                # Collect label
+                batch_labels.append(batch['text_answer'][t])
+            
+            # Calculate metrics for this batch
+            if batch_outputs and batch_labels:
+                matches, scores, invalid = _validate_outputs_and_calculate_metrics(
+                    self.similarity_model, 
+                    batch_outputs, 
+                    batch_labels
+                )
+                
+                exact_matches.extend(matches)
+                similarity_scores.extend(scores)
+                total_invalid_preds += invalid
+            
+            # Progress update
+            if (batch_idx + 1) % 10 == 0:
+                print(f"Processed {batch_idx + 1} batches...")
+        
+        # Calculate final metrics
+        result = _calculate_final_metrics(exact_matches, similarity_scores)
+        result['eval_time'] = time.time() - start_time
+        result['total_invalid_preds'] = total_invalid_preds
+        
+        print(f"Evaluation completed for {dataset}")
+        
+        return result
+    
+    
+    
+class RoboVQABatchModule(DatasetBatchModule):
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_info_dir: str, batch_size: int = 1, k_shots: int = 0):
+        super().__init__(disk_root_dir, modality, source, model, batch_info_dir, batch_size, k_shots)
+        self.get_dataloader_fn = get_openx_dataloader  # Reusing OpenX dataloader
+        self.dataset_family = 'robot_vqa'
+        self.similarity_model = None
+        self.disk_root_dir = disk_root_dir
+        self._datasets = []
+        self.batch_size = batch_size
+        self.dataset = "openx_multi_embodiment"
+        self.model = model
+
+    
+    def _find_shards(self) -> list[str]:
+        return _find_shards(self.dataset, self.disk_root_dir)
+    
+    
+    @property
+    def descriptions(self):
+        if self._definitions_class is None:
+            return {}
+        else:
+            return self._definitions_class.DESCRIPTIONS
+        
+    
+    @property
+    def datasets(self):
+        if len(self._datasets) == 0:
+            tfds_shards = self._find_shards()
+            if len(tfds_shards) != 0:
+                self._datasets.append(self.dataset_family)
+        return self._datasets
+        
+    
+    @property
+    def modality_module(self):
+        self._modality_module = OpenAIModule(model = self.model, max_concurrent_prompts=400)
         return self._modality_module
         
     
@@ -134,7 +272,7 @@ class RoboVQABatchModule(DatasetBatchModule):
         """
         Custom version for RoboVQA that bypasses the action_stats logic.
         """
-        tfds_shards = self._find_shards(dataset)
+        tfds_shards = self._find_shards()
         if len(tfds_shards) == 0:
             return {}
 
@@ -201,7 +339,7 @@ class RoboVQABatchModule(DatasetBatchModule):
                                 f'with batch id {batch_id}. Status: {status}. Stopping eval.')
             if self.similarity_model is None:
                 print("Loading similarity model...")
-                self.similarity_model = SentenceTransformer("all-MiniLM-L6-v2")
+                self.similarity_model = SentenceTransformer("all-MiniLM-L6-v2", device = "cpu") # causes version mismatch with recent cuda version and torch in the conda env
             matches, similarity_score, invalid_preds = _validate_outputs_and_calculate_metrics(self.similarity_model, outputs, labels)
             total_invalid_preds += invalid_preds
                     
@@ -241,25 +379,7 @@ class RoboVQABatchModule(DatasetBatchModule):
             
             # Simple system prompt for VQA
             system_prompt.append(
-                """
-                You are a specialized Visual-Language Model Assistant that answers questions about robotics tasks based on the given image and text context. Your primary function is to interpret visual and textual data to provide precise answers to the asked question.
-
-                Core directive:
-                Analyze the provided Image and Text Context to answer the asked Question. Your answer must be grounded in the provided context and informed by general commonsense. Adhere strictly to the output formatting rules.
-
-                Inputs:
-                    1. Image: A visual representation of the robot's current environment.
-                    2. Text Context: A string of text describing the overall task, goal, or recent history of actions.
-                    3. Question: A specific query about the environment or the next possible action.
-
-                Output formatting rules:
-                Your response must be one of the following three types, and nothing else. Do not add conversational filler, explanations, or apologies.
-                
-                    1. Action Execution Query (e.g., "What should I do?", "What is the next step?"):
-                        - Respond with a concise action phrase.
-                    2. Feasibility/Possibility Query (e.g., "Can I grasp the handle?", "Is the drawer open?"):
-                        - Respond with a single word: Yes or No.
-                """
+                ROBOVQA_PROMPT
                 )
             
             labels.append(batch['text_answer'][t])
