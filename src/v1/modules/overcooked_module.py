@@ -286,7 +286,6 @@ class OvercookedModule(DatasetModule):
             for action_idx, (_, action_dict) in action_space.items():
                 num_actions += len(action_dict)
 
-            actual_preds = []
             for batch in dataloader:
                 # Action stats need to be retrieved only once for each dataset, after they have been populated.
                 if self.action_stats is None:
@@ -313,7 +312,6 @@ class OvercookedModule(DatasetModule):
                             for label in labels
                         ]
                     )
-                    actual_preds.append(outputs)
                     one_hot_labels = self._get_one_hot(labels, num_actions)
 
                     if not isinstance(outputs, list):
@@ -337,7 +335,6 @@ class OvercookedModule(DatasetModule):
                 timestep_trues,
                 num_actions,
             )
-            result["outputs"] = actual_preds
             result["eval_time"] = time.time() - start_time
             result["total_invalid_preds"] = total_invalid_preds
 
