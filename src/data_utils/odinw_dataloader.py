@@ -126,15 +126,8 @@ class ODinWDataset(Dataset):
         options = []
         correct_idx = None
         
-        # Add the correct category first
-        options.append(correct_category)
-        correct_idx = 0
-        
-        # Add other categories as options (limit to reasonable number)
-        other_categories = [cat for cat in category_names if cat != correct_category]
-        # Limit to top 3-4 other categories to keep question manageable
-        max_other_options = min(3, len(other_categories))
-        options.extend(other_categories[:max_other_options])
+        options = category_names
+        correct_idx = category_names.index(correct_category)
         
         # Create the question text
         question_text = f"What object is shown in this image from the {self.dataset_name} dataset?\n"
@@ -167,10 +160,10 @@ class ODinWDataset(Dataset):
         sample = {
             'image': image,
             'question': question_text,
-            'category_id': sample_data['category_id'],
-            'category_name': sample_data['category_name'],
             'correct_option_idx': correct_option_idx,
             'options': options,
+            'category_id': sample_data['category_id'],
+            'category_name': sample_data['category_name'],
             'dataset_name': self.dataset_name,
             'bbox_info': {
                 'bbox': sample_data.get('bbox', []),
