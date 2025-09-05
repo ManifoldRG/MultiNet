@@ -51,7 +51,7 @@ BATCH_QUEUE_TOKEN_DAY_LIMIT = {
 }
 
 class OpenAIModule:
-    def __init__(self, model: str, max_concurrent_prompts: int = None, max_output_tokens_per_query=256, save_batch_queries=False) -> None:
+    def __init__(self, model: str, max_concurrent_prompts: int = None, max_output_tokens_per_query=1000, save_batch_queries=False) -> None:
         if model not in CONTEXT_SIZE_MAP:
             raise KeyError(f"The model {model} is not currenly supported.")
         
@@ -185,11 +185,10 @@ class OpenAIModule:
         messages = system_message + self.history[0][start_idx:]
         
         # Use appropriate token parameter based on model
-        max_tokens_param = self._get_max_tokens_param()
         api_params = {
             "model": self.model,
             "messages": messages,
-            max_tokens_param: self.max_output_tokens_per_query
+            "max_tokens": self.max_output_tokens_per_query
         }
         
         response = self.client.chat.completions.create(**api_params)
@@ -241,6 +240,7 @@ class OpenAIModule:
                         "response_format": { 
                             "type": "text"
                         },
+                        "reasoning": {"effort": "minimal"},
                         "messages": system_messages[i] + messages
                     }
                 }

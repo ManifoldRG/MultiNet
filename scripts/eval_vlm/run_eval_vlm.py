@@ -6,7 +6,7 @@ sys.path.append(ROOT_DIR)
 
 from src.modules.dataset_modules.procgen_module import ProcGenBatchModule
 from src.modules.dataset_modules.openx_module import OpenXBatchModule, OpenXModule
-from v1.modules.robovqa_module import RoboVQABatchModule
+from src.v1.modules.robovqa_module import RoboVQABatchModule, RoboVQAModule
 
 
 import argparse
@@ -75,6 +75,10 @@ if __name__=="__main__":
     if args.dataset_family == 'openx' and not args.batch_process:
         os.environ["OPENAI_API_KEY"] = input("Enter the OpenAI API key: ")
         dataset_module = OpenXModule(args.disk_root_dir, 'vlm', 'openai', args.model, args.dataset_name, 1, 0)
+        dataset_module.run_eval(args.results_path)
+    if args.dataset_family == 'robot_vqa' and not args.batch_process:
+        os.environ["OPENAI_API_KEY"] = input("Enter the OpenAI API key: ")
+        dataset_module = RoboVQAModule(args.disk_root_dir, 'vlm', 'openai', args.model, args.dataset_name, 1, 0)
         dataset_module.run_eval(args.results_path)
     
     
