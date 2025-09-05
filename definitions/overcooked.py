@@ -217,10 +217,8 @@ class OverCookedDefinitions:
             "coordinate": "(1, 1)",
             "description": """
             Perform context-sensitive interactions with kitchen objects adjacent to or at the player's current position. 
-            This includes: picking up ingredients from dispensers or counters, placing held ingredients into cooking pots, 
-            placing cooked soups onto serving counters, delivering completed dishes to serving windows for points, 
-            dropping held items onto empty counter spaces, and picking up completed soups from cooking pots. 
-            The specific interaction depends on what objects are nearby and what the player is currently holding.
+            The specific interaction depends on what objects are nearby and what the player is currently holding and what
+            task is assigned to the player/s.
             """,
         },
     }
