@@ -217,7 +217,7 @@ def _find_pickle_file(dataset, disk_root_dir: str) -> list[str]:
         return []
 
 
-class OvercookedModule(DatasetModule, OpenAIModule):
+class OvercookedModule(DatasetModule):
     def __init__(
         self,
         disk_root_dir: str,
@@ -229,7 +229,6 @@ class OvercookedModule(DatasetModule, OpenAIModule):
         k_shots: int = 0,
     ) -> None:
         DatasetModule.__init__(self, disk_root_dir, modality, source, model, batch_size, k_shots)
-        OpenAIModule.__init__(self, model)
         
         self._definitions_class = OverCookedDefinitions
         self.get_dataloader_fn = get_overcooked_dataloader
@@ -247,32 +246,12 @@ class OvercookedModule(DatasetModule, OpenAIModule):
             max_output_tokens_per_query=512,
         )
         
-        self._modality_module.source_module = self
-        
         return self._modality_module
 
     # Finding the translated pickle files.
     def _find_shards(self) -> list[str]:
         return _find_pickle_file(self.dataset_name, self.disk_root_dir)
     
-    
-    def _get_response_from_api(self, system_prompt: str=None) -> str:
-        
-        start_idx = self._find_starting_point(system_prompt, self.max_output_tokens_per_query)
-        system_message = []
-        if system_prompt is not None:
-            system_message.append({'role': 'system', 'content': system_prompt})
-
-        messages = system_message + self.history[0][start_idx:]
-        
-        api_params = {
-            "model": self.model,
-            "messages": messages,
-        }
-        
-        response = self.client.chat.completions.create(**api_params)
-
-        return response.choices[0].message.content
     
 
     def _run_eval_dataset(self, dataset: str) -> dict:
@@ -307,6 +286,7 @@ class OvercookedModule(DatasetModule, OpenAIModule):
             for action_idx, (_, action_dict) in action_space.items():
                 num_actions += len(action_dict)
 
+            actual_preds = []
             for batch in dataloader:
                 # Action stats need to be retrieved only once for each dataset, after they have been populated.
                 if self.action_stats is None:
@@ -333,6 +313,7 @@ class OvercookedModule(DatasetModule, OpenAIModule):
                             for label in labels
                         ]
                     )
+                    actual_preds.append(outputs)
                     one_hot_labels = self._get_one_hot(labels, num_actions)
 
                     if not isinstance(outputs, list):
@@ -356,6 +337,7 @@ class OvercookedModule(DatasetModule, OpenAIModule):
                 timestep_trues,
                 num_actions,
             )
+            result["outputs"] = actual_preds
             result["eval_time"] = time.time() - start_time
             result["total_invalid_preds"] = total_invalid_preds
 

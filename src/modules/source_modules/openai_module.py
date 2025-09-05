@@ -32,6 +32,7 @@ CONTEXT_SIZE_MAP = {
 }
 
 BATCH_QUEUE_TOKEN_DAY_LIMIT = {
+    'gpt-5-chat-latest': 15000000000,
     'gpt-5-2025-08-07': 15000000000,
     'gpt-4.1-2025-04-14': 15000000000,
     'gpt-4o': 15000000000,
@@ -183,12 +184,10 @@ class OpenAIModule:
 
         messages = system_message + self.history[0][start_idx:]
         
-        # Use appropriate token parameter based on model
-        max_tokens_param = self._get_max_tokens_param()
         api_params = {
             "model": self.model,
             "messages": messages,
-            max_tokens_param: self.max_output_tokens_per_query
+            "max_tokens": self.max_output_tokens_per_query
         }
         
         response = self.client.chat.completions.create(**api_params)
@@ -239,6 +238,9 @@ class OpenAIModule:
                         max_tokens_param: self.max_output_tokens_per_query,
                         "response_format": { 
                             "type": "text"
+                        },
+                         "reasoning":{
+                            "effort": "minimal"
                         },
                         "messages": system_messages[i] + messages
                     }
