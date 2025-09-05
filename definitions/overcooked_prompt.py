@@ -12,6 +12,7 @@ OVERCOOKED_INSTRUCTION = [
     "Actions Available: {action_info}",
     "You MUST generate probabilities for all the actions within range[0, 35], including 0 and 35.",
     "You MUST generate your output keeping the following format: {output_format}",
+    "The sum of probabilities score of all 36 actions MUST be equal to 1."
     "You should not include any other words or characters in your response.",
     "Consider coordination: avoid blocking each other, divide tasks efficiently, and time actions for maximum soup throughput.",
     "{additional_inst}",

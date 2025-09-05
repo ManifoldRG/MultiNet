@@ -14,7 +14,6 @@ import warnings
 
 CONTEXT_SIZE_MAP = {
     'gpt-5-chat-latest': 128000,
-    'gpt-5-chat-latest': 400000,
     'gpt-5-2025-08-07': 400000,
     'gpt-4.1-2025-04-14': 1000000,
     'gpt-4o': 128000,
@@ -33,7 +32,6 @@ CONTEXT_SIZE_MAP = {
 }
 
 BATCH_QUEUE_TOKEN_DAY_LIMIT = {
-    'gpt-5-chat-latest': 15000000000,
     'gpt-5-chat-latest': 15000000000,
     'gpt-5-2025-08-07': 15000000000,
     'gpt-4.1-2025-04-14': 15000000000,
