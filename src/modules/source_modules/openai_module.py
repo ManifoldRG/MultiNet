@@ -184,11 +184,12 @@ class OpenAIModule:
 
         messages = system_message + self.history[0][start_idx:]
         
+        max_tokens_param = self._get_max_tokens_param()
         # Use appropriate token parameter based on model
         api_params = {
             "model": self.model,
             "messages": messages,
-            "max_tokens": self.max_output_tokens_per_query
+            max_tokens_param: self.max_output_tokens_per_query
         }
         
         response = self.client.chat.completions.create(**api_params)
