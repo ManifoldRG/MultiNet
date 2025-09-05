@@ -278,10 +278,19 @@ class OvercookedInference:
             if counter % 500 == 0:
                 intermediate_results = dataset_results.to_dict()
                 intermediate_results['eval_time'] = time.perf_counter() - start_time
-                intermediate_results['avg_emr'] = intermediate_results['exact_match_rate'] / max(1, intermediate_results['total_timesteps'])
-                intermediate_results['avg_player0_accuracy'] = intermediate_results['player0_accuracy'] / max(1, intermediate_results['total_timesteps'])
-                intermediate_results['avg_player1_accuracy'] = intermediate_results['player1_accuracy'] / max(1, intermediate_results['total_timesteps'])
-                intermediate_results['avg_joint_accuracy'] = intermediate_results['joint_accuracy'] / max(1, intermediate_results['total_timesteps'])
+                
+                # Convert raw counts to rates for the main fields (to match final output format)
+                total_ts = max(1, intermediate_results['total_timesteps'])
+                intermediate_results['exact_match_rate'] = intermediate_results['exact_match_rate'] / total_ts
+                intermediate_results['player0_accuracy'] = intermediate_results['player0_accuracy'] / total_ts
+                intermediate_results['player1_accuracy'] = intermediate_results['player1_accuracy'] / total_ts
+                intermediate_results['joint_accuracy'] = intermediate_results['joint_accuracy'] / total_ts
+                
+                # Keep avg_ fields for backward compatibility
+                intermediate_results['avg_emr'] = intermediate_results['exact_match_rate']
+                intermediate_results['avg_player0_accuracy'] = intermediate_results['player0_accuracy']
+                intermediate_results['avg_player1_accuracy'] = intermediate_results['player1_accuracy']
+                intermediate_results['avg_joint_accuracy'] = intermediate_results['joint_accuracy']
                 
                 intermediate_file = os.path.join(output_dir, f'intermediate_results_batch_{counter}.json')
                 with open(intermediate_file, 'w') as f:
