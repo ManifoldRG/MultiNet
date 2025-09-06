@@ -91,7 +91,7 @@ class SQA3DDataset(Dataset):
                 'question_type': annotation.get('question_type', ''),
                 'answer_type': annotation.get('answer_type', ''),
                 'situation': question.get('situation', ''),
-                'alternative': question.get('alternative', ''),
+                'alternative_situation': question.get('alternative_situation', ''),
                 'question_data': question,  # Keep original question data
                 'annotation_data': annotation  # Keep original annotation data
             }
@@ -200,7 +200,7 @@ class SQA3DDataset(Dataset):
         # Get the original question and context
         original_question = sample_data.get('question', '')
         situation = sample_data.get('situation', '')
-        alternative = sample_data.get('alternative', '')
+        alternative_situation = sample_data.get('alternative_situation', '')
         scene_id = sample_data.get('scene_id', '')
         
         # Create formatted question text similar to PIQA
@@ -217,11 +217,11 @@ class SQA3DDataset(Dataset):
         question_parts.append(f"Question: {original_question}")
         
         # Add alternative context if available
-        if alternative:
-            question_parts.append(f"Alternative: {alternative}")
+        if alternative_situation:
+            question_parts.append(f"Alternative Situation: {alternative_situation}")
         
         # Add instruction for VQA task
-        question_parts.append("Please answer the question/alternative question based on the provided scene image and context situation.")
+        question_parts.append("Please answer the question based on the provided scene image and context situation/alternative situation in one word only and nothing more.")
         
         # Combine all parts into formatted question
         formatted_question = "\n".join(question_parts)
@@ -237,7 +237,7 @@ class SQA3DDataset(Dataset):
             'question_type': sample_data.get('question_type', ''),
             'answer_type': sample_data.get('answer_type', ''),
             'situation': situation,
-            'alternative': alternative,
+            'alternative_situation': alternative_situation,
             'has_image': scene_image is not None
         }
         
