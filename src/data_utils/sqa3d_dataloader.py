@@ -88,8 +88,8 @@ class SQA3DDataset(Dataset):
                 'scene_id': question.get('scene_id', ''),
                 'question': question.get('question', ''),
                 'answer': annotation['answers'][0].get('answer', ''),
-                'question_type': question.get('question_type', ''),
-                'answer_type': annotation['answers'][0].get('answer_type', ''),
+                'question_type': annotation.get('question_type', ''),
+                'answer_type': annotation.get('answer_type', ''),
                 'situation': question.get('situation', ''),
                 'alternative': question.get('alternative', ''),
                 'question_data': question,  # Keep original question data
