@@ -239,9 +239,6 @@ class OpenAIModule:
                         "response_format": { 
                             "type": "text"
                         },
-                         "reasoning":{
-                            "effort": "minimal"
-                        },
                         "messages": system_messages[i] + messages
                     }
                 }
