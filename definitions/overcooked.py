@@ -1,14 +1,14 @@
 class OverCookedDefinitions:
     DESCRIPTIONS = {
         "overcooked_ai": {
-            "cramped_corridor": "coordinate in cramped corridor layout",
-            "asymmetric_advantages_tomato": "coordinate in asymmetric advatages layout",
-            "counter_circuit": "coordinate around counter circuit layout",
-            "soup_coordination": "coordinate for soup preparation tasks",
-            "marshmallow_experiment": "complete marshmallow experiment scenario",
-            "inverse_marshmallow_experiment": "complete inverse marshmallow experiment scenario",
-            "marshmallow_experiment_coordination": "coordinate marshmallow experiment tasks",
-            "you_shall_not_pass": "navigate you shall not pass scenario"
+            "cramped_corridor": ["coordinate in cramped corridor layout"],
+            "asymmetric_advantages_tomato": ["coordinate in asymmetric advatages layout"],
+            "counter_circuit": ["coordinate around counter circuit layout"],
+            "soup_coordination": ["coordinate for soup preparation tasks"],
+            "marshmallow_experiment": ["complete marshmallow experiment scenario"],
+            "inverse_marshmallow_experiment": ["complete inverse marshmallow experiment scenario"],
+            "marshmallow_experiment_coordination": ["coordinate marshmallow experiment tasks"],
+            "you_shall_not_pass": ["navigate you shall not pass scenario"]
         }
     }
 

@@ -24,7 +24,6 @@ from src.eval_utils import (
     calculate_tp_fp_fn_counts,
 )
 from src.modules.modality_modules.vlm_module import VLMModule
-from src.modules.source_modules.openai_module import OpenAIModule
 
 from pathlib import Path
 from typing import Union
@@ -41,28 +40,19 @@ MAX_BRIER_MSE_ERROR = 2.0
 NOOP_ACTION = 28
 
 
-def _validate_text_output(output, num_actions) -> bool:
-    if not isinstance(output, list) or not all([isinstance(d, dict) for d in output]):
+def _validate_list_output(output, num_actions) -> bool:
+    if not isinstance(output, list):
+        return False
+    if not len(output) == num_actions:
+        return False
+    
+    try:
+        vals = [float(v) for v in output]
+    except (ValueError, TypeError):
         return False
 
-    keys, vals = set(), []
-    for d in output:
-        for k, v in d.items():
-            try:
-                k = float(k)
-                v = float(v)
-                k = int(np.round(k))
-            except ValueError:
-                return False
-
-            # Check if the key is a digit and within the action space and if it is not a duplicate
-            if not 0 <= k < num_actions or k in keys:
-                return False
-            keys.add(k)
-            vals.append(v)
-
     # Check if the sum of the probabilities is 1, avoiding floating point errors
-    if abs(sum(vals) - 1.0) > 1e-5:
+    if abs(sum(vals) - 1.0) > 1e-05:
         return False
 
     return True
@@ -73,12 +63,8 @@ def _validate_outputs_and_calculate_metrics(outputs, one_hot_labels, num_actions
     total_invalid_preds = 0
     # Validate outputs and calculate Brier MSEs
     for o, output in enumerate(outputs):
-        if _validate_text_output(output, num_actions):
-            output = {int(k): float(v) for d in output for k, v in d.items()}
-            probs = [0.0] * num_actions
-            for i in range(len(probs)):
-                if i in output:
-                    probs[i] = output[i]
+        if _validate_list_output(output, num_actions):
+            probs = [float(v) for v in output]
 
             mae = calculate_brier_mae(probs, one_hot_labels[o])
             brier_maes.append(mae)
@@ -174,7 +160,7 @@ def _get_vlm_instruction(
         dataset in descriptions
     ), f"The layout {dataset} is not included in overcooked."
 
-    if env_name in descriptions:
+    if env_name in descriptions[dataset]:
         env_desc = " ".join(descriptions[dataset][env_name])
     else:
         env_desc = env_name.capitalize() + "."
@@ -282,9 +268,7 @@ class OvercookedModule(DatasetModule):
             start_time = time.time()
 
             action_space = self._get_action_space(dataset, "default")
-            num_actions = 0
-            for action_idx, (_, action_dict) in action_space.items():
-                num_actions += len(action_dict)
+            num_actions = len(action_space)
 
             for batch in dataloader:
                 # Action stats need to be retrieved only once for each dataset, after they have been populated.
@@ -315,7 +299,7 @@ class OvercookedModule(DatasetModule):
                     one_hot_labels = self._get_one_hot(labels, num_actions)
 
                     if not isinstance(outputs, list):
-                        outputs = [None] * len(labels)
+                        outputs = [[None]]
 
                     brier_mses, brier_maes, invalid_preds, preds = (
                         _validate_outputs_and_calculate_metrics(
@@ -557,12 +541,7 @@ class OvercookedBatchModule(DatasetBatchModule):
                 )
 
             action_space = self._get_action_space(ds, "default")
-            num_actions = 0
-            for action_idx, (_, action_dict) in action_space.items():
-                num_actions += 1
-            print(action_space)
-            print(f"NUMBER OF ACTIONS POSSIBLE: {num_actions}")
-            print(labels)
+            num_actions = len(action_space)
 
             # Check if labels are within the action space, otherwise set to NoOp action
             labels = np.array(
@@ -571,7 +550,7 @@ class OvercookedBatchModule(DatasetBatchModule):
             one_hot_labels = self._get_one_hot(labels, num_actions)
 
             if not isinstance(outputs, list):
-                outputs = [None] * len(labels)
+                outputs = [[None]]
 
             brier_mses, brier_maes, invalid_preds, preds = (
                 _validate_outputs_and_calculate_metrics(
