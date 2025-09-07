@@ -38,8 +38,8 @@ class SimpleRoboticsAdapter(ContinuousActionAdapter):
         # Mock model initialization
         self.model = MockRoboticsModel(action_dim=self.action_dim)
         self.device = device
+        self.set_seed(seed)
         self._is_initialized = True
-        self.seed = seed
         print("Robotics model initialized successfully!")
         
     def predict_action(
