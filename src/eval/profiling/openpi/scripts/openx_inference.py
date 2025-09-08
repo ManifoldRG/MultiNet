@@ -224,15 +224,20 @@ class OpenXInference:
             logger.warning("No valid state data found, using minimal dummy state")
             state = jax.numpy.zeros((batch_size, 1))
 
-        # Add open gripper information
-        open_gripper = batch.get('open_gripper', [False] * batch_size)
-        if not isinstance(open_gripper, (list, np.ndarray)):
-            open_gripper = [open_gripper] * batch_size
-        open_gripper = jax.numpy.array(np.array(open_gripper).astype(np.float32)[:, np.newaxis])
-
-        # Combine and pad to action dimension
-        state = jax.numpy.concatenate([state, open_gripper], axis=-1)
-        return jax.numpy.array(pad_to_dim(state, self.config.action_dim, axis=-1))
+        # Handle state dimension overflow/underflow relative to action dimension
+        current_state_dim = state.shape[-1]
+        target_action_dim = self.config.action_dim
+        
+        if current_state_dim > target_action_dim:
+            # Truncate if state is larger than action dimension
+            logger.warning(f"State dimension {current_state_dim} exceeds action dimension {target_action_dim}, truncating")
+            state = state[:, :target_action_dim]
+        elif current_state_dim < target_action_dim:
+            # Pad if state is smaller than action dimension
+            logger.info(f"Padding state from {current_state_dim} to {target_action_dim} dimensions")
+            state = pad_to_dim(state, target_action_dim, axis=-1)
+            
+        return jax.numpy.array(state)
 
     def _cleanup_memory(self, *objects):
         """Clean up memory between batches."""
