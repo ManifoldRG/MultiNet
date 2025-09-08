@@ -104,7 +104,8 @@ class OpenXInference:
 
     def prepare_observation(self, batch: dict, batch_size: int,
                            action_dim: int = ModelConfig.DEFAULT_ACTION_DIM,
-                           max_token_length: int = ModelConfig.DEFAULT_MAX_TOKEN_LENGTH) -> dict:
+                           max_token_length: int = ModelConfig.DEFAULT_MAX_TOKEN_LENGTH,
+                           dataset_name: str = None) -> dict:
         """Prepare observation dictionary for model inference."""
         try:
             # Process images
@@ -114,7 +115,7 @@ class OpenXInference:
             tokens, token_mask = self._prepare_text_tokens(batch)
 
             # Process state
-            state = self._prepare_state(batch, batch_size)
+            state = self._prepare_state(batch, batch_size, dataset_name)
 
             return {
                 "state": state,
@@ -168,14 +169,21 @@ class OpenXInference:
 
         return tokens, token_mask
 
-    def _prepare_state(self, batch: dict, batch_size: int) -> jax.Array:
+    def _prepare_state(self, batch: dict, batch_size: int, dataset_name: str = None) -> jax.Array:
         """Prepare state vector for model input with robust dimension handling."""
         state_components = []
-        excluded_keys = {'image_observation', 'text_observation', 'action', 'reward', 'is_last', 'text_answer'}
+        
+        # Dataset-specific state field mappings for datasets without explicit 'state' key
+        # These fields were selected based on OpenX dataset survey - they represent robot state
+        # (pose, position, sensor readings) rather than action commands or visual observations
+        dataset_state_fields = {
+            'openx_bimanual': ['pose_l', 'pose_r'],  # Left/right arm poses (12 dims: 6+6)
+            'openx_mobile_manipulation': ['gripper_closed', 'base_pose_tool_reached', 'height_to_bottom', 'yaw', 'orientation_box']  # Robot state sensors (~16 dims)
+        }
         
         logger.info(f"Batch keys: {list(batch.keys())}")
 
-        # First check for 'state' key specifically (from current dataloader)
+        # First check for explicit 'state' key (highest priority)
         if 'state' in batch:
             state_values = batch['state']
             if isinstance(state_values, list) and len(state_values) > 0:
@@ -192,28 +200,35 @@ class OpenXInference:
                         # Stack into (batch_size, features) shape
                         state_array = np.stack(state_arrays)
                         state_components.append(state_array)
-                        logger.info(f"Using 'state' key with shape {state_array.shape}")
+                        logger.info(f"Using explicit 'state' key with shape {state_array.shape}")
                 except Exception as e:
                     logger.warning(f"Failed to process 'state' key: {e}")
 
-        # Fallback: process other non-excluded keys that contain state data
-        if not state_components:
-            for key, values in batch.items():
-                if key not in excluded_keys and isinstance(values, list):
-                    if (len(values) > 0 and isinstance(values[0], np.ndarray)
-                        and values[0].dtype in [np.float32, np.float64]):
-                        try:
-                            state_array = np.stack(values)
-                            # Flatten multi-dimensional arrays to 2D (batch, features)
-                            if len(state_array.shape) > 2:
-                                state_array = state_array.reshape(batch_size, -1)
-                            elif len(state_array.shape) == 1:
-                                state_array = state_array[:, np.newaxis]
-                            state_components.append(state_array)
-                            logger.info(f"Added state component '{key}' with shape {state_array.shape}")
-                        except ValueError as e:
-                            logger.warning(f"Skipping state component '{key}' due to dimension mismatch: {e}")
-                            continue
+        # Fallback: use dataset-specific state fields for known datasets
+        if not state_components and dataset_name in dataset_state_fields:
+            logger.info(f"No explicit 'state' key found, using dataset-specific fields for {dataset_name}")
+            target_fields = dataset_state_fields[dataset_name]
+            
+            for field_name in target_fields:
+                if field_name in batch:
+                    values = batch[field_name]
+                    if isinstance(values, list) and len(values) > 0:
+                        if (isinstance(values[0], np.ndarray) 
+                            and values[0].dtype in [np.float32, np.float64]):
+                            try:
+                                state_array = np.stack(values)
+                                # Flatten multi-dimensional arrays to 2D (batch, features)
+                                if len(state_array.shape) > 2:
+                                    state_array = state_array.reshape(batch_size, -1)
+                                elif len(state_array.shape) == 1:
+                                    state_array = state_array[:, np.newaxis]
+                                state_components.append(state_array)
+                                logger.info(f"Added dataset-specific state field '{field_name}' with shape {state_array.shape}")
+                            except ValueError as e:
+                                logger.warning(f"Skipping state field '{field_name}' due to dimension mismatch: {e}")
+                                continue
+                else:
+                    logger.warning(f"Expected state field '{field_name}' not found in batch for dataset {dataset_name}")
 
         # Use real state data if available, otherwise fallback to minimal dummy state
         if state_components:
@@ -221,7 +236,7 @@ class OpenXInference:
             state = np.concatenate(state_components, axis=-1)
             logger.info(f"Using real state data with shape {state.shape}")
         else:
-            logger.warning("No valid state data found, using minimal dummy state")
+            logger.warning(f"No valid state data found for dataset {dataset_name}, using minimal dummy state")
             state = jax.numpy.zeros((batch_size, 1))
 
         # Handle state dimension overflow/underflow relative to action dimension
@@ -327,7 +342,7 @@ class OpenXInference:
 
         for batch in dataloader:
             actual_batch_size = len(batch['image_observation'])
-            obs = self.prepare_observation(batch, actual_batch_size, max_token_length=config.max_token_len)
+            obs = self.prepare_observation(batch, actual_batch_size, max_token_length=config.max_token_len, dataset_name=dataset)
             observation = Observation.from_dict(obs)
 
             actions = model.sample_actions(key, observation, num_steps=ModelConfig.DEFAULT_NUM_STEPS)
