@@ -26,11 +26,9 @@ from src.eval.profiling.openpi.src.openpi.shared import download
 from src.eval.profiling.openpi.src.openpi.shared import normalize
 from src.eval.profiling.openpi.src.openpi.transforms import Unnormalize
 from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
-from src.eval_utils import (get_exact_match_rate,
-                            calculate_tp_fp_fn_counts,
-                            get_micro_precision_from_counts,
-                            get_micro_recall_from_counts,
-                            get_micro_f1)
+from src.eval_utils import (quantile_filter, calculate_mean, min_max_normalize, 
+                            calculate_mse, calculate_mae, calculate_max_relative_mae, 
+                            calculate_proportion_beyond_mae_threshold)
 
 # Constants
 class ModelConfig:
@@ -56,36 +54,107 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 
+def _calculate_batch_metrics(pred_actions, gt_actions, action_stats=None):
+    """Calculate MSE and MAE metrics for a batch of continuous actions."""
+    if action_stats is None:
+        raise ValueError("action_stats is required for proper invalid prediction handling in OpenX evaluation")
+    
+    mses, maes = [], []
+    total_invalid_preds = 0
+    
+    for i in range(len(pred_actions)):
+        pred = np.array(pred_actions[i])
+        gt = np.array(gt_actions[i])
+        
+        # Check for invalid predictions (NaN, inf, or non-numeric values)
+        if np.any(np.isnan(pred)) or np.any(np.isinf(pred)) or pred.size == 0:
+            total_invalid_preds += 1
+            # Use worst-case MSE/MAE for invalid predictions using dataset stats directly
+            max_vals = np.array(action_stats['max'])
+            min_vals = np.array(action_stats['min'])
+            mse = calculate_mse(max_vals[:len(gt)], min_vals[:len(gt)])
+            mae = calculate_mae(max_vals[:len(gt)], min_vals[:len(gt)])
+        else:
+            mse = calculate_mse(pred, gt)
+            mae = calculate_mae(pred, gt)
+        
+        mses.append(mse)
+        maes.append(mae)
+    
+    return mses, maes, total_invalid_preds
+
+def _calculate_final_metrics(timestep_mses, timestep_maes, action_success):
+    """Calculate comprehensive final metrics for OpenX evaluation."""
+    result = {}
+    
+    # Calculate MSE metrics
+    total_dataset_mse = sum(timestep_mses)
+    num_timesteps = len(timestep_mses)
+    avg_dataset_mse = total_dataset_mse / num_timesteps if num_timesteps > 0 else 0.0
+    
+    # Calculate normalized MSE
+    if num_timesteps > 1:
+        normalized_mses = min_max_normalize(timestep_mses)
+        normalized_amse = calculate_mean(normalized_mses)
+    else:
+        normalized_amse = 0.0
+    
+    # Calculate MAE metrics
+    total_dataset_mae = sum(timestep_maes)
+    avg_dataset_mae = calculate_mean(timestep_maes)
+    
+    if num_timesteps > 1:
+        normalized_maes = min_max_normalize(timestep_maes)
+        normalized_amae = calculate_mean(normalized_maes)
+        
+        # Calculate quantile filtered MAE metrics
+        quantile_filtered_maes = quantile_filter(timestep_maes)
+        normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
+        normalized_quantile_filtered_amae = calculate_mean(normalized_quantile_filtered_maes)
+        
+        # Calculate additional MAE metrics
+        max_rel_mae = calculate_max_relative_mae(timestep_maes)
+        prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(timestep_maes)
+    else:
+        normalized_amae = 0.0
+        normalized_quantile_filtered_amae = 0.0
+        max_rel_mae = 0.0
+        prop_beyond_threshold_mae = 0.0
+    
+    # Calculate action success rate
+    action_success_rate = None
+    if len(action_success) > 0:
+        action_success_rate = (sum(action_success) / len(action_success)) * 100
+    
+    result['action_success_rate'] = action_success_rate
+    result['total_dataset_amse'] = total_dataset_mse
+    result['total_dataset_amae'] = total_dataset_mae
+    result['num_timesteps'] = num_timesteps
+    result['avg_dataset_amse'] = avg_dataset_mse
+    result['avg_dataset_amae'] = avg_dataset_mae
+    result['normalized_amse'] = normalized_amse
+    result['normalized_amae'] = normalized_amae
+    result['normalized_quantile_filtered_amae'] = normalized_quantile_filtered_amae
+    result['max_relative_mae'] = max_rel_mae
+    result['proportion_beyond_threshold_mae'] = prop_beyond_threshold_mae
+    
+    return result
+
+
 @dataclass
 class DatasetResults:
     all_preds: list[list[float]] = field(default_factory=list)
     all_gt: list[list[float]] = field(default_factory=list)
+    timestep_mses: list[float] = field(default_factory=list)
+    timestep_maes: list[float] = field(default_factory=list)
+    action_success: list[int] = field(default_factory=list)
 
     total_batches: int = 0
     total_timesteps: int = 0
     eval_time: float = 0
     total_invalid_predictions: int = 0
-    invalid_predictions_percentage: float = 0
-    total_emr: float = 0
-    total_micro_precision: float = 0
-    total_micro_recall: float = 0
-    total_micro_f1: float = 0
-    avg_emr: float = 0
-    avg_micro_precision: float = 0
-    avg_micro_recall: float = 0
-    avg_micro_f1: float = 0
-    total_clipped_emr: float = 0
-    total_clipped_micro_precision: float = 0
-    total_clipped_micro_recall: float = 0
-    total_clipped_micro_f1: float = 0
-    avg_clipped_emr: float = 0
-    avg_clipped_micro_precision: float = 0
-    avg_clipped_micro_recall: float = 0
-    avg_clipped_micro_f1: float = 0
-    total_micro_precision_without_invalids: float = 0
-    total_micro_f1_without_invalids: float = 0
-    avg_micro_precision_without_invalids: float = 0
-    avg_micro_f1_without_invalids: float = 0
+    invalid_predictions_percentage: float = 0.0
+    
 
     def to_dict(self) -> dict:
         return {
@@ -335,7 +404,7 @@ class OpenXInference:
 
         return {'action': clipped_stats}
 
-    def evaluate_model(self, model, key, config, dataset_stats: dict, dataloader: tf.data.Dataset, dataset: str) -> dict[any]:
+    def evaluate_model(self, model, key, config, dataset_stats: dict, dataloader: tf.data.Dataset, dataset: str, dataset_stats_dict: dict = None) -> dict[any]:
         counter = 0
         dataset_results = DatasetResults()
         start_time = time.perf_counter()
@@ -365,19 +434,26 @@ class OpenXInference:
             dataset_results.all_preds.extend(pred_clipped.tolist())
             dataset_results.all_gt.extend(gt_clipped.tolist())
 
-            # Calculate metrics on clipped actions
-            mse = np.mean((pred_clipped - gt_clipped) ** 2)
-            mae = np.mean(np.abs(pred_clipped - gt_clipped))
-
-            # Use normalized metrics
-            gt_variance = np.var(gt_clipped) + 1e-8
-            normalized_mse = mse / gt_variance
-            pseudo_accuracy = np.exp(-normalized_mse)  # Convert to [0,1] range where 1 is perfect
-
-            dataset_results.total_emr += pseudo_accuracy
-            dataset_results.total_micro_precision += pseudo_accuracy
-            dataset_results.total_micro_recall += pseudo_accuracy
-            dataset_results.total_micro_f1 += pseudo_accuracy
+            # Calculate MSE and MAE metrics for this batch directly
+            # Use dataset stats dictionary directly
+            if dataset_stats_dict is None:
+                raise ValueError("dataset_stats_dict is required for OpenX evaluation")
+            
+            mses, maes, invalid_preds = _calculate_batch_metrics(pred_clipped.tolist(), gt_clipped.tolist(), dataset_stats_dict)
+            dataset_results.total_invalid_predictions += invalid_preds
+            
+            # Store the MSE and MAE values for this batch
+            dataset_results.timestep_mses.extend(mses)
+            dataset_results.timestep_maes.extend(maes)
+            
+            # Check for action success (exact match for actions)
+            # For continuous actions, we use exact match as success criterion
+            for i in range(pred_clipped.shape[0]):
+                if np.array_equal(pred_clipped[i], gt_clipped[i]):
+                    dataset_results.action_success.append(1)
+                else:
+                    dataset_results.action_success.append(0)
+            
 
             dataset_results.total_batches += 1
             dataset_results.total_timesteps += actual_batch_size
@@ -391,14 +467,23 @@ class OpenXInference:
         end_time = time.perf_counter()
         dataset_results.eval_time = end_time - start_time
 
-        # Calculate average metrics
+        # Calculate final comprehensive metrics using the accumulated MSE/MAE data
+        final_metrics = _calculate_final_metrics(dataset_results.timestep_mses, dataset_results.timestep_maes, dataset_results.action_success)
+        
+        # Calculate invalid predictions percentage
         if dataset_results.total_timesteps > 0:
-            dataset_results.avg_emr = dataset_results.total_emr / dataset_results.total_timesteps
-            dataset_results.avg_micro_precision = dataset_results.total_micro_precision / dataset_results.total_timesteps
-            dataset_results.avg_micro_recall = dataset_results.total_micro_recall / dataset_results.total_timesteps
-            dataset_results.avg_micro_f1 = dataset_results.total_micro_f1 / dataset_results.total_timesteps
+            invalid_percentage = (dataset_results.total_invalid_predictions / dataset_results.total_timesteps) * 100
+        else:
+            invalid_percentage = 0.0
+        
+        # Add evaluation metadata
+        final_metrics['eval_time'] = dataset_results.eval_time
+        final_metrics['total_invalid_preds'] = dataset_results.total_invalid_predictions
+        final_metrics['invalid_predictions_percentage'] = invalid_percentage
+        final_metrics['total_batches'] = dataset_results.total_batches
+        final_metrics['total_timesteps'] = dataset_results.total_timesteps
 
-        return dataset_results.to_dict()
+        return final_metrics
 
 
 def _get_sorted_shard_paths(dataset_dir: str) -> list[str]:
@@ -528,7 +613,7 @@ def main():
         json.dump(convert_numpy_arrays(dataset_stats_dict), f, indent=4)
     logger.info(f'Dataset stats saved to {stats_output_path}')
 
-    results = openx_inference.evaluate_model(model, key, config, dataset_stats, dataloader, dataset_name)
+    results = openx_inference.evaluate_model(model, key, config, dataset_stats, dataloader, dataset_name, dataset_stats_dict)
 
     if os.path.exists(results_file):
         try:
