@@ -1,0 +1,20 @@
+{
+    "openx_bimanual": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 94.83063892705964,
+        "total_dataset_amae": 50.27243599248251,
+        "num_timesteps": 126,
+        "avg_dataset_amse": 0.7526241184687273,
+        "avg_dataset_amae": 0.3989875872419248,
+        "normalized_amse": 0.10993040755282746,
+        "normalized_amae": 0.2765467389609741,
+        "normalized_quantile_filtered_amae": 0.31564431897783557,
+        "max_relative_mae": 2.7785073479881066,
+        "proportion_beyond_threshold_mae": 0.0,
+        "eval_time": 79.47946853699978,
+        "total_invalid_preds": 0,
+        "invalid_predictions_percentage": 0.0,
+        "total_batches": 3,
+        "total_timesteps": 126
+    }
+}
