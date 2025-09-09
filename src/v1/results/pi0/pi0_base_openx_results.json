@@ -16,5 +16,23 @@
         "invalid_predictions_percentage": 0.0,
         "total_batches": 3,
         "total_timesteps": 126
+    },
+    "openx_quadrupedal": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 3254.6474673561756,
+        "total_dataset_amae": 1675.5297277546067,
+        "num_timesteps": 2268,
+        "avg_dataset_amse": 1.4350297475115412,
+        "avg_dataset_amae": 0.738769721232189,
+        "normalized_amse": 0.10468293493286197,
+        "normalized_amae": 0.22560930745826777,
+        "normalized_quantile_filtered_amae": 0.21637369573258283,
+        "max_relative_mae": 4.176506112934617,
+        "proportion_beyond_threshold_mae": 0.02204585537918871,
+        "eval_time": 803.8054558329995,
+        "total_invalid_preds": 0,
+        "invalid_predictions_percentage": 0.0,
+        "total_batches": 46,
+        "total_timesteps": 2268
     }
 }
