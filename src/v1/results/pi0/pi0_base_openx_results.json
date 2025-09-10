@@ -34,5 +34,23 @@
         "invalid_predictions_percentage": 0.0,
         "total_batches": 46,
         "total_timesteps": 2268
+    },
+    "openx_mobile_manipulation": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 1092.1702297692284,
+        "total_dataset_amae": 2067.453970334331,
+        "num_timesteps": 17808,
+        "avg_dataset_amse": 0.06133031389090456,
+        "avg_dataset_amae": 0.11609692106549414,
+        "normalized_amse": 0.0765818128096667,
+        "normalized_amae": 0.23444572496934804,
+        "normalized_quantile_filtered_amae": 0.2649717828434282,
+        "max_relative_mae": 4.507521878506185,
+        "proportion_beyond_threshold_mae": 0.01061320754716981,
+        "eval_time": 6256.778383598001,
+        "total_invalid_preds": 0,
+        "invalid_predictions_percentage": 0.0,
+        "total_batches": 357,
+        "total_timesteps": 17808
     }
 }
