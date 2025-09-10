@@ -63,7 +63,7 @@ def _validate_outputs_and_calculate_metrics(model: SentenceTransformer, outputs:
 
 
 
-def _calculate_final_metrics(exact_matches, similarity_scores):
+def _calculate_final_metrics(exact_matches, similarity_scores, total_invalid_preds):
     """Calculate comprehensive final metrics for RoboVQA evaluation."""
     result = {}
     
@@ -71,12 +71,32 @@ def _calculate_final_metrics(exact_matches, similarity_scores):
     total_samples = len(exact_matches)
     exact_match_accuracy = sum(exact_matches) / total_samples if total_samples > 0 else 0.0
     
-    # Calculate average scores
+    # Calculate similarity metrics
     avg_similarity_score = sum(similarity_scores) / total_samples if total_samples > 0 else 0.0
+    max_similarity_score = max(similarity_scores) if similarity_scores else 0.0
+    min_similarity_score = min(similarity_scores) if similarity_scores else 0.0
+    
+    # Calculate additional statistics
+    similarity_std = np.std(similarity_scores) if similarity_scores else 0.0
+    
+    # Calculate percentage of high similarity matches (threshold-based)
+    high_similarity_threshold = 0.8
+    high_similarity_count = sum(1 for score in similarity_scores if score >= high_similarity_threshold)
+    high_similarity_percentage = (high_similarity_count / total_samples * 100) if total_samples > 0 else 0.0
+    
+    # Calculate invalid prediction percentage
+    invalid_percentage = (total_invalid_preds / total_samples * 100) if total_samples > 0 else 0.0
     
     result['exact_match_accuracy'] = exact_match_accuracy
     result['avg_similarity_score'] = avg_similarity_score
+    result['max_similarity_score'] = max_similarity_score
+    result['min_similarity_score'] = min_similarity_score
+    result['similarity_std'] = similarity_std
+    result['high_similarity_percentage'] = high_similarity_percentage
+    result['high_similarity_threshold'] = high_similarity_threshold
     result['total_samples'] = total_samples
+    result['total_invalid_preds'] = total_invalid_preds
+    result['invalid_percentage'] = invalid_percentage
     
     return result
 
@@ -217,9 +237,9 @@ class RoboVQAModule(DatasetModule):
                 print(f"Processed {batch_idx + 1} batches...")
         
         # Calculate final metrics
-        result = _calculate_final_metrics(exact_matches, similarity_scores)
+        result = _calculate_final_metrics(exact_matches, similarity_scores, total_invalid_preds)
         result['eval_time'] = time.time() - start_time
-        result['total_invalid_preds'] = total_invalid_preds
+        
         
         print(f"Evaluation completed for {dataset}")
         
@@ -348,9 +368,8 @@ class RoboVQABatchModule(DatasetBatchModule):
             exact_matches.extend(matches)
             similarity_scores.extend(similarity_score)
         
-        result = _calculate_final_metrics(exact_matches, similarity_scores)
+        result = _calculate_final_metrics(exact_matches, similarity_scores, total_invalid_preds)
         result['eval_time'] = time.time() - start_time
-        result['total_invalid_preds'] = total_invalid_preds
         
         return result
 
