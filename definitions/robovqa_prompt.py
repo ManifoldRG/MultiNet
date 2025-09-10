@@ -9,7 +9,7 @@ ROBOVQA_PROMPT = """
                     2. Question: A specific query about the environment or the next possible action.
 
                 Output formatting rules:
-                Your response must be one of the following three types, and nothing else. Do not add conversational filler, explanations, or apologies.
+                Your response must be one of the following types, and nothing else. Do not add conversational filler, explanations, or apologies.
                 
                     1. Action Execution Query (e.g., "What should I do?", "What is the next step?"):
                         - Respond with a concise action phrase.
