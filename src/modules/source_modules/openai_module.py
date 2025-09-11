@@ -144,12 +144,12 @@ class OpenAIModule:
                     for content_item in content:
                         if content_item['type'] == 'text':
                             message_content.append({
-                                "type": "text",
+                                "type": "input_text",
                                 "text": content_item['text']
                             })
                         elif content_item['type'] == 'image_url':
                             message_content.append({
-                                "type": "image_url",
+                                "type": "input_image",
                                 "image_url": content_item['image_url']
                             })
                     
