@@ -57,28 +57,14 @@ class OvercookedInference:
         self._create_action_mapping()
 
     def _create_action_mapping(self):
-        """Create mapping from continuous Pi0 output to discrete Overcooked actions."""
-        # Define individual actions for each player (same as in overcooked_dataloader.py)
-        single_actions = [
-            (0, -1),   # NORTH
-            (0, 1),    # SOUTH  
-            (1, 0),    # EAST
-            (-1, 0),   # WEST
-            (0, 0),    # STAY
-            (1, 1)     # INTERACT
-        ]
+        """Import action mapping from dataloader to avoid duplication."""
+        from src.data_utils.overcooked_dataloader import OvercookedDataset
+        temp_dataset = OvercookedDataset.__new__(OvercookedDataset)
+        temp_dataset._create_discrete_action_mapping()
         
-        # Create discrete to joint action mapping
-        self.discrete_to_joint = {}
-        self.joint_to_discrete = {}
-        
-        action_idx = 0
-        for p0_action in single_actions:
-            for p1_action in single_actions:
-                joint_action = (tuple(p0_action), tuple(p1_action))
-                self.discrete_to_joint[action_idx] = joint_action
-                self.joint_to_discrete[joint_action] = action_idx
-                action_idx += 1
+        self.discrete_to_joint = temp_dataset.discrete_to_joint
+        self.joint_to_discrete = temp_dataset.joint_to_discrete
+        self.num_discrete_actions = temp_dataset.num_discrete_actions
 
     def prepare_observation(self, obs_dict: dict, batch_size: int, max_token_length: int = 48) -> dict:
         """Prepare observation dictionary for pi0 model inference."""
@@ -165,7 +151,7 @@ class OvercookedInference:
                 p1_discrete = self._continuous_to_discrete_action(p1_continuous)
                 
                 # Convert to joint action index
-                joint_action = (tuple(p0_discrete), tuple(p1_discrete))
+                joint_action = (p0_discrete, p1_discrete)
                 discrete_action_idx = self.joint_to_discrete.get(joint_action, 0)  # Default to (STAY, STAY)
                 
                 batch_discrete_actions.append(discrete_action_idx)
@@ -173,18 +159,16 @@ class OvercookedInference:
         
         return np.array(discrete_actions)
 
-    def _continuous_to_discrete_action(self, continuous_action: np.ndarray) -> tuple:
+    def _continuous_to_discrete_action(self, continuous_action: np.ndarray):
         """Convert continuous 2D action to discrete Overcooked action."""
         x, y = continuous_action
-        
-        # Define thresholds for action mapping
         threshold = 0.5
         
         # Check for interact action first (high magnitude in both dimensions)
         if abs(x) > threshold and abs(y) > threshold:
-            return (1, 1)   # INTERACT
+            return 'interact'
         
-        # Map to discrete actions based on thresholds
+        # Map to movement actions based on thresholds
         if abs(x) > abs(y):  # Horizontal movement dominant
             if x > threshold:
                 return (1, 0)   # EAST
@@ -200,7 +184,7 @@ class OvercookedInference:
             else:
                 return (0, 0)   # STAY
 
-    def evaluate_model(self, model, key, config, dataloader, dataset_name: str, output_dir: str = None) -> dict:
+    def evaluate_model(self, model, key, config, dataloader, dataset_name: str, output_dir: str = None, max_samples: int = None) -> dict:
         """Evaluate the model on the Overcooked dataset."""
         counter = 0
         dataset_results = DatasetResults()
@@ -210,10 +194,23 @@ class OvercookedInference:
         print(f"Starting evaluation: {total_batches} total batches")
 
         start_time = time.perf_counter()
+        samples_processed = 0
 
         for batch in dataloader:
-            # Process entire batch at once
             actual_batch_size = len(batch['image_observation'])
+            # Check if we've reached max_samples limit
+            if max_samples is not None and samples_processed + actual_batch_size > max_samples:
+                # Process only remaining samples from this batch
+                remaining = max_samples - samples_processed
+                if remaining <= 0:
+                    break
+                # Truncate batch to remaining samples
+                for key in batch:
+                    if isinstance(batch[key], list):
+                        batch[key] = batch[key][:remaining]
+                    elif hasattr(batch[key], '__len__'):
+                        batch[key] = batch[key][:remaining]
+                actual_batch_size = remaining
             obs = {
                 'image_observation': batch['image_observation'],
                 'text_observation': batch['text_observation']
@@ -223,13 +220,14 @@ class OvercookedInference:
             observation = Observation.from_dict(transformed_dict)
             
             # Sample actions for entire batch
-            actions = model.sample_actions(key, observation, num_steps=10)
+            actions = model.sample_actions(key, observation, num_steps=1)
             discrete_actions = self.process_output(actions)
             
             counter += 1
+            samples_processed += actual_batch_size
             
             # Progress reporting
-            if counter % 100 == 0 or counter == total_batches:
+            if counter % 100 == 0 or counter == total_batches or (max_samples and samples_processed >= max_samples):
                 elapsed_time = time.perf_counter() - start_time
                 print(f"Progress: {counter}/{total_batches} batches ({counter/total_batches*100:.1f}%) - {elapsed_time:.1f}s elapsed")
             
@@ -243,29 +241,28 @@ class OvercookedInference:
             batch_joint_matches = 0
             
             for i in range(len(discrete_actions)):
-                for j in range(len(discrete_actions[i])):
-                    pred_action_idx = discrete_actions[i][j]
-                    gt_action_idx = gt_actions[i]  # Ground truth is single value per timestep
-                    
-                    # Exact match
-                    if pred_action_idx == gt_action_idx:
-                        batch_exact_matches += 1
-                        batch_joint_matches += 1
-                    
-                    # Convert to joint actions for per-player analysis
-                    pred_joint = self.discrete_to_joint[pred_action_idx]
-                    gt_joint = self.discrete_to_joint[gt_action_idx]
-                    
-                    # Per-player accuracy
-                    if pred_joint[0] == gt_joint[0]:  # Player 0
-                        batch_p0_matches += 1
-                    if pred_joint[1] == gt_joint[1]:  # Player 1
-                        batch_p1_matches += 1
+                pred_action_idx = discrete_actions[i][0]  # Take first (and only) timestep
+                gt_action_idx = gt_actions[i]
+                
+                # Exact match
+                if pred_action_idx == gt_action_idx:
+                    batch_exact_matches += 1
+                    batch_joint_matches += 1
+                
+                # Convert to joint actions for per-player analysis
+                pred_joint = self.discrete_to_joint[pred_action_idx]
+                gt_joint = self.discrete_to_joint[gt_action_idx]
+                
+                # Per-player accuracy
+                if pred_joint[0] == gt_joint[0]:  # Player 0
+                    batch_p0_matches += 1
+                if pred_joint[1] == gt_joint[1]:  # Player 1
+                    batch_p1_matches += 1
             
-            total_predictions = len(discrete_actions) * len(discrete_actions[0]) if len(discrete_actions) > 0 else 0
+            total_predictions = len(discrete_actions)
             
             # Store batch results (convert to Python int to avoid JSON serialization issues)
-            dataset_results.all_preds.extend([int(action) for batch_actions in discrete_actions for action in batch_actions])
+            dataset_results.all_preds.extend([int(discrete_actions[i][0]) for i in range(len(discrete_actions))])
             dataset_results.all_gt.extend([int(action) for action in gt_actions.tolist()])
             dataset_results.total_batches = counter
             dataset_results.total_timesteps += total_predictions
@@ -301,6 +298,11 @@ class OvercookedInference:
             del transformed_dict, observation, actions, discrete_actions, gt_actions
             gc.collect()
             jax.clear_caches()
+            
+            # Break if we've reached max_samples
+            if max_samples is not None and samples_processed >= max_samples:
+                print(f"Reached max_samples limit: {samples_processed}/{max_samples}")
+                break
 
         end_time = time.perf_counter()
         eval_duration = end_time - start_time
@@ -340,6 +342,12 @@ def parse_args() -> argparse.Namespace:
         default=5,
         help='Batch size for inference'
     )
+    parser.add_argument(
+        '--max_samples',
+        type=int,
+        default=None,
+        help='Maximum number of samples to process (useful for testing)'
+    )
     
     args = parser.parse_args()
     
@@ -377,7 +385,9 @@ def main():
     # Run evaluation
     dataset_name = "overcooked"
     print(f'\n ---- EVALUATING {dataset_name} ---- \n')
-    results = overcooked_inference.evaluate_model(model, key, config, dataloader, dataset_name, args.output_dir)
+    if args.max_samples:
+        print(f'Limiting evaluation to {args.max_samples} samples')
+    results = overcooked_inference.evaluate_model(model, key, config, dataloader, dataset_name, args.output_dir, args.max_samples)
     
     # Save results
     results_data = {dataset_name: results}

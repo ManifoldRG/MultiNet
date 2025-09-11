@@ -48,10 +48,20 @@ def create_test_data():
     for episode_id in range(2):
         for timestep in range(5):
             # Create dummy timestep data
+            # Mix different action types for better testing
+            if timestep == 0:
+                joint_action = str(['interact', [1, 0]])  # Player 0: INTERACT, Player 1: EAST
+            elif timestep == 1:
+                joint_action = str([[0, -1], 'interact'])  # Player 0: NORTH, Player 1: INTERACT  
+            elif timestep == 2:
+                joint_action = str(['interact', 'interact'])  # Both INTERACT
+            else:
+                joint_action = str([[0, -1], [1, 0]])  # Player 0: NORTH, Player 1: EAST
+                
             timestep_data = {
                 'trial_id': f'test_episode_{episode_id}',
                 'state': create_dummy_image_base64(),
-                'joint_action': str([[0, -1], [1, 0]]),  # Player 0: NORTH, Player 1: EAST
+                'joint_action': joint_action,
                 'reward': 0.0,
                 'score': float(timestep * 10),
                 'time_left': float(300 - timestep * 10),
@@ -92,7 +102,7 @@ def test_action_mapping():
         (np.array([0.0, 1.0]), (0, 1)),    # SOUTH
         (np.array([0.0, -1.0]), (0, -1)),  # NORTH
         (np.array([0.0, 0.0]), (0, 0)),    # STAY
-        (np.array([1.0, 1.0]), (1, 1)),    # INTERACT
+        (np.array([1.0, 1.0]), 'interact'), # INTERACT
     ]
     
     for continuous_action, expected_discrete in test_cases:
@@ -100,7 +110,7 @@ def test_action_mapping():
         print(f"Continuous {continuous_action} -> Discrete {result} (expected {expected_discrete})")
         assert result == expected_discrete, f"Expected {expected_discrete}, got {result}"
     
-    print("✓ Action mapping tests passed!")
+    print("Action mapping tests passed!")
 
 
 def test_dataloader():
@@ -130,7 +140,7 @@ def test_dataloader():
             if batch_count >= 2:  # Only test first 2 batches
                 break
         
-        print("✓ Dataloader tests passed!")
+        print("Dataloader tests passed!")
         
     finally:
         # Clean up test file
@@ -211,8 +221,9 @@ def test_full_inference():
         print(f"Discrete actions shape: {discrete_actions.shape}")
         print(f"Sample discrete actions: {discrete_actions}")
         
-        # Verify discrete actions are in valid range
-        assert np.all(discrete_actions >= 0) and np.all(discrete_actions < 36), "Invalid discrete action indices"
+        # Get the actual number of discrete actions from the inference object
+        num_actions = inference.num_discrete_actions
+        assert np.all(discrete_actions >= 0) and np.all(discrete_actions < num_actions), f"Invalid discrete action indices, expected range [0, {num_actions})"
         
         print("✓ Full inference pipeline tests passed!")
         
@@ -232,12 +243,12 @@ def main():
         test_observation_preparation()
         test_full_inference()
         
-        print("\n🎉 All tests passed! The Overcooked inference script should work correctly.")
+        print("\nAll tests passed! The Overcooked inference script should work correctly.")
         print("\nTo run the full inference, use:")
         print("python overcooked_inference.py --output_dir /path/to/output --data_file /path/to/overcooked_data.pkl")
         
     except Exception as e:
-        print(f"\n❌ Test failed with error: {e}")
+        print(f"\nTest failed with error: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
