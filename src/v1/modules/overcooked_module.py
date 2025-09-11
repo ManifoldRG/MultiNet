@@ -213,7 +213,7 @@ def _get_vlm_instruction(
 def _find_pickle_file(dataset, disk_root_dir: str) -> list[str]:
     try:
         # Construct the dataset directory path
-        dataset_dir = f"{disk_root_dir}/{dataset}/test"
+        dataset_dir = f"{disk_root_dir}/test"
         print(dataset_dir)
         # Use glob to find .pickle file
         pickle_file = glob(f"{dataset_dir}/*.pickle")
