@@ -105,7 +105,7 @@ class OpenAIModule:
     def _convert_messages_to_responses_format(self, messages: list[dict]) -> list[dict]:
         """
         Convert chat completions message format to responses API input format.
-        The responses API supports multimodal content including images.
+        The responses API expects content items with type 'message' for text content.
         """
         converted_content = []
         
@@ -114,67 +114,65 @@ class OpenAIModule:
             content = message['content']
             
             if role == 'system':
-                # Add system content as text
+                # Add system content as message
                 if isinstance(content, str):
                     converted_content.append({
-                        "type": "text",
-                        "text": f"System: {content}"
+                        "type": "message",
+                        "role": "system",
+                        "content": content
                     })
                 else:
                     # Handle structured system content if needed
                     converted_content.append({
-                        "type": "text", 
-                        "text": f"System: {content}"
+                        "type": "message",
+                        "role": "system", 
+                        "content": str(content)
                     })
             
             elif role == 'user':
-                role_prefix = "User: "
-                
                 if isinstance(content, str):
                     # Simple string content
                     converted_content.append({
-                        "type": "text",
-                        "text": f"{role_prefix}{content}"
+                        "type": "message",
+                        "role": "user",
+                        "content": content
                     })
                 elif isinstance(content, list):
-                    # Multimodal content (text + images)
-                    # Process items in order, preserving structure
-                    first_text = True
+                    # For multimodal content, create a message with multimodal content
+                    message_content = []
                     
                     for content_item in content:
                         if content_item['type'] == 'text':
-                            # Preserve individual text segments with proper role prefix
-                            prefix = role_prefix if first_text else ""
-                            converted_content.append({
+                            message_content.append({
                                 "type": "text",
-                                "text": f"{prefix}{content_item['text']}"
+                                "text": content_item['text']
                             })
-                            first_text = False
                         elif content_item['type'] == 'image_url':
-                            # Add image to responses format
-                            image_url = content_item['image_url']['url']
-                            detail = content_item['image_url'].get('detail', 'auto')
-                            
-                            converted_content.append({
+                            message_content.append({
                                 "type": "image_url",
-                                "image_url": {
-                                    "url": image_url,
-                                    "detail": detail
-                                }
+                                "image_url": content_item['image_url']
                             })
+                    
+                    converted_content.append({
+                        "type": "message",
+                        "role": "user",
+                        "content": message_content
+                    })
             
             elif role == 'assistant':
                 # Handle assistant responses
                 if isinstance(content, list) and len(content) > 0:
                     if content[0].get('type') == 'text':
                         converted_content.append({
-                            "type": "text",
-                            "text": f"Assistant: {content[0]['text']}"
+                            "type": "message",
+                            "role": "assistant",
+                            "content": content[0]['text']
                         })
                 elif isinstance(content, str):
                     converted_content.append({
-                        "type": "text",
-                        "text": f"Assistant: {content}"
+                        "type": "message",
+                        "role": "assistant",
+                        "content": content
                     })
         
         return converted_content
