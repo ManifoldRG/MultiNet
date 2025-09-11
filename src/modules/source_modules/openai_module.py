@@ -150,7 +150,7 @@ class OpenAIModule:
                         elif content_item['type'] == 'image_url':
                             message_content.append({
                                 "type": "input_image",
-                                "image_url": content_item['image_url']
+                                "image_url": content_item['image_url']['url']
                             })
                     
                     converted_content.append({
