@@ -13,11 +13,12 @@ import os
 import warnings
 
 class DatasetModule(ABC):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_size: int = 1, k_shots: int = 0) -> None:
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, dataset_name: str, batch_size: int = 1, k_shots: int = 0) -> None:
         self._definitions_class = None
         self.get_dataloader_fn = None 
         self.dataset_family = None
         self.format_instruction_prompt_fn = None
+        self.dataset_name = dataset_name
 
         self.disk_root_dir = disk_root_dir
         self.batch_size = batch_size
@@ -43,10 +44,13 @@ class DatasetModule(ABC):
     @property
     def datasets(self):
         if len(self._datasets) == 0:
-            for dataset in list(self.descriptions.keys()):
-                tfds_shards = self._find_shards(dataset)
-                if len(tfds_shards) != 0:
-                    self._datasets.append(dataset)
+            if self.dataset_name is not None:
+                self._datasets.append(self.dataset_name)
+            else:
+                for dataset in list(self.descriptions.keys()):
+                    tfds_shards = self._find_shards(dataset)
+                    if len(tfds_shards) != 0:
+                        self._datasets.append(dataset)
         return self._datasets
         
     @property
@@ -73,14 +77,14 @@ class DatasetModule(ABC):
         return res.reshape(list(targets.shape)+[nb_classes])
 
     # Main evaluation function.
-    def run_eval(self) -> None:
+    def run_eval(self, results_path: str) -> None:
         # Since OpenX consists of multiple datasets, a modality module should be initialized per every evaluation step for each dataset.
 
         total_results = {}
         for dataset in self.datasets:
             
-            if os.path.exists('<path to results>'):
-                with open('<path to results>', 'r') as f:
+            if os.path.exists(results_path):
+                with open(results_path, 'r') as f:
                     completed_datasets = json.load(f)
             
                 if dataset in completed_datasets:
@@ -90,9 +94,9 @@ class DatasetModule(ABC):
             result = self._run_eval_dataset(dataset)
             total_results[dataset] = result
             
-            if os.path.exists('<path to results>'):
+            if os.path.exists(results_path):
                 # If it exists, load the existing data
-                with open('<path to results>', 'r') as f:
+                with open(results_path, 'r') as f:
                     existing_results = json.load(f)
                 # Append new data to existing data
                 existing_results.update(total_results)
@@ -101,7 +105,7 @@ class DatasetModule(ABC):
                 existing_results = total_results
 
             # Write the updated or new results to the file
-            with open('<path to results>', 'w') as f:
+            with open(results_path, 'w') as f:
                 json.dump(existing_results, f, indent=4, default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x)
             self.action_stats = None
 
@@ -302,7 +306,7 @@ class BatchInfo:
 
 class DatasetBatchModule(DatasetModule, ABC):
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_info_dir: str, batch_size: int = 1, k_shots: int = 0) -> None:
-        super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
+        super().__init__(disk_root_dir, modality, source, model, dataset_name=None, batch_size=batch_size, k_shots=k_shots)
         self.batch_info_dir = batch_info_dir
         self._batch_list = None
         

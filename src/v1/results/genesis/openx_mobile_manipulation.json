@@ -1,0 +1,17 @@
+{
+    "fractal20220817_data": {
+        "action_success_rate": 0.25,
+        "total_dataset_amse": 1319.0209749191658,
+        "total_dataset_amae": 1540.399570961628,
+        "num_timesteps": 17808,
+        "avg_dataset_amse": 0.07406901251792261,
+        "avg_dataset_amae": 0.0865004251438475,
+        "normalized_amse": 0.026160403410189655,
+        "normalized_amae": 0.06179541611326672,
+        "normalized_quantile_filtered_amae": 0.23122304431375895,
+        "max_relative_mae": 13.48517829095543,
+        "proportion_beyond_threshold_mae": 0.0013477088948787063,
+        "eval_time": 36856.83211803436,
+        "total_invalid_preds": 1
+    }
+}

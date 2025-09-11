@@ -1,0 +1,17 @@
+{
+    "berkeley_gnm_sac_son": {
+        "action_success_rate": 0.6779661016949152,
+        "total_dataset_amse": 218.91779040488865,
+        "total_dataset_amae": 1616.0423140695007,
+        "num_timesteps": 24507,
+        "avg_dataset_amse": 0.008932867768592184,
+        "avg_dataset_amae": 0.06594207018686503,
+        "normalized_amse": 0.05072158095913796,
+        "normalized_amae": 0.1711819135454475,
+        "normalized_quantile_filtered_amae": 0.21838102976234722,
+        "max_relative_mae": 6.984816606878517,
+        "proportion_beyond_threshold_mae": 0.032929367119598485,
+        "eval_time": 29220.018859624863,
+        "total_invalid_preds": 0
+    }
+}
