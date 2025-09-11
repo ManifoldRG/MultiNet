@@ -57,7 +57,9 @@ if __name__=="__main__":
         dataset_module = ProcGenBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     elif args.dataset_family == 'openx':
         dataset_module = OpenXBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
-    else:
+   elif args.dataset_family == 'overcooked_ai':
+        dataset_module = OvercookedBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
+   else:
         print(f"The dataset family {args.dataset_family} is not supported.")
         exit(1)
         
