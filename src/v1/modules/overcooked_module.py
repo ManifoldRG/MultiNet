@@ -22,6 +22,12 @@ from src.eval_utils import (
     get_micro_recall_from_counts,
     get_micro_f1,
     calculate_tp_fp_fn_counts,
+    get_precision_per_class,
+    get_recall_per_class,
+    get_f1_per_class,
+    get_macro_precision,
+    get_macro_recall,
+    get_macro_f1,
 )
 from src.modules.modality_modules.vlm_module import VLMModule
 
@@ -102,7 +108,7 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_act
     max_rel_mae = calculate_max_relative_mae(timestep_maes)
     prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(timestep_maes)
 
-    # Calculate f1
+    # Calculate micro metrics
     possible_actions = list(range(num_actions))
     tp, fp, fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
         preds, trues, possible_actions
@@ -112,6 +118,16 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_act
     recall = get_micro_recall_from_counts(tp, fn)
     f1 = get_micro_f1(precision, recall)
     f1_without_invalid = get_micro_f1(precision_without_invalid, recall)
+    
+    # Calculate class-wise metrics
+    class_precisions = get_precision_per_class(preds, trues, possible_actions)
+    class_recalls = get_recall_per_class(preds, trues, possible_actions)
+    class_f1s = get_f1_per_class(class_precisions, class_recalls)
+    
+    # Calculate macro metrics
+    macro_precision = get_macro_precision(class_precisions)
+    macro_recall = get_macro_recall(class_recalls)
+    macro_f1 = get_macro_f1(class_f1s)
 
     # Calculate MSE metrics
     total_dataset_amse = sum(timestep_mses)
@@ -138,6 +154,12 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_act
     result["precision_without_invalid"] = precision_without_invalid
     result["f1"] = f1
     result["f1_without_invalid"] = f1_without_invalid
+    result["macro_precision"] = macro_precision
+    result["macro_recall"] = macro_recall
+    result["macro_f1"] = macro_f1
+    result["class_precisions"] = class_precisions
+    result["class_recalls"] = class_recalls
+    result["class_f1s"] = class_f1s
     result["total_invalids"] = int(invalid_fp)
     result["percentage_invalids"] = (invalid_fp / len(preds)) * 100
     result["preds"] = [int(pred) for pred in preds]
