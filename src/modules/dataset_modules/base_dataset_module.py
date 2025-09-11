@@ -306,7 +306,7 @@ class BatchInfo:
 
 class DatasetBatchModule(DatasetModule, ABC):
     def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_info_dir: str, batch_size: int = 1, k_shots: int = 0) -> None:
-        super().__init__(disk_root_dir, modality, source, model, batch_size, k_shots)
+        super().__init__(disk_root_dir, modality, source, model, dataset_name=None, batch_size=batch_size, k_shots=k_shots)
         self.batch_info_dir = batch_info_dir
         self._batch_list = None
         
