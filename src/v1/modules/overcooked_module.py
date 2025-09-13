@@ -182,11 +182,6 @@ def _get_vlm_instruction(
         dataset in descriptions
     ), f"The layout {dataset} is not included in overcooked."
 
-    if env_name in descriptions[dataset]:
-        env_desc = " ".join(descriptions[dataset][env_name])
-    else:
-        env_desc = env_name.capitalize() + "."
-
     action_space = _get_action_space_fn(dataset, env_name)
 
     if dataset not in action_exclusiveness:
@@ -201,7 +196,6 @@ def _get_vlm_instruction(
 
     instruction = format_instruction_prompt_fn(
         env_name,
-        env_desc,
         str(definitions_class.ACTION_MEANINGS),
         action_space,
         additional_inst,
