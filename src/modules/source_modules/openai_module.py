@@ -281,7 +281,7 @@ class OpenAIModule:
             api_params = {
                 "model": self.model,
                 "input": input_content,
-                "reasoning": {"effort": "minimal"},
+                "reasoning": {"effort": "low"},
                 "max_output_tokens": min(512, self.max_output_tokens_per_query)
             }
             
@@ -353,7 +353,7 @@ class OpenAIModule:
                         "body": {
                             "model": self.model,
                             "input": input_content,
-                            "reasoning": {"effort": "minimal"},
+                            "reasoning": {"effort": "low"},
                             "max_output_tokens": min(512, self.max_output_tokens_per_query)
                         }
                     }
