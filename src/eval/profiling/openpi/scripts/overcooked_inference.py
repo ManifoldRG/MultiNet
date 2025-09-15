@@ -8,9 +8,11 @@ from src.eval.profiling.openpi.src.openpi.models import pi0
 from src.eval.profiling.openpi.src.openpi.models import model as _model
 from src.eval.profiling.openpi.src.openpi.models.model import Observation
 from src.eval.profiling.openpi.src.openpi.models.tokenizer import PaligemmaTokenizer
-from src.eval.profiling.openpi.src.openpi.transforms import pad_to_dim
-from src.data_utils.overcooked_dataloader import get_overcooked_dataloader
+from src.eval.profiling.openpi.src.openpi.transforms import pad_to_dim, Unnormalize
+from src.data_utils.overcooked_dataloader import get_overcooked_dataloader, OvercookedDataset
 from src.eval.profiling.openpi.src.openpi.shared import download
+from src.eval.profiling.openpi.src.openpi.shared.normalize import NormStats
+from src.eval_utils import *
 import jax
 import numpy as np
 import tensorflow as tf
@@ -19,9 +21,11 @@ from dataclasses import dataclass, field, fields
 import time
 
 
-#Restrict tf to CPU
+# Restrict tf to CPU
 tf.config.set_visible_devices([], "GPU")
 # Configure JAX memory settings
+os.environ['JAX_PLATFORMS'] = 'cpu'
+os.environ['CUDA_VISIBLE_DEVICES'] = ''
 os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.8'
 os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
@@ -40,6 +44,28 @@ class DatasetResults:
     player1_accuracy: float = 0
     joint_accuracy: float = 0
     
+    # Additional metrics (will be set dynamically)
+    total_micro_precision: float = 0
+    total_micro_recall: float = 0
+    total_micro_f1: float = 0
+    total_macro_precision: float = 0
+    total_macro_recall: float = 0
+    total_macro_f1: float = 0
+    total_mae: float = 0
+    total_mse: float = 0
+    total_invalid_predictions: int = 0
+    
+    # Final averaged metrics (calculated at the end)
+    micro_precision: float = 0
+    micro_recall: float = 0
+    micro_f1: float = 0
+    macro_precision: float = 0
+    macro_recall: float = 0
+    macro_f1: float = 0
+    mae: float = 0
+    mse: float = 0
+    invalid_predictions_percentage: float = 0
+    
     def to_dict(self) -> dict:
         return {
             field.name: getattr(self, field.name)
@@ -57,8 +83,6 @@ class OvercookedInference:
         self._create_action_mapping()
 
     def _create_action_mapping(self):
-        """Import action mapping from dataloader to avoid duplication."""
-        from src.data_utils.overcooked_dataloader import OvercookedDataset
         temp_dataset = OvercookedDataset.__new__(OvercookedDataset)
         temp_dataset._create_discrete_action_mapping()
         
@@ -123,71 +147,81 @@ class OvercookedInference:
         
         return transformed_dict
 
-    def process_output(self, actions: jax.numpy.ndarray) -> np.ndarray:
+    def process_output(self, actions: jax.numpy.ndarray, dataset_stats: dict) -> np.ndarray:
         """
-        Convert continuous Pi0 action outputs to discrete Overcooked joint actions.
+        Process Pi0 action outputs using normalization statistics.
         
         Args:
             actions: Pi0 continuous actions of shape (batch_size, action_horizon, 32)
+            dataset_stats: Dataset normalization statistics for unnormalization
             
         Returns:
-            np.ndarray: Discrete joint action indices
+            np.ndarray: Discrete action indices (0-35)
         """
-        # Convert to numpy and extract first 4 dimensions
+        # Convert to numpy
         actions = np.array(actions)
-        # Extract first 4 dimensions: [p0_x, p0_y, p1_x, p1_y]
-        relevant_actions = actions[..., :4]
         
-        discrete_actions = []
-        for batch_idx in range(relevant_actions.shape[0]):
-            batch_discrete_actions = []
-            for step_idx in range(relevant_actions.shape[1]):
-                # Extract player actions
-                p0_continuous = relevant_actions[batch_idx, step_idx, :2]  # [x, y] for player 0
-                p1_continuous = relevant_actions[batch_idx, step_idx, 2:4]  # [x, y] for player 1
-                
-                # Convert continuous to discrete actions
-                p0_discrete = self._continuous_to_discrete_action(p0_continuous)
-                p1_discrete = self._continuous_to_discrete_action(p1_continuous)
-                
-                # Convert to joint action index
-                joint_action = (p0_discrete, p1_discrete)
-                discrete_action_idx = self.joint_to_discrete.get(joint_action, 0)  # Default to (STAY, STAY)
-                
-                batch_discrete_actions.append(discrete_action_idx)
-            discrete_actions.append(batch_discrete_actions)
+        # Get only first dimension and preserve batch dimensions 
+        actions = actions[..., 0:1]
         
-        return np.array(discrete_actions)
+        # Apply unnormalization using dataset statistics
+        if 'action' in dataset_stats:
+            unnormalizer = Unnormalize(norm_stats=dataset_stats)
+            unnormalized_actions = unnormalizer({'action': actions})['action']
+        else:
+            unnormalized_actions = actions
+        
+        # Discretize the actions 
+        discrete_actions = np.round(unnormalized_actions, 0).astype(int)
+        
+        # Clip to valid range [0, num_discrete_actions-1]
+        discrete_actions = np.clip(discrete_actions, 0, self.num_discrete_actions - 1)
+        
+        return discrete_actions
 
-    def _continuous_to_discrete_action(self, continuous_action: np.ndarray):
-        """Convert continuous 2D action to discrete Overcooked action."""
-        x, y = continuous_action
-        threshold = 0.5
+    
+    def get_dataset_stats(self, dataloader, dataset_name: str = "overcooked"):
+        """Calculate normalization statistics for Overcooked discrete actions."""
+        # For Overcooked, we need to create normalization stats for our 36 discrete actions (0-35)
+        # This maps the continuous model output to our discrete action space
         
-        # Check for interact action first (high magnitude in both dimensions)
-        if abs(x) > threshold and abs(y) > threshold:
-            return 'interact'
+        # Collect all discrete actions from the dataset
+        all_actions = []
+        for batch in dataloader:
+            all_actions.extend(batch['action'])
         
-        # Map to movement actions based on thresholds
-        if abs(x) > abs(y):  # Horizontal movement dominant
-            if x > threshold:
-                return (1, 0)   # EAST
-            elif x < -threshold:
-                return (-1, 0)  # WEST
-            else:
-                return (0, 0)   # STAY
-        else:  # Vertical movement dominant
-            if y > threshold:
-                return (0, 1)   # SOUTH
-            elif y < -threshold:
-                return (0, -1)  # NORTH
-            else:
-                return (0, 0)   # STAY
+        all_actions = np.array(all_actions)
+        print(f"Collected {len(all_actions)} actions for statistics")
+        print(f"Action range in dataset: {all_actions.min()}-{all_actions.max()}")
+        print(f"Unique actions: {len(np.unique(all_actions))}")
+        
+        # Create normalization statistics that will map continuous outputs to discrete range
+        # Structure needs to match what Unnormalize expects (action key with NormStats)
+        
+        action_mean = all_actions.mean()
+        action_std = all_actions.std() if all_actions.std() > 0 else 1.0  # Avoid division by zero
+        
+        norm_stats = NormStats(
+            mean=np.array([action_mean]),
+            std=np.array([action_std])
+        )
+        
+        dataset_stats = {
+            'action': norm_stats
+        }
+        
+        print(f"Normalization stats: mean={action_mean:.2f}, std={action_std:.2f}")
+        
+        return dataset_stats, {}
 
     def evaluate_model(self, model, key, config, dataloader, dataset_name: str, output_dir: str = None, max_samples: int = None) -> dict:
         """Evaluate the model on the Overcooked dataset."""
         counter = 0
         dataset_results = DatasetResults()
+
+        # Calculate normalization statistics from dataset
+        print("Calculating dataset normalization statistics...")
+        dataset_stats, _ = self.get_dataset_stats(dataloader, dataset_name)
 
         # Calculate total batches for progress tracking
         total_batches = len(dataloader)
@@ -221,7 +255,7 @@ class OvercookedInference:
             
             # Sample actions for entire batch
             actions = model.sample_actions(key, observation, num_steps=1)
-            discrete_actions = self.process_output(actions)
+            normalized_actions = self.process_output(actions, dataset_stats)
             
             counter += 1
             samples_processed += actual_batch_size
@@ -234,42 +268,79 @@ class OvercookedInference:
             # Get ground truth actions from batch
             gt_actions = np.array(batch['action'])
             
-            # Calculate metrics
-            batch_exact_matches = 0
+            # Flatten normalized_actions for metric calculation
+            flat_predictions = normalized_actions.flatten() if normalized_actions.ndim > 1 else normalized_actions
+            flat_gt = gt_actions.flatten() if gt_actions.ndim > 1 else gt_actions
+            
+            # Calculate basic metrics
+            emr = get_exact_match_rate(flat_predictions, flat_gt)
+            action_space = list(range(self.num_discrete_actions))
+            
+            # Calculate micro metrics
+            total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
+                flat_predictions, flat_gt, action_space
+            )
+            micro_precision = get_micro_precision_from_counts(total_tp, total_fp)
+            micro_recall = get_micro_recall_from_counts(total_tp, total_fn)
+            micro_f1 = get_micro_f1(micro_precision, micro_recall)
+            
+            # Calculate macro metrics
+            class_precisions = get_precision_per_class(flat_predictions, flat_gt, action_space)
+            class_recalls = get_recall_per_class(flat_predictions, flat_gt, action_space)
+            class_f1s = get_f1_per_class(class_precisions, class_recalls)
+            macro_precision = get_macro_precision(class_precisions)
+            macro_recall = get_macro_recall(class_recalls)
+            macro_f1 = get_macro_f1(class_f1s)
+            
+            # Calculate MAE and MSE
+            mae = calculate_mae(flat_predictions, flat_gt)
+            mse = calculate_mse(flat_predictions, flat_gt)
+            
+            # Calculate per-player accuracy for Overcooked-specific analysis
             batch_p0_matches = 0
             batch_p1_matches = 0
             batch_joint_matches = 0
             
-            for i in range(len(discrete_actions)):
-                pred_action_idx = discrete_actions[i][0]  # Take first (and only) timestep
-                gt_action_idx = gt_actions[i]
+            for i in range(len(flat_predictions)):
+                pred_action_idx = flat_predictions[i]
+                gt_action_idx = flat_gt[i]
                 
-                # Exact match
                 if pred_action_idx == gt_action_idx:
-                    batch_exact_matches += 1
                     batch_joint_matches += 1
                 
                 # Convert to joint actions for per-player analysis
-                pred_joint = self.discrete_to_joint[pred_action_idx]
-                gt_joint = self.discrete_to_joint[gt_action_idx]
-                
-                # Per-player accuracy
-                if pred_joint[0] == gt_joint[0]:  # Player 0
-                    batch_p0_matches += 1
-                if pred_joint[1] == gt_joint[1]:  # Player 1
-                    batch_p1_matches += 1
+                if pred_action_idx < self.num_discrete_actions and gt_action_idx < self.num_discrete_actions:
+                    pred_joint = self.discrete_to_joint[pred_action_idx]
+                    gt_joint = self.discrete_to_joint[gt_action_idx]
+                    
+                    # Per-player accuracy
+                    if pred_joint[0] == gt_joint[0]:  # Player 0
+                        batch_p0_matches += 1
+                    if pred_joint[1] == gt_joint[1]:  # Player 1
+                        batch_p1_matches += 1
             
-            total_predictions = len(discrete_actions)
+            total_predictions = len(flat_predictions)
             
-            # Store batch results (convert to Python int to avoid JSON serialization issues)
-            dataset_results.all_preds.extend([int(discrete_actions[i][0]) for i in range(len(discrete_actions))])
-            dataset_results.all_gt.extend([int(action) for action in gt_actions.tolist()])
+            # Store batch results
+            dataset_results.all_preds.extend([int(x) for x in flat_predictions.tolist()])
+            dataset_results.all_gt.extend([int(x) for x in flat_gt.tolist()])
             dataset_results.total_batches = counter
             dataset_results.total_timesteps += total_predictions
-            dataset_results.exact_match_rate += batch_exact_matches
+            dataset_results.exact_match_rate += emr * total_predictions
             dataset_results.player0_accuracy += batch_p0_matches
             dataset_results.player1_accuracy += batch_p1_matches
             dataset_results.joint_accuracy += batch_joint_matches
+            
+            # Store additional metrics
+            dataset_results.total_micro_precision += micro_precision * total_predictions
+            dataset_results.total_micro_recall += micro_recall * total_predictions
+            dataset_results.total_micro_f1 += micro_f1 * total_predictions
+            dataset_results.total_macro_precision += macro_precision * total_predictions
+            dataset_results.total_macro_recall += macro_recall * total_predictions
+            dataset_results.total_macro_f1 += macro_f1 * total_predictions
+            dataset_results.total_mae += mae * total_predictions
+            dataset_results.total_mse += mse * total_predictions
+            dataset_results.total_invalid_predictions += int(invalid_fp)
 
             # Save intermediate results every 500 batches
             if counter % 500 == 0:
@@ -283,6 +354,17 @@ class OvercookedInference:
                 intermediate_results['player1_accuracy'] = intermediate_results['player1_accuracy'] / total_ts
                 intermediate_results['joint_accuracy'] = intermediate_results['joint_accuracy'] / total_ts
                 
+                # Calculate additional metrics
+                intermediate_results['micro_precision'] = intermediate_results.get('total_micro_precision', 0) / total_ts
+                intermediate_results['micro_recall'] = intermediate_results.get('total_micro_recall', 0) / total_ts
+                intermediate_results['micro_f1'] = intermediate_results.get('total_micro_f1', 0) / total_ts
+                intermediate_results['macro_precision'] = intermediate_results.get('total_macro_precision', 0) / total_ts
+                intermediate_results['macro_recall'] = intermediate_results.get('total_macro_recall', 0) / total_ts
+                intermediate_results['macro_f1'] = intermediate_results.get('total_macro_f1', 0) / total_ts
+                intermediate_results['mae'] = intermediate_results.get('total_mae', 0) / total_ts
+                intermediate_results['mse'] = intermediate_results.get('total_mse', 0) / total_ts
+                intermediate_results['invalid_predictions_percentage'] = intermediate_results.get('total_invalid_predictions', 0) / total_ts * 100
+                
                 # Keep avg_ fields for backward compatibility
                 intermediate_results['avg_emr'] = intermediate_results['exact_match_rate']
                 intermediate_results['avg_player0_accuracy'] = intermediate_results['player0_accuracy']
@@ -295,7 +377,7 @@ class OvercookedInference:
                 print(f"Saved intermediate results at batch {counter}")
 
             # Memory management
-            del transformed_dict, observation, actions, discrete_actions, gt_actions
+            del transformed_dict, observation, actions, normalized_actions, gt_actions
             gc.collect()
             jax.clear_caches()
             
@@ -314,6 +396,17 @@ class OvercookedInference:
             dataset_results.player0_accuracy /= dataset_results.total_timesteps
             dataset_results.player1_accuracy /= dataset_results.total_timesteps
             dataset_results.joint_accuracy /= dataset_results.total_timesteps
+            
+            # Calculate additional metrics
+            dataset_results.micro_precision = dataset_results.total_micro_precision / dataset_results.total_timesteps
+            dataset_results.micro_recall = dataset_results.total_micro_recall / dataset_results.total_timesteps
+            dataset_results.micro_f1 = dataset_results.total_micro_f1 / dataset_results.total_timesteps
+            dataset_results.macro_precision = dataset_results.total_macro_precision / dataset_results.total_timesteps
+            dataset_results.macro_recall = dataset_results.total_macro_recall / dataset_results.total_timesteps
+            dataset_results.macro_f1 = dataset_results.total_macro_f1 / dataset_results.total_timesteps
+            dataset_results.mae = dataset_results.total_mae / dataset_results.total_timesteps
+            dataset_results.mse = dataset_results.total_mse / dataset_results.total_timesteps
+            dataset_results.invalid_predictions_percentage = dataset_results.total_invalid_predictions / dataset_results.total_timesteps * 100
 
         return dataset_results.to_dict()
 
@@ -375,6 +468,10 @@ def main():
     params = _model.restore_params(checkpoint_path)
     model = config.load(params)
     overcooked_inference = OvercookedInference(model, tokenizer, config)
+    
+    # Enable diagonal move logging for testing
+    overcooked_inference._log_raw_outputs = True
+    overcooked_inference._diagonal_count = 0
 
     results_file = os.path.join(args.output_dir, 'pi0_base_overcooked_results.json')
     raw_data_file = os.path.join(args.output_dir, 'raw_predictions_gt.json')
@@ -417,6 +514,16 @@ def main():
     print(f'Player 0 Accuracy: {results["player0_accuracy"]:.4f}')
     print(f'Player 1 Accuracy: {results["player1_accuracy"]:.4f}')
     print(f'Joint Accuracy: {results["joint_accuracy"]:.4f}')
+    if 'micro_precision' in results:
+        print(f'Micro Precision: {results["micro_precision"]:.4f}')
+        print(f'Micro Recall: {results["micro_recall"]:.4f}')
+        print(f'Micro F1: {results["micro_f1"]:.4f}')
+        print(f'Macro Precision: {results["macro_precision"]:.4f}')
+        print(f'Macro Recall: {results["macro_recall"]:.4f}')
+        print(f'Macro F1: {results["macro_f1"]:.4f}')
+        print(f'MAE: {results["mae"]:.4f}')
+        print(f'MSE: {results["mse"]:.4f}')
+        print(f'Invalid Predictions %: {results["invalid_predictions_percentage"]:.2f}%')
     print(f'Total timesteps: {results["total_timesteps"]}')
     print(f'Evaluation time: {results["eval_time"]:.2f} seconds')
 
