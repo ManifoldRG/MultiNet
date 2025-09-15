@@ -8,6 +8,17 @@ from glob import glob
 from typing import Union
 from src.eval_utils import get_exact_match_rate
 
+PIQA_SYSTEM_PROMPT = """
+You are evaluating physical commonsense reasoning questions. You will be presented with a goal and two possible solutions 
+(Solution 0 and Solution 1). Your task is to determine which solution is more appropriate for achieving the given goal.
+
+Respond with only:
+- 0 if Solution 0 is correct
+- 1 if Solution 1 is correct
+
+Do not provide any explanation, reasoning, or additional text. Only output the single digit 0 or 1.
+"""
+
 def _validate_output(output) -> bool:
     """Validate that output is exactly '0' or '1'"""
     if not isinstance(output, str):
@@ -153,7 +164,7 @@ class PIQAModule(DatasetModule):
                         
                         output = self.modality_module.infer_step(
                             inputs=formatted_input,
-                            system_prompt=None
+                            system_prompt=PIQA_SYSTEM_PROMPT
                         )
                         batch_outputs.append(output)
                     except Exception as e:
@@ -255,7 +266,7 @@ class PIQABatchModule(DatasetBatchModule):
             formatted_input = [('text', question)]
             inputs_batch.append(formatted_input)
             
-            system_prompt.append("")
+            system_prompt.append(PIQA_SYSTEM_PROMPT)
             
             batch_labels.append(labels[i])
             # PIQA doesn't have is_last field, so we set all to True
