@@ -282,13 +282,19 @@ class OpenAIModule:
                 "model": self.model,
                 "input": input_content,
                 "reasoning": {"effort": "low"},
-                "max_output_tokens": min(512, self.max_output_tokens_per_query)
+                "max_output_tokens": 2048 #min(512, self.max_output_tokens_per_query)
             }
             
             response = self.client.responses.create(**api_params)
             
             # Extract the ResponseOutputMessage (first element in output list)
-            return response.output[1].content[0].text
+            if len(response.output) < 2:
+                # Handle case where only reasoning is present without message
+                print(f"Warning: Response missing message content, only reasoning available: {response.output}")
+                response_content = ""
+            else:
+                response_content = response.output[1].content[0].text
+            return response_content
         else:
             # Use chat completions API for non-reasoning models
             max_tokens_param = self._get_max_tokens_param()
@@ -316,7 +322,13 @@ class OpenAIModule:
             response = json.loads(response)
             if self._is_reasoning_model():
                 # For responses API, extract from output list
-                response_content = response['response']['body']['output'][1]['content'][0]['text']
+                output = response['response']['body']['output']
+                if len(output) < 2:
+                    # Handle case where only reasoning is present without message
+                    print(f"Warning: Response missing message content, only reasoning available: {output}")
+                    response_content = ""
+                else:
+                    response_content = output[1]['content'][0]['text']
             else:
                 # For chat completions API
                 response_content = response['response']['body']['choices'][0]['message']['content']
@@ -354,7 +366,7 @@ class OpenAIModule:
                             "model": self.model,
                             "input": input_content,
                             "reasoning": {"effort": "low"},
-                            "max_output_tokens": min(512, self.max_output_tokens_per_query)
+                            "max_output_tokens": 2048 #min(512, self.max_output_tokens_per_query)
                         }
                     }
                 else:
@@ -415,7 +427,13 @@ class OpenAIModule:
                 response = json.loads(response)
                 if self._is_reasoning_model():
                     # For responses API, extract from output list
-                    response_content = response['response']['body']['output'][1]['content'][0]['text']
+                    output = response['response']['body']['output']
+                    if len(output) < 2:
+                        # Handle case where only reasoning is present without message
+                        print(f"Warning: Response missing message content, only reasoning available: {output}")
+                        response_content = ""
+                    else:
+                        response_content = output[1]['content'][0]['text']
                 else:
                     # For chat completions API
                     response_content = response['response']['body']['choices'][0]['message']['content']
