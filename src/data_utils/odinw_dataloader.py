@@ -41,10 +41,6 @@ class ODinWDataset(Dataset):
         # Filter out categories where supercategory == "none"
         filtered = [c for c in categories_data["categories"] if c["supercategory"] != "none"]
 
-        # Re-assign IDs sequentially starting from 0
-        for new_id, cat in enumerate(filtered):
-            cat["id"] = new_id
-
         # Update metadata
         categories_data["categories"] = filtered
         categories_data["num_categories"] = len(filtered)
