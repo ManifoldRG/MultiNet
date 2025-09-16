@@ -37,6 +37,18 @@ class ODinWDataset(Dataset):
         
         with open(categories_file, 'r') as f:
             categories_data = json.load(f)
+            
+        # Filter out categories where supercategory == "none"
+        filtered = [c for c in categories_data["categories"] if c["supercategory"] != "none"]
+
+        # Re-assign IDs sequentially starting from 0
+        for new_id, cat in enumerate(filtered):
+            cat["id"] = new_id
+
+        # Update metadata
+        categories_data["categories"] = filtered
+        categories_data["num_categories"] = len(filtered)
+        categories_data["category_names"] = [c["name"] for c in filtered]
         
         return categories_data
     
