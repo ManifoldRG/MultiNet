@@ -152,7 +152,8 @@ class ODinWDataset(Dataset):
         # Apply transforms if provided
         if self.transform is not None:
             image = self.transform(image)
-        
+            
+        image = np.array(image)
         # Create classification question
         question_text, correct_option_idx, options = self._create_classification_question(sample_data)
         
