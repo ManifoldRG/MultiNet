@@ -1,0 +1,17 @@
+{
+    "bridge": {
+        "action_success_rate": 0.25,
+        "total_dataset_amse": 225.44248461157466,
+        "total_dataset_amae": 505.9785210986799,
+        "num_timesteps": 13537,
+        "avg_dataset_amse": 0.016653799557625373,
+        "avg_dataset_amae": 0.03737744855571244,
+        "normalized_amse": 0.06150140731149669,
+        "normalized_amae": 0.1122042107899673,
+        "normalized_quantile_filtered_amae": 0.158179145355968,
+        "max_relative_mae": 15.010850863321142,
+        "proportion_beyond_threshold_mae": 0.12602496860456527,
+        "eval_time": 184.45471334457397,
+        "total_invalid_preds": 0
+    }
+}
