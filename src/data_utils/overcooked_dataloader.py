@@ -36,100 +36,86 @@ class OvercookedDataset(Dataset):
         self._load_all_data()
         
     def _create_discrete_action_mapping(self):
-        """Create mapping between joint actions and discrete action indices using Option A approach."""
-        movement_actions = [
+        """Create mapping between joint actions and discrete action indices."""
+        # Define individual actions for each player
+        # ACTUAL ACTIONS: NORTH, SOUTH, EAST, WEST, STAY, INTERACT
+        single_actions = [
             (0, -1),   # NORTH
             (0, 1),    # SOUTH  
             (1, 0),    # EAST
             (-1, 0),   # WEST
             (0, 0),    # STAY
+            (1, 1)     # INTERACT (this is a word in the actual dataset, we convert it to (1,1))
         ]
         
+        # Create all possible joint actions (player0_action, player1_action)
         self.joint_to_discrete = {}
         self.discrete_to_joint = {}
-        action_idx = 0
         
-        # Regular movement combinations (0-24)
-        for p0_action in movement_actions:
-            for p1_action in movement_actions:
+        action_idx = 0
+        for p0_action in single_actions:
+            for p1_action in single_actions:
+                # Create joint action as tuple for hashing
                 joint_action = (tuple(p0_action), tuple(p1_action))
+                
+                # Map joint action to discrete index
                 self.joint_to_discrete[joint_action] = action_idx
                 self.discrete_to_joint[action_idx] = joint_action
+                
                 action_idx += 1
         
-        # Player 0 INTERACT + Player 1 movements (25-29)
-        for p1_action in movement_actions:
-            joint_action = ('interact', tuple(p1_action))
-            self.joint_to_discrete[joint_action] = action_idx
-            self.discrete_to_joint[action_idx] = joint_action
-            action_idx += 1
-            
-        # Player 0 movements + Player 1 INTERACT (30-34)  
-        for p0_action in movement_actions:
-            joint_action = (tuple(p0_action), 'interact')
-            self.joint_to_discrete[joint_action] = action_idx
-            self.discrete_to_joint[action_idx] = joint_action
-            action_idx += 1
-            
-        # Both players INTERACT (35)
-        joint_action = ('interact', 'interact')
-        self.joint_to_discrete[joint_action] = action_idx
-        self.discrete_to_joint[action_idx] = joint_action
-        action_idx += 1
+        # Total number of discrete actions: 6 * 6 = 36
+        self.num_discrete_actions = len(self.joint_to_discrete)
         
-        self.num_discrete_actions = action_idx
-        self.action_string_to_tuple = {}
+        # Create special mapping for 'interact' string to (1,1)
+        self.action_string_to_tuple = {
+            'interact': (1, 1)
+        }
     
     def _convert_joint_action_to_discrete(self, joint_action):
         """Convert joint action to discrete action index."""
         if not isinstance(joint_action, list) or len(joint_action) != 2:
-            raise ValueError(f"Expected list of length 2 for joint_action, got {type(joint_action)} with length {len(joint_action) if isinstance(joint_action, list) else 'N/A'}: {joint_action}")
+            # Fallback: both players STAY
+            return self.joint_to_discrete[((0, 0), (0, 0))]
         
         player0_action = joint_action[0]
         player1_action = joint_action[1]
         
-        # Handle string 'interact' actions directly
+        # Convert string actions to tuples
         if player0_action == 'interact':
-            processed_p0 = 'interact'
-        else:
-            if not isinstance(player0_action, (list, tuple)) or len(player0_action) != 2:
-                raise ValueError(f"Invalid player0_action format: {player0_action}")
-            processed_p0 = tuple(player0_action)
-            
+            player0_action = self.action_string_to_tuple['interact']
         if player1_action == 'interact':
-            processed_p1 = 'interact'  
+            player1_action = self.action_string_to_tuple['interact']
+        
+        # Ensure actions are tuples
+        # Convert to tuple with warning if needed
+        if not isinstance(player0_action, (list, tuple)):
+            print(f"Warning: player0_action is not a list/tuple. Before: {player0_action}, After: (0, 0)")
+            player0_action = (0, 0)
         else:
-            if not isinstance(player1_action, (list, tuple)) or len(player1_action) != 2:
-                raise ValueError(f"Invalid player1_action format: {player1_action}")
-            processed_p1 = tuple(player1_action)
-        
-        joint_action_tuple = (processed_p0, processed_p1)
-        
-        if joint_action_tuple not in self.joint_to_discrete:
-            raise ValueError(f"Joint action not found in mapping: {joint_action_tuple}")
+            player0_action = tuple(player0_action)
             
-        return self.joint_to_discrete[joint_action_tuple]
+        if not isinstance(player1_action, (list, tuple)):
+            print(f"Warning: player1_action is not a list/tuple. Before: {player1_action}, After: (0, 0)")
+            player1_action = (0, 0)
+        else:
+            player1_action = tuple(player1_action)
+        
+        # Create joint action tuple
+        joint_action_tuple = (player0_action, player1_action)
+        
+        # Return discrete action index, or default if not found
+        return self.joint_to_discrete.get(joint_action_tuple, self.joint_to_discrete[((0, 0), (0, 0))])
     
     def convert_discrete_to_joint_action(self, discrete_action):
         """Convert discrete action index back to joint action format."""
-        if discrete_action not in self.discrete_to_joint:
-            raise ValueError(f"Discrete action {discrete_action} not found in mapping")
-            
-        joint_action_tuple = self.discrete_to_joint[discrete_action]
-        p0_action, p1_action = joint_action_tuple
-        
-        # Convert back to list format, handling 'interact' strings
-        if p0_action == 'interact':
-            processed_p0 = 'interact'
+        if discrete_action in self.discrete_to_joint:
+            joint_action_tuple = self.discrete_to_joint[discrete_action]
+            # Convert back to list format: [player0_action, player1_action]
+            return [list(joint_action_tuple[0]), list(joint_action_tuple[1])]
         else:
-            processed_p0 = list(p0_action)
-            
-        if p1_action == 'interact':
-            processed_p1 = 'interact'
-        else:
-            processed_p1 = list(p1_action)
-            
-        return [processed_p0, processed_p1]
+            # Default fallback
+            return [[0, 0], [0, 0]]
     
     def get_action_mapping_info(self):
         """Get information about the discrete action mapping."""
@@ -147,23 +133,15 @@ class OvercookedDataset(Dataset):
             (0, 1): "SOUTH", 
             (1, 0): "EAST",
             (-1, 0): "WEST",
-            (0, 0): "STAY"
+            (0, 0): "STAY",
+            (1, 1): "INTERACT"
         }
         
         descriptions = {}
         for discrete_idx, joint_action in self.discrete_to_joint.items():
             p0_action, p1_action = joint_action
-            
-            if p0_action == 'interact':
-                p0_name = "INTERACT"
-            else:
-                p0_name = action_names.get(p0_action, f"Custom{p0_action}")
-                
-            if p1_action == 'interact':
-                p1_name = "INTERACT"  
-            else:
-                p1_name = action_names.get(p1_action, f"Custom{p1_action}")
-                
+            p0_name = action_names.get(p0_action, f"Custom{p0_action}")
+            p1_name = action_names.get(p1_action, f"Custom{p1_action}")
             descriptions[discrete_idx] = f"Player0:{p0_name}, Player1:{p1_name}"
         
         return descriptions

@@ -12,7 +12,20 @@ from src.eval.profiling.openpi.src.openpi.transforms import pad_to_dim, Unnormal
 from src.data_utils.overcooked_dataloader import get_overcooked_dataloader, OvercookedDataset
 from src.eval.profiling.openpi.src.openpi.shared import download
 from src.eval.profiling.openpi.src.openpi.shared.normalize import NormStats
-from src.eval_utils import *
+from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
+from src.eval_utils import (get_exact_match_rate,
+                            calculate_tp_fp_fn_counts,
+                            get_micro_precision_from_counts, 
+                            get_micro_recall_from_counts, 
+                            get_micro_f1,
+                            get_precision_per_class,
+                            get_recall_per_class,
+                            get_f1_per_class,
+                            get_macro_precision,
+                            get_macro_recall,
+                            get_macro_f1,
+                            calculate_mae,
+                            calculate_mse)
 import jax
 import numpy as np
 import tensorflow as tf
@@ -35,6 +48,7 @@ os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
 class DatasetResults:
     all_preds: list[int] = field(default_factory=list)
     all_gt: list[int] = field(default_factory=list)
+    all_clipped_preds: list[int] = field(default_factory=list)
     
     total_batches: int = 0
     total_timesteps: int = 0
@@ -44,27 +58,25 @@ class DatasetResults:
     player1_accuracy: float = 0
     joint_accuracy: float = 0
     
-    # Additional metrics (will be set dynamically)
-    total_micro_precision: float = 0
-    total_micro_recall: float = 0
-    total_micro_f1: float = 0
-    total_macro_precision: float = 0
-    total_macro_recall: float = 0
-    total_macro_f1: float = 0
-    total_mae: float = 0
-    total_mse: float = 0
+    # Invalid predictions count
     total_invalid_predictions: int = 0
     
-    # Final averaged metrics (calculated at the end)
+    # Final metrics (calculated on full dataset at the end)
     micro_precision: float = 0
     micro_recall: float = 0
     micro_f1: float = 0
     macro_precision: float = 0
     macro_recall: float = 0
     macro_f1: float = 0
-    mae: float = 0
-    mse: float = 0
     invalid_predictions_percentage: float = 0
+    
+    # Final clipped metrics
+    avg_clipped_emr: float = 0
+    avg_clipped_micro_precision: float = 0
+    avg_clipped_micro_recall: float = 0
+    avg_clipped_micro_f1: float = 0
+    avg_micro_precision_without_invalids: float = 0
+    avg_micro_f1_without_invalids: float = 0
     
     def to_dict(self) -> dict:
         return {
@@ -174,45 +186,59 @@ class OvercookedInference:
         # Discretize the actions 
         discrete_actions = np.round(unnormalized_actions, 0).astype(int)
         
-        # Clip to valid range [0, num_discrete_actions-1]
-        discrete_actions = np.clip(discrete_actions, 0, self.num_discrete_actions - 1)
-        
         return discrete_actions
 
     
     def get_dataset_stats(self, dataloader, dataset_name: str = "overcooked"):
-        """Calculate normalization statistics for Overcooked discrete actions."""
-        # For Overcooked, we need to create normalization stats for our 36 discrete actions (0-35)
-        # This maps the continuous model output to our discrete action space
+        """Calculate normalization statistics for Overcooked discrete actions using RunningStats."""
         
-        # Collect all discrete actions from the dataset
-        all_actions = []
+        running_stats = RunningStats()
+        
+        print('Calculating dataset stats...')
+        # Process all batches in the dataloader
+        batch_count = 0
+        total_actions = 0
+        
         for batch in dataloader:
-            all_actions.extend(batch['action'])
+            batch_count += 1
+            print(f'Processing batch: {batch_count}')
+            
+            # Extract actions from batch
+            actions = np.array(batch['action'])
+            print(f"Batch {batch_count}: {len(actions)} actions, range: {actions.min()}-{actions.max()}")
+            
+            # Convert to float for consistent processing with other datasets
+            actions = actions.astype(np.float32)
+            
+            # Reshape if 1D to ensure proper dimensions for RunningStats
+            if actions.ndim == 1:
+                actions = actions.reshape(-1, 1)
+            
+            # Update running statistics
+            running_stats.update(actions)
+            total_actions += len(actions)
+            
+            # Memory cleanup
+            del actions
+            gc.collect()
         
-        all_actions = np.array(all_actions)
-        print(f"Collected {len(all_actions)} actions for statistics")
-        print(f"Action range in dataset: {all_actions.min()}-{all_actions.max()}")
-        print(f"Unique actions: {len(np.unique(all_actions))}")
+        # Get final statistics
+        stats = running_stats.get_statistics()
         
-        # Create normalization statistics that will map continuous outputs to discrete range
-        # Structure needs to match what Unnormalize expects (action key with NormStats)
+        print(f"Processed {total_actions} total actions across {batch_count} batches")
+        print(f"Final stats - Mean: {stats.mean}, Std: {stats.std}")
+        print(f"Quantiles - Q01: {stats.q01}, Q99: {stats.q99}")
         
-        action_mean = all_actions.mean()
-        action_std = all_actions.std() if all_actions.std() > 0 else 1.0  # Avoid division by zero
-        
-        norm_stats = NormStats(
-            mean=np.array([action_mean]),
-            std=np.array([action_std])
-        )
-        
-        dataset_stats = {
-            'action': norm_stats
+        # Convert NormStats to dictionary format for saving
+        stats_dict = {
+            'mean': stats.mean.tolist(),
+            'std': stats.std.tolist(),
+            'q01': stats.q01.tolist(),
+            'q99': stats.q99.tolist()
         }
         
-        print(f"Normalization stats: mean={action_mean:.2f}, std={action_std:.2f}")
-        
-        return dataset_stats, {}
+        # Return both dictionary format and NormStats object
+        return {'action': stats_dict}, {'action': stats}
 
     def evaluate_model(self, model, key, config, dataloader, dataset_name: str, output_dir: str = None, max_samples: int = None) -> dict:
         """Evaluate the model on the Overcooked dataset."""
@@ -254,8 +280,8 @@ class OvercookedInference:
             observation = Observation.from_dict(transformed_dict)
             
             # Sample actions for entire batch
-            actions = model.sample_actions(key, observation, num_steps=1)
-            normalized_actions = self.process_output(actions, dataset_stats)
+            actions = model.sample_actions(key, observation, num_steps=10)
+            unnormalized_discrete_actions = self.process_output(actions, dataset_stats)
             
             counter += 1
             samples_processed += actual_batch_size
@@ -269,32 +295,12 @@ class OvercookedInference:
             gt_actions = np.array(batch['action'])
             
             # Flatten normalized_actions for metric calculation
-            flat_predictions = normalized_actions.flatten() if normalized_actions.ndim > 1 else normalized_actions
+            flat_predictions = unnormalized_discrete_actions.flatten() if unnormalized_discrete_actions.ndim > 1 else unnormalized_discrete_actions
             flat_gt = gt_actions.flatten() if gt_actions.ndim > 1 else gt_actions
             
-            # Calculate basic metrics
-            emr = get_exact_match_rate(flat_predictions, flat_gt)
+            # Clip predictions for clipped metrics storage
             action_space = list(range(self.num_discrete_actions))
-            
-            # Calculate micro metrics
-            total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
-                flat_predictions, flat_gt, action_space
-            )
-            micro_precision = get_micro_precision_from_counts(total_tp, total_fp)
-            micro_recall = get_micro_recall_from_counts(total_tp, total_fn)
-            micro_f1 = get_micro_f1(micro_precision, micro_recall)
-            
-            # Calculate macro metrics
-            class_precisions = get_precision_per_class(flat_predictions, flat_gt, action_space)
-            class_recalls = get_recall_per_class(flat_predictions, flat_gt, action_space)
-            class_f1s = get_f1_per_class(class_precisions, class_recalls)
-            macro_precision = get_macro_precision(class_precisions)
-            macro_recall = get_macro_recall(class_recalls)
-            macro_f1 = get_macro_f1(class_f1s)
-            
-            # Calculate MAE and MSE
-            mae = calculate_mae(flat_predictions, flat_gt)
-            mse = calculate_mse(flat_predictions, flat_gt)
+            clipped_predictions = np.clip(flat_predictions, action_space[0], action_space[-1])
             
             # Calculate per-player accuracy for Overcooked-specific analysis
             batch_p0_matches = 0
@@ -324,60 +330,18 @@ class OvercookedInference:
             # Store batch results
             dataset_results.all_preds.extend([int(x) for x in flat_predictions.tolist()])
             dataset_results.all_gt.extend([int(x) for x in flat_gt.tolist()])
+            dataset_results.all_clipped_preds.extend([int(x) for x in clipped_predictions.tolist()])
             dataset_results.total_batches = counter
             dataset_results.total_timesteps += total_predictions
-            dataset_results.exact_match_rate += emr * total_predictions
             dataset_results.player0_accuracy += batch_p0_matches
             dataset_results.player1_accuracy += batch_p1_matches
             dataset_results.joint_accuracy += batch_joint_matches
             
-            # Store additional metrics
-            dataset_results.total_micro_precision += micro_precision * total_predictions
-            dataset_results.total_micro_recall += micro_recall * total_predictions
-            dataset_results.total_micro_f1 += micro_f1 * total_predictions
-            dataset_results.total_macro_precision += macro_precision * total_predictions
-            dataset_results.total_macro_recall += macro_recall * total_predictions
-            dataset_results.total_macro_f1 += macro_f1 * total_predictions
-            dataset_results.total_mae += mae * total_predictions
-            dataset_results.total_mse += mse * total_predictions
-            dataset_results.total_invalid_predictions += int(invalid_fp)
-
-            # Save intermediate results every 500 batches
-            if counter % 500 == 0:
-                intermediate_results = dataset_results.to_dict()
-                intermediate_results['eval_time'] = time.perf_counter() - start_time
-                
-                # Convert raw counts to rates for the main fields (to match final output format)
-                total_ts = max(1, intermediate_results['total_timesteps'])
-                intermediate_results['exact_match_rate'] = intermediate_results['exact_match_rate'] / total_ts
-                intermediate_results['player0_accuracy'] = intermediate_results['player0_accuracy'] / total_ts
-                intermediate_results['player1_accuracy'] = intermediate_results['player1_accuracy'] / total_ts
-                intermediate_results['joint_accuracy'] = intermediate_results['joint_accuracy'] / total_ts
-                
-                # Calculate additional metrics
-                intermediate_results['micro_precision'] = intermediate_results.get('total_micro_precision', 0) / total_ts
-                intermediate_results['micro_recall'] = intermediate_results.get('total_micro_recall', 0) / total_ts
-                intermediate_results['micro_f1'] = intermediate_results.get('total_micro_f1', 0) / total_ts
-                intermediate_results['macro_precision'] = intermediate_results.get('total_macro_precision', 0) / total_ts
-                intermediate_results['macro_recall'] = intermediate_results.get('total_macro_recall', 0) / total_ts
-                intermediate_results['macro_f1'] = intermediate_results.get('total_macro_f1', 0) / total_ts
-                intermediate_results['mae'] = intermediate_results.get('total_mae', 0) / total_ts
-                intermediate_results['mse'] = intermediate_results.get('total_mse', 0) / total_ts
-                intermediate_results['invalid_predictions_percentage'] = intermediate_results.get('total_invalid_predictions', 0) / total_ts * 100
-                
-                # Keep avg_ fields for backward compatibility
-                intermediate_results['avg_emr'] = intermediate_results['exact_match_rate']
-                intermediate_results['avg_player0_accuracy'] = intermediate_results['player0_accuracy']
-                intermediate_results['avg_player1_accuracy'] = intermediate_results['player1_accuracy']
-                intermediate_results['avg_joint_accuracy'] = intermediate_results['joint_accuracy']
-                
-                intermediate_file = os.path.join(output_dir, f'intermediate_results_batch_{counter}.json')
-                with open(intermediate_file, 'w') as f:
-                    json.dump({'overcooked': intermediate_results}, f, indent=4)
-                print(f"Saved intermediate results at batch {counter}")
+            # Only store raw predictions and ground truth - metrics calculated outside loop
 
             # Memory management
-            del transformed_dict, observation, actions, normalized_actions, gt_actions
+            del transformed_dict, observation, actions, unnormalized_discrete_actions, gt_actions, \
+                flat_predictions, flat_gt, clipped_predictions
             gc.collect()
             jax.clear_caches()
             
@@ -390,23 +354,87 @@ class OvercookedInference:
         eval_duration = end_time - start_time
         dataset_results.eval_time = eval_duration
         
-        # Calculate final averages
+        # Calculate all final metrics correctly using all accumulated predictions
         if dataset_results.total_timesteps > 0:
-            dataset_results.exact_match_rate /= dataset_results.total_timesteps
+            # Convert accumulated predictions to numpy arrays
+            all_preds = np.array(dataset_results.all_preds)
+            all_gt = np.array(dataset_results.all_gt)
+            all_clipped_preds = np.array(dataset_results.all_clipped_preds)
+            
+            # Calculate EMR from all accumulated predictions
+            if len(all_preds) > 0 and len(all_gt) > 0:
+                dataset_results.exact_match_rate = get_exact_match_rate(all_preds, all_gt)
+            else:
+                dataset_results.exact_match_rate = 0.0
+            
+            # Calculate per-player accuracies (already accumulated correctly)
             dataset_results.player0_accuracy /= dataset_results.total_timesteps
             dataset_results.player1_accuracy /= dataset_results.total_timesteps
             dataset_results.joint_accuracy /= dataset_results.total_timesteps
             
-            # Calculate additional metrics
-            dataset_results.micro_precision = dataset_results.total_micro_precision / dataset_results.total_timesteps
-            dataset_results.micro_recall = dataset_results.total_micro_recall / dataset_results.total_timesteps
-            dataset_results.micro_f1 = dataset_results.total_micro_f1 / dataset_results.total_timesteps
-            dataset_results.macro_precision = dataset_results.total_macro_precision / dataset_results.total_timesteps
-            dataset_results.macro_recall = dataset_results.total_macro_recall / dataset_results.total_timesteps
-            dataset_results.macro_f1 = dataset_results.total_macro_f1 / dataset_results.total_timesteps
-            dataset_results.mae = dataset_results.total_mae / dataset_results.total_timesteps
-            dataset_results.mse = dataset_results.total_mse / dataset_results.total_timesteps
-            dataset_results.invalid_predictions_percentage = dataset_results.total_invalid_predictions / dataset_results.total_timesteps * 100
+            # Calculate comprehensive metrics on full dataset
+            action_space = list(range(self.num_discrete_actions))
+            
+            # Calculate unclipped metrics
+            total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
+                all_preds, all_gt, action_space
+            )
+            dataset_results.micro_precision = get_micro_precision_from_counts(total_tp, total_fp)
+            dataset_results.micro_recall = get_micro_recall_from_counts(total_tp, total_fn)
+            dataset_results.micro_f1 = get_micro_f1(dataset_results.micro_precision, dataset_results.micro_recall)
+            
+            # Calculate macro metrics
+            class_precisions = get_precision_per_class(all_preds, all_gt, action_space)
+            class_recalls = get_recall_per_class(all_preds, all_gt, action_space)
+            class_f1s = get_f1_per_class(class_precisions, class_recalls)
+            dataset_results.macro_precision = get_macro_precision(class_precisions)
+            dataset_results.macro_recall = get_macro_recall(class_recalls)
+            dataset_results.macro_f1 = get_macro_f1(class_f1s)
+            
+            # Calculate metrics without invalid predictions
+            dataset_results.avg_micro_precision_without_invalids = get_micro_precision_from_counts(total_tp, valid_fp)
+            dataset_results.avg_micro_f1_without_invalids = get_micro_f1(
+                dataset_results.avg_micro_precision_without_invalids, dataset_results.micro_recall
+            )
+            dataset_results.invalid_predictions_percentage = invalid_fp / dataset_results.total_timesteps * 100
+            
+            # Calculate clipped metrics using all accumulated clipped predictions
+            if len(all_clipped_preds) > 0 and len(all_gt) > 0:
+                dataset_results.avg_clipped_emr = get_exact_match_rate(all_clipped_preds, all_gt)
+                
+                clipped_total_tp, clipped_total_fp, clipped_total_fn, _, _ = calculate_tp_fp_fn_counts(
+                    all_clipped_preds, all_gt, action_space
+                )
+                dataset_results.avg_clipped_micro_precision = get_micro_precision_from_counts(clipped_total_tp, clipped_total_fp)
+                dataset_results.avg_clipped_micro_recall = get_micro_recall_from_counts(clipped_total_tp, clipped_total_fn)
+                dataset_results.avg_clipped_micro_f1 = get_micro_f1(
+                    dataset_results.avg_clipped_micro_precision, dataset_results.avg_clipped_micro_recall
+                )
+            else:
+                dataset_results.avg_clipped_emr = 0.0
+                dataset_results.avg_clipped_micro_precision = 0.0
+                dataset_results.avg_clipped_micro_recall = 0.0
+                dataset_results.avg_clipped_micro_f1 = 0.0
+            
+            print(f"\n=== FINAL METRICS (calculated on full dataset) ===")
+            print(f"Exact Match Rate: {dataset_results.exact_match_rate:.4f}")
+            print(f"Unclipped Micro Precision: {dataset_results.micro_precision:.4f}")
+            print(f"Unclipped Micro Recall: {dataset_results.micro_recall:.4f}")
+            print(f"Unclipped Micro F1: {dataset_results.micro_f1:.4f}")
+            print(f"Macro Precision: {dataset_results.macro_precision:.4f}")
+            print(f"Macro Recall: {dataset_results.macro_recall:.4f}")
+            print(f"Macro F1: {dataset_results.macro_f1:.4f}")
+            print(f"Micro Precision without invalids: {dataset_results.avg_micro_precision_without_invalids:.4f}")
+            print(f"Micro F1 without invalids: {dataset_results.avg_micro_f1_without_invalids:.4f}")
+            print(f"Invalid predictions %: {dataset_results.invalid_predictions_percentage:.2f}%")
+            print(f"Clipped EMR: {dataset_results.avg_clipped_emr:.4f}")
+            print(f"Clipped Micro Precision: {dataset_results.avg_clipped_micro_precision:.4f}")
+            print(f"Clipped Micro Recall: {dataset_results.avg_clipped_micro_recall:.4f}")
+            print(f"Clipped Micro F1: {dataset_results.avg_clipped_micro_f1:.4f}")
+            print(f"Player 0 Accuracy: {dataset_results.player0_accuracy:.4f}")
+            print(f"Player 1 Accuracy: {dataset_results.player1_accuracy:.4f}")
+            print(f"Joint Accuracy: {dataset_results.joint_accuracy:.4f}")
+            print(f"==================================================")
 
         return dataset_results.to_dict()
 
@@ -461,7 +489,7 @@ def main():
     print(f'Reading data from: {args.data_file}')
     
     # Initialize model and inference object
-    config = pi0.Pi0Config(action_horizon=1)
+    config = pi0.Pi0Config(action_horizon=1, action_dim=1)
     tokenizer = PaligemmaTokenizer()
     key = jax.random.key(0)
     checkpoint_path = download.maybe_download("s3://openpi-assets/checkpoints/pi0_base/params")
@@ -514,16 +542,19 @@ def main():
     print(f'Player 0 Accuracy: {results["player0_accuracy"]:.4f}')
     print(f'Player 1 Accuracy: {results["player1_accuracy"]:.4f}')
     print(f'Joint Accuracy: {results["joint_accuracy"]:.4f}')
-    if 'micro_precision' in results:
-        print(f'Micro Precision: {results["micro_precision"]:.4f}')
-        print(f'Micro Recall: {results["micro_recall"]:.4f}')
-        print(f'Micro F1: {results["micro_f1"]:.4f}')
-        print(f'Macro Precision: {results["macro_precision"]:.4f}')
-        print(f'Macro Recall: {results["macro_recall"]:.4f}')
-        print(f'Macro F1: {results["macro_f1"]:.4f}')
-        print(f'MAE: {results["mae"]:.4f}')
-        print(f'MSE: {results["mse"]:.4f}')
-        print(f'Invalid Predictions %: {results["invalid_predictions_percentage"]:.2f}%')
+    print(f'Micro Precision: {results["micro_precision"]:.4f}')
+    print(f'Micro Recall: {results["micro_recall"]:.4f}')
+    print(f'Micro F1: {results["micro_f1"]:.4f}')
+    print(f'Macro Precision: {results["macro_precision"]:.4f}')
+    print(f'Macro Recall: {results["macro_recall"]:.4f}')
+    print(f'Macro F1: {results["macro_f1"]:.4f}')
+    print(f'Invalid Predictions %: {results["invalid_predictions_percentage"]:.2f}%')
+    print(f'Clipped EMR: {results["avg_clipped_emr"]:.4f}')
+    print(f'Clipped Micro Precision: {results["avg_clipped_micro_precision"]:.4f}')
+    print(f'Clipped Micro Recall: {results["avg_clipped_micro_recall"]:.4f}')
+    print(f'Clipped Micro F1: {results["avg_clipped_micro_f1"]:.4f}')
+    print(f'Micro Precision without invalids: {results["avg_micro_precision_without_invalids"]:.4f}')
+    print(f'Micro F1 without invalids: {results["avg_micro_f1_without_invalids"]:.4f}')
     print(f'Total timesteps: {results["total_timesteps"]}')
     print(f'Evaluation time: {results["eval_time"]:.2f} seconds')
 
