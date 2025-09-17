@@ -14,7 +14,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
-import numpy as np
 import torch
 
 # Add project root to path
@@ -23,9 +22,10 @@ sys.path.insert(0, str(ROOT_DIR))
 
 # Import evaluation harness components
 from src.eval_harness.model_adapter import ModelAdapter
-from src.eval_harness.scoring.robotics_metrics import RoboticsMetricsCalculator
-from src.data_utils.shard_finder import find_shards
-from src.data_utils.openx_dataloader import get_openx_dataloader
+
+from src.data_utils import *
+from src.eval_harness.scoring import *
+
 
 class EvaluationConfig:
     """Configuration class for evaluation parameters."""
@@ -52,7 +52,7 @@ class EvaluationConfig:
             
         # Validate dataset
         self.task_type = self._get_task_type()
-        
+
     def _get_task_type(self) -> str:
         """Determine task type based on dataset name."""
         # TODO: update this to have better task type descriptions
@@ -60,17 +60,17 @@ class EvaluationConfig:
         gameplay_datasets = ['overcooked_ai']
         robotics_datasets = ['openx']
         mcq_datasets = ['piqa']
-        text_gen_datasets = ['sqa3d', 'robovqa']
+        vqa_datasets = ['sqa3d', 'robovqa']
         grounding_datasets = ['odinw']
-        tool_use_datasets = ['bfclv3']
+        tool_use_datasets = ['bfcl']
         
         if self.dataset in gameplay_datasets:
             return 'discrete_action'
-        elif self.dataset in robotics_datasets:
+        elif any(dataset in self.dataset for dataset in robotics_datasets):
             return 'continuous_action'
         elif self.dataset in mcq_datasets:
             return 'multiple_choice'
-        elif self.dataset in text_gen_datasets:
+        elif self.dataset in vqa_datasets:
             return 'text_generation'
         elif self.dataset in grounding_datasets:
             return 'grounding'
@@ -81,6 +81,90 @@ class EvaluationConfig:
             print(f"Warning: Unknown dataset '{self.dataset}', defaulting to discrete_action task type")
             return 'discrete_action'
 
+def get_dataset_and_dataloader(config: EvaluationConfig) -> tuple:
+    # Find data files
+    if 'openx' in config.dataset:
+        files, path = find_data_files('openx', config.disk_root_dir, dataset=config.dataset, split=config.data_split)
+    elif 'robovqa' in config.dataset:
+        files, path = find_data_files('openx', config.disk_root_dir, dataset='openx_multi_embodiment', split=config.data_split)
+    else:
+        files, path = find_data_files(config.dataset, config.disk_root_dir, split=config.data_split)
+    
+    if len(files) == 0:
+        error_msg = f"No data found for dataset {config.dataset} in {path}. "
+        raise FileNotFoundError(error_msg)
+    
+    # Get dataloader
+    if 'openx' in config.dataset:
+        dataset, data_loader = get_openx_dataloader(
+            files, batch_size=config.batch_size, dataset_name=config.dataset
+        )
+    elif config.dataset == 'robovqa':
+        dataset, data_loader = get_openx_dataloader(
+            files, batch_size=config.batch_size, dataset_name='robot_vqa'
+        )
+    elif config.dataset == 'overcooked_ai':
+        if len(files) > 1:
+            raise NotImplementedError("No support for multiple datasets yet.")
+        pickle_file = files[0]
+            
+        dataset, data_loader = get_overcooked_dataloader(
+            pickle_file, batch_size=config.batch_size
+        )
+    elif config.dataset == 'piqa':
+        if len(files) > 1:
+            raise NotImplementedError("No support for multiple datasets yet.")
+        jsonl_file = files[0]
+        dataset, data_loader = get_piqa_dataloader(
+            jsonl_file, batch_size=config.batch_size,
+        )
+    elif config.dataset == 'sqa3d':
+        if len(files) > 1:
+            raise NotImplementedError("No support for multiple datasets yet.")
+        data_dict = files[0]
+        question_file = data_dict['question_file']
+        annotation_file = data_dict['annotation_file']
+        images_dir = data_dict['images_dir']
+        dataset, data_loader = get_sqa3d_dataloader(
+            question_file, annotation_file, images_dir, batch_size=config.batch_size
+        )
+    elif config.dataset == 'odinw':
+        dataset, data_loader = get_odinw_multi_dataloader(
+            files, batch_size=config.batch_size
+        )
+
+    elif config.dataset == 'bfcl':
+        if len(files) > 1:
+            raise NotImplementedError("No support for multiple datasets yet.")
+        data_dict = files[0]
+        question_file = data_dict['question_file']
+        answer_file = data_dict['answer_file']
+        dataset, data_loader = get_bfcl_dataloader(
+            question_file, answer_file, batch_size=config.batch_size
+        )
+    else:
+        raise ValueError(f"Invalid dataset name: {config.dataset}")
+    return dataset, data_loader
+
+def get_metrics_calculator(config: EvaluationConfig, dataset: torch.utils.data.Dataset):
+    if 'openx' in config.dataset:
+        action_stats = dataset.action_stats
+        metrics_calculator = RoboticsMetricsCalculator(action_stats)
+    elif config.dataset == 'robovqa':
+        metrics_calculator = VQAMetricsCalculator()
+    elif config.dataset == 'overcooked_ai':
+        metrics_calculator = OvercookedAIMetricsCalculator()
+    elif config.dataset == 'piqa':
+        metrics_calculator = MCQMetricsCalculator()
+    elif config.dataset == 'sqa3d':
+        metrics_calculator = VQAMetricsCalculator()
+    elif config.dataset == 'odinw':
+        metrics_calculator = MCQMetricsCalculator()
+    elif config.dataset == 'bfcl':
+        metrics_calculator = VQAMetricsCalculator()
+    else:
+        raise ValueError(f"Invalid dataset name: {config.dataset}")
+    return metrics_calculator
 
 def load_model_adapter(config: EvaluationConfig) -> ModelAdapter:
     """Load the user's model adapter from the specified module."""
@@ -159,7 +243,10 @@ def save_results(metrics: Dict[str, Any], config: EvaluationConfig) -> None:
     
     print(f"Metrics saved to: {results_file}")
 
-
+def bordered_print(text: str):
+    print(f"\n{'='*60}")
+    print(text)
+    print(f"{'='*60}")
 
 def main():
     """Main evaluation function."""
@@ -167,7 +254,7 @@ def main():
     
     # Required arguments
     parser.add_argument('--dataset', type=str, required=True,
-                       help="Dataset name (overcooked_ai, openx, piqa, sqa3d, robovqa, odinw, bfclv3)")
+                       help="Dataset name (overcooked_ai, any openx morphology, piqa, sqa3d, robovqa, odinw, bfcl)")
     parser.add_argument('--model_adapter_module_path', type=str, required=True,
                        help="Path to Python module containing ModelAdapter implementation")
     parser.add_argument('--output_path', type=str, required=True,
@@ -197,79 +284,43 @@ def main():
     print(f"Device: {config.device}")
     
     # Step 1: Load dataset
-    print(f"\n{'='*60}")
-    print("STEP 1: LOADING DATASET")
-    print(f"{'='*60}")
-    
-    if config.dataset == 'openx':
-        shard_paths = find_shards('openx', config.disk_root_dir, split=config.data_split)
-        if len(shard_paths) == 0:
-            error_msg = f"No shards found for dataset {config.dataset} in split {config.data_split}. "
-            if config.data_split == 'private':
-                error_msg += f"Please check if the private data is available under '{config.disk_root_dir}/openx_*/test/'."
-            else:
-                error_msg += f"Please check if the public data is available under '{config.disk_root_dir}/openx_*/public/'."
-            raise ValueError(error_msg)
+    bordered_print("STEP 1: LOADING DATASET")
 
-        dataset, data_loader = get_openx_dataloader(
-            shard_paths, batch_size=config.batch_size, dataset_name='openx', num_workers=0, by_episode=False
-        )
-    else:
-        raise ValueError(f"Invalid dataset name: {config.dataset}")
-    
+    dataset, data_loader = get_dataset_and_dataloader(config)
+
     # Step 2: Load model adapter
-    print(f"\n{'='*60}")
-    print("STEP 2: LOADING MODEL ADAPTER")
-    print(f"{'='*60}")
+    bordered_print("STEP 2: LOADING MODEL ADAPTER")
     
     model_adapter = load_model_adapter(config)
     print(f"Model adapter loaded: {model_adapter.__class__.__name__}")
     
     # Step 3: Run and save predictions to file
-    print(f"\n{'='*60}")
-    print("STEP 3: RUNNING PREDICTIONS")
-    print(f"{'='*60}")
+    bordered_print("STEP 3: RUNNING PREDICTIONS")
     
     # Get predictions and ground truth actions
-    if config.dataset == 'openx':
-        predictions = []
-        ground_truth_actions = []
-        # Process all batches from the dataloader
-        for batch in data_loader:
-            batch_predictions = model_adapter.batch_predict_actions(batch)
-            predictions.extend(batch_predictions)
-            ground_truth_actions.extend(batch['action'])
+    predictions = []
+    ground_truth_actions = []
+    # Process all batches from the dataloader
+    for batch in data_loader:
+        batch_predictions = model_adapter.batch_predict_actions(batch)
+        predictions.extend(batch_predictions)
+        ground_truth_actions.extend(batch['action'])
 
-        # save predictions to file
-        save_predictions(predictions, config)
-    else:
-        raise ValueError(f"Invalid dataset name: {config.dataset}")
+    # save predictions to file
+    save_predictions(predictions, config)
     
     # Step 4: Calculate metrics
-    print(f"\n{'='*60}")
-    print("STEP 4: CALCULATING METRICS")
-    print(f"{'='*60}")
+    bordered_print("STEP 4: CALCULATING METRICS")
     
-    if config.dataset == 'openx':
-        # load action stats
-        action_stats = dataset.action_stats
-        metrics_calculator = RoboticsMetricsCalculator(action_stats)
-        
-        # calculate metrics given predictions and ground truth actions
-        metrics = metrics_calculator.calculate_metrics(predictions, ground_truth_actions)
-    else:
-        raise ValueError(f"Invalid dataset name: {config.dataset}")
+    metrics_calculator = get_metrics_calculator(config)
+    metrics = metrics_calculator.calculate_metrics(predictions, ground_truth_actions)
     
     # Step 5: Save results
-    print(f"\n{'='*60}")
-    print("STEP 5: SAVING METRICS")
-    print(f"{'='*60}")
-    
+    bordered_print("STEP 5: SAVING METRICS")
+
     save_results(metrics, config)
     
-    print(f"\n{'='*60}")
-    print("EVALUATION COMPLETE!")
-    print(f"{'='*60}")
+    bordered_print("EVALUATION COMPLETE!")
 
 
 if __name__ == "__main__":
