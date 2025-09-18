@@ -371,6 +371,13 @@ class OvercookedInference:
             flat_predictions = unnormalized_discrete_actions.flatten() if unnormalized_discrete_actions.ndim > 1 else unnormalized_discrete_actions
             flat_gt = gt_actions.flatten() if gt_actions.ndim > 1 else gt_actions
             
+            # Debug: Check for invalid predictions in this batch
+            invalid_preds = np.where((flat_predictions < 0) | (flat_predictions >= self.num_discrete_actions))[0]
+            if len(invalid_preds) > 0:
+                print(f"Warning: Batch {counter} contains {len(invalid_preds)} invalid predictions out of {len(flat_predictions)}")
+                print(f"Invalid prediction values: {flat_predictions[invalid_preds]}")
+                print(f"Valid action range: [0, {self.num_discrete_actions-1}]")
+            
             # Clip predictions for clipped metrics storage
             action_space = list(range(self.num_discrete_actions))
             clipped_predictions = np.clip(flat_predictions, action_space[0], action_space[-1])
@@ -388,7 +395,9 @@ class OvercookedInference:
                     batch_joint_matches += 1
                 
                 # Convert to joint actions for per-player analysis
-                if pred_action_idx < self.num_discrete_actions and gt_action_idx < self.num_discrete_actions:
+                # Check if both predicted and ground truth actions are valid indices
+                if (pred_action_idx >= 0 and pred_action_idx < self.num_discrete_actions and 
+                    gt_action_idx >= 0 and gt_action_idx < self.num_discrete_actions):
                     pred_joint = self.discrete_to_joint[pred_action_idx]
                     gt_joint = self.discrete_to_joint[gt_action_idx]
                     
