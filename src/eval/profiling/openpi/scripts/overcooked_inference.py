@@ -306,21 +306,21 @@ class OvercookedInference:
         # Try to load existing dataset statistics first
         if output_dir:
             print("Checking for existing dataset statistics...")
-            dataset_stats, _ = self.load_dataset_stats(output_dir)
+            dataset_stats_dict, dataset_stats = self.load_dataset_stats(output_dir)
             
-            if dataset_stats is None:
+            if dataset_stats_dict is None:
                 # Calculate normalization statistics from dataset
                 print("No existing stats found. Calculating dataset normalization statistics...")
-                dataset_stats, _ = self.get_dataset_stats(dataloader, dataset_name)
+                dataset_stats_dict, dataset_stats = self.get_dataset_stats(dataloader, dataset_name)
                 
                 # Save the calculated stats for future use
-                self.save_dataset_stats(dataset_stats, output_dir)
+                self.save_dataset_stats(dataset_stats_dict, output_dir)
             else:
                 print("Using existing dataset statistics (skipping calculation)")
         else:
             # Fallback to calculating stats if no output_dir provided
             print("Calculating dataset normalization statistics...")
-            dataset_stats, _ = self.get_dataset_stats(dataloader, dataset_name)
+            dataset_stats_dict, dataset_stats = self.get_dataset_stats(dataloader, dataset_name)
 
         # Calculate total batches for progress tracking
         total_batches = len(dataloader)
