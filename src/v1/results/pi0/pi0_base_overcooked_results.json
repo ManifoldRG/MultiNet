@@ -96541,7 +96541,6 @@
         "player0_accuracy": 0.26476255594231723,
         "player1_accuracy": 0.12173669816011934,
         "joint_accuracy": 0.03956364992541024,
-        "total_invalid_predictions": 0,
         "micro_precision": 0.03956364992541024,
         "micro_recall": 0.03956364992541024,
         "micro_f1": 0.03956364992541024,
