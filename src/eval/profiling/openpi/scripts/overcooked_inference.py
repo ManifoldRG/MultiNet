@@ -206,17 +206,26 @@ class OvercookedInference:
             # Extract actions from batch
             actions = np.array(batch['action'])
             print(f"Batch {batch_count}: {len(actions)} actions, range: {actions.min()}-{actions.max()}")
+            print(f"Batch {batch_count}: Original actions shape: {actions.shape}, dtype: {actions.dtype}")
             
             # Convert to float for consistent processing with other datasets
             actions = actions.astype(np.float32)
             
-            # Reshape if 1D to ensure proper dimensions for RunningStats
-            if actions.ndim == 1:
-                actions = actions.reshape(-1, 1)
+            # Ensure consistent 2D shape: (batch_size, 1) for all batches
+            # Flatten first to handle any multidimensional arrays, then reshape to (N, 1)
+            actions = actions.flatten().reshape(-1, 1)
+            print(f"Batch {batch_count}: Reshaped actions shape: {actions.shape}, vector_length: {actions.shape[1]}")
             
-            # Update running statistics
-            running_stats.update(actions)
-            total_actions += len(actions)
+            # Update running statistics with error handling
+            try:
+                running_stats.update(actions)
+                total_actions += len(actions)
+            except ValueError as e:
+                print(f"ERROR in batch {batch_count}: {e}")
+                print(f"Current vector length expected: {running_stats._mean.size if running_stats._mean is not None else 'uninitialized'}")
+                print(f"Received vector length: {actions.shape[1]}")
+                print(f"Action shape details: {actions.shape}")
+                raise
             
             # Memory cleanup
             del actions
@@ -586,8 +595,13 @@ def main():
     results_file = os.path.join(args.output_dir, 'pi0_base_overcooked_results.json')
     raw_data_file = os.path.join(args.output_dir, 'raw_predictions_gt.json')
 
-    # Create dataloader
-    dataset_obj, dataloader = get_overcooked_dataloader(args.data_file, batch_size=args.batch_size, by_episode=False)
+    # Create dataloader (layout-aware batching, preserves order, no drops, no shuffle)
+    dataset_obj, dataloader = get_overcooked_dataloader(
+        args.data_file,
+        batch_size=args.batch_size,
+        by_episode=False,
+        group_by_layout=True
+    )
     
     # Run evaluation
     dataset_name = "overcooked"
