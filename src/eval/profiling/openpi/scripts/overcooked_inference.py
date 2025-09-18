@@ -240,14 +240,87 @@ class OvercookedInference:
         # Return both dictionary format and NormStats object
         return {'action': stats_dict}, {'action': stats}
 
-    def evaluate_model(self, model, key, config, dataloader, dataset_name: str, output_dir: str = None, max_samples: int = None) -> dict:
+    def save_dataset_stats(self, stats_dict: dict, output_dir: str) -> str:
+        """Save dataset statistics to JSON file."""
+        stats_file = os.path.join(output_dir, "overcooked_stats.json")
+        
+        # Add metadata to the stats
+        stats_with_meta = {
+            'stats': stats_dict,
+            'metadata': {
+                'calculated_at': datetime.datetime.now().isoformat(),
+                'dataset_type': 'overcooked'
+            }
+        }
+        
+        with open(stats_file, 'w') as f:
+            json.dump(stats_with_meta, f, indent=4)
+        
+        print(f"Dataset stats saved to: {stats_file}")
+        return stats_file
+
+    def load_dataset_stats(self, output_dir: str) -> tuple[dict, dict]:
+        """
+        Load dataset statistics from JSON file if it exists.
+        
+        Returns:
+            tuple: (stats_dict, stats_norm_objects) or (None, None) if file doesn't exist
+        """
+        stats_file = os.path.join(output_dir, "overcooked_stats.json")
+        
+        if not os.path.exists(stats_file):
+            return None, None
+        
+        try:
+            with open(stats_file, 'r') as f:
+                data = json.load(f)
+            
+            stats_dict = data['stats']
+            
+            # Reconstruct NormStats objects from the saved dictionary
+            action_stats_dict = stats_dict['action']
+            norm_stats = NormStats(
+                mean=np.array(action_stats_dict['mean']),
+                std=np.array(action_stats_dict['std']),
+                q01=np.array(action_stats_dict['q01']),
+                q99=np.array(action_stats_dict['q99'])
+            )
+            
+            stats_norm_objects = {'action': norm_stats}
+            
+            print(f"Loaded dataset stats from: {stats_file}")
+            print(f"Stats calculated at: {data['metadata']['calculated_at']}")
+            
+            return stats_dict, stats_norm_objects
+            
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            print(f"Warning: Failed to load stats from {stats_file}: {e}")
+            print("Will recalculate stats...")
+            return None, None
+
+    def evaluate_model(self, model, key, config, dataloader, dataset_name: str, output_dir: str = None, max_samples: int = None, data_file: str = None) -> dict:
         """Evaluate the model on the Overcooked dataset."""
         counter = 0
         dataset_results = DatasetResults()
 
-        # Calculate normalization statistics from dataset
-        print("Calculating dataset normalization statistics...")
-        dataset_stats, _ = self.get_dataset_stats(dataloader, dataset_name)
+        # Try to load existing dataset statistics first
+        if output_dir:
+            print("Checking for existing dataset statistics...")
+            dataset_stats, _ = self.load_dataset_stats(output_dir)
+            
+            if dataset_stats is None:
+                # Calculate normalization statistics from dataset
+                print("No existing stats found. Calculating dataset normalization statistics...")
+                dataset_stats, _ = self.get_dataset_stats(dataloader, dataset_name)
+                
+                # Save the calculated stats for future use
+                self.save_dataset_stats(dataset_stats, output_dir)
+            else:
+                print("Using existing dataset statistics (skipping calculation)")
+        else:
+            # Fallback to calculating stats if no output_dir provided
+            print("Calculating dataset normalization statistics...")
+            dataset_stats, _ = self.get_dataset_stats(dataloader, dataset_name)
 
         # Calculate total batches for progress tracking
         total_batches = len(dataloader)
@@ -489,7 +562,7 @@ def main():
     print(f'Reading data from: {args.data_file}')
     
     # Initialize model and inference object
-    config = pi0.Pi0Config(action_horizon=1, action_dim=1)
+    config = pi0.Pi0Config(action_horizon=1)
     tokenizer = PaligemmaTokenizer()
     key = jax.random.key(0)
     checkpoint_path = download.maybe_download("s3://openpi-assets/checkpoints/pi0_base/params")
@@ -512,7 +585,7 @@ def main():
     print(f'\n ---- EVALUATING {dataset_name} ---- \n')
     if args.max_samples:
         print(f'Limiting evaluation to {args.max_samples} samples')
-    results = overcooked_inference.evaluate_model(model, key, config, dataloader, dataset_name, args.output_dir, args.max_samples)
+    results = overcooked_inference.evaluate_model(model, key, config, dataloader, dataset_name, args.output_dir, args.max_samples, args.data_file)
     
     # Save results
     results_data = {dataset_name: results}
