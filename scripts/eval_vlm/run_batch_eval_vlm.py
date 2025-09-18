@@ -51,16 +51,19 @@ if __name__=="__main__":
         
     # TODO: More branches will be added during the implementation.
     dataset_module = None
-    if dataset_family == 'procgen' and args.batch_process:
+    if dataset_family == 'procgen':
         dataset_module = ProcGenBatchModule('', modality, source, model, '')
-    elif dataset_family == 'openx' and args.batch_process:
+    elif dataset_family == 'openx':
         dataset_module = OpenXBatchModule('', modality, source, model, '')
     elif dataset_family == 'overcooked_ai':
         dataset_module = OvercookedBatchModule('', modality, source, model, '')
-    elif dataset_family == "robot_vqa" and args.batch_process:
+    elif dataset_family == "robot_vqa":
         dataset_module = RoboVQABatchModule('', modality, source, model, '')
-    elif dataset_family == "piqa" and args.batch_process:
+    elif dataset_family == "piqa":
         dataset_module = PIQABatchModule('', modality, source, model, '')
-    elif dataset_family == "odinw" and args.batch_process:
+    elif dataset_family == "odinw":
         dataset_module = ODinWBatchModule('', modality, source, model, '')
+    
+    assert dataset_module is not None, "The dataset module has not been set correctly. Check required."
+    
     dataset_module.run_eval(os.path.abspath(args.results_path), batch_info_dict)
