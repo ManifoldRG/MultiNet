@@ -88,8 +88,18 @@ class OvercookedDataset(Dataset):
             player1_action = self.action_string_to_tuple['interact']
         
         # Ensure actions are tuples
-        player0_action = tuple(player0_action) if isinstance(player0_action, (list, tuple)) else (0, 0)
-        player1_action = tuple(player1_action) if isinstance(player1_action, (list, tuple)) else (0, 0)
+        # Convert to tuple with warning if needed
+        if not isinstance(player0_action, (list, tuple)):
+            print(f"Warning: player0_action is not a list/tuple. Before: {player0_action}, After: (0, 0)")
+            player0_action = (0, 0)
+        else:
+            player0_action = tuple(player0_action)
+            
+        if not isinstance(player1_action, (list, tuple)):
+            print(f"Warning: player1_action is not a list/tuple. Before: {player1_action}, After: (0, 0)")
+            player1_action = (0, 0)
+        else:
+            player1_action = tuple(player1_action)
         
         # Create joint action tuple
         joint_action_tuple = (player0_action, player1_action)
