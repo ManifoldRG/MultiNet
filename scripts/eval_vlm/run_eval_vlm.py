@@ -64,17 +64,17 @@ if __name__=="__main__":
         # TODO: More branches will be added during the implementation.
         dataset_module = None
         if dataset_family == 'procgen' and args.batch_process:
-            dataset_module = ProcGenBatchModule(args.disk_root_dir, modality, source, model, 1, 0)
+            dataset_module = ProcGenBatchModule(args.disk_root_dir, modality, source, model, args.batch_job_info_path, 1, 0)
         elif dataset_family == 'openx' and args.batch_process:
-            dataset_module = OpenXBatchModule(args.disk_root_dir, modality, source, model, 1, 0)
+            dataset_module = OpenXBatchModule(args.disk_root_dir, modality, source, model, args.batch_job_info_path, 1, 0)
         elif dataset_family == 'overcooked_ai':
-            dataset_module = OvercookedBatchModule(args.disk_root_dir, modality, source, model, 1, 0)
+            dataset_module = OvercookedBatchModule(args.disk_root_dir, modality, source, model, args.batch_job_info_path, 1, 0)
         elif dataset_family == "robot_vqa" and args.batch_process:
-            dataset_module = RoboVQABatchModule(args.disk_root_dir, modality, source, model, 1, 0)
+            dataset_module = RoboVQABatchModule(args.disk_root_dir, modality, source, model, args.batch_job_info_path, 1, 0)
         elif dataset_family == "piqa" and args.batch_process:
-            dataset_module = PIQABatchModule(args.disk_root_dir, modality, source, model, 1, 0)
+            dataset_module = PIQABatchModule(args.disk_root_dir, modality, source, model, args.batch_job_info_path, 1, 0)
         elif dataset_family == "odinw" and args.batch_process:
-            dataset_module = ODinWBatchModule(args.disk_root_dir, modality, source, model, args.dataset_name, args.batch_job_info_path,  1, 0)
+            dataset_module = ODinWBatchModule(args.disk_root_dir, modality, source, model, args.batch_job_info_path,  1, 0)
         dataset_module.run_eval(os.path.abspath(args.results_path), batch_info_dict)
         
     
@@ -88,13 +88,10 @@ if __name__=="__main__":
         if args.dataset_family == 'openx':
             dataset_module = OpenXModule(args.disk_root_dir, 'vlm', 'openai', args.model, args.dataset_name, 1, 0)
         elif args.dataset_family == 'overcooked_ai':
-            os.environ["OPENAI_API_KEY"] = input("Enter the OpenAI API key: ")
             dataset_module = OvercookedModule(args.disk_root_dir, 'vlm', 'openai', args.model, args.dataset_name, 1, 0)
         elif args.dataset_family == 'robot_vqa':
-            os.environ["OPENAI_API_KEY"] = input("Enter the OpenAI API key: ")
             dataset_module = RoboVQAModule(args.disk_root_dir, 'vlm', 'openai', args.model, args.dataset_name, 1, 0)
         elif args.dataset_family == 'piqa':
-            os.environ["OPENAI_API_KEY"] = input("Enter the OpenAI API key: ")
             dataset_module = PIQAModule(args.disk_root_dir, 'vlm', 'openai', args.model, args.dataset_name, 1, 0)
         
         dataset_module.run_eval(args.results_path)

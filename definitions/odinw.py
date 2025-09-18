@@ -1,45 +1,44 @@
 class ODinWDefinitions:
-    SUB_DATASET_NAMES = {
-        'AerialMaritimeDrone':['0', '1', '2', '3', '4'],
-        'AmericanSignLanguageLetters': ['0', '1', '2', '3', '4', '5' ,'6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25'],
-        'Aquarium': ['0', '1', '2', '3', '4', '5' ,'6'],
-        'BCCD': ['0', '1', '2'],
-        'ChessPieces': ['0', '1', '2', '3', '4', '5' ,'6', '7', '8', '9', '10', '11', '12'],
-        'CottontailRabbits': ['0'],
-        'DroneControl': ['0', '1', '2', '3', '4', '5' ,'6', '7'],
-        'EgoHands': ['0', '1', '2', '3'],
-        'HardHatWorkers': ['0', '1', '2'],
-        'MaskWearing': ['0', '1'],
-        'MountainDewCommercial': ['0'],
-        'NorthAmericaMushrooms': ['0', '1'],
-        'OxfordPets': ['0', '1'],
-        'PKLot': ['0', '1'],
-        'Packages': ['0'],
-        'PascalVOC': [],
-        'Raccoon': ['0', '1', '2'],
-        'ShellfishOpenImages': ['0', '1', '2'],
-        'ThermalCheetah': ['0', '1'],
-        'UnoCards': ['0', '1', '2', '3', '4', '5' ,'6', '7', '8', '9', '10', '11', '12', '13', '14'],
-        'VehiclesOpenImages': ['0', '1', '2', '3', '4'],
-        'WildfireSmoke': ['0'],
-        'boggleBoards': ['0', '1', '2', '3', '4', '5' ,'6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', '34', '35'],
-        'brackishUnderwater': ['0', '1', '2', '3', '4', '5'],
-        'dice': ['0', '1', '2', '3', '4', '5'],
-        'openPoetryVision': ['0', '1', '2', '3', '4', '5' ,'6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42'],
-        'pistols': ['0'],
-        'plantdoc': ['0', '1', '2', '3', '4', '5' ,'6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29'],
-        'pothole': ['0'],
-        'selfdrivingCar': ['0', '1', '2', '3', '4', '5' ,'6', '7', '8', '9', '10'],
-        'thermalDogsAndPeople': ['0', '1'],
-        'vector': ['0'],
-        'websiteScreenshots': ['0', '1', '2', '3', '4', '5' ,'6', '7']
+    SUB_DATASET_CATEGORIES = {
+        'AerialMaritimeDrone': 5,
+        'AmericanSignLanguageLetters': 26,
+        'Aquarium': 7,
+        'BCCD': 3,
+        'ChessPieces': 13,
+        # 'CottontailRabbits': 1,
+        'DroneControl': 8,
+        'EgoHands': 4,
+        'HardHatWorkers': 3,
+        'MaskWearing': 2,
+        # 'MountainDewCommercial': 1,
+        'NorthAmericaMushrooms': 2,
+        'OxfordPets': 37,
+        'PKLot': 2,
+        # 'Packages': 1,
+        # 'Raccoon': 1,
+        'ShellfishOpenImages': 3,
+        'ThermalCheetah': 2,
+        'UnoCards': 15,
+        'VehiclesOpenImages': 5,
+        # 'WildfireSmoke': 1,
+        'boggleBoards': 36,
+        'brackishUnderwater': 6,
+        'dice': 6,
+        'openPoetryVision': 43,
+        # 'pistols': 1,
+        'plantdoc': 30,
+        # 'pothole': 1,
+        'selfdrivingCar': 11,
+        'thermalDogsAndPeople': 2,
+        # 'vector': 1,
+        'websiteScreenshots': 8,
         }
     
     SYSTEM_PROMPT = """
-    You are a specialized Visual-Language Model Assistant that identifies given object and selects the best option possible
-    Read the task carefully. Look at the image and the provided multiple-choice options. 
-    Identify the correct object and output only the number corresponding to the correct option.
-    Do not output words, category names, or explanations.
-    Do not output reasoning steps.
-    The answer must be a single integer within the provided range (e.g., 0, 1, 2, …).
+        You are a specialized Visual-Language Model Assistant that identifies the object in a given image and selects the best option possible from the options provided.
+        Read the task carefully. Look at the image and the provided multiple-choice options.
+        Identify the correct object and output ONLY the number corresponding to the correct option.
+        The answer must be a single integer within the provided range of options (e.g., 0, 1, 2, …).
+        Do not output words, category names, or explanations.
+        Do not output reasoning steps.
     """

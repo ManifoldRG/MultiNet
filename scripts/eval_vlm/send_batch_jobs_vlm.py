@@ -69,7 +69,7 @@ if __name__=="__main__":
     elif args.dataset_family == "piqa":
         dataset_module = PIQABatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     elif args.dataset_family == "odinw":
-        dataset_module = ODinWBatchModule(data_root_dir, modality, source, args.model, args.dataset_name, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
+        dataset_module = ODinWBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     else:
         print(f"The dataset family {args.dataset_family} is not supported.")
         exit(1)

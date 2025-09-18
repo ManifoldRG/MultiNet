@@ -24,10 +24,10 @@ import os
 from typing import Union
 
 def _validate_output(output, possible_outputs) -> bool:
-    """Validate that output is exactly '0' or '1'"""
+    """Validate that output is a valid integer within the possible outputs"""
     if not isinstance(output, str):
         return False
-    return output.strip() in possible_outputs
+    return int(output.strip()) in possible_outputs
 
 
 def _validate_outputs_and_calculate_metrics(outputs, possible_outputs):
@@ -62,7 +62,6 @@ def _calculate_final_metrics(preds, labels, possible_outputs):
     
     preds = np.array([int(pred) for pred in preds])
     labels = np.array([int(true) for true in labels])
-    possible_outputs = [int(x) for x in possible_outputs]
     if len(valid_preds) > 0:
         exact_match_rate = get_exact_match_rate(np.array(valid_preds), np.array(valid_trues))
     else:
@@ -115,58 +114,47 @@ def _calculate_final_metrics(preds, labels, possible_outputs):
     return result
 
 
-def _find_sub_dir(dataset:str, disk_root_dir: str, sub_dataset_dir: str) -> str:
-    try:
-        dataset_dir = f"{disk_root_dir}/{dataset}/test/{sub_dataset_dir}"
-        if os.path.exists(dataset_dir):
-            return dataset_dir
-    except Exception as e:
-        print(f"Cannot identify the directory to the dataset. Skipping this dataset. Error: {e}")
-        print(f"sub_dataset_dir cannot be {sub_dataset_dir}, please enter one of the dataset : {ODinWDefinitions.SUB_DATASET_NAMES.keys}")
+def _find_sub_dir(disk_root_dir: str, dataset: str) -> str:
+    dataset_dir = f"{disk_root_dir}/odinw/test/{dataset}"
+    if os.path.exists(dataset_dir):
+        return dataset_dir
+    else:
+        print(f"dataset name cannot be {dataset}, please enter one of the dataset : {ODinWDefinitions.SUB_DATASET_CATEGORIES.keys}")
         return ""
 
-
 class ODinWBatchModule(DatasetBatchModule):
-    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, dataset_name:str, batch_info_dir: str,  batch_size: int = 1, k_shots: int = 0):
+    def __init__(self, disk_root_dir: str, modality: str, source: str, model: str, batch_info_dir: str,  batch_size: int = 1, k_shots: int = 0):
         super().__init__(disk_root_dir, modality, source, model, batch_info_dir, batch_size, k_shots)
-        
         self.get_dataloader_fn = get_odinw_dataloader
-        self.disk_root_dir = disk_root_dir
-        self.source = source
-        self.batch_size = batch_size
         self.dataset_family = "odinw"
-        self._possible_outputs = []
-        self.dataset_name = dataset_name
-        print(f"Dataset Name : {self.dataset_name}")
-        self.possible_outputs = ODinWDefinitions.SUB_DATASET_NAMES[self.dataset_name]
-        
-    def _find_shards(self, dataset) -> str:
-        return _find_sub_dir(self.dataset_family, self.disk_root_dir, self.dataset_name)
-    
+
     @property
     def datasets(self):
         if len(self._datasets) == 0:
-            sub_dirs = self._find_shards(self.dataset_name)
-            if sub_dirs:
-                self._datasets.append(sub_dirs)
+            for dataset in list(ODinWDefinitions.SUB_DATASET_CATEGORIES.keys()):
+                datafiles = self._find_shards(dataset)
+                if len(datafiles) != 0:
+                    self._datasets.append(dataset)
         return self._datasets
+
+    def _find_shards(self, dataset) -> str:
+        return _find_sub_dir(self.disk_root_dir, dataset)
     
     @property
     def modality_module(self):
         self._modality_module = OpenAIModule(model = self.model, max_concurrent_prompts=400)
         return self._modality_module
      
-
     def _send_batch_jobs_for_dataset(self, dataset):
-        """Send batch jobs for PIQA dataset."""
+        """Send batch jobs for ODinW dataset."""
         sub_dir = self._find_shards(dataset)
         if not sub_dir:
+            print(f"Error finding dataset dir, skipping: {dataset}")
             return {}
 
         dataloader_obj, dataloader = self.get_dataloader_fn(
             sub_dir, batch_size=self.batch_size
         )
-
         print(f"Sending batch jobs for dataset: {dataset}...")
         for i, batch in enumerate(dataloader):
             self._send_batch_job(batch, dataset, i)
@@ -196,11 +184,11 @@ class ODinWBatchModule(DatasetBatchModule):
             system_prompt.append(ODinWDefinitions.SYSTEM_PROMPT)
             
             batch_labels.append(labels[i])
-            # PIQA doesn't have is_last field, so we set all to True
+            # ODinW doesn't have is_last field, so we set all to True
             is_lasts.append(True)
 
         # Send batch job to OpenAI
-        batch_responses, batch_id, token_count = self.modality_module.batch_infer_step(
+        _, batch_id, token_count = self.modality_module.batch_infer_step(
             inputs_batch, system_prompt, retrieve_and_return_results=False
         )
         
@@ -267,14 +255,16 @@ class ODinWBatchModule(DatasetBatchModule):
             if not isinstance(outputs, list):
                 outputs = [outputs]
             all_outs.extend(outputs)
-            invalid_preds, preds = _validate_outputs_and_calculate_metrics(outputs, self.possible_outputs)
+
+            possible_outputs = list(range(ODinWDefinitions.SUB_DATASET_CATEGORIES[ds]))
+            invalid_preds, preds = _validate_outputs_and_calculate_metrics(outputs, possible_outputs)
             total_invalid_preds += invalid_preds
             all_preds.extend(preds)
             all_trues.extend(labels)
 
             assert len(outputs) == num_inputs, "The length of outputs do not match with the number of processed inputs."
 
-        result = _calculate_final_metrics(all_preds, all_trues, self.possible_outputs)
+        result = _calculate_final_metrics(all_preds, all_trues, possible_outputs)
         result["eval_time"] = time.time() - start_time
         result["total_invalid_preds"] = total_invalid_preds
         result["all_outs"] = all_outs
