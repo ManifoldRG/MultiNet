@@ -25,9 +25,14 @@ from typing import Union
 
 def _validate_output(output, possible_outputs) -> bool:
     """Validate that output is a valid integer within the possible outputs"""
-    if not isinstance(output, str):
-        return False
-    return int(output.strip()) in possible_outputs
+    # Handle string outputs that might contain the choice
+    if isinstance(output, str):
+        try:
+            return int(output.strip()) in possible_outputs
+        except Exception:
+            return False
+
+    return False
 
 
 def _validate_outputs_and_calculate_metrics(outputs, possible_outputs):
@@ -63,13 +68,11 @@ def _calculate_final_metrics(preds, labels, possible_outputs):
     preds = np.array([int(pred) for pred in preds])
     labels = np.array([int(true) for true in labels])
     if len(valid_preds) > 0:
-        exact_match_rate = get_exact_match_rate(np.array(valid_preds), np.array(valid_trues))
+        exact_match_rate_without_invalids = get_exact_match_rate(np.array(valid_preds), np.array(valid_trues))
     else:
-        exact_match_rate = 0.0
+        exact_match_rate_without_invalids = 0.0
     
-    total_predictions = len(preds)
-    correct_predictions = sum(1 for pred, true in zip(preds, labels) if pred == true and pred != -1)
-    exact_match_rate_with_invalids = correct_predictions / total_predictions if total_predictions > 0 else 0.0
+    exact_match_rate_with_invalids = get_exact_match_rate(preds, labels)
     
      # Calculate metrics counts
     tp, fp, fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
@@ -93,13 +96,13 @@ def _calculate_final_metrics(preds, labels, possible_outputs):
     macro_f1 = get_macro_f1(class_f1s)
     
     
-    result["exact_match_rate"] = exact_match_rate
-    result["exact_match_rate_with_invalids"] = exact_match_rate_with_invalids
+    result["exact_match_rate"] = exact_match_rate_with_invalids
+    result["exact_match_rate_without_invalids"] = exact_match_rate_without_invalids
     result["recall"] = recall
     result["precision"] = precision
-    result["precision_without_invalid"] = precision_without_invalid
+    result["precision_without_invalids"] = precision_without_invalid
     result["f1"] = f1
-    result["f1_without_invalid"] = f1_without_invalid
+    result["f1_without_invalids"] = f1_without_invalid
     result["macro_precision"] = macro_precision
     result["macro_recall"] = macro_recall
     result["macro_f1"] = macro_f1
@@ -139,11 +142,6 @@ class ODinWBatchModule(DatasetBatchModule):
 
     def _find_shards(self, dataset) -> str:
         return _find_sub_dir(self.disk_root_dir, dataset)
-    
-    @property
-    def modality_module(self):
-        self._modality_module = OpenAIModule(model = self.model, max_concurrent_prompts=400)
-        return self._modality_module
      
     def _send_batch_jobs_for_dataset(self, dataset):
         """Send batch jobs for ODinW dataset."""
@@ -161,8 +159,7 @@ class ODinWBatchModule(DatasetBatchModule):
 
         print(f"Finished sending jobs for {dataset}.")
         return self.batch_list[dataset]
-    
-    
+
     def _send_batch_job(self, batch, dataset_name, batch_num):
         """Process the batch to get inputs in the right format for OpenAI batch processing."""
         questions = batch["question"]
@@ -188,13 +185,13 @@ class ODinWBatchModule(DatasetBatchModule):
             is_lasts.append(True)
 
         # Send batch job to OpenAI
-        _, batch_id, token_count = self.modality_module.batch_infer_step(
-            inputs_batch, system_prompt, retrieve_and_return_results=False
+        batch_id, token_count = self.modality_module.send_batch_job(
+            inputs_batch, None, system_prompt
         )
-        
+
         is_lasts = [int(is_last) for is_last in is_lasts]
         labels_array = [int(label) for label in batch_labels]
-        output_types = ['text'] * len(labels_array)
+        output_types = [str] * len(labels_array)
 
         batch_job = BatchInfo(
             self.dataset_family,
@@ -242,10 +239,11 @@ class ODinWBatchModule(DatasetBatchModule):
             batch_id = batch_info["batch_id"].item()
             labels = batch_info["labels"]
             num_inputs = batch_info["num_inputs"].item()
+            output_types = list(batch_info["output_types"])
 
             status = self.modality_module.get_batch_job_status(batch_id)
             if status == "completed":
-                outputs = self.modality_module.retrieve_batch_results(batch_id)
+                outputs = self.modality_module.retrieve_batch_results(batch_id, output_types)
             else:
                 raise Exception(
                     f"Batch not completed for batch {ds} batch num {batch_num} "

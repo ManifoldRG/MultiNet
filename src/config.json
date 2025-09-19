@@ -9,6 +9,7 @@
         "datacomp": "vision-language",
         "finewebedu": "vision-language",
         "odinw": "vision-language",
+        "sqa3d": "vision-language",
         "piqa": "language",
         "robot_vqa": "control",
         "dm_lab_rlu": "control",
