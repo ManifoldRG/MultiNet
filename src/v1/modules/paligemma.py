@@ -7,7 +7,7 @@ import torch
 from transformers import AutoProcessor, PaliGemmaForConditionalGeneration, PaliGemmaProcessor
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model_id = "google/paligemma-3b-mix-224"
+model_id = "google/paligemma-3b-pt-224"
 model = PaliGemmaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.bfloat16)
 processor = AutoProcessor.from_pretrained(model_id)
 
