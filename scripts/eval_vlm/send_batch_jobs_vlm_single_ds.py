@@ -8,6 +8,7 @@ from src.modules.dataset_modules.procgen_module import ProcGenBatchModule
 from src.modules.dataset_modules.openx_module import OpenXBatchModule
 from src.v1.modules.overcooked_module import OvercookedBatchModule
 from src.v1.modules.odinw_module import ODinWBatchModule
+from src.v1.modules.sqa3d_module import SQA3DBatchModule
 
 import datetime
 import argparse
@@ -63,6 +64,8 @@ if __name__=="__main__":
         dataset_module = OvercookedBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     elif args.dataset_family == 'odinw':
         dataset_module = ODinWBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
+    elif args.dataset_family == 'sqa3d':
+        dataset_module = SQA3DBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     else:
         print(f"The dataset family {args.dataset_family} is not supported.")
         exit(1)
