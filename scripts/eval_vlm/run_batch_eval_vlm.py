@@ -10,6 +10,7 @@ from src.v1.modules.overcooked_module import OvercookedBatchModule
 from src.v1.modules.robovqa_module import RoboVQABatchModule
 from src.v1.modules.piqa_module import PIQABatchModule
 from src.v1.modules.odinw_module import ODinWBatchModule
+from src.v1.modules.sqa3d_module import SQA3DBatchModule
 
 import argparse
 import json
@@ -63,6 +64,8 @@ if __name__=="__main__":
         dataset_module = PIQABatchModule('', modality, source, model, '')
     elif dataset_family == "odinw":
         dataset_module = ODinWBatchModule('', modality, source, model, '')
+    elif dataset_family == "sqa3d":
+        dataset_module = SQA3DBatchModule('', modality, source, model, '')
     
     assert dataset_module is not None, "The dataset module has not been set correctly. Check required."
     

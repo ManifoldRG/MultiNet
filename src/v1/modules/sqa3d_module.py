@@ -1,5 +1,4 @@
 from src.modules.dataset_modules.base_dataset_module import (
-    DatasetModule,
     DatasetBatchModule,
     BatchInfo,
 )
@@ -14,12 +13,13 @@ import string
 from typing import Any
 from glob import glob
 import re
-from definitions.sqa3d import SQA3DDefinitions
+from definitions.sqa3d_prompt import SQA3DDefinitions
 from sentence_transformers import SentenceTransformer, util
 
 def _validate_output(output) -> bool:
     """Validate that output is a non-empty string"""
     return isinstance(output, str) and len(output.strip()) > 0
+
 
 def _normalize_text(text: str) -> str:
     """Normalize text for comparison by removing punctuation and extra spaces."""
@@ -28,6 +28,7 @@ def _normalize_text(text: str) -> str:
     # Remove extra whitespace
     text = ' '.join(text.split())
     return text
+
 
 def _find_data_files(disk_root_dir: str) -> tuple:
     """Find SQA3D data files (questions, annotations, images)"""
@@ -57,7 +58,7 @@ def _validate_outputs_and_calculate_metrics(model: SentenceTransformer, outputs:
     exact_matches = []
     similarity_scores = []
     total_invalid_preds = 0
-    
+    preds = []
     for i, output in enumerate(outputs):
         if _validate_output(output):
             normalized_output = _normalize_text(output)
@@ -73,13 +74,16 @@ def _validate_outputs_and_calculate_metrics(model: SentenceTransformer, outputs:
             
             similarity = util.cos_sim(emb1, emb2).item()
             similarity_scores.append(similarity)
+
+            preds.append(normalized_output)
         else:
             # Invalid output - assign worst possible scores
             exact_matches.append(0.0)
             similarity_scores.append(0.0)
             total_invalid_preds += 1
+            preds.append("")
     
-    return exact_matches, similarity_scores, total_invalid_preds
+    return exact_matches, similarity_scores, total_invalid_preds, preds
 
 
 def _calculate_final_metrics(exact_matches, similarity_scores, total_invalid_preds):
@@ -132,6 +136,7 @@ class SQA3DBatchModule(DatasetBatchModule):
         batch_info_dir: str,
         batch_size: int = 1,
         k_shots: int = 0,
+        similarity_model: str = "all-MiniLM-L6-v2",
     ):
         super().__init__(
             disk_root_dir, modality, source, model, batch_info_dir, batch_size, k_shots
@@ -143,9 +148,10 @@ class SQA3DBatchModule(DatasetBatchModule):
         self.dataset_family = "sqa3d"
         self.dataset_name = "sqa3d"
 
-    @property
-    def datasets(self):
-        return ['sqa3d']
+        # Explicitly setting clean_up_tokenization_spaces because the default behaviour will 
+        # change to False in transformers v4.45
+        self.similarity_model = SentenceTransformer(similarity_model, 
+                                tokenizer_kwargs={"clean_up_tokenization_spaces": True})
 
     def _find_shards(self, dataset: str) -> dict:
         return _find_data_files(self.disk_root_dir)
@@ -225,6 +231,7 @@ class SQA3DBatchModule(DatasetBatchModule):
 
         all_preds = []
         all_trues = []
+        normalized_preds = []
         total_invalid_preds = 0
         start_time = time.time()
 
@@ -262,16 +269,18 @@ class SQA3DBatchModule(DatasetBatchModule):
             if not isinstance(outputs, list):
                 outputs = [outputs]
 
-            exact_matches, similarity_scores, invalid_preds = _validate_outputs_and_calculate_metrics(self.similarity_model, outputs, labels)
+            exact_matches, similarity_scores, invalid_preds, preds = _validate_outputs_and_calculate_metrics(self.similarity_model, outputs, labels)
             total_invalid_preds += invalid_preds
             all_preds.extend(outputs)
             all_trues.extend(labels)
+            normalized_preds.extend(preds)
 
             assert len(outputs) == num_inputs, "The length of outputs do not match with the number of processed inputs."
 
         result = _calculate_final_metrics(exact_matches, similarity_scores, total_invalid_preds)
         result["eval_time"] = time.time() - start_time
-        result['preds'] = all_preds
+        result['preds'] = normalized_preds
         result['gt_actions'] = all_trues
+        result['all_outs'] = all_preds
 
         return result
