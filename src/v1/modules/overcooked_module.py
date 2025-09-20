@@ -338,7 +338,6 @@ class OvercookedModule(DatasetModule):
                 num_actions,
             )
             result["eval_time"] = time.time() - start_time
-            result["total_invalid_preds"] = total_invalid_preds
 
         except KeyError as e:
             print(f"KeyError occurred: {e}")
@@ -573,7 +572,6 @@ class OvercookedBatchModule(DatasetBatchModule):
             timestep_mses, timestep_maes, timestep_preds, timestep_trues, num_actions
         )
         result["eval_time"] = time.time() - start_time
-        result["total_invalid_preds"] = total_invalid_preds
 
         return result
 
