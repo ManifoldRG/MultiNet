@@ -176,6 +176,8 @@ def _get_vlm_instruction(
     additional_instructions,
     format_instruction_prompt_fn,
     _get_action_space_fn,
+    time_left,
+    time_elapsed,
 ):
     """Get VLM instruction for a given dataset and environment name"""
     assert (
@@ -198,16 +200,18 @@ def _get_vlm_instruction(
         env_name,
         str(definitions_class.ACTION_MEANINGS),
         action_space,
+        time_left,
+        time_elapsed,
         additional_inst,
     )
     return instruction
 
 
 # Finding the pickle file
-def _find_pickle_file(dataset, disk_root_dir: str) -> list[str]:
+def _find_pickle_file(dataset: str, disk_root_dir: str) -> list[str]:
     try:
         # Construct the dataset directory path
-        dataset_dir = f"{disk_root_dir}/test"
+        dataset_dir = f"{disk_root_dir}/{dataset}/test"
         print(dataset_dir)
         # Use glob to find .pickle file
         pickle_file = glob(f"{dataset_dir}/*.pickle")
@@ -254,8 +258,6 @@ class OvercookedModule(DatasetModule):
     def _find_shards(self) -> list[str]:
         return _find_pickle_file(self.dataset_name, self.disk_root_dir)
     
-    
-
     def _run_eval_dataset(self, dataset: str) -> dict:
         result = {}
 
@@ -371,7 +373,7 @@ class OvercookedModule(DatasetModule):
 
                 # First, setting the instructions and output types.
                 env_name = text_obs[t].strip().strip(string.punctuation).lower()
-                instruction = self._get_vlm_instruction("overcooked_ai", env_name)
+                instruction = self._get_vlm_instruction("overcooked_ai", env_name, batch["time_left"][t], batch["time_elapsed"][t])
                 instructions.append(instruction)
 
                 output_type = self._get_output_type("overcooked_ai", env_name)
@@ -404,7 +406,7 @@ class OvercookedModule(DatasetModule):
                 is_lasts,
             )
 
-    def _get_vlm_instruction(self, dataset: str, env_name: str):
+    def _get_vlm_instruction(self, dataset: str, env_name: str, time_left: float, time_elapsed: float):
         return _get_vlm_instruction(
             dataset,
             env_name,
@@ -414,6 +416,8 @@ class OvercookedModule(DatasetModule):
             self.additional_instructions,
             self.format_instruction_prompt_fn,
             self._get_action_space,
+            time_left,
+            time_elapsed,
         )
 
 
@@ -433,25 +437,11 @@ class OvercookedBatchModule(DatasetBatchModule):
         )
         self._definitions_class = OverCookedDefinitions
         self.get_dataloader_fn = get_overcooked_dataloader
-        self.disk_root_dir = disk_root_dir
         self.format_instruction_prompt_fn = format_instruction_prompt
-        self.source = source
-        self.batch_size = batch_size
         self.dataset_family = "overcooked_ai"
         self.dataset_name = "overcooked_ai"
-        self._datasets = ["overcooked_ai"]
 
-    @property
-    def modality_module(self):
-        self._modality_module = VLMModule(
-            self.source,
-            self.model,
-            max_concurrent_prompts=400,
-            max_output_tokens_per_query=512,
-        )
-        return self._modality_module
-
-    def _find_shards(self, dataset:str) -> list[str]:
+    def _find_shards(self, dataset: str) -> list[str]:
         return _find_pickle_file(dataset, self.disk_root_dir)
 
     def _send_batch_job(self, batch, dataset_name, batch_num):
@@ -587,7 +577,7 @@ class OvercookedBatchModule(DatasetBatchModule):
 
         return result
 
-    def _get_vlm_instruction(self, dataset: str, env_name: str):
+    def _get_vlm_instruction(self, dataset: str, env_name: str, time_left: float, time_elapsed: float):
         return _get_vlm_instruction(
             dataset,
             env_name,
@@ -597,6 +587,8 @@ class OvercookedBatchModule(DatasetBatchModule):
             self.additional_instructions,
             self.format_instruction_prompt_fn,
             self._get_action_space,
+            time_left,
+            time_elapsed
         )
 
     def _process_batch(self, batch: dict[str, list[Any]], dataset: str):
@@ -619,7 +611,7 @@ class OvercookedBatchModule(DatasetBatchModule):
 
             # First, setting the instructions and output types.
             env_name = text_obs[t].strip().strip(string.punctuation).lower()
-            instruction = self._get_vlm_instruction(dataset, env_name)
+            instruction = self._get_vlm_instruction(dataset, env_name, batch["time_left"][t], batch["time_elapsed"][t])
             instructions.append(instruction)
 
             output_type = self._get_output_type(dataset, env_name)
