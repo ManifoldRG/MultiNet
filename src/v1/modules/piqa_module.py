@@ -9,14 +9,10 @@ from typing import Union
 from src.eval_utils import get_exact_match_rate
 
 PIQA_SYSTEM_PROMPT = """
-You are evaluating physical commonsense reasoning questions. You will be presented with a goal and two possible solutions 
-(Solution 0 and Solution 1). Your task is to determine which solution is more appropriate for achieving the given goal.
-
-Respond with only:
-- 0 if Solution 0 is correct
-- 1 if Solution 1 is correct
-
-Do not provide any explanation, reasoning, or additional text. Only output the single digit 0 or 1.
+    You are evaluating physical commonsense reasoning questions. You will be presented with a goal and possible solutions.
+    Your task is to determine which solution is more appropriate for achieving the given goal.
+    Output only the index of the correct solution, and nothing else.
+    Do not provide any explanation, reasoning, or additional text.
 """
 
 def _validate_output(output) -> bool:
@@ -215,23 +211,6 @@ class PIQABatchModule(DatasetBatchModule):
         self.dataset_family = "piqa"
         self.dataset_name = "piqa"
 
-    @property
-    def datasets(self):
-        if len(self._datasets) == 0:
-            jsonl_file = self._find_shards(self.dataset_name)
-            if jsonl_file:
-                self._datasets.append(self.dataset_family)
-        return self._datasets
-
-    @property
-    def modality_module(self):
-        self._modality_module = OpenAIModule(
-            self.model,
-            max_concurrent_prompts=400,
-            max_output_tokens_per_query=16,
-        )
-        return self._modality_module
-
     def _find_shards(self, dataset: str) -> str:
         return _find_jsonl_file(dataset, self.disk_root_dir)
 
@@ -273,13 +252,13 @@ class PIQABatchModule(DatasetBatchModule):
             is_lasts.append(True)
 
         # Send batch job to OpenAI
-        batch_responses, batch_id, token_count = self.modality_module.batch_infer_step(
-            inputs_batch, system_prompt, retrieve_and_return_results=False
+        batch_id, token_count = self.modality_module.send_batch_job(
+            inputs_batch, None, system_prompt
         )
         
         is_lasts = [int(is_last) for is_last in is_lasts]
         labels_array = [int(label) for label in batch_labels]
-        output_types = ['text'] * len(labels_array)
+        output_types = [str] * len(labels_array)
 
         batch_job = BatchInfo(
             self.dataset_family,
@@ -320,6 +299,7 @@ class PIQABatchModule(DatasetBatchModule):
 
             batch_info = np.load(fp, allow_pickle=True)
 
+            output_types = list(batch_info["output_types"])
             ds = batch_info["dataset_name"].item()
             batch_num = batch_info["batch_num"].item()
             batch_id = batch_info["batch_id"].item()
@@ -328,7 +308,7 @@ class PIQABatchModule(DatasetBatchModule):
 
             status = self.modality_module.get_batch_job_status(batch_id)
             if status == "completed":
-                outputs = self.modality_module.retrieve_batch_results(batch_id)
+                outputs = self.modality_module.retrieve_batch_results(batch_id, output_types)
             else:
                 raise Exception(
                     f"Batch not completed for batch {ds} batch num {batch_num} "
