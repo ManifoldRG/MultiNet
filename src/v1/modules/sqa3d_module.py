@@ -188,13 +188,14 @@ class SQA3DBatchModule(DatasetBatchModule):
         is_lasts = []
         
         for question, answer, scene_image in zip(questions, answers, scene_images):
+            if scene_image is None:
+                continue
+
             # Format input for VLM
             formatted_input = [('text', question)]
             
             # Add scene image if available
-            # TODO: Should we profile on missing images?
-            if scene_image is not None:
-                formatted_input.append(('image', scene_image))
+            formatted_input.append(('image', scene_image))
             
             inputs_batch.append(formatted_input)
             system_prompt.append(SQA3DDefinitions.SYSTEM_PROMPT)
@@ -209,7 +210,7 @@ class SQA3DBatchModule(DatasetBatchModule):
         
         is_lasts = [int(is_last) for is_last in is_lasts]
         output_types = [str] * len(batch_labels)
-
+        num_inputs = len(inputs_batch)
         batch_job = BatchInfo(
             self.dataset_family,
             dataset_name,
@@ -219,7 +220,7 @@ class SQA3DBatchModule(DatasetBatchModule):
             token_count,
             is_lasts,
             batch_labels,
-            len(questions),
+            num_inputs,
             self.batch_info_dir,
             self.model,
         )
