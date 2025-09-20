@@ -58,7 +58,7 @@ if __name__=="__main__":
         dataset_module = OpenXBatchModule('', modality, source, model, '')
     elif dataset_family == 'overcooked_ai':
         dataset_module = OvercookedBatchModule('', modality, source, model, '')
-    elif dataset_family == "robot_vqa":
+    elif dataset_family == 'robot_vqa':
         dataset_module = RoboVQABatchModule('', modality, source, model, '')
     elif dataset_family == "piqa":
         dataset_module = PIQABatchModule('', modality, source, model, '')
