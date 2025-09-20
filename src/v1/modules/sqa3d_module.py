@@ -233,6 +233,8 @@ class SQA3DBatchModule(DatasetBatchModule):
         all_preds = []
         all_trues = []
         normalized_preds = []
+        all_exact_matches = []
+        all_similarity_scores = []
         total_invalid_preds = 0
         start_time = time.time()
 
@@ -275,10 +277,11 @@ class SQA3DBatchModule(DatasetBatchModule):
             all_preds.extend(outputs)
             all_trues.extend(labels)
             normalized_preds.extend(preds)
+            all_exact_matches.extend(exact_matches)
+            all_similarity_scores.extend(similarity_scores)
 
             assert len(outputs) == num_inputs, "The length of outputs do not match with the number of processed inputs."
-
-        result = _calculate_final_metrics(exact_matches, similarity_scores, total_invalid_preds)
+        result = _calculate_final_metrics(all_exact_matches, all_similarity_scores, total_invalid_preds)
         result["eval_time"] = time.time() - start_time
         result['preds'] = normalized_preds
         result['gt_actions'] = all_trues
