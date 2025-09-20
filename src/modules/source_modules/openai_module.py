@@ -293,7 +293,8 @@ class OpenAIModule:
                 print(f"Warning: Response missing message content, only reasoning available: {response.output}")
                 response_content = ""
             else:
-                response_content = response.output[1].content[0].text
+                # -1 because the last element is the message and sometimes there are more than one reasoning steps
+                response_content = response.output[-1].content[0].text
             return response_content
         else:
             # Use chat completions API for non-reasoning models
@@ -328,7 +329,8 @@ class OpenAIModule:
                     print(f"Warning: Response missing message content, only reasoning available: {output}")
                     response_content = ""
                 else:
-                    response_content = output[1]['content'][0]['text']
+                    # -1 because the last element is the message and sometimes there are more than one reasoning steps
+                    response_content = output[-1]['content'][0]['text']
             else:
                 # For chat completions API
                 response_content = response['response']['body']['choices'][0]['message']['content']
@@ -433,7 +435,8 @@ class OpenAIModule:
                         print(f"Warning: Response missing message content, only reasoning available: {output}")
                         response_content = ""
                     else:
-                        response_content = output[1]['content'][0]['text']
+                        # -1 because the last element is the message and sometimes there are more than one reasoning steps
+                        response_content = output[-1]['content'][0]['text']
                 else:
                     # For chat completions API
                     response_content = response['response']['body']['choices'][0]['message']['content']
