@@ -13,7 +13,7 @@ ROBOVQA_PROMPT = \
 
         Output formatting rules:
         Your response must be one of the following, and nothing else. Do not add conversational filler, explanations, or apologies.
-            1. Action Execution Query (e.g., "What should I do?", "What is the next step? What should I do to achieve the current goal"):
+            1. Action Execution Query (e.g., "What should I do?", "What is the next step?"):
                 - Respond with a concise action phrase.
             2. Feasibility/Possibility/Completion Query (e.g., "Is it possible to grasp the handle?", "Is the drawer open?"):
                 - Respond with a single word: yes or no.
