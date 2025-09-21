@@ -406,7 +406,7 @@ class RoboVQABatchModule(DatasetBatchModule):
             
             assert len(outputs) == num_inputs, "The length of outputs do not match with the number of processed inputs."
         
-        result = _calculate_final_metrics(exact_matches, similarity_scores, total_invalid_preds)
+        result = _calculate_final_metrics(all_exact_matches, all_similarity_scores, total_invalid_preds)
         result['eval_time'] = time.time() - start_time
         result['preds'] = normalized_preds
         result['gt_actions'] = all_trues
