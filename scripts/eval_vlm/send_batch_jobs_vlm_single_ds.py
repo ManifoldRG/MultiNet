@@ -10,6 +10,7 @@ from src.v1.modules.overcooked_module import OvercookedBatchModule
 from src.v1.modules.odinw_module import ODinWBatchModule
 from src.v1.modules.sqa3d_module import SQA3DBatchModule
 from src.v1.modules.robovqa_module import RoboVQABatchModule
+from src.v1.modules.piqa_module import PIQABatchModule
 
 import datetime
 import argparse
@@ -69,6 +70,8 @@ if __name__=="__main__":
         dataset_module = SQA3DBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     elif args.dataset_family == 'robot_vqa':
         dataset_module = RoboVQABatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
+    elif args.dataset_family == 'piqa':
+        dataset_module = PIQABatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     else:
         print(f"The dataset family {args.dataset_family} is not supported.")
         exit(1)
