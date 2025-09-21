@@ -115,7 +115,13 @@ class OpenXDataset(Dataset):
                 text_answer = elem['observation']['raw_text_answer'].numpy().decode('utf-8')
 
             if self.dataset_name == "robot_vqa":
-                text_observation_multi_embodiment = f"Task and Context: {text_observation.split(' Q: ',1)[0].strip()}\n Question: {text_observation.split(' Q: ',1)[1].strip()}"
+                parts = text_observation.split('Q:', 1)
+                if len(parts) == 1:
+                    text_observation_multi_embodiment = text_observation
+                elif len(parts) == 2 and text_observation.startswith("Q:"):
+                    text_observation_multi_embodiment = f"Question: {parts[1].strip()}"
+                else:
+                    text_observation_multi_embodiment = f"Task and Context: {parts[0].strip()}\n Question: {parts[1].strip()}"
 
             # Extract relevant features from the example
             step_data = {

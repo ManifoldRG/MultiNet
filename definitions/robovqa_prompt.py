@@ -15,6 +15,8 @@ ROBOVQA_PROMPT = \
         Your response must be one of the following, and nothing else. Do not add conversational filler, explanations, or apologies.
             1. Action Execution Query (e.g., "What should I do?", "What is the next step?"):
                 - Respond with a concise action phrase.
-            2. Feasibility/Possibility Query (e.g., "Can I grasp the handle?", "Is the drawer open?"):
+            2. Feasibility/Possibility/Completion Query (e.g., "Is it possible to grasp the handle?", "Is the drawer open?"):
                 - Respond with a single word: yes or no.
+        If the current goal is to perform an action with no followup question, then assume it's an action execution query.
+        Do not respond with any additional explanation or information.
     """
