@@ -117,7 +117,7 @@ class OpenXDataset(Dataset):
             if self.dataset_name == "robot_vqa":
                 parts = text_observation.split('Q:', 1)
                 if len(parts) == 1:
-                    text_observation_multi_embodiment = f"Question: {text_observation.strip()}"
+                    text_observation_multi_embodiment = text_observation
                 elif len(parts) == 2 and text_observation.startswith("Q:"):
                     text_observation_multi_embodiment = f"Question: {parts[1].strip()}"
                 else:
