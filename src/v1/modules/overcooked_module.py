@@ -18,6 +18,7 @@ from src.eval_utils import (
     calculate_proportion_beyond_mae_threshold,
 )
 from src.eval_utils import (
+    get_exact_match_rate,
     get_micro_precision_from_counts,
     get_micro_recall_from_counts,
     get_micro_f1,
@@ -63,12 +64,54 @@ def _validate_list_output(output, num_actions) -> bool:
 
     return True
 
+def _get_individual_player_labels(joint_one_hot_label):
+    individual_action_space = OverCookedDefinitions.INDIVIDUAL_ACTION_SPACE
+    discrete_to_joint = OverCookedDefinitions.PLAYER_ACTION_SPACE_TUPLES
+
+    joint_action_truth = np.argmax(joint_one_hot_label)
+    player0_truth_action, player1_truth_action = discrete_to_joint[joint_action_truth]
+    player0_label, player1_label = \
+        individual_action_space[player0_truth_action], individual_action_space[player1_truth_action]
+    return player0_label, player1_label
+
+def _calculate_individual_player_metrics(joint_probs, player0_label, player1_label):
+    individual_action_space = OverCookedDefinitions.INDIVIDUAL_ACTION_SPACE
+
+    # convert joint discrete action probs to player0 and player1 discrete action probs
+    player0_probs = [0.0] * 6
+    player1_probs = [0.0] * 6
+    discrete_to_joint = OverCookedDefinitions.PLAYER_ACTION_SPACE_TUPLES
+    for action_idx, prob in enumerate(joint_probs):
+        player0_action, player1_action = discrete_to_joint[action_idx]
+        player0_probs[individual_action_space[player0_action]] += prob
+        player1_probs[individual_action_space[player1_action]] += prob
+
+    player0_pred = np.argmax(player0_probs)
+    player1_pred = np.argmax(player1_probs)
+
+    player0_one_hot_label = [0.0] * 6
+    player1_one_hot_label = [0.0] * 6
+    player0_one_hot_label[player0_label] = 1.0
+    player1_one_hot_label[player1_label] = 1.0
+
+    player0_mae = calculate_brier_mae(player0_probs, player0_one_hot_label)
+    player1_mae = calculate_brier_mae(player1_probs, player1_one_hot_label)
+    player0_mse = calculate_brier_mse(player0_probs, player0_one_hot_label)
+    player1_mse = calculate_brier_mse(player1_probs, player1_one_hot_label)
+
+    return player0_mae, player0_mse, player0_pred, \
+        player1_mae, player1_mse, player1_pred
 
 def _validate_outputs_and_calculate_metrics(outputs, one_hot_labels, num_actions):
     brier_mses, brier_maes, preds = [], [], []
+    player0_mses, player0_maes, player1_mses, player1_maes = [], [], [], []
+    player0_preds, player1_preds = [], []
+    player0_trues, player1_trues = [], []
     total_invalid_preds = 0
     # Validate outputs and calculate Brier MSEs
     for o, output in enumerate(outputs):
+        player0_label, player1_label = _get_individual_player_labels(one_hot_labels[o])
+
         if _validate_list_output(output, num_actions):
             probs = [float(v) for v in output]
 
@@ -79,15 +122,37 @@ def _validate_outputs_and_calculate_metrics(outputs, one_hot_labels, num_actions
             brier_mses.append(mse)
 
             preds.append(np.argmax(probs))
+
+            player0_mae, player0_mse, player0_pred, \
+                player1_mae, player1_mse, player1_pred = \
+                    _calculate_individual_player_metrics(probs, player0_label, player1_label)
+            player0_maes.append(player0_mae)
+            player1_maes.append(player1_mae)
+            player0_mses.append(player0_mse)
+            player1_mses.append(player1_mse)
+            player0_preds.append(player0_pred)
+            player1_preds.append(player1_pred)
         else:
             # max possible Brier MSE is 2.0
             brier_maes.append(MAX_BRIER_MAE_ERROR)
             brier_mses.append(MAX_BRIER_MSE_ERROR)
-
+            player0_maes.append(MAX_BRIER_MAE_ERROR)
+            player1_maes.append(MAX_BRIER_MAE_ERROR)
+            player0_mses.append(MAX_BRIER_MSE_ERROR)
+            player1_mses.append(MAX_BRIER_MSE_ERROR)
+            
             total_invalid_preds += 1
 
             preds.append(-1)
-    return brier_mses, brier_maes, total_invalid_preds, preds
+            player0_preds.append(-1)
+            player1_preds.append(-1)
+
+        player0_trues.append(player0_label)
+        player1_trues.append(player1_label)
+
+    return brier_mses, brier_maes, total_invalid_preds, preds, \
+        player0_mses, player0_maes, player0_preds, player0_trues, \
+        player1_mses, player1_maes, player1_preds, player1_trues
 
 
 def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_actions):
@@ -110,6 +175,7 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_act
 
     # Calculate micro metrics
     possible_actions = list(range(num_actions))
+
     tp, fp, fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
         preds, trues, possible_actions
     )
@@ -137,6 +203,10 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_act
     normalized_mses = min_max_normalize(timestep_mses)
     normalized_amse = calculate_mean(normalized_mses)
 
+    exact_match_rate = get_exact_match_rate(preds, trues)
+    
+
+    result["exact_match"] = exact_match_rate
     result["total_dataset_amse"] = total_dataset_amse
     result["total_dataset_amae"] = sum(timestep_maes)
     result["num_timesteps"] = num_timesteps
@@ -324,6 +394,7 @@ class OvercookedModule(DatasetModule):
                             outputs, one_hot_labels, num_actions
                         )
                     )
+
                     timestep_mses.extend(brier_mses)
                     timestep_maes.extend(brier_maes)
                     total_invalid_preds += invalid_preds
@@ -504,9 +575,10 @@ class OvercookedBatchModule(DatasetBatchModule):
         result = {}
 
         timestep_mses, timestep_maes, timestep_preds, timestep_trues = [], [], [], []
+        all_player0_mses, all_player0_maes, all_player0_preds, all_player0_trues = [], [], [], []
+        all_player1_mses, all_player1_maes, all_player1_preds, all_player1_trues = [], [], [], []
         total_invalid_preds = 0
         start_time = time.time()
-        total_invalid_preds = 0
 
         # If it's a folder path, iterate over all files in the folder
         if isinstance(dataset_batch_info_paths, str):
@@ -557,20 +629,41 @@ class OvercookedBatchModule(DatasetBatchModule):
             if not isinstance(outputs, list):
                 outputs = [[None]]
 
-            brier_mses, brier_maes, invalid_preds, preds = (
+            brier_mses, brier_maes, invalid_preds, preds, \
+                player0_mses, player0_maes, player0_preds, player0_trues, \
+                player1_mses, player1_maes, player1_preds, player1_trues = (
                 _validate_outputs_and_calculate_metrics(
                     outputs, one_hot_labels, num_actions
                 )
             )
+
             timestep_mses.extend(brier_mses)
             timestep_maes.extend(brier_maes)
             total_invalid_preds += invalid_preds
             timestep_preds.extend(preds)
             timestep_trues.extend(labels)
 
+            all_player0_mses.extend(player0_mses)
+            all_player0_maes.extend(player0_maes)
+            all_player0_preds.extend(player0_preds)
+            all_player0_trues.extend(player0_trues)
+
+            all_player1_mses.extend(player1_mses)
+            all_player1_maes.extend(player1_maes)
+            all_player1_preds.extend(player1_preds)
+            all_player1_trues.extend(player1_trues)
+
         result = _calculate_final_metrics(
             timestep_mses, timestep_maes, timestep_preds, timestep_trues, num_actions
         )
+        player0_result = _calculate_final_metrics(
+            all_player0_mses, all_player0_maes, all_player0_preds, all_player0_trues, 6
+        )
+        player1_result = _calculate_final_metrics(
+            all_player1_mses, all_player1_maes, all_player1_preds, all_player1_trues, 6
+        )
+        result["player0_results"] = player0_result
+        result["player1_results"] = player1_result
         result["eval_time"] = time.time() - start_time
 
         return result
