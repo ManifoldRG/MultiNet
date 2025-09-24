@@ -95,6 +95,15 @@ def get_precision_per_class(
         predicted_actions: np.ndarray, gt_actions: np.ndarray, all_labels: list) -> dict[int, float]:
     """Calculate macro precision by computing precision for each class label.
     Returns a dictionary mapping class labels to their precision values."""
+    predicted_actions = np.asarray(predicted_actions).squeeze()
+    gt_actions = np.asarray(gt_actions).squeeze()
+
+    if predicted_actions.shape != gt_actions.shape:
+        raise ValueError("Predicted and ground truth actions must have the same shape.")
+        
+    if len(all_labels) == 0 or predicted_actions.size == 0:
+        raise ValueError("No valid action labels or empty action arrays")
+    
     # Initialize dictionary to store class precisions
     class_precisions = {}
     
@@ -120,6 +129,15 @@ def get_recall_per_class(
         predicted_actions: np.ndarray, gt_actions: np.ndarray, all_labels: list) -> dict[int, float]:
     """Calculate macro recall by computing recall for each class label.
     Returns a dictionary mapping class labels to their recall values."""
+    predicted_actions = np.asarray(predicted_actions).squeeze()
+    gt_actions = np.asarray(gt_actions).squeeze()
+
+    if predicted_actions.shape != gt_actions.shape:
+        raise ValueError("Predicted and ground truth actions must have the same shape.")
+        
+    if len(all_labels) == 0 or predicted_actions.size == 0:
+        raise ValueError("No valid action labels or empty action arrays")
+    
     class_recalls = {}
     
     for label in set(all_labels):

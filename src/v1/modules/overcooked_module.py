@@ -18,6 +18,7 @@ from src.eval_utils import (
     calculate_proportion_beyond_mae_threshold,
 )
 from src.eval_utils import (
+    get_exact_match_rate,
     get_micro_precision_from_counts,
     get_micro_recall_from_counts,
     get_micro_f1,
@@ -174,6 +175,7 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_act
 
     # Calculate micro metrics
     possible_actions = list(range(num_actions))
+
     tp, fp, fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
         preds, trues, possible_actions
     )
@@ -201,6 +203,10 @@ def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_act
     normalized_mses = min_max_normalize(timestep_mses)
     normalized_amse = calculate_mean(normalized_mses)
 
+    exact_match_rate = get_exact_match_rate(preds, trues)
+    
+
+    result["exact_match"] = exact_match_rate
     result["total_dataset_amse"] = total_dataset_amse
     result["total_dataset_amae"] = sum(timestep_maes)
     result["num_timesteps"] = num_timesteps
