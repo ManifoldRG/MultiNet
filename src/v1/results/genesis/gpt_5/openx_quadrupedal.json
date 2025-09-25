@@ -1,0 +1,17 @@
+{
+    "utokyo_saytap_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 1514.4851355865767,
+        "total_dataset_amae": 1284.3778466291099,
+        "num_timesteps": 2268,
+        "avg_dataset_amse": 0.6677624054614536,
+        "avg_dataset_amae": 0.5663041651803838,
+        "normalized_amse": 0.05365353327381862,
+        "normalized_amae": 0.1732778122579522,
+        "normalized_quantile_filtered_amae": 0.16308429413072822,
+        "max_relative_mae": 5.10452924271459,
+        "proportion_beyond_threshold_mae": 0.02821869488536155,
+        "eval_time": 11.775448560714722,
+        "total_invalid_preds": 0
+    }
+}

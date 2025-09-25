@@ -60,7 +60,7 @@ class EvaluationConfig:
         gameplay_datasets = ['overcooked_ai']
         robotics_datasets = ['openx']
         mcq_datasets = ['piqa']
-        text_gen_datasets = ['sqa3d', 'robovqa']
+        text_gen_datasets = ['sqa3d', 'robot_vqa']
         grounding_datasets = ['odinw']
         tool_use_datasets = ['bfclv3']
         
@@ -167,7 +167,7 @@ def main():
     
     # Required arguments
     parser.add_argument('--dataset', type=str, required=True,
-                       help="Dataset name (overcooked_ai, openx, piqa, sqa3d, robovqa, odinw, bfclv3)")
+                       help="Dataset name (overcooked_ai, openx, piqa, sqa3d, robot_vqa, odinw, bfclv3)")
     parser.add_argument('--model_adapter_module_path', type=str, required=True,
                        help="Path to Python module containing ModelAdapter implementation")
     parser.add_argument('--output_path', type=str, required=True,
@@ -206,9 +206,9 @@ def main():
         if len(shard_paths) == 0:
             error_msg = f"No shards found for dataset {config.dataset} in split {config.data_split}. "
             if config.data_split == 'private':
-                error_msg += "Please check if the private data is available under 'disk_root_dir/openx_*/test/'."
+                error_msg += f"Please check if the private data is available under '{config.disk_root_dir}/openx_*/test/'."
             else:
-                error_msg += "Please check if the public data is available under 'disk_root_dir/openx_*/public/'."
+                error_msg += f"Please check if the public data is available under '{config.disk_root_dir}/openx_*/public/'."
             raise ValueError(error_msg)
 
         dataset, data_loader = get_openx_dataloader(

@@ -1,4 +1,5 @@
 from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import BatchSampler
 from PIL import Image
 from typing import List, Dict, Any
 from collections import defaultdict
@@ -88,8 +89,18 @@ class OvercookedDataset(Dataset):
             player1_action = self.action_string_to_tuple['interact']
         
         # Ensure actions are tuples
-        player0_action = tuple(player0_action) if isinstance(player0_action, (list, tuple)) else (0, 0)
-        player1_action = tuple(player1_action) if isinstance(player1_action, (list, tuple)) else (0, 0)
+        # Convert to tuple with warning if needed
+        if not isinstance(player0_action, (list, tuple)):
+            print(f"Warning: player0_action is not a list/tuple. Before: {player0_action}, After: (0, 0)")
+            player0_action = (0, 0)
+        else:
+            player0_action = tuple(player0_action)
+            
+        if not isinstance(player1_action, (list, tuple)):
+            print(f"Warning: player1_action is not a list/tuple. Before: {player1_action}, After: (0, 0)")
+            player1_action = (0, 0)
+        else:
+            player1_action = tuple(player1_action)
         
         # Create joint action tuple
         joint_action_tuple = (player0_action, player1_action)
@@ -321,8 +332,64 @@ def custom_collate(batch):
     return result
 
 
+class StreamingLayoutBatchSampler(BatchSampler):
+    """Yield batches that never mix layouts, preserving original dataset order.
+
+    - Does not drop samples
+    - Does not shuffle
+    - Splits contiguous runs of the same layout into batches of size `batch_size`
+    """
+    def __init__(self, dataset: OvercookedDataset, batch_size: int):
+        assert not dataset.by_episode, "StreamingLayoutBatchSampler expects by_episode=False"
+        self.dataset = dataset
+        self.batch_size = batch_size
+
+        # Precompute contiguous runs of indices per layout to support __len__ efficiently
+        self._runs = []  # list of (start_idx, end_idx) inclusive ranges for contiguous same-layout segments
+        prev_layout = None
+        run_start = None
+        for idx in range(len(dataset)):
+            episode_idx, timestep_in_episode = dataset.timestep_to_episode[idx]
+            layout_name = dataset.episodes[episode_idx][timestep_in_episode]['layout_name']
+            if prev_layout is None:
+                prev_layout = layout_name
+                run_start = idx
+            elif layout_name != prev_layout:
+                self._runs.append((run_start, idx - 1))
+                prev_layout = layout_name
+                run_start = idx
+        if run_start is not None:
+            self._runs.append((run_start, len(dataset) - 1))
+
+    def __iter__(self):
+        # Stream over runs, yielding fixed-size batches, preserving order
+        for (start_idx, end_idx) in self._runs:
+            run_length = end_idx - start_idx + 1
+            full_batches = run_length // self.batch_size
+            remainder = run_length % self.batch_size
+            # Yield full batches
+            for b in range(full_batches):
+                s = start_idx + b * self.batch_size
+                e = s + self.batch_size
+                yield list(range(s, e))
+            # Yield tail (if any) without dropping
+            if remainder > 0:
+                s = end_idx - remainder + 1
+                e = end_idx + 1
+                yield list(range(s, e))
+
+    def __len__(self) -> int:
+        total = 0
+        for (start_idx, end_idx) in self._runs:
+            run_length = end_idx - start_idx + 1
+            # ceil(run_length / batch_size)
+            total += (run_length + self.batch_size - 1) // self.batch_size
+        return total
+
+
 def get_overcooked_dataloader(data_file: str, batch_size: int, 
-                            num_workers: int = 0, by_episode: bool = False) -> tuple:
+                            num_workers: int = 0, by_episode: bool = False,
+                            group_by_layout: bool = False) -> tuple:
     """
     Create Overcooked dataloader.
     
@@ -336,11 +403,20 @@ def get_overcooked_dataloader(data_file: str, batch_size: int,
         tuple: (dataset, dataloader) similar to ProcGen implementation
     """
     dataset = OvercookedDataset(data_file, by_episode=by_episode)
-    dataloader = DataLoader(
-        dataset,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=num_workers,
-        collate_fn=custom_collate
-    )
+    if group_by_layout and not by_episode:
+        batch_sampler = StreamingLayoutBatchSampler(dataset, batch_size=batch_size)
+        dataloader = DataLoader(
+            dataset,
+            batch_sampler=batch_sampler,
+            num_workers=num_workers,
+            collate_fn=custom_collate
+        )
+    else:
+        dataloader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=num_workers,
+            collate_fn=custom_collate
+        )
     return dataset, dataloader

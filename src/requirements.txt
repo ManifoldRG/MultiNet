@@ -175,11 +175,12 @@ sympy==1.12.1
 tensorboard==2.16.2
 tensorboard-data-server==0.7.2
 tensordict==0.4.0
-tensorflow==2.16.2
+tensorflow[and-cuda]==2.16.2
 tensorflow-datasets==4.9.6
 tensorflow-io-gcs-filesystem==0.37.1
 tensorflow-metadata==1.15.0
 termcolor==2.4.0
+tf_keras==2.16.0
 threadpoolctl==3.5.0
 tiktoken==0.7.0
 timm==1.0.8

@@ -1,0 +1,63 @@
+{
+    "NorthAmericaMushrooms": {
+        "exact_match_rate": 1.0,
+        "exact_match_rate_without_invalids": 1.0,
+        "recall": 1.0,
+        "precision": 1.0,
+        "precision_without_invalids": 1.0,
+        "f1": 1.0,
+        "f1_without_invalids": 1.0,
+        "macro_precision": 1.0,
+        "macro_recall": 1.0,
+        "macro_f1": 1.0,
+        "class_precisions": {
+            "0": 1.0,
+            "1": 1.0
+        },
+        "class_recalls": {
+            "0": 1.0,
+            "1": 1.0
+        },
+        "class_f1s": {
+            "0": 1.0,
+            "1": 1.0
+        },
+        "total_invalids": 0,
+        "percentage_invalids": 0.0,
+        "preds": [
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1
+        ],
+        "gt_actions": [
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1
+        ],
+        "eval_time": 4.008199453353882,
+        "total_invalid_preds": 0,
+        "all_outs": [
+            "1",
+            "1",
+            "1",
+            "0",
+            "1",
+            "1",
+            "1",
+            "1",
+            "1"
+        ]
+    }
+}

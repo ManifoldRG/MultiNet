@@ -7,6 +7,9 @@ sys.path.append(ROOT_DIR)
 from src.modules.dataset_modules.procgen_module import ProcGenBatchModule
 from src.modules.dataset_modules.openx_module import OpenXBatchModule
 from src.v1.modules.robovqa_module import RoboVQABatchModule
+from src.v1.modules.overcooked_module import OvercookedBatchModule
+from src.v1.modules.piqa_module import PIQABatchModule
+from src.v1.modules.odinw_module import ODinWBatchModule
 
 import datetime
 import argparse
@@ -18,6 +21,7 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_root_dir', type=str, required=True, help="The root directory of the translated data.")
     parser.add_argument('--dataset_family', type=str, required=True, help="The name of the dataset to evaluate.")
+    parser.add_argument('--dataset_name', type=str, required=False, help="The name of the dataset to evaluate within the dataset family.")
     parser.add_argument('--model', type=str, required=True, help="The name of the model to evaluate.")
     parser.add_argument("--metadata_dir", type=str, required=True, help="The directory to save batch info in after sending the jobs.")
     parser.add_argument('--batch_size', type=int, default=1, help="The batch size used for evaluation.")
@@ -60,6 +64,12 @@ if __name__=="__main__":
         dataset_module = OpenXBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     elif args.dataset_family == 'robot_vqa':
         dataset_module = RoboVQABatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
+    elif args.dataset_family == "overcooked_ai":
+        dataset_module = OvercookedBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
+    elif args.dataset_family == "piqa":
+        dataset_module = PIQABatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
+    elif args.dataset_family == "odinw":
+        dataset_module = ODinWBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     else:
         print(f"The dataset family {args.dataset_family} is not supported.")
         exit(1)

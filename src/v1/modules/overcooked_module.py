@@ -1,0 +1,733 @@
+from src.modules.dataset_modules.base_dataset_module import (
+    DatasetModule,
+    DatasetBatchModule,
+    BatchInfo,
+)
+from definitions.overcooked import OverCookedDefinitions
+from src.data_utils.overcooked_dataloader import get_overcooked_dataloader
+from definitions.overcooked_prompt import format_instruction_prompt
+from src.eval_utils import (
+    quantile_filter,
+    calculate_brier_mae,
+    min_max_normalize,
+    calculate_brier_mse,
+    calculate_mean,
+)
+from src.eval_utils import (
+    calculate_max_relative_mae,
+    calculate_proportion_beyond_mae_threshold,
+)
+from src.eval_utils import (
+    get_exact_match_rate,
+    get_micro_precision_from_counts,
+    get_micro_recall_from_counts,
+    get_micro_f1,
+    calculate_tp_fp_fn_counts,
+    get_precision_per_class,
+    get_recall_per_class,
+    get_f1_per_class,
+    get_macro_precision,
+    get_macro_recall,
+    get_macro_f1,
+)
+from src.modules.modality_modules.vlm_module import VLMModule
+
+from pathlib import Path
+from typing import Union
+from glob import glob
+
+import numpy as np
+import time
+import string
+from typing import Any
+
+
+MAX_BRIER_MAE_ERROR = 2.0
+MAX_BRIER_MSE_ERROR = 2.0
+NOOP_ACTION = 28
+
+
+def _validate_list_output(output, num_actions) -> bool:
+    if not isinstance(output, list):
+        return False
+    if not len(output) == num_actions:
+        return False
+    
+    try:
+        vals = [float(v) for v in output]
+    except (ValueError, TypeError):
+        return False
+
+    # Check if the sum of the probabilities is 1, avoiding floating point errors
+    if abs(sum(vals) - 1.0) > 1e-05:
+        return False
+
+    return True
+
+def _get_individual_player_labels(joint_one_hot_label):
+    individual_action_space = OverCookedDefinitions.INDIVIDUAL_ACTION_SPACE
+    discrete_to_joint = OverCookedDefinitions.PLAYER_ACTION_SPACE_TUPLES
+
+    joint_action_truth = np.argmax(joint_one_hot_label)
+    player0_truth_action, player1_truth_action = discrete_to_joint[joint_action_truth]
+    player0_label, player1_label = \
+        individual_action_space[player0_truth_action], individual_action_space[player1_truth_action]
+    return player0_label, player1_label
+
+def _calculate_individual_player_metrics(joint_probs, player0_label, player1_label):
+    individual_action_space = OverCookedDefinitions.INDIVIDUAL_ACTION_SPACE
+
+    # convert joint discrete action probs to player0 and player1 discrete action probs
+    player0_probs = [0.0] * 6
+    player1_probs = [0.0] * 6
+    discrete_to_joint = OverCookedDefinitions.PLAYER_ACTION_SPACE_TUPLES
+    for action_idx, prob in enumerate(joint_probs):
+        player0_action, player1_action = discrete_to_joint[action_idx]
+        player0_probs[individual_action_space[player0_action]] += prob
+        player1_probs[individual_action_space[player1_action]] += prob
+
+    player0_pred = np.argmax(player0_probs)
+    player1_pred = np.argmax(player1_probs)
+
+    player0_one_hot_label = [0.0] * 6
+    player1_one_hot_label = [0.0] * 6
+    player0_one_hot_label[player0_label] = 1.0
+    player1_one_hot_label[player1_label] = 1.0
+
+    player0_mae = calculate_brier_mae(player0_probs, player0_one_hot_label)
+    player1_mae = calculate_brier_mae(player1_probs, player1_one_hot_label)
+    player0_mse = calculate_brier_mse(player0_probs, player0_one_hot_label)
+    player1_mse = calculate_brier_mse(player1_probs, player1_one_hot_label)
+
+    return player0_mae, player0_mse, player0_pred, \
+        player1_mae, player1_mse, player1_pred
+
+def _validate_outputs_and_calculate_metrics(outputs, one_hot_labels, num_actions):
+    brier_mses, brier_maes, preds = [], [], []
+    player0_mses, player0_maes, player1_mses, player1_maes = [], [], [], []
+    player0_preds, player1_preds = [], []
+    player0_trues, player1_trues = [], []
+    total_invalid_preds = 0
+    # Validate outputs and calculate Brier MSEs
+    for o, output in enumerate(outputs):
+        player0_label, player1_label = _get_individual_player_labels(one_hot_labels[o])
+
+        if _validate_list_output(output, num_actions):
+            probs = [float(v) for v in output]
+
+            mae = calculate_brier_mae(probs, one_hot_labels[o])
+            brier_maes.append(mae)
+
+            mse = calculate_brier_mse(probs, one_hot_labels[o])
+            brier_mses.append(mse)
+
+            preds.append(np.argmax(probs))
+
+            player0_mae, player0_mse, player0_pred, \
+                player1_mae, player1_mse, player1_pred = \
+                    _calculate_individual_player_metrics(probs, player0_label, player1_label)
+            player0_maes.append(player0_mae)
+            player1_maes.append(player1_mae)
+            player0_mses.append(player0_mse)
+            player1_mses.append(player1_mse)
+            player0_preds.append(player0_pred)
+            player1_preds.append(player1_pred)
+        else:
+            # max possible Brier MSE is 2.0
+            brier_maes.append(MAX_BRIER_MAE_ERROR)
+            brier_mses.append(MAX_BRIER_MSE_ERROR)
+            player0_maes.append(MAX_BRIER_MAE_ERROR)
+            player1_maes.append(MAX_BRIER_MAE_ERROR)
+            player0_mses.append(MAX_BRIER_MSE_ERROR)
+            player1_mses.append(MAX_BRIER_MSE_ERROR)
+            
+            total_invalid_preds += 1
+
+            preds.append(-1)
+            player0_preds.append(-1)
+            player1_preds.append(-1)
+
+        player0_trues.append(player0_label)
+        player1_trues.append(player1_label)
+
+    return brier_mses, brier_maes, total_invalid_preds, preds, \
+        player0_mses, player0_maes, player0_preds, player0_trues, \
+        player1_mses, player1_maes, player1_preds, player1_trues
+
+
+def _calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_actions):
+    result = {}
+
+    # Calculate MAE metrics
+    average_dataset_mae = calculate_mean(timestep_maes)
+    normalized_maes = min_max_normalize(timestep_maes)
+    average_normalized_mae = calculate_mean(normalized_maes)
+
+    # Calculate quantile filtered MAE metrics
+    quantile_filtered_maes = quantile_filter(timestep_maes)
+    normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
+    average_normalized_quantile_filtered_mae = calculate_mean(
+        normalized_quantile_filtered_maes
+    )
+
+    max_rel_mae = calculate_max_relative_mae(timestep_maes)
+    prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(timestep_maes)
+
+    # Calculate micro metrics
+    possible_actions = list(range(num_actions))
+
+    tp, fp, fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
+        preds, trues, possible_actions
+    )
+    precision = get_micro_precision_from_counts(tp, fp)
+    precision_without_invalid = get_micro_precision_from_counts(tp, valid_fp)
+    recall = get_micro_recall_from_counts(tp, fn)
+    f1 = get_micro_f1(precision, recall)
+    f1_without_invalid = get_micro_f1(precision_without_invalid, recall)
+    
+    # Calculate class-wise metrics
+    class_precisions = get_precision_per_class(preds, trues, possible_actions)
+    class_recalls = get_recall_per_class(preds, trues, possible_actions)
+    class_f1s = get_f1_per_class(class_precisions, class_recalls)
+    
+    # Calculate macro metrics
+    macro_precision = get_macro_precision(class_precisions)
+    macro_recall = get_macro_recall(class_recalls)
+    macro_f1 = get_macro_f1(class_f1s)
+
+    # Calculate MSE metrics
+    total_dataset_amse = sum(timestep_mses)
+    num_timesteps = len(timestep_mses)
+    avg_dataset_amse = total_dataset_amse / num_timesteps if num_timesteps > 0 else 0.0
+
+    normalized_mses = min_max_normalize(timestep_mses)
+    normalized_amse = calculate_mean(normalized_mses)
+
+    exact_match_rate = get_exact_match_rate(preds, trues)
+    
+
+    result["exact_match"] = exact_match_rate
+    result["total_dataset_amse"] = total_dataset_amse
+    result["total_dataset_amae"] = sum(timestep_maes)
+    result["num_timesteps"] = num_timesteps
+    result["avg_dataset_amse"] = avg_dataset_amse
+    result["avg_dataset_amae"] = average_dataset_mae
+    result["normalized_amse"] = normalized_amse
+    result["normalized_amae"] = average_normalized_mae
+    result["normalized_quantile_filtered_amae"] = (
+        average_normalized_quantile_filtered_mae
+    )
+    result["max_relative_mae"] = max_rel_mae
+    result["proportion_beyond_threshold_mae"] = prop_beyond_threshold_mae
+    result["recall"] = recall
+    result["precision"] = precision
+    result["precision_without_invalid"] = precision_without_invalid
+    result["f1"] = f1
+    result["f1_without_invalid"] = f1_without_invalid
+    result["macro_precision"] = macro_precision
+    result["macro_recall"] = macro_recall
+    result["macro_f1"] = macro_f1
+    result["class_precisions"] = class_precisions
+    result["class_recalls"] = class_recalls
+    result["class_f1s"] = class_f1s
+    result["total_invalids"] = int(invalid_fp)
+    result["percentage_invalids"] = (invalid_fp / len(preds)) * 100
+    result["preds"] = [int(pred) for pred in preds]
+    result["gt_actions"] = [int(true) for true in trues]
+    return result
+
+
+def _get_vlm_instruction(
+    dataset: str,
+    env_name: str,
+    definitions_class,
+    descriptions,
+    action_exclusiveness,
+    additional_instructions,
+    format_instruction_prompt_fn,
+    _get_action_space_fn,
+    time_left,
+    time_elapsed,
+):
+    """Get VLM instruction for a given dataset and environment name"""
+    assert (
+        dataset in descriptions
+    ), f"The layout {dataset} is not included in overcooked."
+
+    action_space = _get_action_space_fn(dataset, env_name)
+
+    if dataset not in action_exclusiveness:
+        dataset = "default"
+
+    additional_inst = None
+    if dataset in additional_instructions:
+        if env_name in additional_instructions[dataset]:
+            additional_inst = " ".join(additional_instructions[dataset][env_name])
+        else:
+            additional_inst = None
+
+    instruction = format_instruction_prompt_fn(
+        env_name,
+        str(definitions_class.ACTION_MEANINGS),
+        action_space,
+        time_left,
+        time_elapsed,
+        additional_inst,
+    )
+    return instruction
+
+
+# Finding the pickle file
+def _find_pickle_file(dataset: str, disk_root_dir: str) -> list[str]:
+    try:
+        # Construct the dataset directory path
+        dataset_dir = f"{disk_root_dir}/{dataset}/test"
+        print(dataset_dir)
+        # Use glob to find .pickle file
+        pickle_file = glob(f"{dataset_dir}/*.pickle")
+        return pickle_file[0]
+    except Exception as e:
+        print(
+            f"Cannot identify the directory to the dataset. Skipping this dataset. Error: {e}"
+        )
+        return []
+
+
+class OvercookedModule(DatasetModule):
+    def __init__(
+        self,
+        disk_root_dir: str,
+        modality: str,
+        source: str,
+        model: str,
+        dataset_name: str,
+        batch_size: int = 1,
+        k_shots: int = 0,
+    ) -> None:
+        DatasetModule.__init__(self, disk_root_dir, modality, source, model, batch_size, k_shots)
+        
+        self._definitions_class = OverCookedDefinitions
+        self.get_dataloader_fn = get_overcooked_dataloader
+        self.format_instruction_prompt_fn = format_instruction_prompt
+        self.dataset_name = dataset_name
+        self.batch_size = batch_size
+
+        
+    @property
+    def modality_module(self):
+        self._modality_module = VLMModule(
+            self.source,
+            self.model,
+            max_concurrent_prompts=400,
+            max_output_tokens_per_query=512,
+        )
+        
+        return self._modality_module
+
+    # Finding the translated pickle files.
+    def _find_shards(self) -> list[str]:
+        return _find_pickle_file(self.dataset_name, self.disk_root_dir)
+    
+    def _run_eval_dataset(self, dataset: str) -> dict:
+        result = {}
+
+        try:
+            oc_pickle = self._find_shards()
+            if len(oc_pickle) == 0:
+                return {}
+
+            start_time = time.time()
+
+            # Creating the dataloader.
+            dataloader_obj, dataloader = self.get_dataloader_fn(
+                oc_pickle,
+                batch_size=self.batch_size,
+            )
+            
+            result = {}
+
+            timestep_mses, timestep_maes, timestep_preds, timestep_trues = (
+                [],
+                [],
+                [],
+                [],
+            )
+            total_invalid_preds = 0
+            start_time = time.time()
+
+            action_space = self._get_action_space(dataset, "default")
+            num_actions = len(action_space)
+
+            for batch in dataloader:
+                # Action stats need to be retrieved only once for each dataset, after they have been populated.
+                if self.action_stats is None:
+                    self.action_stats = dataloader_obj.action_stats
+
+                # Consuming the batch until all timesteps in the batch.
+                for (
+                    cur_inputs,
+                    k_shots_examples,
+                    instructions,
+                    labels,
+                    idxs,
+                    output_types,
+                    is_lasts,
+                ) in self._process_batch(batch, dataset):
+                    outputs = self.modality_module.infer_step(
+                        cur_inputs, k_shots_examples, instructions, output_types
+                    )  # (B)
+
+                    # Check if labels are within the action space, otherwise set to NoOp action
+                    labels = np.array(
+                        [
+                            label if label < num_actions else NOOP_ACTION
+                            for label in labels
+                        ]
+                    )
+                    one_hot_labels = self._get_one_hot(labels, num_actions)
+
+                    if not isinstance(outputs, list):
+                        outputs = [[None]]
+
+                    brier_mses, brier_maes, invalid_preds, preds = (
+                        _validate_outputs_and_calculate_metrics(
+                            outputs, one_hot_labels, num_actions
+                        )
+                    )
+
+                    timestep_mses.extend(brier_mses)
+                    timestep_maes.extend(brier_maes)
+                    total_invalid_preds += invalid_preds
+                    timestep_preds.extend(preds)
+                    timestep_trues.extend(labels)
+
+            result = _calculate_final_metrics(
+                timestep_mses,
+                timestep_maes,
+                timestep_preds,
+                timestep_trues,
+                num_actions,
+            )
+            result["eval_time"] = time.time() - start_time
+
+        except KeyError as e:
+            print(f"KeyError occurred: {e}")
+            print(
+                f"The VLMModule cannot be initialized since there is no dataset called {dataset}. Moving on to the next one..."
+            )
+            return {}
+
+        return result
+
+    def _process_batch(self, batch: dict[str, list[Any]], dataset: str):
+        text_obs = batch["text_observation"]
+
+        max_timesteps = max(0, len(text_obs))
+
+        for t in range(max_timesteps):
+            (
+                cur_inputs,
+                k_shots_examples,
+                instructions,
+                labels,
+                idxs,
+                output_types,
+                is_lasts,
+            ) = [], [], [], [], [], [], []
+
+
+            if t < len(text_obs):
+                # This batch is consumed.
+                idxs.append(t)
+                cur_inputs.append([])
+
+                # First, setting the instructions and output types.
+                env_name = text_obs[t].strip().strip(string.punctuation).lower()
+                instruction = self._get_vlm_instruction("overcooked_ai", env_name, batch["time_left"][t], batch["time_elapsed"][t])
+                instructions.append(instruction)
+
+                output_type = self._get_output_type("overcooked_ai", env_name)
+                output_types.append(output_type)
+
+                labels.append(batch["action"][t])
+                is_lasts.append(batch["is_last"][t])
+
+                if (
+                    "image_observation" in batch
+                    and batch["image_observation"][t] is not None
+                ):
+                    image_obs = batch["image_observation"][t]
+                    if len(image_obs.shape) == 4:
+                        image_obs = [
+                            ("image_observation", image) for image in image_obs
+                        ]
+                        cur_inputs[-1] += image_obs
+                    else:
+                        cur_inputs[-1].append(("image_observation", image_obs))
+
+                cur_inputs[-1].append(("text_observation", text_obs[t]))
+            yield (
+                cur_inputs,
+                k_shots_examples,
+                instructions,
+                labels,
+                idxs,
+                output_types,
+                is_lasts,
+            )
+
+    def _get_vlm_instruction(self, dataset: str, env_name: str, time_left: float, time_elapsed: float):
+        return _get_vlm_instruction(
+            dataset,
+            env_name,
+            self._definitions_class,
+            self.descriptions,
+            self.action_exclusiveness,
+            self.additional_instructions,
+            self.format_instruction_prompt_fn,
+            self._get_action_space,
+            time_left,
+            time_elapsed,
+        )
+
+
+class OvercookedBatchModule(DatasetBatchModule):
+    def __init__(
+        self,
+        disk_root_dir: str,
+        modality: str,
+        source: str,
+        model: str,
+        batch_info_dir: str,
+        batch_size: int = 1,
+        k_shots: int = 0,
+    ):
+        super().__init__(
+            disk_root_dir, modality, source, model, batch_info_dir, batch_size, k_shots
+        )
+        self._definitions_class = OverCookedDefinitions
+        self.get_dataloader_fn = get_overcooked_dataloader
+        self.format_instruction_prompt_fn = format_instruction_prompt
+        self.dataset_family = "overcooked_ai"
+        self.dataset_name = "overcooked_ai"
+
+    def _find_shards(self, dataset: str) -> list[str]:
+        return _find_pickle_file(dataset, self.disk_root_dir)
+
+    def _send_batch_job(self, batch, dataset_name, batch_num):
+        (
+            cur_inputs,
+            k_shots_examples,
+            instructions,
+            labels,
+            idxs,
+            output_types,
+            is_lasts,
+        ) = self._process_batch(batch, dataset_name)
+        num_inputs = len(cur_inputs)
+        batch_id, token_count = self.modality_module.send_batch_job(
+            cur_inputs, [], instructions
+        )
+        labels = [np.array(label) for label in labels]
+        is_lasts = [int(is_last) for is_last in is_lasts]
+        labels = [
+            label.numpy() if not isinstance(label, np.ndarray) else label
+            for label in labels
+        ]
+
+        batch_job = BatchInfo(
+            self.dataset_family,
+            dataset_name,
+            batch_num,
+            batch_id,
+            output_types,
+            token_count,
+            is_lasts,
+            labels,
+            num_inputs,
+            self.batch_info_dir,
+            self.model,
+        )
+        fp = batch_job.save_to_file()
+        self.batch_list[dataset_name].append(str(fp))
+
+    def _send_batch_jobs_for_dataset(self, dataset):
+        oc_pickle = self._find_shards(dataset)
+        if len(oc_pickle) == 0:
+            return {}
+
+        # Creating the dataloader, getting both the object and the iterable
+        dataloader_obj, dataloader = self.get_dataloader_fn(
+            oc_pickle, batch_size=self.batch_size, by_episode=False
+        )
+
+        print(f"Sending batch jobs for dataset: {dataset}...")
+        for i, batch in enumerate(dataloader):
+            print("Sending Batch Jobs....")
+            self._send_batch_job(batch, dataset, i)
+            print("Batch Jobs sent!")
+
+        print(f"Finished sending jobs for {dataset}.")
+        return self.batch_list[dataset]
+
+
+    def _run_eval_dataset(self, dataset_batch_info_paths: Union[str, list[str]]):
+        result = {}
+
+        timestep_mses, timestep_maes, timestep_preds, timestep_trues = [], [], [], []
+        all_player0_mses, all_player0_maes, all_player0_preds, all_player0_trues = [], [], [], []
+        all_player1_mses, all_player1_maes, all_player1_preds, all_player1_trues = [], [], [], []
+        total_invalid_preds = 0
+        start_time = time.time()
+
+        # If it's a folder path, iterate over all files in the folder
+        if isinstance(dataset_batch_info_paths, str):
+            paths = Path(dataset_batch_info_paths).iterdir()
+        elif isinstance(dataset_batch_info_paths, list):
+            paths = dataset_batch_info_paths
+        else:
+            raise ValueError(
+                f"data_batch_info_paths should be a path to a folder or a list of filepaths"
+            )
+
+        for fp in paths:
+            if not Path(fp).exists():
+                raise FileNotFoundError(f"Could not find file at path {fp}")
+
+            batch_info = np.load(fp, allow_pickle=True)
+
+            print(batch_info)
+
+            output_types = list(batch_info["output_types"])
+            ds = batch_info["dataset_name"].item()
+            batch_num = batch_info["batch_num"].item()
+            batch_id = batch_info["batch_id"].item()
+            labels = batch_info["labels"]
+            num_inputs = batch_info["num_inputs"].item()
+            is_lasts = [bool(is_last) for is_last in batch_info["is_lasts"]]
+
+            status = self.modality_module.get_batch_job_status(batch_id)
+            if status == "completed":
+                outputs = self.modality_module.retrieve_batch_results(
+                    batch_id, output_types
+                )
+            else:
+                raise Exception(
+                    f"Batch not completed for batch {ds} batch num {batch_num} "
+                    f"with batch id {batch_id}. Status: {status}. Stopping eval."
+                )
+
+            action_space = self._get_action_space(ds, "default")
+            num_actions = len(action_space)
+
+            # Check if labels are within the action space, otherwise set to NoOp action
+            labels = np.array(
+                [label if label < num_actions else NOOP_ACTION for label in labels]
+            )
+            one_hot_labels = self._get_one_hot(labels, num_actions)
+
+            if not isinstance(outputs, list):
+                outputs = [[None]]
+
+            brier_mses, brier_maes, invalid_preds, preds, \
+                player0_mses, player0_maes, player0_preds, player0_trues, \
+                player1_mses, player1_maes, player1_preds, player1_trues = (
+                _validate_outputs_and_calculate_metrics(
+                    outputs, one_hot_labels, num_actions
+                )
+            )
+
+            timestep_mses.extend(brier_mses)
+            timestep_maes.extend(brier_maes)
+            total_invalid_preds += invalid_preds
+            timestep_preds.extend(preds)
+            timestep_trues.extend(labels)
+
+            all_player0_mses.extend(player0_mses)
+            all_player0_maes.extend(player0_maes)
+            all_player0_preds.extend(player0_preds)
+            all_player0_trues.extend(player0_trues)
+
+            all_player1_mses.extend(player1_mses)
+            all_player1_maes.extend(player1_maes)
+            all_player1_preds.extend(player1_preds)
+            all_player1_trues.extend(player1_trues)
+
+        result = _calculate_final_metrics(
+            timestep_mses, timestep_maes, timestep_preds, timestep_trues, num_actions
+        )
+        player0_result = _calculate_final_metrics(
+            all_player0_mses, all_player0_maes, all_player0_preds, all_player0_trues, 6
+        )
+        player1_result = _calculate_final_metrics(
+            all_player1_mses, all_player1_maes, all_player1_preds, all_player1_trues, 6
+        )
+        result["player0_results"] = player0_result
+        result["player1_results"] = player1_result
+        result["eval_time"] = time.time() - start_time
+
+        return result
+
+    def _get_vlm_instruction(self, dataset: str, env_name: str, time_left: float, time_elapsed: float):
+        return _get_vlm_instruction(
+            dataset,
+            env_name,
+            self._definitions_class,
+            self.descriptions,
+            self.action_exclusiveness,
+            self.additional_instructions,
+            self.format_instruction_prompt_fn,
+            self._get_action_space,
+            time_left,
+            time_elapsed
+        )
+
+    def _process_batch(self, batch: dict[str, list[Any]], dataset: str):
+        # Getting the maxmimum length of episodes.
+        text_obs = batch["text_observation"]
+        num_timesteps = len(text_obs)
+        (
+            cur_inputs,
+            k_shots_examples,
+            instructions,
+            labels,
+            idxs,
+            output_types,
+            is_lasts,
+        ) = [], [], [], [], [], [], []
+        for t in range(num_timesteps):
+            # This batch is consumed.
+            idxs.append(t)
+            cur_inputs.append([])
+
+            # First, setting the instructions and output types.
+            env_name = text_obs[t].strip().strip(string.punctuation).lower()
+            instruction = self._get_vlm_instruction(dataset, env_name, batch["time_left"][t], batch["time_elapsed"][t])
+            instructions.append(instruction)
+
+            output_type = self._get_output_type(dataset, env_name)
+            output_types.append(output_type)
+
+            labels.append(batch["action"][t])
+            is_lasts.append(batch["is_last"][t])
+
+            if (
+                "image_observation" in batch
+                and batch["image_observation"][t] is not None
+            ):
+                image_obs = batch["image_observation"][t]
+                if len(image_obs.shape) == 4:
+                    image_obs = [("image_observation", image) for image in image_obs]
+                    cur_inputs[-1] += image_obs
+                else:
+                    cur_inputs[-1].append(("image_observation", image_obs))
+
+        return (
+            cur_inputs,
+            k_shots_examples,
+            instructions,
+            labels,
+            idxs,
+            output_types,
+            is_lasts,
+        )

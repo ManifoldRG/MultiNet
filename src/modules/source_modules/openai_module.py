@@ -13,6 +13,7 @@ import time
 import warnings
 
 CONTEXT_SIZE_MAP = {
+    'gpt-5-chat-latest': 128000,
     'gpt-5-2025-08-07': 400000,
     'gpt-4.1-2025-04-14': 1000000,
     'gpt-4o': 128000,
@@ -31,6 +32,7 @@ CONTEXT_SIZE_MAP = {
 }
 
 BATCH_QUEUE_TOKEN_DAY_LIMIT = {
+    'gpt-5-chat-latest': 15000000000,
     'gpt-5-2025-08-07': 15000000000,
     'gpt-4.1-2025-04-14': 15000000000,
     'gpt-4o': 15000000000,
@@ -85,6 +87,95 @@ class OpenAIModule:
             return "max_completion_tokens"
         else:
             return "max_tokens"
+    
+    def _is_reasoning_model(self) -> bool:
+        """
+        Returns True if the model is a reasoning model that should use the responses API.
+        Uses simple name-based detection for known reasoning models.
+        """
+        reasoning_patterns = [
+            'gpt-5',        # GPT-5 series
+            'o1',           # o1 series (o1-preview, o1-mini, etc.)
+            'o3',           # o3 series (future-proofing)
+        ]
+        
+        model_lower = self.model.lower()
+        return any(pattern in model_lower for pattern in reasoning_patterns)
+    
+    def _convert_messages_to_responses_format(self, messages: list[dict]) -> list[dict]:
+        """
+        Convert chat completions message format to responses API input format.
+        The responses API expects content items with type 'message' for text content.
+        """
+        converted_content = []
+        
+        for message in messages:
+            role = message['role']
+            content = message['content']
+            
+            if role == 'system':
+                # Add system content as message
+                if isinstance(content, str):
+                    converted_content.append({
+                        "type": "message",
+                        "role": "system",
+                        "content": content
+                    })
+                else:
+                    # Handle structured system content if needed
+                    converted_content.append({
+                        "type": "message",
+                        "role": "system", 
+                        "content": str(content)
+                    })
+            
+            elif role == 'user':
+                if isinstance(content, str):
+                    # Simple string content
+                    converted_content.append({
+                        "type": "message",
+                        "role": "user",
+                        "content": content
+                    })
+                elif isinstance(content, list):
+                    # For multimodal content, create a message with multimodal content
+                    message_content = []
+                    
+                    for content_item in content:
+                        if content_item['type'] == 'text':
+                            message_content.append({
+                                "type": "input_text",
+                                "text": content_item['text']
+                            })
+                        elif content_item['type'] == 'image_url':
+                            message_content.append({
+                                "type": "input_image",
+                                "image_url": content_item['image_url']['url']
+                            })
+                    
+                    converted_content.append({
+                        "type": "message",
+                        "role": "user",
+                        "content": message_content
+                    })
+            
+            elif role == 'assistant':
+                # Handle assistant responses
+                if isinstance(content, list) and len(content) > 0:
+                    if content[0].get('type') == 'text':
+                        converted_content.append({
+                            "type": "message",
+                            "role": "assistant",
+                            "content": content[0]['text']
+                        })
+                elif isinstance(content, str):
+                    converted_content.append({
+                        "type": "message",
+                        "role": "assistant",
+                        "content": content
+                    })
+        
+        return converted_content
     
     @property
     def max_concurrent_prompts(self):
@@ -173,7 +264,7 @@ class OpenAIModule:
         self.history = [[] for _ in range(self.max_concurrent_prompts)]
         self.cur_num_tokens_cache = [[] for _ in range(self.max_concurrent_prompts)]
 
-    # Calling the chat completion API.
+    # Calling the chat completion API or responses API for reasoning models.
     def _get_response_from_api(self, system_prompt: str=None) -> str:
         start_idx = self._find_starting_point(system_prompt, self.max_output_tokens_per_query)
         system_message = []
@@ -182,17 +273,40 @@ class OpenAIModule:
 
         messages = system_message + self.history[0][start_idx:]
         
-        # Use appropriate token parameter based on model
-        max_tokens_param = self._get_max_tokens_param()
-        api_params = {
-            "model": self.model,
-            "messages": messages,
-            max_tokens_param: self.max_output_tokens_per_query
-        }
-        
-        response = self.client.chat.completions.create(**api_params)
-
-        return response.choices[0].message.content
+        if self._is_reasoning_model():
+            # Use responses API for reasoning models
+            # The responses API supports multimodal input in a structured format
+            input_content = self._convert_messages_to_responses_format(messages)
+            
+            api_params = {
+                "model": self.model,
+                "input": input_content,
+                "reasoning": {"effort": "low"},
+                "max_output_tokens": 2048 #min(512, self.max_output_tokens_per_query)
+            }
+            
+            response = self.client.responses.create(**api_params)
+            
+            # Extract the ResponseOutputMessage (first element in output list)
+            if len(response.output) < 2:
+                # Handle case where only reasoning is present without message
+                print(f"Warning: Response missing message content, only reasoning available: {response.output}")
+                response_content = ""
+            else:
+                # -1 because the last element is the message and sometimes there are more than one reasoning steps
+                response_content = response.output[-1].content[0].text
+            return response_content
+        else:
+            # Use chat completions API for non-reasoning models
+            max_tokens_param = self._get_max_tokens_param()
+            api_params = {
+                "model": self.model,
+                "messages": messages,
+                max_tokens_param: self.max_output_tokens_per_query
+            }
+            
+            response = self.client.chat.completions.create(**api_params)
+            return response.choices[0].message.content
     
     def get_batch_job_status(self, batch_job_id: str) -> bool:
         batch_job = self.client.batches.retrieve(batch_job_id)
@@ -207,8 +321,20 @@ class OpenAIModule:
         responses = []
         for response in result.iter_lines():
             response = json.loads(response)
-            response = response['response']['body']['choices'][0]['message']['content']
-            responses.append(response)
+            if self._is_reasoning_model():
+                # For responses API, extract from output list
+                output = response['response']['body']['output']
+                if len(output) < 2:
+                    # Handle case where only reasoning is present without message
+                    print(f"Warning: Response missing message content, only reasoning available: {output}")
+                    response_content = ""
+                else:
+                    # -1 because the last element is the message and sometimes there are more than one reasoning steps
+                    response_content = output[-1]['content'][0]['text']
+            else:
+                # For chat completions API
+                response_content = response['response']['body']['choices'][0]['message']['content']
+            responses.append(response_content)
         return responses
         
     def _execute_batch_job(self, system_prompts: list[str], 
@@ -223,25 +349,44 @@ class OpenAIModule:
             system_messages.append([{'role': 'system', 'content': prompt}])
 
         file_name = "batch_queries.jsonl"
-        max_tokens_param = self._get_max_tokens_param()
         
         with open(file_name, 'w') as file:
             for i, start_idx in enumerate(start_idxs):
                 messages = self.history[i][start_idx:]
                 
-                task = {
-                    "custom_id": f"task-{i}",
-                    "method": "POST",
-                    "url": "/v1/chat/completions",
-                    "body": {
-                        "model": self.model,
-                        max_tokens_param: self.max_output_tokens_per_query,
-                        "response_format": { 
-                            "type": "text"
-                        },
-                        "messages": system_messages[i] + messages
+                if self._is_reasoning_model():
+                    # Use responses API for reasoning models
+                    # Convert messages to proper multimodal format
+                    full_messages = system_messages[i] + messages
+                    input_content = self._convert_messages_to_responses_format(full_messages)
+                    
+                    task = {
+                        "custom_id": f"task-{i}",
+                        "method": "POST",
+                        "url": "/v1/responses",
+                        "body": {
+                            "model": self.model,
+                            "input": input_content,
+                            "reasoning": {"effort": "low"},
+                            "max_output_tokens": 2048 #min(512, self.max_output_tokens_per_query)
+                        }
                     }
-                }
+                else:
+                    # Use chat completions API for non-reasoning models
+                    max_tokens_param = self._get_max_tokens_param()
+                    task = {
+                        "custom_id": f"task-{i}",
+                        "method": "POST",
+                        "url": "/v1/chat/completions",
+                        "body": {
+                            "model": self.model,
+                            max_tokens_param: self.max_output_tokens_per_query,
+                            "response_format": { 
+                                "type": "text"
+                            },
+                            "messages": system_messages[i] + messages
+                        }
+                    }
         
                 file.write(json.dumps(task) + '\n')
 
@@ -249,9 +394,11 @@ class OpenAIModule:
             file=open(file_name, "rb"),
             purpose="batch"
         )
+        # Use appropriate endpoint based on model type
+        endpoint = "/v1/responses" if self._is_reasoning_model() else "/v1/chat/completions"
         batch_job = self.client.batches.create(
             input_file_id=batch_file.id,
-            endpoint="/v1/chat/completions",
+            endpoint=endpoint,
             completion_window="24h"
         )
         
@@ -280,8 +427,20 @@ class OpenAIModule:
             responses = []
             for response in result.iter_lines():
                 response = json.loads(response)
-                response = response['response']['body']['choices'][0]['message']['content']
-                responses.append(response)
+                if self._is_reasoning_model():
+                    # For responses API, extract from output list
+                    output = response['response']['body']['output']
+                    if len(output) < 2:
+                        # Handle case where only reasoning is present without message
+                        print(f"Warning: Response missing message content, only reasoning available: {output}")
+                        response_content = ""
+                    else:
+                        # -1 because the last element is the message and sometimes there are more than one reasoning steps
+                        response_content = output[-1]['content'][0]['text']
+                else:
+                    # For chat completions API
+                    response_content = response['response']['body']['choices'][0]['message']['content']
+                responses.append(response_content)
             return responses, batch_job_id
         else:
             return [], batch_job_id

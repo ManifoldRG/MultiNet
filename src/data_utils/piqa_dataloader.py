@@ -42,7 +42,7 @@ class PIQADataset(Dataset):
         sol2 = sample_data.get('sol2', '')
         
         # Format the question as a multiple choice question
-        question_text = f"Goal: {goal}\nSolution 1: {sol1}\nSolution 2: {sol2}\nWhich solution is better for the given goal?"
+        question_text = f"Goal: {goal}\nSolution 0: {sol1}\nSolution 1: {sol2}\nWhich solution is better for the given goal? Output 0 or 1 only."
         
         # The label indicates which solution is correct (0 for sol1, 1 for sol2)
         label = sample_data.get('label', 0)
@@ -54,6 +54,7 @@ class PIQADataset(Dataset):
             'goal': goal,
             'sol1': sol1,
             'sol2': sol2,
+            'label': label,
             'correct_solution': correct_answer,
             'sample_id': sample_data.get('id', ''),
             'line_id': sample_data.get('line_id', 0)

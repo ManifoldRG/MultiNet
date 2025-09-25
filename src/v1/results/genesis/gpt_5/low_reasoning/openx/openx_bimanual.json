@@ -1,0 +1,17 @@
+{
+    "utokyo_xarm_bimanual_converted_externally_to_rlds": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 18.841562906050708,
+        "total_dataset_amae": 17.033272921263,
+        "num_timesteps": 126,
+        "avg_dataset_amse": 0.14953621354008498,
+        "avg_dataset_amae": 0.13518470572430952,
+        "normalized_amse": 0.07231351871258465,
+        "normalized_amae": 0.20414801506321215,
+        "normalized_quantile_filtered_amae": 0.20446644602010416,
+        "max_relative_mae": 4.231197975924814,
+        "proportion_beyond_threshold_mae": 0.023809523809523808,
+        "eval_time": 1.903918743133545,
+        "total_invalid_preds": 0
+    }
+}

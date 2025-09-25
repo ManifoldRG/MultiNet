@@ -8,6 +8,9 @@
         "vqa_v2": "vision-language",
         "datacomp": "vision-language",
         "finewebedu": "vision-language",
+        "odinw": "vision-language",
+        "sqa3d": "vision-language",
+        "piqa": "language",
         "robot_vqa": "control",
         "dm_lab_rlu": "control",
         "atari": "control",
@@ -19,9 +22,11 @@
         "procgen": "control",
         "language_table": "control",
         "openx": "control",
-        "locomujoco": "control"
+        "locomujoco": "control",
+        "overcooked_ai": "control"
     },
     "models": {
+        "gpt-5-chat-latest": ["vlm", "openai"],
         "gpt-5-2025-08-07": ["vlm", "openai"],
         "gpt-4o-2024-05-13": ["vlm", "openai"],
         "gpt-4o-2024-08-06": ["vlm", "openai"],
