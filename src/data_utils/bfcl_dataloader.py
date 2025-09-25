@@ -127,7 +127,7 @@ class BFCLDataset(Dataset):
         # Add available tools information
         if involved_classes and path:
             prompt_parts.append(f"Available Tool Classes: {', '.join(involved_classes)}")
-            prompt_parts.append(f"Available Functions: {', '.join(path)}")
+            prompt_parts.append(f"Available Functions: {', '.join([func.split('.')[-1] for func in path])}")
             prompt_parts.append("")
         
         # Add multi-turn conversation
