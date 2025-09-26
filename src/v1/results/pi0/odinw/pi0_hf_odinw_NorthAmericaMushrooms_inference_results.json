@@ -1,0 +1,53 @@
+{
+    "all_preds": [
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+    ],
+    "all_gt": [
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1
+    ],
+    "total_batches": 1,
+    "total_samples": 9,
+    "eval_time": 1.7925055019986758,
+    "total_invalid_predictions": 9,
+    "exact_match_rate": 0.0,
+    "exact_match_rate_with_invalids": 0.0,
+    "precision": 0.0,
+    "precision_without_invalid": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "f1_without_invalid": 0.0,
+    "macro_precision": 0.0,
+    "macro_recall": 0.0,
+    "macro_f1": 0.0,
+    "percentage_invalids": 100.0,
+    "class_precisions": {
+        "0": 0.0,
+        "1": 0.0
+    },
+    "class_recalls": {
+        "0": 0.0,
+        "1": 0.0
+    },
+    "class_f1s": {
+        "0": 0.0,
+        "1": 0.0
+    },
+    "invalid_predictions_percentage": 0,
+    "invalid_predictions": []
+}
