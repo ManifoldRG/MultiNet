@@ -286,6 +286,11 @@ def run_evaluation(args):
             action_tokenizer = DiscreteActionTokenizer(processor.tokenizer, num_actions)
             decoded_actions = action_tokenizer.decode_token_ids_to_actions(output_ids.cpu().numpy())
             pred_actions = np.round(decoded_actions).astype(int).flatten()  # Flatten to 1D array of actions.
+            logger.debug(f"Batch {batch_counter}: gt_actions = {gt_actions}")
+            logger.debug(f"Batch {batch_counter}: output_ids shape = {output_ids.shape}")
+            logger.debug(f"Batch {batch_counter}: decoded_actions = {decoded_actions}")
+            logger.debug(f"Batch {batch_counter}: pred_actions = {pred_actions}")
+
             mses, maes, invalid_preds, batch_preds = calculate_batch_metrics(pred_actions, gt_actions, probs, num_actions)
             all_mses.extend(mses)
             all_maes.extend(maes)
