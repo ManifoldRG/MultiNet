@@ -6,6 +6,7 @@ import logging
 import time
 import types
 import gc
+import warnings
 from typing import Optional, Tuple
 import numpy as np
 import torch
@@ -40,6 +41,9 @@ from src.eval_utils import (
     get_macro_recall,
     get_macro_f1,
 )
+
+# Suppress warnings to reduce log clutter
+warnings.filterwarnings("ignore")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -121,55 +125,67 @@ def fixed_magma_forward(
         attentions=outputs.attentions,
     )
 
-def stable_softmax(logits):
-    """Apply softmax with numerical stability by subtracting the max value."""
-    max_logits = torch.max(logits, dim=-1, keepdim=True)[0]
-    exp_logits = torch.exp(logits - max_logits)
-    return exp_logits / torch.sum(exp_logits, dim=-1, keepdim=True)
-
-def calculate_batch_metrics(pred_probs, gt_actions, full_probs, num_actions, vocab_size, invalid_threshold=0.1):
+def calculate_batch_metrics(pred_probs, gt_actions, num_actions):
     one_hot_labels = []
     for gt in gt_actions:
-        one_hot = [0.0] * num_actions
+        one_hot = np.zeros(num_actions, dtype=np.float32)
         one_hot[int(gt)] = 1.0
         one_hot_labels.append(one_hot)
+    one_hot_labels = np.array(one_hot_labels)
+    
     brier_mses, brier_maes, pred_actions = [], [], []
     total_invalid_preds = 0
+    
     for i in range(len(pred_probs)):
-        prob = pred_probs[i]
-        if np.any(np.isnan(prob)) or np.any(np.isinf(prob)):
-            logger.warning(f"NaN or Inf in pred_probs at index {i}")
-            prob = np.full(num_actions, 1.0 / num_actions)
+        prob = np.array(pred_probs[i], dtype=np.float32)
+        if len(prob) != num_actions or np.any(np.isnan(prob)) or np.any(np.isinf(prob)) or not np.isclose(np.sum(prob), 1.0, rtol=1e-5):
+            logger.warning(f"Invalid pred_probs at index {i}: length={len(prob)}, sum={np.sum(prob)}, isnan={np.any(np.isnan(prob))}, isinf={np.any(np.isinf(prob))}")
+            prob = np.full(num_actions, 1.0 / num_actions, dtype=np.float32)
             total_invalid_preds += 1
             pred_action = -1
         else:
-            non_action_probs = full_probs[i][:-num_actions]
-            invalid = np.sum(non_action_probs) > invalid_threshold
-            if invalid:
-                total_invalid_preds += 1
-                prob = np.full(num_actions, 1.0 / num_actions)
-                pred_action = -1
-            else:
-                pred_action = np.argmax(prob)
-        mae = calculate_brier_mae(prob, one_hot_labels[i])
-        mse = calculate_brier_mse(prob, one_hot_labels[i])
+            pred_action = np.argmax(prob)
+        
+        try:
+            mae = calculate_brier_mae(prob, one_hot_labels[i])
+            mse = calculate_brier_mse(prob, one_hot_labels[i])
+            # Ensure scalar outputs
+            mae = float(mae.item() if isinstance(mae, np.ndarray) else mae)
+            mse = float(mse.item() if isinstance(mse, np.ndarray) else mse)
+        except Exception as e:
+            logger.warning(f"Error computing MAE/MSE at index {i}: {e}; using worst-case values")
+            mae = MAX_BRIER_MAE_ERROR
+            mse = MAX_BRIER_MSE_ERROR
+            total_invalid_preds += 1
+            pred_action = -1
+        
         if np.isnan(mae) or np.isinf(mae):
-            logger.warning(f"Invalid MAE at index {i}; using worst-case value")
-            brier_maes.append(MAX_BRIER_MAE_ERROR)
-        else:
-            brier_maes.append(mae)
+            logger.warning(f"Invalid MAE at index {i}: {mae}; using worst-case value")
+            mae = MAX_BRIER_MAE_ERROR
         if np.isnan(mse) or np.isinf(mse):
-            logger.warning(f"Invalid MSE at index {i}; using worst-case value")
-            brier_mses.append(MAX_BRIER_MSE_ERROR)
-        else:
-            brier_mses.append(mse)
+            logger.warning(f"Invalid MSE at index {i}: {mse}; using worst-case value")
+            mse = MAX_BRIER_MSE_ERROR
+        
+        brier_maes.append(mae)
+        brier_mses.append(mse)
         pred_actions.append(pred_action)
+    
     return brier_mses, brier_maes, total_invalid_preds, pred_actions
 
 def calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_actions, n_invalid_outputs):
     result = {}
-    # Handle empty or invalid metric lists with worst-case defaults
-    if not timestep_maes or all(np.isnan(x) or np.isinf(x) for x in timestep_maes):
+    logger.debug(f"timestep_maes: {timestep_maes}")
+    logger.debug(f"timestep_mses: {timestep_mses}")
+    
+    # Convert to numpy arrays and ensure scalar values
+    timestep_maes = [float(x) if not np.isscalar(x) else x for x in timestep_maes]
+    timestep_mses = [float(x) if not np.isscalar(x) else x for x in timestep_mses]
+    
+    # Check for invalid metrics
+    mae_invalid = not timestep_maes or any(np.isnan(x) or np.isinf(x) for x in timestep_maes)
+    mse_invalid = not timestep_mses or any(np.isnan(x) or np.isinf(x) for x in timestep_mses)
+    
+    if mae_invalid:
         logger.warning("No valid MAEs collected; setting MAE-related metrics to worst-case values")
         average_dataset_mae = MAX_BRIER_MAE_ERROR
         average_normalized_mae = MAX_BRIER_MAE_ERROR
@@ -179,40 +195,58 @@ def calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_acti
         normalized_maes = [MAX_BRIER_MAE_ERROR] * len(timestep_maes) if timestep_maes else []
         normalized_quantile_filtered_maes = [MAX_BRIER_MAE_ERROR] * len(timestep_maes) if timestep_maes else []
     else:
-        average_dataset_mae = calculate_mean(timestep_maes) if timestep_maes else MAX_BRIER_MAE_ERROR
-        normalized_maes = min_max_normalize(timestep_maes) if timestep_maes else [MAX_BRIER_MAE_ERROR] * len(timestep_maes)
-        average_normalized_mae = calculate_mean(normalized_maes) if normalized_maes else MAX_BRIER_MAE_ERROR
-        quantile_filtered_maes = quantile_filter(timestep_maes) if timestep_maes else [MAX_BRIER_MAE_ERROR] * len(timestep_maes)
-        normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes) if quantile_filtered_maes else [MAX_BRIER_MAE_ERROR] * len(timestep_maes)
-        average_normalized_quantile_filtered_mae = calculate_mean(normalized_quantile_filtered_maes) if normalized_quantile_filtered_maes else MAX_BRIER_MAE_ERROR
-        max_rel_mae = calculate_max_relative_mae(timestep_maes) if timestep_maes else MAX_BRIER_MAE_ERROR
-        prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(timestep_maes) if timestep_maes else 1.0
-    if not timestep_mses or all(np.isnan(x) or np.isinf(x) for x in timestep_mses):
+        try:
+            average_dataset_mae = float(calculate_mean(timestep_maes))
+            normalized_maes = min_max_normalize(timestep_maes)
+            average_normalized_mae = float(calculate_mean(normalized_maes))
+            quantile_filtered_maes = quantile_filter(timestep_maes)
+            normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
+            average_normalized_quantile_filtered_mae = float(calculate_mean(normalized_quantile_filtered_maes))
+            max_rel_mae = float(calculate_max_relative_mae(timestep_maes))
+            prop_beyond_threshold_mae = float(calculate_proportion_beyond_mae_threshold(timestep_maes))
+        except Exception as e:
+            logger.warning(f"Error computing MAE metrics: {e}; using worst-case values")
+            average_dataset_mae = MAX_BRIER_MAE_ERROR
+            average_normalized_mae = MAX_BRIER_MAE_ERROR
+            average_normalized_quantile_filtered_mae = MAX_BRIER_MAE_ERROR
+            max_rel_mae = MAX_BRIER_MAE_ERROR
+            prop_beyond_threshold_mae = 1.0
+            normalized_maes = [MAX_BRIER_MAE_ERROR] * len(timestep_maes) if timestep_maes else []
+            normalized_quantile_filtered_maes = [MAX_BRIER_MAE_ERROR] * len(timestep_maes) if timestep_maes else []
+    
+    if mse_invalid:
         logger.warning("No valid MSEs collected; setting MSE-related metrics to worst-case values")
         total_dataset_amse = len(timestep_mses) * MAX_BRIER_MSE_ERROR if timestep_mses else 0.0
         avg_dataset_amse = MAX_BRIER_MSE_ERROR
         normalized_amse = MAX_BRIER_MSE_ERROR
     else:
-        total_dataset_amse = sum(timestep_mses) if timestep_mses else 0.0
-        num_timesteps = len(timestep_mses)
-        avg_dataset_amse = total_dataset_amse / num_timesteps if num_timesteps > 0 else MAX_BRIER_MSE_ERROR
-        normalized_mses = min_max_normalize(timestep_mses) if timestep_mses else [MAX_BRIER_MSE_ERROR] * len(timestep_mses)
-        normalized_amse = calculate_mean(normalized_mses) if normalized_mses else MAX_BRIER_MSE_ERROR
+        try:
+            total_dataset_amse = float(sum(timestep_mses))
+            num_timesteps = len(timestep_mses)
+            avg_dataset_amse = total_dataset_amse / num_timesteps if num_timesteps > 0 else MAX_BRIER_MSE_ERROR
+            normalized_mses = min_max_normalize(timestep_mses)
+            normalized_amse = float(calculate_mean(normalized_mses))
+        except Exception as e:
+            logger.warning(f"Error computing MSE metrics: {e}; using worst-case values")
+            total_dataset_amse = len(timestep_mses) * MAX_BRIER_MSE_ERROR if timestep_mses else 0.0
+            avg_dataset_amse = MAX_BRIER_MSE_ERROR
+            normalized_amse = MAX_BRIER_MSE_ERROR
+    
     possible_actions = list(range(num_actions))
     try:
         tp, fp, fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(preds, trues, possible_actions)
-        precision = get_micro_precision_from_counts(tp, fp)
-        precision_without_invalid = get_micro_precision_from_counts(tp, valid_fp)
-        recall = get_micro_recall_from_counts(tp, fn)
-        f1 = get_micro_f1(precision, recall)
-        f1_without_invalid = get_micro_f1(precision_without_invalid, recall)
+        precision = float(get_micro_precision_from_counts(tp, fp))
+        precision_without_invalid = float(get_micro_precision_from_counts(tp, valid_fp))
+        recall = float(get_micro_recall_from_counts(tp, fn))
+        f1 = float(get_micro_f1(precision, recall))
+        f1_without_invalid = float(get_micro_f1(precision_without_invalid, recall))
         class_precisions = get_precision_per_class(preds, trues, possible_actions)
         class_recalls = get_recall_per_class(preds, trues, possible_actions)
         class_f1s = get_f1_per_class(class_precisions, class_recalls)
-        macro_precision = get_macro_precision(class_precisions)
-        macro_recall = get_macro_recall(class_recalls)
-        macro_f1 = get_macro_f1(class_f1s)
-        exact_match_rate = get_exact_match_rate(preds, trues)
+        macro_precision = float(get_macro_precision(class_precisions))
+        macro_recall = float(get_macro_recall(class_recalls))
+        macro_f1 = float(get_macro_f1(class_f1s))
+        exact_match_rate = float(get_exact_match_rate(preds, trues))
     except Exception as e:
         logger.warning(f"Error in classification metrics: {e}; setting to worst-case values")
         tp = fp = fn = valid_fp = invalid_fp = 0
@@ -222,9 +256,10 @@ def calculate_final_metrics(timestep_mses, timestep_maes, preds, trues, num_acti
         class_f1s = [0.0] * num_actions
         macro_precision = macro_recall = macro_f1 = 0.0
         exact_match_rate = 0.0
+    
     result["exact_match"] = exact_match_rate
     result["total_dataset_amse"] = total_dataset_amse
-    result["total_dataset_amae"] = sum(timestep_maes) if timestep_maes else 0.0
+    result["total_dataset_amae"] = float(sum(timestep_maes)) if timestep_maes else 0.0
     result["num_timesteps"] = len(timestep_mses)
     result["avg_dataset_amse"] = avg_dataset_amse
     result["avg_dataset_amae"] = average_dataset_mae
@@ -256,12 +291,13 @@ def run_evaluation(args):
     os.makedirs(args.output_dir, exist_ok=True)
     
     logger.info("Loading model and processor...")
+    dtype = torch.bfloat16
     try:
         model = AutoModelForCausalLM.from_pretrained(
             "microsoft/Magma-8B",
             trust_remote_code=True,
             device_map="auto",
-            torch_dtype=torch.float16,
+            torch_dtype=dtype,
             low_cpu_mem_usage=True,
         )
         processor = AutoProcessor.from_pretrained("microsoft/Magma-8B", trust_remote_code=True)
@@ -308,6 +344,8 @@ def run_evaluation(args):
         all_probs = [[1.0 / num_actions] * num_actions] * args.batch_size
         total_invalid_outputs = args.batch_size
     else:
+        action_map = OverCookedDefinitions.ACTION_MEANINGS
+        system_content = f"You are an AI agent that selects one of the following actions based on the image: {', '.join([f'{k}: {v}' for k,v in action_map.items()])}. Output only the action number."
         for batch_counter, batch in enumerate(dataloader, 1):
             print("--------------------------------------------------------------------------")
             print("--------------------------------------------------------------------------")
@@ -321,7 +359,6 @@ def run_evaluation(args):
                 gt_actions = [int(gt) if isinstance(gt, (int, np.integer)) and 0 <= gt < num_actions else 0 for gt in gt_actions]
                 logger.debug(f"Batch {batch_counter}: gt_actions = {gt_actions}")
                 logger.debug(f"Batch {batch_counter}: image shapes = {[img.size for img in images]}")
-
                 prompts = []
                 for i in range(len(env_names)):
                     env_name = env_names[i]
@@ -336,40 +373,78 @@ def run_evaluation(args):
                         time_elapsed[i],
                         additional_inst
                     )
-                    prompt = processor.tokenizer.apply_chat_template([{"role": "user", "content": f"<image>\n{inst}"}], tokenize=False, add_generation_prompt=True)
+                    convs = [
+                        {"role": "system", "content": system_content},
+                        {"role": "user", "content": f"<image>\n{inst}"},
+                    ]
+                    prompt = processor.tokenizer.apply_chat_template(convs, tokenize=False, add_generation_prompt=True)
                     prompts.append(prompt)
                 inputs = processor(texts=prompts, images=images, return_tensors="pt", padding=True)
                 inputs = {k: v.to(model.device) for k, v in inputs.items()}
                 if 'pixel_values' in inputs and inputs['pixel_values'] is not None:
-                    inputs['pixel_values'] = inputs['pixel_values'].to(torch.float16)
+                    inputs['pixel_values'] = inputs['pixel_values'].to(dtype)
                     if torch.isnan(inputs['pixel_values']).any() or torch.isinf(inputs['pixel_values']).any():
                         logger.error("NaN or Inf detected in pixel_values")
-                with torch.inference_mode():
-                    outputs = model(**inputs)
-                    logits = outputs.logits[:, -1, :]
+                base_input_ids = inputs['input_ids']
+                base_attention_mask = inputs['attention_mask']
+                pixel_values = inputs.get('pixel_values')
+                image_sizes = inputs.get('image_sizes')
+                batch_size = base_input_ids.shape[0]
+                # Append prefix
+                action_prefix_str = "The action number is: "
+                prefix_tokens = processor.tokenizer(action_prefix_str, add_special_tokens=False, return_tensors="pt").input_ids.to(model.device)
+                base_input_ids = torch.cat([base_input_ids, prefix_tokens.repeat(batch_size, 1)], dim=1)
+                base_attention_mask = torch.cat([base_attention_mask, torch.ones(batch_size, prefix_tokens.shape[1], dtype=base_attention_mask.dtype, device=model.device)], dim=1)
+                base_len = base_input_ids.shape[1]
+                # Compute logprobs
+                all_logprobs = torch.full((batch_size, num_actions), float('-inf'), device=model.device, dtype=torch.float32)
+                for action_idx in range(num_actions):
+                    action_str = str(action_idx)
+                    action_tokens = processor.tokenizer(action_str, add_special_tokens=False).input_ids
+                    action_tokens_tensor = torch.tensor([action_tokens] * batch_size, device=model.device)  # batch_size x l
+                    l = action_tokens_tensor.shape[1]
+                    full_input_ids = torch.cat([base_input_ids, action_tokens_tensor], dim=1)
+                    full_attention_mask = torch.cat([base_attention_mask, torch.ones(batch_size, l, dtype=base_attention_mask.dtype, device=model.device)], dim=1)
+                    inputs_dict = {
+                        'input_ids': full_input_ids,
+                        'attention_mask': full_attention_mask,
+                    }
+                    if pixel_values is not None:
+                        inputs_dict['pixel_values'] = pixel_values
+                    if image_sizes is not None:
+                        inputs_dict['image_sizes'] = image_sizes
+                    with torch.inference_mode():
+                        outputs = model(**inputs_dict)
+                    logits = outputs.logits
                     if torch.isnan(logits).any() or torch.isinf(logits).any():
                         logger.error(f"Batch {batch_counter}: NaN or Inf in logits")
-                        action_probs = np.full((logits.shape[0], num_actions), 1.0 / num_actions)
-                        full_probs = np.full((logits.shape[0], logits.shape[-1]), 1.0 / logits.shape[-1])
-                    else:
-                        logits = torch.clamp(logits, -100, 100)
-                        action_probs = stable_softmax(logits[:, -num_actions:]).cpu().numpy()
-                        full_probs = stable_softmax(logits).cpu().numpy()
-                for i, prob in enumerate(action_probs):
+                    action_logits = logits[:, base_len:base_len + l, :]  # batch_size x l x V
+                    log_probs = torch.log_softmax(action_logits, dim=-1)
+                    gather_index = action_tokens_tensor.unsqueeze(-1)  # batch_size x l x 1
+                    token_logprobs = log_probs.gather(dim=-1, index=gather_index).squeeze(-1)  # batch_size x l
+                    sum_logprobs = token_logprobs.sum(dim=-1)  # batch_size
+                    all_logprobs[:, action_idx] = sum_logprobs
+                # Convert to probs
+                max_log = all_logprobs.max(dim=-1, keepdim=True)[0]
+                exp_log = torch.exp(all_logprobs - max_log)
+                sum_exp = exp_log.sum(dim=-1, keepdim=True)
+                action_probs = exp_log / sum_exp  # batch_size x num_actions
+                action_probs_np = action_probs.cpu().numpy()
+                for i, prob in enumerate(action_probs_np):
                     if len(prob) != num_actions or not np.isclose(np.sum(prob), 1.0, rtol=1e-5):
                         logger.warning(f"Batch {batch_counter}: Invalid probability distribution at index {i}: length={len(prob)}, sum={np.sum(prob)}")
-                        action_probs[i] = np.full(num_actions, 1.0 / num_actions)
+                        action_probs_np[i] = np.full(num_actions, 1.0 / num_actions)
                 mses, maes, invalid_preds, pred_actions = calculate_batch_metrics(
-                    action_probs, gt_actions, full_probs, num_actions, vocab_size=logits.shape[-1]
+                    action_probs_np, gt_actions, num_actions
                 )
                 all_mses.extend(mses)
                 all_maes.extend(maes)
                 all_preds.extend(pred_actions)
                 all_trues.extend(gt_actions)
-                all_probs.extend(action_probs.tolist())
+                all_probs.extend(action_probs_np.tolist())
                 total_invalid_outputs += invalid_preds
                 logger.info(f"--- Processed Batch {batch_counter}/{total_batches} ---")
-                print(f"PROBS = {action_probs}")
+                print(f"PROBS = {action_probs_np}")
                 print(f"Batch {batch_counter}: pred_actions = {pred_actions}")
                 
             except Exception as e:
@@ -419,6 +494,7 @@ def run_evaluation(args):
             "class_f1s": [0.0] * num_actions,
             "total_invalids": int(total_invalid_outputs),
             "percentage_invalids": 100.0,
+            "n_invalid_outputs": int(total_invalid_outputs),
             "preds": [int(pred) for pred in all_preds],
             "gt_actions": [int(true) for true in all_trues],
             "action_probabilities": all_probs
