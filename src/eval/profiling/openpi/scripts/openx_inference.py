@@ -54,6 +54,126 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 
+def _binarize_gripper_actions(actions: np.ndarray) -> np.ndarray:
+    """
+    Converts gripper actions from continuous to binary values (0 and 1).
+    Simplified version for numpy arrays.
+    """
+    open_mask = actions > 0.95
+    closed_mask = actions < 0.05
+    # For values in between, use 0.5 threshold
+    return np.where(actions > 0.5, 1.0, 0.0)
+
+
+def _invert_gripper_actions(actions: np.ndarray) -> np.ndarray:
+    """Invert gripper actions: 1 - actions"""
+    return 1.0 - actions
+
+
+def _rel2abs_gripper_actions(actions: np.ndarray) -> np.ndarray:
+    """
+    Converts relative gripper actions (+1 for closing, -1 for opening) to absolute actions (0 = closed; 1 = open).
+    Simplified version for numpy arrays.
+    """
+    # Note =>> -1 for closing, 1 for opening, 0 for no change
+    opening_mask = actions < -0.1
+    closing_mask = actions > 0.1
+    thresholded_actions = np.where(opening_mask, 1, np.where(closing_mask, -1, 0))
+    
+    # Convert to 0 = closed, 1 = open
+    new_actions = thresholded_actions / 2 + 0.5
+    
+    return new_actions
+
+
+def _create_action_tensor_from_dict(action_dict: Dict[str, np.ndarray], dataset_name: str) -> np.ndarray:
+    """
+    Create action tensor from action dictionary based on dataset type.
+    Follows specific transforms from transforms.py for rt1 and bridge_oxe datasets.
+    """
+    if action_dict is None:
+        return None
+    
+    action_components = []
+    logger.info(f"Processing action_dict for {dataset_name} with keys: {list(action_dict.keys())}")
+    
+    # RT1 dataset transform (openx_mobile_manipulation)
+    # trajectory["action"] = tf.concat((world_vector, rotation_delta, rel2abs_gripper_actions(gripper_closedness_action)), axis=-1)
+    if dataset_name == 'openx_mobile_manipulation':
+        # RT1 dataset expects: world_vector + rotation_delta + gripper_closedness_action
+        if 'world_vector' in action_dict and 'rotation_delta' in action_dict and 'gripper_closedness_action' in action_dict:
+            # Add world_vector (3D)
+            world_vector = np.array(action_dict['world_vector'])
+            if world_vector.ndim == 0:
+                world_vector = world_vector.reshape(1)
+            elif world_vector.ndim > 1:
+                world_vector = world_vector.flatten()
+            action_components.append(world_vector)
+            logger.info(f"RT1: Added world_vector with shape {world_vector.shape}")
+            
+            # Add rotation_delta (3D)
+            rotation_delta = np.array(action_dict['rotation_delta'])
+            if rotation_delta.ndim == 0:
+                rotation_delta = rotation_delta.reshape(1)
+            elif rotation_delta.ndim > 1:
+                rotation_delta = rotation_delta.flatten()
+            action_components.append(rotation_delta)
+            logger.info(f"RT1: Added rotation_delta with shape {rotation_delta.shape}")
+            
+            # Add processed gripper_closedness_action (1D) with rel2abs conversion
+            gripper_raw = np.array(action_dict['gripper_closedness_action'])
+            if gripper_raw.ndim == 0:
+                gripper_raw = gripper_raw.reshape(1)
+            elif gripper_raw.ndim > 1:
+                gripper_raw = gripper_raw.flatten()
+            
+            # Apply rel2abs_gripper_actions transform (RT1 specific)
+            gripper_action = _rel2abs_gripper_actions(gripper_raw)
+            if gripper_action.ndim == 0:
+                gripper_action = gripper_action.reshape(1)
+            action_components.append(gripper_action)
+            logger.info(f"RT1: Added gripper_closedness_action with shape {gripper_action.shape}")
+        else:
+            logger.warning(f"RT1 dataset missing required keys: world_vector, rotation_delta, gripper_closedness_action")
+            return None
+    
+    # Bridge OXE dataset transform (openx_single_arm)  
+    # trajectory["action"] = tf.concat((world_vector, rotation_delta, tf.cast(open_gripper[:, None], tf.float32)), axis=-1)
+    elif dataset_name == 'openx_single_arm':
+        # Bridge OXE dataset expects: world_vector + rotation_delta + open_gripper
+        if 'world_vector' in action_dict and 'rotation_delta' in action_dict and 'open_gripper' in action_dict:
+            # Add world_vector (3D)
+            world_vector = np.array(action_dict['world_vector'])
+            if world_vector.ndim == 0:
+                world_vector = world_vector.reshape(1)
+            elif world_vector.ndim > 1:
+                world_vector = world_vector.flatten()
+            action_components.append(world_vector)
+            logger.info(f"Bridge OXE: Added world_vector with shape {world_vector.shape}")
+            
+            # Add rotation_delta (3D)
+            rotation_delta = np.array(action_dict['rotation_delta'])
+            if rotation_delta.ndim == 0:
+                rotation_delta = rotation_delta.reshape(1)
+            elif rotation_delta.ndim > 1:
+                rotation_delta = rotation_delta.flatten()
+            action_components.append(rotation_delta)
+            logger.info(f"Bridge OXE: Added rotation_delta with shape {rotation_delta.shape}")
+            
+            # Add open_gripper (1D) cast to float32
+            gripper_raw = np.array(action_dict['open_gripper'])
+            if gripper_raw.ndim == 0:
+                gripper_raw = gripper_raw.reshape(1)
+            elif gripper_raw.ndim > 1:
+                gripper_raw = gripper_raw.flatten()
+            gripper_action = gripper_raw.astype(np.float32)
+            action_components.append(gripper_action)
+            logger.info(f"Bridge OXE: Added open_gripper with shape {gripper_action.shape}")
+        else:
+            logger.warning(f"Bridge OXE dataset missing required keys: world_vector, rotation_delta, open_gripper")
+            return None
+
+
 def _calculate_batch_metrics(pred_actions, gt_actions, action_stats=None):
     """Calculate MSE and MAE metrics for a batch of continuous actions."""
     if action_stats is None:
@@ -417,7 +537,41 @@ class OpenXInference:
             actions = model.sample_actions(key, observation, num_steps=ModelConfig.DEFAULT_NUM_STEPS)
             processed_actions = self.process_output(actions, dataset_stats, dataset)
 
+            # Process ground truth actions - check for action_dict first
             gt_actions = batch['action']
+            
+            # Check if action_dict is available and dataset requires special processing
+            if ('action_dict' in batch and batch['action_dict'] is not None and 
+                len(batch['action_dict']) > 0):
+                action_dicts = batch['action_dict']
+                
+                # Check if this is a dataset that requires action dict processing
+                if dataset in ['openx_mobile_manipulation', 'openx_single_arm']:
+                    logger.info(f"Processing action_dict for dataset {dataset}")
+                    processed_gt_actions = []
+                    
+                    for i, action_dict in enumerate(action_dicts):
+                        if action_dict is not None and len(action_dict) > 0:
+                            # Create action tensor from dictionary
+                            action_tensor = _create_action_tensor_from_dict(action_dict, dataset)
+                            if action_tensor is not None:
+                                processed_gt_actions.append(action_tensor)
+                                logger.info(f"Sample {i}: Created action tensor with shape {action_tensor.shape}")
+                            else:
+                                # Fallback to original action if dict processing fails
+                                processed_gt_actions.append(np.array(gt_actions[i]))
+                                logger.warning(f"Sample {i}: Falling back to original action")
+                        else:
+                            # Use original action if dict is None or empty
+                            processed_gt_actions.append(np.array(gt_actions[i]))
+                    
+                    if processed_gt_actions:
+                        gt_actions = processed_gt_actions
+                        logger.info(f"Successfully processed {len(processed_gt_actions)} actions from action_dict")
+                    else:
+                        logger.warning("No valid actions processed from action_dict, using original actions")
+            
+            # Convert to numpy array format
             gt_actions = np.array([np.array(action) for action in gt_actions])
 
             # Dynamic action comparison - clip GT to match prediction dimension
@@ -590,6 +744,57 @@ def main():
     # Get dataset stats from the dataset object
     dataset_stats_dict = dataset.action_stats
     dataset_stats = {'action': normalize.NormStats(**dataset_stats_dict)}
+
+    # Determine dynamic action dimension based on ground truth actions
+    dynamic_action_dim = None
+    sample_batch = None
+    try:
+        # Get first batch to analyze action dimensions
+        for batch in dataloader:
+            sample_batch = batch
+            break
+        
+        if sample_batch is not None:
+            # Process sample actions to determine correct action dimension
+            sample_gt_actions = sample_batch['action']
+            
+            # Check if action_dict processing is needed for this dataset
+            if ('action_dict' in sample_batch and sample_batch['action_dict'] is not None and 
+                len(sample_batch['action_dict']) > 0 and 
+                dataset_name in ['openx_mobile_manipulation', 'openx_single_arm']):
+                logger.info(f"Analyzing action_dict for dynamic action dimension for dataset {dataset_name}")
+                
+                # Process first action_dict to get dimension
+                action_dicts = sample_batch['action_dict']
+                for action_dict in action_dicts:
+                    if action_dict is not None and len(action_dict) > 0:
+                        action_tensor = _create_action_tensor_from_dict(action_dict, dataset_name)
+                        if action_tensor is not None:
+                            dynamic_action_dim = len(action_tensor)
+                            logger.info(f"Determined dynamic action dimension: {dynamic_action_dim} from action_dict")
+                            break
+            
+            # Fallback to using regular action dimension
+            if dynamic_action_dim is None:
+                sample_action = np.array(sample_gt_actions[0])
+                dynamic_action_dim = len(sample_action)
+                logger.info(f"Determined dynamic action dimension: {dynamic_action_dim} from regular action")
+            
+            logger.info(f"Using dynamic action dimension: {dynamic_action_dim}")
+            
+        # Reload model with dynamic action dimension if different from default
+        if dynamic_action_dim is not None and dynamic_action_dim != config.action_dim:
+            logger.info(f"Reloading model with action_dim={dynamic_action_dim} (was {config.action_dim})")
+            config = pi0.Pi0Config(action_horizon=ModelConfig.DEFAULT_ACTION_HORIZON, action_dim=dynamic_action_dim)
+            model = config.load(_model.restore_params(download.maybe_download("s3://openpi-assets/checkpoints/pi0_base/params")))
+            openx_inference = OpenXInference(model, tokenizer, config)
+            
+        # Recreate dataloader since we consumed the first batch
+        dataset, dataloader = get_openx_dataloader(shard_paths, args.batch_size, dataset_name)
+        
+    except Exception as e:
+        logger.warning(f"Failed to determine dynamic action dimension: {e}")
+        logger.info("Using default model configuration")
 
     # Save stats to a file (with comprehensive numpy array conversion)
     def convert_numpy_arrays(obj):
