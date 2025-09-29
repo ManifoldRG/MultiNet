@@ -114,6 +114,7 @@ class BFCLDataset(Dataset):
         ground_truth = conversation_data['ground_truth']
         involved_classes = conversation_data['involved_classes']
         initial_config = conversation_data['initial_config']
+        path = conversation_data['path']
         
         prompt_parts = []
         
@@ -124,8 +125,9 @@ class BFCLDataset(Dataset):
             prompt_parts.append("")
         
         # Add available tools information
-        if involved_classes:
+        if involved_classes and path:
             prompt_parts.append(f"Available Tool Classes: {', '.join(involved_classes)}")
+            prompt_parts.append(f"Available Functions: {', '.join([func.split('.')[-1] for func in path])}")
             prompt_parts.append("")
         
         # Add multi-turn conversation

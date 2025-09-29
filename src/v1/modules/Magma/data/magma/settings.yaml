@@ -1,0 +1,15 @@
+# tracker settings
+tracker:
+  backward_tracking: true
+  ckpt_path: ./checkpoints/cotracker2.pth
+  grid_query_frame: 0
+  grid_size: 32
+  save_dir: ./
+
+# sft settings
+trace_processor:
+  num_clusters: 3
+trace_planner:
+  quant_size: 200
+  skip_frames: 16
+  step_to_predict: 16 # use same setting as COIN since the videos have 30fps

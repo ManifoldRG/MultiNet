@@ -37,6 +37,14 @@ class ODinWDataset(Dataset):
         
         with open(categories_file, 'r') as f:
             categories_data = json.load(f)
+            
+        # Filter out categories where supercategory == "none"
+        filtered = [c for c in categories_data["categories"] if c["supercategory"] != "none"]
+
+        # Update metadata
+        categories_data["categories"] = filtered
+        categories_data["num_categories"] = len(filtered)
+        categories_data["category_names"] = [c["name"] for c in filtered]
         
         return categories_data
     
@@ -152,7 +160,8 @@ class ODinWDataset(Dataset):
         # Apply transforms if provided
         if self.transform is not None:
             image = self.transform(image)
-        
+            
+        image = np.array(image)
         # Create classification question
         question_text, correct_option_idx, options = self._create_classification_question(sample_data)
         

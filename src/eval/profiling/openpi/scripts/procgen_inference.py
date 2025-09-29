@@ -42,30 +42,23 @@ os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
 class DatasetResults:
     all_preds: list[list[float]] = field(default_factory=list)
     all_gt: list[list[float]] = field(default_factory=list)
+    all_clipped_preds: list[list[float]] = field(default_factory=list)
     
     total_batches: int = 0
     total_timesteps: int = 0
     eval_time: float = 0
     total_invalid_predictions: int = 0
     invalid_predictions_percentage: float = 0
-    total_emr: float = 0
-    total_micro_precision: float = 0
-    total_micro_recall: float = 0
-    total_micro_f1: float = 0
+    
+    # Final metrics (calculated on full dataset at the end)
     avg_emr: float = 0
     avg_micro_precision: float = 0
     avg_micro_recall: float = 0
     avg_micro_f1: float = 0
-    total_clipped_emr: float = 0
-    total_clipped_micro_precision: float = 0
-    total_clipped_micro_recall: float = 0
-    total_clipped_micro_f1: float = 0
     avg_clipped_emr: float = 0
     avg_clipped_micro_precision: float = 0
     avg_clipped_micro_recall: float = 0
     avg_clipped_micro_f1: float = 0
-    total_micro_precision_without_invalids: float = 0
-    total_micro_f1_without_invalids: float = 0
     avg_micro_precision_without_invalids: float = 0
     avg_micro_f1_without_invalids: float = 0
 
@@ -242,74 +235,20 @@ class ProcGenInference:
             #print('Ground truth actions: ', gt_actions)
             #print('Predicted actions: ', unnormalized_discrete_actions)
             
-            # Calculate metrics
-            emr = get_exact_match_rate(unnormalized_discrete_actions, gt_actions)
+            # Get action space for clipping and storing data
             action_space = sorted(ProcGenDefinitions.get_valid_action_space(dataset, 'default'))
-            
-            # Calculate metrics counts once and reuse
-            total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
-                unnormalized_discrete_actions, gt_actions, action_space
-            )
-
-            # Calculate all metrics using the same counts
-            """
-            using micro to avoid minority class distortion since we expect the action predictions to be imbalanced.
-            e.g. in one episode, the agent might take the same action consecutively to reach a goal in a straight line.
-            """
-            micro_precision = get_micro_precision_from_counts(total_tp, total_fp)
-            micro_recall = get_micro_recall_from_counts(total_tp, total_fn)
-            micro_f1 = get_micro_f1(micro_precision, micro_recall)
-            
-            print(f"Unclipped Micro Precision: {micro_precision}, Micro Recall: {micro_recall}, Micro F1: {micro_f1}")
-            
-            # Calculate metrics that count invalid predictions as both false positives and false negatives
-            total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
-                unnormalized_discrete_actions, gt_actions, action_space
-            )
-
-            micro_precision_without_invalids = get_micro_precision_from_counts(total_tp, valid_fp)
-            micro_f1_without_invalids = get_micro_f1(micro_precision_without_invalids, micro_recall) # micro_recall is not affected
-
-            print(f"Unclipped Micro Precision without invalids: {micro_precision_without_invalids}, \
-                  Unclipped Micro F1 without invalids: {micro_f1_without_invalids}")
-
             clipped_predictions = np.clip(unnormalized_discrete_actions, action_space[0], action_space[-1])
-            clipped_emr = get_exact_match_rate(clipped_predictions, gt_actions)
-            clipped_total_tp, clipped_total_fp, clipped_total_fn, _, _ = calculate_tp_fp_fn_counts(
-                clipped_predictions, gt_actions, action_space
-            )
-            clipped_micro_precision = get_micro_precision_from_counts(clipped_total_tp, clipped_total_fp)
-            clipped_micro_recall = get_micro_recall_from_counts(clipped_total_tp, clipped_total_fn)
-            clipped_micro_f1 = get_micro_f1(clipped_micro_precision, clipped_micro_recall)
-
-            print(f"Clipped Micro Precision: {clipped_micro_precision}, Clipped Micro Recall: {clipped_micro_recall}, Clipped Micro F1: {clipped_micro_f1}")
 
             # Store results for this batch
             dataset_results.all_preds.extend(unnormalized_discrete_actions.tolist())
             dataset_results.all_gt.extend(gt_actions.tolist())
-            dataset_results.total_invalid_predictions += int(invalid_fp)  # invalid_fp is the same as the number of invalid predictions
+            dataset_results.all_clipped_preds.extend(clipped_predictions.tolist())
             dataset_results.total_batches = counter
             dataset_results.total_timesteps += len(actions)
-            dataset_results.total_emr += emr
-            dataset_results.total_micro_precision += micro_precision
-            dataset_results.total_micro_recall += micro_recall
-            dataset_results.total_micro_f1 += micro_f1
-
-            dataset_results.total_clipped_emr += clipped_emr
-            dataset_results.total_clipped_micro_precision += clipped_micro_precision
-            dataset_results.total_clipped_micro_recall += clipped_micro_recall
-            dataset_results.total_clipped_micro_f1 += clipped_micro_f1
-
-            dataset_results.total_micro_precision_without_invalids += micro_precision_without_invalids
-            dataset_results.total_micro_f1_without_invalids += micro_f1_without_invalids
 
             # Memory management
             del transformed_dict, observation, actions, unnormalized_discrete_actions, \
-                gt_actions, total_tp, total_fp, total_fn, clipped_predictions, \
-                clipped_total_tp, clipped_total_fp, clipped_total_fn, \
-                micro_precision, micro_recall, micro_f1, clipped_micro_precision, \
-                clipped_micro_recall, clipped_micro_f1, emr, clipped_emr, \
-                micro_precision_without_invalids, micro_f1_without_invalids
+                gt_actions, clipped_predictions
             gc.collect()
             jax.clear_caches()
             print(f"Processed {counter} episodes, cleared memory")
@@ -321,17 +260,90 @@ class ProcGenInference:
         end_time = time.perf_counter()
         eval_duration = end_time - start_time
         dataset_results.eval_time = eval_duration
-        dataset_results.avg_emr = dataset_results.total_emr / dataset_results.total_timesteps
-        dataset_results.invalid_predictions_percentage = dataset_results.total_invalid_predictions / dataset_results.total_timesteps * 100
-        dataset_results.avg_micro_precision = dataset_results.total_micro_precision / dataset_results.total_timesteps
-        dataset_results.avg_micro_recall = dataset_results.total_micro_recall / dataset_results.total_timesteps
-        dataset_results.avg_micro_f1 = dataset_results.total_micro_f1 / dataset_results.total_timesteps
-        dataset_results.avg_clipped_emr = dataset_results.total_clipped_emr / dataset_results.total_timesteps
-        dataset_results.avg_clipped_micro_precision = dataset_results.total_clipped_micro_precision / dataset_results.total_timesteps
-        dataset_results.avg_clipped_micro_recall = dataset_results.total_clipped_micro_recall / dataset_results.total_timesteps
-        dataset_results.avg_clipped_micro_f1 = dataset_results.total_clipped_micro_f1 / dataset_results.total_timesteps
-        dataset_results.avg_micro_precision_without_invalids = dataset_results.total_micro_precision_without_invalids / dataset_results.total_timesteps
-        dataset_results.avg_micro_f1_without_invalids = dataset_results.total_micro_f1_without_invalids / dataset_results.total_timesteps
+        
+        # Calculate all final metrics correctly using all accumulated predictions
+        if dataset_results.total_timesteps > 0:
+            # Flatten the lists since they contain lists of predictions
+            flat_all_preds = [item for sublist in dataset_results.all_preds for item in sublist] if dataset_results.all_preds else []
+            flat_all_gt = [item for sublist in dataset_results.all_gt for item in sublist] if dataset_results.all_gt else []
+            flat_all_clipped_preds = [item for sublist in dataset_results.all_clipped_preds for item in sublist] if dataset_results.all_clipped_preds else []
+            
+            # Convert to numpy arrays
+            all_preds = np.array(flat_all_preds)
+            all_gt = np.array(flat_all_gt)
+            all_clipped_preds = np.array(flat_all_clipped_preds)
+            
+            # Calculate EMR from all accumulated predictions
+            if len(all_preds) > 0 and len(all_gt) > 0:
+                dataset_results.avg_emr = get_exact_match_rate(all_preds, all_gt)
+            else:
+                dataset_results.avg_emr = 0.0
+            
+            # Get action space using the dataset parameter passed to this method
+            action_space = sorted(ProcGenDefinitions.get_valid_action_space(dataset, 'default'))
+            
+            # Calculate comprehensive metrics on full dataset
+            if len(all_preds) > 0 and len(all_gt) > 0:
+                # Calculate unclipped metrics
+                total_tp, total_fp, total_fn, valid_fp, invalid_fp = calculate_tp_fp_fn_counts(
+                    all_preds, all_gt, action_space
+                )
+                dataset_results.avg_micro_precision = get_micro_precision_from_counts(total_tp, total_fp)
+                dataset_results.avg_micro_recall = get_micro_recall_from_counts(total_tp, total_fn)
+                dataset_results.avg_micro_f1 = get_micro_f1(dataset_results.avg_micro_precision, dataset_results.avg_micro_recall)
+                
+                # Calculate metrics without invalid predictions
+                dataset_results.avg_micro_precision_without_invalids = get_micro_precision_from_counts(total_tp, valid_fp)
+                dataset_results.avg_micro_f1_without_invalids = get_micro_f1(
+                    dataset_results.avg_micro_precision_without_invalids, dataset_results.avg_micro_recall
+                )
+                dataset_results.total_invalid_predictions = int(invalid_fp)
+                dataset_results.invalid_predictions_percentage = invalid_fp / dataset_results.total_timesteps * 100
+                
+                # Calculate clipped metrics
+                if len(all_clipped_preds) > 0:
+                    dataset_results.avg_clipped_emr = get_exact_match_rate(all_clipped_preds, all_gt)
+                    
+                    clipped_total_tp, clipped_total_fp, clipped_total_fn, _, _ = calculate_tp_fp_fn_counts(
+                        all_clipped_preds, all_gt, action_space
+                    )
+                    dataset_results.avg_clipped_micro_precision = get_micro_precision_from_counts(clipped_total_tp, clipped_total_fp)
+                    dataset_results.avg_clipped_micro_recall = get_micro_recall_from_counts(clipped_total_tp, clipped_total_fn)
+                    dataset_results.avg_clipped_micro_f1 = get_micro_f1(
+                        dataset_results.avg_clipped_micro_precision, dataset_results.avg_clipped_micro_recall
+                    )
+                else:
+                    dataset_results.avg_clipped_emr = 0.0
+                    dataset_results.avg_clipped_micro_precision = 0.0
+                    dataset_results.avg_clipped_micro_recall = 0.0
+                    dataset_results.avg_clipped_micro_f1 = 0.0
+            else:
+                # Set all metrics to 0 if no valid data
+                dataset_results.avg_emr = 0.0
+                dataset_results.avg_micro_precision = 0.0
+                dataset_results.avg_micro_recall = 0.0
+                dataset_results.avg_micro_f1 = 0.0
+                dataset_results.avg_micro_precision_without_invalids = 0.0
+                dataset_results.avg_micro_f1_without_invalids = 0.0
+                dataset_results.invalid_predictions_percentage = 0.0
+                dataset_results.avg_clipped_emr = 0.0
+                dataset_results.avg_clipped_micro_precision = 0.0
+                dataset_results.avg_clipped_micro_recall = 0.0
+                dataset_results.avg_clipped_micro_f1 = 0.0
+            
+            print(f"\n=== FINAL METRICS (calculated on full dataset) ===")
+            print(f"Exact Match Rate: {dataset_results.avg_emr:.4f}")
+            print(f"Unclipped Micro Precision: {dataset_results.avg_micro_precision:.4f}")
+            print(f"Unclipped Micro Recall: {dataset_results.avg_micro_recall:.4f}")
+            print(f"Unclipped Micro F1: {dataset_results.avg_micro_f1:.4f}")
+            print(f"Micro Precision without invalids: {dataset_results.avg_micro_precision_without_invalids:.4f}")
+            print(f"Micro F1 without invalids: {dataset_results.avg_micro_f1_without_invalids:.4f}")
+            print(f"Invalid predictions %: {dataset_results.invalid_predictions_percentage:.2f}%")
+            print(f"Clipped EMR: {dataset_results.avg_clipped_emr:.4f}")
+            print(f"Clipped Micro Precision: {dataset_results.avg_clipped_micro_precision:.4f}")
+            print(f"Clipped Micro Recall: {dataset_results.avg_clipped_micro_recall:.4f}")
+            print(f"Clipped Micro F1: {dataset_results.avg_clipped_micro_f1:.4f}")
+            print(f"==================================================")
 
         return dataset_results.to_dict()
 

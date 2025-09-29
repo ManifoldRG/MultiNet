@@ -1,0 +1,18 @@
+services:
+  magma-service:
+    build:
+      context: ../..
+      dockerfile: server/docker/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - MODEL_ID=microsoft/Magma-8B
+      - PORT=8080
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

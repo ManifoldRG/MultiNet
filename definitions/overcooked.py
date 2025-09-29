@@ -12,6 +12,47 @@ class OverCookedDefinitions:
         }
     }
 
+    INDIVIDUAL_ACTION_SPACE = {"NORTH": 0, "SOUTH": 1, "EAST": 2, "WEST": 3, "STAY": 4, "INTERACT": 5}
+    
+    PLAYER_ACTION_SPACE_TUPLES = {
+        0: ("NORTH", "NORTH"),
+        1: ("NORTH", "SOUTH"),
+        2: ("NORTH", "EAST"),
+        3: ("NORTH", "WEST"),
+        4: ("NORTH", "STAY"),
+        5: ("NORTH", "INTERACT"),
+        6: ("SOUTH", "NORTH"),
+        7: ("SOUTH", "SOUTH"),
+        8: ("SOUTH", "EAST"),
+        9: ("SOUTH", "WEST"),
+        10: ("SOUTH", "STAY"),
+        11: ("SOUTH", "INTERACT"),
+        12: ("EAST", "NORTH"),
+        13: ("EAST", "SOUTH"),
+        14: ("EAST", "EAST"),
+        15: ("EAST", "WEST"),
+        16: ("EAST", "STAY"),
+        17: ("EAST", "INTERACT"),
+        18: ("WEST", "NORTH"),
+        19: ("WEST", "SOUTH"),
+        20: ("WEST", "EAST"),
+        21: ("WEST", "WEST"),
+        22: ("WEST", "STAY"),
+        23: ("WEST", "INTERACT"),
+        24: ("STAY", "NORTH"),
+        25: ("STAY", "SOUTH"),
+        26: ("STAY", "EAST"),
+        27: ("STAY", "WEST"),
+        28: ("STAY", "STAY"),
+        29: ("STAY", "INTERACT"),
+        30: ("INTERACT", "NORTH"),
+        31: ("INTERACT", "SOUTH"),
+        32: ("INTERACT", "EAST"),
+        33: ("INTERACT", "WEST"),
+        34: ("INTERACT", "STAY"),
+        35: ("INTERACT", "INTERACT")
+    }
+
     ACTION_SPACES = {
         "overcooked_ai": {
             "default": {

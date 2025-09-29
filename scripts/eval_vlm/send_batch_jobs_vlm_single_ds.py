@@ -7,6 +7,10 @@ sys.path.append(ROOT_DIR)
 from src.modules.dataset_modules.procgen_module import ProcGenBatchModule
 from src.modules.dataset_modules.openx_module import OpenXBatchModule
 from src.v1.modules.overcooked_module import OvercookedBatchModule
+from src.v1.modules.odinw_module import ODinWBatchModule
+from src.v1.modules.sqa3d_module import SQA3DBatchModule
+from src.v1.modules.robovqa_module import RoboVQABatchModule
+from src.v1.modules.piqa_module import PIQABatchModule
 
 import datetime
 import argparse
@@ -60,12 +64,19 @@ if __name__=="__main__":
         dataset_module = OpenXBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     elif args.dataset_family == 'overcooked_ai':
         dataset_module = OvercookedBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
+    elif args.dataset_family == 'odinw':
+        dataset_module = ODinWBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
+    elif args.dataset_family == 'sqa3d':
+        dataset_module = SQA3DBatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
+    elif args.dataset_family == 'robot_vqa':
+        dataset_module = RoboVQABatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
+    elif args.dataset_family == 'piqa':
+        dataset_module = PIQABatchModule(data_root_dir, modality, source, args.model, os.path.abspath(args.metadata_dir), args.batch_size, args.k_shots)
     else:
         print(f"The dataset family {args.dataset_family} is not supported.")
         exit(1)
         
     assert dataset_module is not None, "The dataset module has not been set correctly. Check required."
-    
     batch_list = dataset_module._send_batch_jobs_for_dataset(args.dataset_name)
     batch_list = {args.dataset_name: batch_list}
     with open(f"{args.dataset_family}_{args.dataset_name}_batch_list_{datetime.datetime.now()}.json", 'w') as f:

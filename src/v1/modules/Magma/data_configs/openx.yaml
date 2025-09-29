@@ -1,0 +1,7 @@
+# a list of all the data paths
+DATA_PATH: 
+  - "/path/to/open-x"
+IMAGE_FOLDER:
+  - "siglip-224px+mx-oxe-magic-soup"    
+LANGUAGE_PATH:
+  - ""

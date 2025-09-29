@@ -1,0 +1,1 @@
+from .data_utils import OpenXMagma as openx_magma
