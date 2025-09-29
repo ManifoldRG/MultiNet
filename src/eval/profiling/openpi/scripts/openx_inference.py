@@ -80,6 +80,52 @@ def _rel2abs_gripper_actions(actions: np.ndarray) -> np.ndarray:
     return new_actions
 
 
+def _recalculate_action_stats_from_tensors(action_tensors: list, dataset_name: str) -> dict:
+    """
+    Recalculate action statistics from a list of processed action tensors.
+    This is used when action dictionaries are processed to get accurate stats.
+    """
+    if not action_tensors:
+        logger.warning(f"No action tensors provided for stats calculation for dataset {dataset_name}")
+        return None
+    
+    # Convert all tensors to numpy arrays and stack them
+    action_arrays = []
+    for tensor in action_tensors:
+        if tensor is not None:
+            action_arrays.append(np.array(tensor))
+    
+    if not action_arrays:
+        logger.warning(f"No valid action tensors found for dataset {dataset_name}")
+        return None
+    
+    # Stack all actions into a single array (num_samples, action_dim)
+    try:
+        stacked_actions = np.stack(action_arrays)
+        action_dim = stacked_actions.shape[1]
+        num_samples = stacked_actions.shape[0]
+        
+        logger.info(f"Recalculating stats from {num_samples} action tensors of dimension {action_dim} for dataset {dataset_name}")
+        
+        # Calculate statistics
+        action_stats = {
+            'min': np.min(stacked_actions, axis=0).tolist(),
+            'max': np.max(stacked_actions, axis=0).tolist(),
+            'sum': np.sum(stacked_actions, axis=0).tolist(),
+            'mean': np.mean(stacked_actions, axis=0).tolist(),
+            'std': np.std(stacked_actions, axis=0).tolist(),
+            'count': num_samples,
+            'size': [action_dim]
+        }
+        
+        logger.info(f"Recalculated action stats: size={action_stats['size']}, count={action_stats['count']}")
+        return action_stats
+        
+    except Exception as e:
+        logger.error(f"Error recalculating action stats for dataset {dataset_name}: {e}")
+        return None
+
+
 def _create_action_tensor_from_dict(action_dict: Dict[str, np.ndarray], dataset_name: str) -> np.ndarray:
     """
     Create action tensor from action dictionary based on dataset type.
@@ -746,58 +792,64 @@ def main():
 
     # Get dataset stats from the dataset object
     dataset_stats_dict = dataset.action_stats
-    dataset_stats = {'action': normalize.NormStats(**dataset_stats_dict)}
-
-    # Determine dynamic action dimension based on ground truth actions
-    dynamic_action_dim = None
+    
+    # Check if we need to recalculate stats due to action_dict processing
+    needs_stats_recalculation = False
+    processed_action_tensors = []
+    
+    # Check first batch to see if action_dict processing is needed
     sample_batch = None
     try:
-        # Get first batch to analyze action dimensions
         for batch in dataloader:
             sample_batch = batch
             break
         
-        if sample_batch is not None:
-            # Process sample actions to determine correct action dimension
-            sample_gt_actions = sample_batch['action']
-            
-            # Check if action_dict processing is needed for this dataset
-            if ('action_dict' in sample_batch and sample_batch['action_dict'] is not None and 
-                len(sample_batch['action_dict']) > 0 and 
-                dataset_name in ['openx_mobile_manipulation', 'openx_single_arm']):
-                logger.info(f"Analyzing action_dict for dynamic action dimension for dataset {dataset_name}")
+        if (sample_batch is not None and 
+            'action_dict' in sample_batch and 
+            sample_batch['action_dict'] is not None and 
+            len(sample_batch['action_dict']) > 0 and 
+            dataset_name in ['openx_mobile_manipulation', 'openx_single_arm']):
+            needs_stats_recalculation = True
+            logger.info(f"Action dictionary processing detected for {dataset_name}. Will recalculate stats from processed tensors.")
+    except Exception as e:
+        logger.warning(f"Error checking for action_dict processing: {e}")
+    
+    # If we need to recalculate stats, process all batches to collect action tensors
+    if needs_stats_recalculation:
+        logger.info("Collecting all processed action tensors to recalculate statistics...")
+        
+        # Recreate dataloader and process all batches
+        dataset, dataloader = get_openx_dataloader(shard_paths, args.batch_size, dataset_name)
+        
+        for batch_idx, batch in enumerate(dataloader):
+            if ('action_dict' in batch and batch['action_dict'] is not None and 
+                len(batch['action_dict']) > 0):
+                action_dicts = batch['action_dict']
                 
-                # Process first action_dict to get dimension
-                action_dicts = sample_batch['action_dict']
                 for action_dict in action_dicts:
                     if action_dict is not None and len(action_dict) > 0:
                         action_tensor = _create_action_tensor_from_dict(action_dict, dataset_name)
                         if action_tensor is not None:
-                            dynamic_action_dim = len(action_tensor)
-                            logger.info(f"Determined dynamic action dimension: {dynamic_action_dim} from action_dict")
-                            break
+                            processed_action_tensors.append(action_tensor)
             
-            # Fallback to using regular action dimension
-            if dynamic_action_dim is None:
-                sample_action = np.array(sample_gt_actions[0])
-                dynamic_action_dim = len(sample_action)
-                logger.info(f"Determined dynamic action dimension: {dynamic_action_dim} from regular action")
-            
-            logger.info(f"Using dynamic action dimension: {dynamic_action_dim}")
-            
-        # Reload model with dynamic action dimension if different from default
-        if dynamic_action_dim is not None and dynamic_action_dim != config.action_dim:
-            logger.info(f"Reloading model with action_dim={dynamic_action_dim} (was {config.action_dim})")
-            config = pi0.Pi0Config(action_horizon=ModelConfig.DEFAULT_ACTION_HORIZON, action_dim=dynamic_action_dim)
-            model = config.load(_model.restore_params(download.maybe_download("s3://openpi-assets/checkpoints/pi0_base/params")))
-            openx_inference = OpenXInference(model, tokenizer, config)
-            
-        # Recreate dataloader since we consumed the first batch
-        dataset, dataloader = get_openx_dataloader(shard_paths, args.batch_size, dataset_name)
+            if batch_idx % 100 == 0:
+                logger.info(f"Processed {batch_idx} batches for stats calculation, collected {len(processed_action_tensors)} action tensors")
         
-    except Exception as e:
-        logger.warning(f"Failed to determine dynamic action dimension: {e}")
-        logger.info("Using default model configuration")
+        # Recalculate stats from processed tensors
+        if processed_action_tensors:
+            recalculated_stats = _recalculate_action_stats_from_tensors(processed_action_tensors, dataset_name)
+            if recalculated_stats is not None:
+                dataset_stats_dict = recalculated_stats
+                logger.info(f"Successfully recalculated action stats from {len(processed_action_tensors)} processed action tensors")
+            else:
+                logger.warning("Failed to recalculate stats, using original stats")
+        else:
+            logger.warning("No processed action tensors collected, using original stats")
+        
+        # Recreate dataloader for evaluation
+        dataset, dataloader = get_openx_dataloader(shard_paths, args.batch_size, dataset_name)
+    
+    dataset_stats = {'action': normalize.NormStats(**dataset_stats_dict)}
 
     # Save stats to a file (with comprehensive numpy array conversion)
     def convert_numpy_arrays(obj):
@@ -819,7 +871,11 @@ def main():
                                    DatasetConfig.STATS_FILENAME_TEMPLATE.format(dataset_name=dataset_name))
     with open(stats_output_path, 'w') as f:
         json.dump(convert_numpy_arrays(dataset_stats_dict), f, indent=4)
-    logger.info(f'Dataset stats saved to {stats_output_path}')
+    
+    if needs_stats_recalculation:
+        logger.info(f'Recalculated dataset stats saved to {stats_output_path}')
+    else:
+        logger.info(f'Original dataset stats saved to {stats_output_path}')
 
     results = openx_inference.evaluate_model(model, key, config, dataset_stats, dataloader, dataset_name, dataset_stats_dict)
 
