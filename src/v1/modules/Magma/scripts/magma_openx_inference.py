@@ -77,6 +77,12 @@ def fixed_magma_forward(
     for_inputs_embeds_ids = input_ids.clone()
     for_inputs_embeds_ids[input_ids == image_token_index] = 0
     inputs_embeds = self.get_input_embeddings()(for_inputs_embeds_ids)
+    
+    # Ensure input embeddings have the correct dtype
+    if hasattr(self, 'dtype'):
+        inputs_embeds = inputs_embeds.to(dtype=self.dtype)
+    elif hasattr(self.language_model, 'dtype'):
+        inputs_embeds = inputs_embeds.to(dtype=self.language_model.dtype)
 
     # Process images if present
     if pixel_values is not None and (input_ids == image_token_index).any():
@@ -88,6 +94,12 @@ def fixed_magma_forward(
         # This matches the original Magma code pattern: permute(0, 2, 3, 1)
         image_features = image_features.permute(0, 2, 3, 1)  # (B, H, W, C)
         image_features = self.multi_modal_projector(image_features)
+        
+        # Ensure image features have the correct dtype to match text embeddings
+        if hasattr(self, 'dtype'):
+            image_features = image_features.to(dtype=self.dtype)
+        elif hasattr(self.language_model, 'dtype'):
+            image_features = image_features.to(dtype=self.language_model.dtype)
         
         # Flatten spatial dimensions to get sequence format (B, H*W, hidden_dim)
         b, h, w, hidden_dim = image_features.shape
@@ -116,8 +128,13 @@ def fixed_magma_forward(
             ], dim=0)
             new_inputs_embeds.append(full_embeds)
             
-        # Stack all embeddings
+        # Stack all embeddings and ensure proper dtype
         inputs_embeds = torch.stack(new_inputs_embeds, dim=0)
+        # Ensure inputs_embeds has the same dtype as the model
+        if hasattr(self, 'dtype'):
+            inputs_embeds = inputs_embeds.to(dtype=self.dtype)
+        elif hasattr(self.language_model, 'dtype'):
+            inputs_embeds = inputs_embeds.to(dtype=self.language_model.dtype)
         
         # Update attention mask and position ids for new sequence length
         new_sequence_length = inputs_embeds.shape[1]
@@ -258,13 +275,28 @@ def run_evaluation(args):
         "microsoft/Magma-8B",
         trust_remote_code=True,
         device_map="auto",
-        torch_dtype=torch.float16,
+        torch_dtype=torch.bfloat16,  # Use bfloat16 to match model expectations
         low_cpu_mem_usage=True,
+        attn_implementation="eager",  # Use eager attention to avoid SDPA compatibility issues
     )
+    
+    # Disable cache in model config to prevent DynamicCache compatibility issues
+    if hasattr(model.config, 'use_cache'):
+        model.config.use_cache = False
     processor = AutoProcessor.from_pretrained("microsoft/Magma-8B", trust_remote_code=True)
     
     model.forward = types.MethodType(fixed_magma_forward, model)
-    logger.info("Final patched forward function has been applied to the model.")
+    
+    # Patch the generation method to ensure cache is always disabled
+    original_generate = model.generate
+    def patched_generate(*args, **kwargs):
+        # Force disable cache in all generation calls
+        kwargs['use_cache'] = False
+        kwargs['past_key_values'] = None
+        return original_generate(*args, **kwargs)
+    
+    model.generate = patched_generate
+    logger.info("Final patched forward function and generate method have been applied to the model.")
 
     logger.info(f"Locating data shards in: {args.dataset_dir}")
     shard_paths = _get_sorted_shard_paths(args.dataset_dir)
@@ -286,7 +318,13 @@ def run_evaluation(args):
     logger.info("Action stats calculated and dataloader is ready.")
     
     action_dim = action_stats['min'].shape[0]
-    generation_args = {"max_new_tokens": action_dim, "temperature": 0.0, "do_sample": False}
+    generation_args = {
+        "max_new_tokens": action_dim, 
+        "temperature": 0.0, 
+        "do_sample": False,
+        "use_cache": False,  # Explicitly disable cache to avoid DynamicCache compatibility issues
+        "past_key_values": None,  # Ensure no cache is used
+    }
     
     all_mses, all_maes, all_successes = [], [], []
     total_batches = len(dataloader)
@@ -297,15 +335,18 @@ def run_evaluation(args):
         try:
             images = [Image.fromarray(img) for img in batch["image_observation"]]
             instructions = [txt for txt in batch["text_observation"]]
-            gt_actions = np.array([action.numpy() for action in batch['action']])
+            gt_actions = np.array(batch['action'])
             
             prompts = [processor.tokenizer.apply_chat_template([{"role": "user", "content": f"<image>\n{inst}"}], tokenize=False, add_generation_prompt=True) for inst in instructions]
             inputs = processor(texts=prompts, images=images, return_tensors="pt", padding=True)
             inputs = {k: v.to(model.device) for k, v in inputs.items()}
             if 'pixel_values' in inputs and inputs['pixel_values'] is not None:
-                inputs['pixel_values'] = inputs['pixel_values'].to(torch.float16)
+                inputs['pixel_values'] = inputs['pixel_values'].to(dtype=model.dtype)
 
             with torch.inference_mode():
+                # Ensure no cache is passed through inputs
+                if 'past_key_values' in inputs:
+                    del inputs['past_key_values']
                 generate_ids = model.generate(**inputs, **generation_args)
 
             output_ids = generate_ids[:, inputs["input_ids"].shape[-1]:]
