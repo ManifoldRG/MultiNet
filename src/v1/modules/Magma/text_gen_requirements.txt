@@ -1,0 +1,5 @@
+# First clone the multinet repo, then pip install -r text_gen_requirements.txt
+# For adapting any text gen datasets like piqa, sqa3d, etc.
+open_clip_torch
+git+https://github.com/jwyang/transformers.git@dev/jwyang-v4.48.2
+bitsandbytes

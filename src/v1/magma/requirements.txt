@@ -1,3 +1,0 @@
-open_clip_torch
-git+https://github.com/jwyang/transformers.git@dev/jwyang-v4.48.2
-bitsandbytes

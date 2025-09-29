@@ -3,6 +3,7 @@ import json
 import logging
 import pprint
 import re
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Any, List
@@ -13,9 +14,9 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm.auto import tqdm
 from transformers import AutoModelForCausalLM, AutoProcessor
 
+sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 from src.data_utils.piqa_dataloader import get_piqa_dataloader
 from src.eval_utils import get_exact_match_rate
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
@@ -98,7 +99,7 @@ def main(args):
     for batch in tqdm(dataloader, desc="Running Inference"):
         prompts_text = batch["question"]
         labels = batch["label"]
-
+         
         chats = [[{"role": "user", "content": p}] for p in prompts_text]
 
         input_ids = processor.tokenizer.apply_chat_template(
@@ -125,6 +126,7 @@ def main(args):
 
     parsed_choices = _validate_outputs_and_parse(raw_predictions)
     final_report = _calculate_final_metrics(parsed_choices, gt_labels)
+    final_report['all_outs'] = raw_predictions
 
     print("\n--- PIQA Evaluation Report ---")
     pprint.pprint(final_report)
@@ -138,7 +140,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run evaluation on the PIQA dataset.")
-    parser.add_argument('--model_name_or_path', type=str, default="microsoft/phi-2", help="Model identifier.")
+    parser.add_argument('--model_name_or_path', type=str, default="microsoft/Magma-8B", help="Model identifier.")
     parser.add_argument('--data_path', type=str, required=True, help="Path to the PIQA data file (e.g., test.jsonl).")
     parser.add_argument('--dtype', type=str, default="fp16", choices=['fp16', 'bf16', 'fp32'], help="Model data type.")
     parser.add_argument('--batch_size', type=int, default=2, help="Batch size for inference.")
