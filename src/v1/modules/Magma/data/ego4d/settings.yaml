@@ -1,0 +1,20 @@
+# tracker settings
+tracker:
+  backward_tracking: true
+  ckpt_path: ./checkpoints/cotracker2.pth
+  grid_query_frame: 0
+  grid_size: 32
+  save_dir: ./
+
+# sft settings
+trace_processor:
+  num_clusters: 5
+  postive_factor_threshold: 0.5  # this will times the max value of the trace to get the threshold
+  postive_speed_threshold: 2 # this is the speed threshold for the positive trace
+trace_planner:
+  quant_size: 200
+  skip_frames: 16
+  step_to_predict: 16 # use same setting as COIN since the videos have 30fps
+  step_rightmost_ratio: 0.5 # the ratio of the rightmost point to set as the start frame
+training:
+  size: 1_000_000

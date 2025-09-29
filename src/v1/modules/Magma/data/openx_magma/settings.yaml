@@ -1,0 +1,16 @@
+# tracker settings
+tracker:
+  ckpt_path: "./checkpoints/cotracker2.pth"
+  grid_size: 32
+  grid_query_frame: 0
+  backward_tracking: True
+  save_dir: "./"
+som:
+  format: 'visual'
+# sft settings
+trace_processor:
+  num_clusters: 5
+  postive_factor_threshold: 0.5  # this will times the max value of the trace to get the threshold
+  postive_speed_threshold: 1 # this is the speed threshold for the positive trace
+trace_planner:
+  step_rightmost_ratio: 0.5 # the ratio of the rightmost point to set as the start frame
