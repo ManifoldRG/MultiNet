@@ -1,0 +1,134 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "magma"
+version = "0.0.1"
+description = "A Foundation Model for Multimodal AI Agents."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+]
+dependencies = [
+    "torch==2.3.1",
+    "torchvision==0.18.1", 
+    "pytorch-lightning>=1.0.8",
+    "transformers>=4.49.0",
+    "tokenizers>=0.15.0",
+    "sentencepiece==0.1.99",
+    "shortuuid",
+    "accelerate==0.34.2",
+    "peft==0.4.0",
+    "bitsandbytes==0.44.1",
+    "pydantic>=2.0",
+    "markdown2[all]",
+    "numpy",
+    "scikit-learn==1.5.0",
+    "gradio==4.44.1",
+    "gradio_client",
+    "spaces",
+    "requests",
+    "httpx",
+    "uvicorn",
+    "fastapi",
+    "einops==0.6.1",
+    "einops-exts==0.0.4",
+    "timm==0.9.12",
+    "tensorflow==2.15.0",
+    "tensorflow_datasets==4.9.3",
+    "tensorflow_graphics==2021.12.3",    
+    "draccus",    
+    "numba", 
+    "dlimp @ git+https://github.com/moojink/dlimp_openvla",
+    "loguru", 
+    "sacrebleu", 
+    "evaluate", 
+    "sqlitedict",
+    "open_clip_torch",
+    "flash-attn",
+]
+
+[project.optional-dependencies]
+train = [
+    "deepspeed", 
+    "ninja", 
+    "wandb"
+]
+eval = [
+    "azure-ai-ml",
+    "datasets",
+    "fire",
+    "openai==1.8.0",
+    "opencv-python",
+    "openpyxl==3.1.2",
+    "pillow==9.4.0",
+    "python-Levenshtein",
+    "rich",
+    "streamlit==1.29.0",
+    "typer[all]",
+    "word2number",
+]
+agent = [
+    "pygame",
+    "easyocr",
+    "paddleocr",
+    "common==0.1.2",
+    "dual==0.0.10",
+    "tight==0.1.0",
+    "prox==0.0.17",
+    "paddle==1.0.2",
+    "paddlepaddle==2.6.2",
+    "supervision==0.18.0",
+    "ultralytics==8.3.78", 
+]
+server = [
+    "fastapi",
+    "uvicorn",
+    "python-multipart",
+    "pillow"
+]
+
+[tool.setuptools.packages.find]
+exclude = [
+    "assets*",
+    "benchmark*",
+    "docs",
+    "dist*",
+    "playground*",
+    "scripts*",
+    "tests*",
+    "azureblobs*",
+    "azure*"
+]
+
+[tool.wheel]
+exclude = [
+    "assets*",
+    "benchmark*",
+    "docs",
+    "dist*",
+    "playground*",
+    "scripts*",
+    "tests*",
+    "azureblobs*",
+    "azure*"    
+]
+
+[tool.black]
+line-length = 120
+skip-string-normalization = true
+
+[tool.pyright]
+exclude = [
+    "**/__pycache__",
+    "playground",
+    "_results",
+    "_data",
+    "models",
+    "checkpoints",
+    "wandb",
+    "docs",
+]
