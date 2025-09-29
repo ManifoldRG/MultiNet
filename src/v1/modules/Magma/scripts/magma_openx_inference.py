@@ -317,12 +317,16 @@ def run_evaluation(args):
     logger.info("Action stats calculated and dataloader is ready.")
     
     action_dim = action_stats['min'].shape[0]
+    logger.info(f"Action dimension from stats: {action_dim}")
     generation_args = {
         "max_new_tokens": action_dim, 
+        "min_new_tokens": action_dim,  # Force the model to generate exactly action_dim tokens
         "temperature": 0.0, 
         "do_sample": False,
         "use_cache": False,  # Explicitly disable cache to avoid DynamicCache compatibility issues
         "past_key_values": None,  # Ensure no cache is used
+        "eos_token_id": None,  # Disable early stopping on EOS token
+        "pad_token_id": processor.tokenizer.pad_token_id,
     }
     
     all_mses, all_maes, all_successes = [], [], []
@@ -371,6 +375,27 @@ def run_evaluation(args):
             output_ids = generate_ids[:, inputs["input_ids"].shape[-1]:]
             action_tokenizer = ActionTokenizer(processor.tokenizer)
             normalized_actions = action_tokenizer.decode_token_ids_to_actions(output_ids.cpu().numpy())
+
+            # Debug logging to understand the dimension mismatch
+            logger.info(f"Generated token IDs shape: {output_ids.shape}")
+            logger.info(f"Action stats min shape (expected action dim): {action_stats['min'].shape}")
+            logger.info(f"Normalized actions shape: {np.array(normalized_actions).shape}")
+            logger.info(f"Ground truth actions shape: {gt_actions.shape}")
+            
+            # Check if we have the right number of action dimensions
+            if normalized_actions.shape[1] != action_stats['min'].shape[0]:
+                logger.warning(f"Dimension mismatch: predicted {normalized_actions.shape[1]} dims, expected {action_stats['min'].shape[0]} dims")
+                # Pad or truncate to match expected dimensions
+                expected_dim = action_stats['min'].shape[0]
+                if normalized_actions.shape[1] < expected_dim:
+                    # Pad with zeros if we have fewer dimensions
+                    padding = np.zeros((normalized_actions.shape[0], expected_dim - normalized_actions.shape[1]))
+                    normalized_actions = np.concatenate([normalized_actions, padding], axis=1)
+                    logger.info(f"Padded actions to shape: {normalized_actions.shape}")
+                else:
+                    # Truncate if we have more dimensions
+                    normalized_actions = normalized_actions[:, :expected_dim]
+                    logger.info(f"Truncated actions to shape: {normalized_actions.shape}")
 
             # Unnormalize actions
             pred_actions = np.array([unnormalize_action(act, action_stats) for act in normalized_actions])
