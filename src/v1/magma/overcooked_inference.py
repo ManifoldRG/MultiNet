@@ -17,10 +17,10 @@ from transformers import (
 from transformers import logging as transformers_logging
 from transformers.modeling_outputs import ModelOutput
 from dataclasses import dataclass
-from MultiNet.src.data_utils.overcooked_dataloader import get_overcooked_dataloader
-from MultiNet.definitions.overcooked import OverCookedDefinitions
-from MultiNet.definitions.overcooked_prompt import format_instruction_prompt
-from MultiNet.src.eval_utils import (
+from src.data_utils.overcooked_dataloader import get_overcooked_dataloader
+from definitions.overcooked import OverCookedDefinitions
+from definitions.overcooked_prompt import format_instruction_prompt
+from src.eval_utils import (
     quantile_filter,
     calculate_brier_mae,
     min_max_normalize,
