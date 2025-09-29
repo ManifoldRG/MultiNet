@@ -9,15 +9,15 @@ import yaml
 import logging
 from PIL import Image
 import torch.distributed as dist
-from data.utils.visual_trace import visual_trace
-from data.utils.som_tom import som_prompting, tom_prompting
-from data.conversations import Constructor
+from ..utils.visual_trace import visual_trace
+from ..utils.som_tom import som_prompting, tom_prompting
+from ..conversations import Constructor
 from .conf import VLAConfig, VLARegistry
 from dataclasses import dataclass, field
 from magma.processing_magma import MagmaProcessor
 from .materialize import get_vla_dataset_and_collator
 from .datasets.rlds.utils.data_utils import save_dataset_statistics
-from data.utils.visual_tracker import visual_tracker
+from ..utils.visual_tracker import visual_tracker
 
 logger = logging.getLogger(__name__)
 

@@ -6,10 +6,10 @@ import numpy as np
 import os
 import yaml
 from PIL import Image
-from data.utils.visual_trace import visual_trace
-from data.utils.som_tom import som_prompting, tom_prompting
-from data.conversations import Constructor
-from data.openx.action_tokenizer import ActionTokenizer
+from ..utils.visual_trace import visual_trace
+from ..utils.som_tom import som_prompting, tom_prompting
+from ..conversations import Constructor
+from ..openx.action_tokenizer import ActionTokenizer
 
 class OpenXMagma(Constructor):
     def __init__(self, **kwargs):

@@ -21,7 +21,7 @@ import torch.distributed as dist
 import collections
 from PIL import Image
 from io import BytesIO
-from data.utils.constants import IGNORE_INDEX, IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
+from .utils.constants import IGNORE_INDEX, IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 from magma.image_processing_magma import MagmaImageProcessor
 from magma.processing_magma import MagmaProcessor
 from .data_item import DataItem

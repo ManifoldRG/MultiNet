@@ -6,8 +6,8 @@ import numpy as np
 import os
 import yaml
 from PIL import Image
-from data.utils.visual_trace import visual_trace
-from data.utils.som_tom import som_prompting, tom_prompting
+from .utils.visual_trace import visual_trace
+from .utils.som_tom import som_prompting, tom_prompting
 import torchvision.io as tv_io
 import torchvision
 import time

@@ -6,7 +6,7 @@ import numpy as np
 import os
 import yaml
 from PIL import Image
-from data.conversations import Constructor
+from ..conversations import Constructor
 
 class EpicKitchen(Constructor):
     def __init__(self, **kwargs):

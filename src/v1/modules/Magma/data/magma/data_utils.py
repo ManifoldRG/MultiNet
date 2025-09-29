@@ -7,7 +7,7 @@ import os
 import yaml
 from tqdm import tqdm
 from PIL import Image
-from data.conversations import Constructor
+from ..conversations import Constructor
 
 class Magma(Constructor):
     def __init__(self, **kwargs):

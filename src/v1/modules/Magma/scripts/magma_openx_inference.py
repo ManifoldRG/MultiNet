@@ -21,8 +21,11 @@ from transformers import logging as transformers_logging
 from transformers.modeling_outputs import ModelOutput
 from dataclasses import dataclass
 
+# Add project root to path for imports
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../../')))
+
 from src.data_utils.openx_dataloader import get_openx_dataloader
-from src.v1.magma.action_tokenizer import ActionTokenizer
+from src.v1.modules.Magma.data.openx.action_tokenizer import ActionTokenizer
 from src.v1.modules.Magma.data.openx.datasets.rlds.oxe.transforms import OXE_STANDARDIZATION_TRANSFORMS
 from src.eval_utils import (
     quantile_filter,
@@ -289,7 +292,7 @@ def run_evaluation(args):
     total_batches = len(dataloader)
     logger.info(f"Starting evaluation on {total_batches} batches...")
     start_time = time.perf_counter()
-
+    
     for batch_counter, batch in enumerate(dataloader, 1):
         try:
             images = [Image.fromarray(img) for img in batch["image_observation"]]
