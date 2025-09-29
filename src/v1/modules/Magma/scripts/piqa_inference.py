@@ -14,7 +14,9 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm.auto import tqdm
 from transformers import AutoModelForCausalLM, AutoProcessor
 
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
+project_dir = next(p for p in Path(__file__).parents if p.parts[-1]=='MultiNet')
+sys.path.append(str(project_dir))
+
 from src.data_utils.piqa_dataloader import get_piqa_dataloader
 from src.eval_utils import get_exact_match_rate
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
