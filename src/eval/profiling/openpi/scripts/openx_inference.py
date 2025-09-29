@@ -43,12 +43,6 @@ class DatasetConfig:
     RESULTS_FILENAME = 'pi0_base_openx_results.json'
     STATS_FILENAME_TEMPLATE = '{dataset_name}_stats.json'
 
-class ActionComponents:
-    WORLD_VECTOR_DIM = 3
-    ROTATION_DELTA_DIM = 3
-    OPEN_GRIPPER_DIM = 1
-    TERMINATE_EPISODE_DIM = 1
-
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -172,6 +166,15 @@ def _create_action_tensor_from_dict(action_dict: Dict[str, np.ndarray], dataset_
         else:
             logger.warning(f"Bridge OXE dataset missing required keys: world_vector, rotation_delta, open_gripper")
             return None
+    
+    # Concatenate all action components if we have any
+    if action_components:
+        action_tensor = np.concatenate(action_components)
+        logger.info(f"Created action tensor with shape {action_tensor.shape} for dataset {dataset_name}")
+        return action_tensor
+    else:
+        logger.warning(f"No valid action components found for dataset {dataset_name}")
+        return None
 
 
 def _calculate_batch_metrics(pred_actions, gt_actions, action_stats=None):
