@@ -645,8 +645,8 @@ class BFCLDownloader(BaseDownloader):
     def __init__(self, cache_dir: Path):
         super().__init__("bfcl_v3", DatasetType.TOOL_USE, cache_dir)
         # GitHub raw URLs for the BFCL v3 files
-        self.questions_url = "https://raw.githubusercontent.com/ShishirPatil/gorilla/main/berkeley-function-call-leaderboard/bfcl_eval/data/BFCL_v3_multi_turn_base.json"
-        self.answers_url = "https://raw.githubusercontent.com/ShishirPatil/gorilla/main/berkeley-function-call-leaderboard/bfcl_eval/data/possible_answer/BFCL_v3_multi_turn_base.json"
+        self.questions_url = "https://raw.githubusercontent.com/ShishirPatil/gorilla/d2177992bbba9aa228b53c0645bf8f5613a5a7c6/berkeley-function-call-leaderboard/bfcl_eval/data/BFCL_v3_multi_turn_base.json"
+        self.answers_url = "https://raw.githubusercontent.com/ShishirPatil/gorilla/d2177992bbba9aa228b53c0645bf8f5613a5a7c6/berkeley-function-call-leaderboard/bfcl_eval/data/possible_answer/BFCL_v3_multi_turn_base.json"
         self.questions_file = self.cache_dir / "BFCL_v3_multi_turn_base.json"
         self.answers_file = self.cache_dir / "possible_answer_BFCL_v3_multi_turn_base.json"
     
