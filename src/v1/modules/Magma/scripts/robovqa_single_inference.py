@@ -47,6 +47,11 @@ def _normalize_text(text: Any) -> str:
     text = re.sub(r'[^\w\s]', '', text.lower())
     # Remove extra whitespace
     text = ' '.join(text.split())
+
+    numbers = "zero one two three four five six seven eight nine".split()
+    int_numbers = [str(i) for i in range(10)]
+    if text in int_numbers:
+        text = numbers[int(text)]
     return text
 
 def _validate_outputs_and_parse(outputs: list) -> list:
