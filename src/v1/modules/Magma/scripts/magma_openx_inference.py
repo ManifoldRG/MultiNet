@@ -146,6 +146,7 @@ def _calculate_final_metrics(mses, maes, successes):
     
     return result
 
+# Action processing from src/v1/modules/Magma/data/openx/datasets/rlds/oxe/transforms.py
 def _rel2abs_gripper_actions(actions: np.ndarray) -> np.ndarray:
     """
     Converts relative gripper actions (+1 for closing, -1 for opening) to absolute actions (0 = closed; 1 = open).
@@ -244,6 +245,7 @@ def _create_action_tensor_from_dict(action_dict: dict, dataset_name: str) -> np.
     else:
         raise ValueError(f"No valid action components found for dataset {dataset_name}")
 
+#Action stats need to be recalculated when action_dict is processed because of action dict processing 
 def _recalculate_action_stats_from_tensors(action_tensors: list, dataset_name: str) -> dict:
     """
     Recalculate action statistics from a list of processed action tensors.
@@ -286,8 +288,9 @@ def _recalculate_action_stats_from_tensors(action_tensors: list, dataset_name: s
     except Exception as e:
         raise RuntimeError(f"Error recalculating action stats for dataset {dataset_name}: {e}")
 
+#Unnormalize function same as src/v1/modules/Magma/agents/libero/libero_magma_utils.py and src/v1/modules/Magma/tools/simplerenv-magma/simpler_env/policies/magma/magma_model.py
 def unnormalize_action(normalized_action, action_stats):
-    action_low, action_high = np.array(action_stats["min"]), np.array(action_stats["max"])
+    action_low, action_high = np.array(action_stats["q01"]), np.array(action_stats["q99"])
     return 0.5 * (normalized_action + 1) * (action_high - action_low) + action_low
 
 
@@ -412,6 +415,7 @@ def run_evaluation(args):
     
     action_dim = action_stats['min'].shape[0]
     logger.info(f"Action dimension from stats: {action_dim}")
+    #Generation args same as src/v1/modules/Magma/tools/simplerenv-magma/simpler_env/policies/magma/magma_model.py and src/v1/modules/Magma/agents/libero/libero_magma_utils.py
     generation_args = {
         "max_new_tokens": 1000,
         "temperature": 0.7, 
@@ -469,9 +473,10 @@ def run_evaluation(args):
         # Convert to numpy array format
         gt_actions = np.array([np.array(action) for action in gt_actions])
         
-        # Process each image-prompt pair individually (Magma doesn't support batch processing)
+        # Process each image-prompt pair individually (batch processing throwing errors as of now)
         batch_normalized_actions = []
         
+        #Same prompt as src/v1/modules/Magma/tools/simplerenv-magma/simpler_env/policies/magma/magma_model.py and src/v1/modules/Magma/agents/libero/libero_magma_utils.py
         for idx, (image, inst) in enumerate(zip(images, instructions)):
             convs = [
                 {"role": "user", "content": f"<image>\nWhat action should the robot take to {inst}?"},
@@ -499,17 +504,16 @@ def run_evaluation(args):
             if 'pixel_values' in inputs and inputs['pixel_values'] is not None:
                 inputs['pixel_values'] = inputs['pixel_values'].to(torch.bfloat16)
 
+            #Generate and process action same as src/v1/modules/Magma/tools/simplerenv-magma/simpler_env/policies/magma/magma_model.py and src/v1/modules/Magma/agents/libero/libero_magma_utils.py
             with torch.inference_mode():
                 generate_ids = model.generate(**inputs, **generation_args)
             
             action_ids = generate_ids[0, -8:-1].cpu().tolist() 
             action_ids = np.array(action_ids).astype(np.int64)
-            
-            # Extract generated tokens (excluding the input prompt)
-            #output_ids = generate_ids[:, inputs["input_ids"].shape[-1]:]
+
             action_tokenizer = ActionTokenizer(processor.tokenizer)
             normalized_action = action_tokenizer.decode_token_ids_to_actions(action_ids)
-            batch_normalized_actions.append(normalized_action)  # Keep full action vector
+            batch_normalized_actions.append(normalized_action) 
             
             # Clean up intermediate tensors
             del inputs, generate_ids, action_ids
