@@ -60,18 +60,34 @@ def _get_sorted_shard_paths(dataset_dir: str) -> list[str]:
     shard_dirs.sort(key=lambda x: x[0])
     return [path for _, path in shard_dirs]
 
-def _calculate_batch_metrics(pred_actions, gt_actions, action_stats):
+def _calculate_batch_metrics(pred_actions, gt_actions, action_stats=None):
+    """Calculate MSE and MAE metrics for a batch of continuous actions."""
+    if action_stats is None:
+        raise ValueError("action_stats is required for proper invalid prediction handling in OpenX evaluation")
+    
     mses, maes = [], []
+    total_invalid_preds = 0
+    
     for i in range(len(pred_actions)):
-        pred, gt = np.array(pred_actions[i]), np.array(gt_actions[i])
+        pred = np.array(pred_actions[i])
+        gt = np.array(gt_actions[i])
+        
+        # Check for invalid predictions (NaN, inf, or non-numeric values)
         if np.any(np.isnan(pred)) or np.any(np.isinf(pred)) or pred.size == 0:
-            max_vals, min_vals = np.array(action_stats['max']), np.array(action_stats['min'])
-            mse, mae = calculate_mse(max_vals[:len(gt)], min_vals[:len(gt)]), calculate_mae(max_vals[:len(gt)], min_vals[:len(gt)])
+            total_invalid_preds += 1
+            # Use worst-case MSE/MAE for invalid predictions using dataset stats directly
+            max_vals = np.array(action_stats['max'])
+            min_vals = np.array(action_stats['min'])
+            mse = calculate_mse(max_vals[:len(gt)], min_vals[:len(gt)])
+            mae = calculate_mae(max_vals[:len(gt)], min_vals[:len(gt)])
         else:
-            mse, mae = calculate_mse(pred, gt), calculate_mae(pred, gt)
+            mse = calculate_mse(pred, gt)
+            mae = calculate_mae(pred, gt)
+        
         mses.append(mse)
         maes.append(mae)
-    return mses, maes
+    
+    return mses, maes, total_invalid_preds
 
 def _calculate_final_metrics(mses, maes, successes):
     """Calculate comprehensive final metrics for OpenX evaluation."""
@@ -394,6 +410,8 @@ def run_evaluation(args):
     }
     
     all_mses, all_maes, all_successes = [], [], []
+    total_invalid_predictions = 0
+    total_timesteps = 0
     total_batches = len(dataloader)
     logger.info(f"Starting evaluation on {total_batches} batches...")
     start_time = time.perf_counter()
@@ -461,26 +479,19 @@ def run_evaluation(args):
                 if hasattr(model.config, 'mm_use_image_start_end') and model.config.mm_use_image_start_end:
                     prompt = prompt.replace("<image>", "<image_start><image><image_end>")
                 prompts.append(prompt)
-            # Process each sample in the batch
-            all_output_ids = []
-            
-            for img, prompt in zip(images, prompts):
-                inputs = processor(images=img, texts=prompt, return_tensors="pt")
-                inputs['pixel_values'] = inputs['pixel_values'].unsqueeze(0)
-                inputs['image_sizes'] = inputs['image_sizes'].unsqueeze(0)
-                inputs = inputs.to("cuda").to(torch.bfloat16)
+            # Process entire batch at once
+            inputs = processor(texts=prompts, images=images, return_tensors="pt", padding=True)
+            inputs = {k: v.to("cuda") for k, v in inputs.items()}
+            if 'pixel_values' in inputs and inputs['pixel_values'] is not None:
+                inputs['pixel_values'] = inputs['pixel_values'].to(torch.bfloat16)
 
-                with torch.inference_mode():
-                    generate_ids = model.generate(**inputs, **generation_args)
+            with torch.inference_mode():
+                generate_ids = model.generate(**inputs, **generation_args)
 
-                # Extract generated tokens (excluding the input prompt)
-                output_ids = generate_ids[:, inputs["input_ids"].shape[-1]:]
-                all_output_ids.append(output_ids)
-            
-            # Stack all output ids and decode with ActionTokenizer
-            all_output_ids = torch.cat(all_output_ids, dim=0)
+            # Extract generated tokens (excluding the input prompt)
+            output_ids = generate_ids[:, inputs["input_ids"].shape[-1]:]
             action_tokenizer = ActionTokenizer(processor.tokenizer)
-            normalized_actions = action_tokenizer.decode_token_ids_to_actions(all_output_ids.cpu().numpy())
+            normalized_actions = action_tokenizer.decode_token_ids_to_actions(output_ids.cpu().numpy())
             
             logger.info(f"Normalized actions shape: {normalized_actions.shape}")
             logger.info(f"Ground truth actions shape: {gt_actions.shape}")
@@ -502,12 +513,26 @@ def run_evaluation(args):
 
             # Unnormalize actions
             pred_actions = np.array([unnormalize_action(act, action_stats) for act in normalized_actions])
-            
-            # Apply dataset-specific transforms (includes gripper processing)
-            pred_actions = apply_dataset_transform(pred_actions, args.dataset_name)
 
-            mses, maes = _calculate_batch_metrics(pred_actions, gt_actions, action_stats)
-            successes = [1 if mae < 0.05 else 0 for mae in maes]
+            # Dynamic action comparison - clip to minimum dimension for fair comparison
+            effective_dim = min(pred_actions.shape[1], gt_actions.shape[1])
+            pred_clipped = pred_actions[:, :effective_dim]
+            gt_clipped = gt_actions[:, :effective_dim]
+
+            logger.info(f"Comparing actions - Pred shape: {pred_clipped.shape}, GT shape: {gt_clipped.shape}")
+
+            mses, maes, invalid_preds = _calculate_batch_metrics(pred_clipped, gt_clipped, action_stats)
+            total_invalid_predictions += invalid_preds
+            total_timesteps += len(pred_clipped)
+            
+            # Calculate action success (exact match for continuous actions)
+            successes = []
+            for i in range(pred_clipped.shape[0]):
+                if np.array_equal(pred_clipped[i], gt_clipped[i]):
+                    successes.append(1)
+                else:
+                    successes.append(0)
+            
             all_mses.extend(mses)
             all_maes.extend(maes)
             all_successes.extend(successes)
@@ -523,6 +548,21 @@ def run_evaluation(args):
 
     logger.info("Evaluation loop finished. Calculating final metrics...")
     final_metrics = _calculate_final_metrics(all_mses, all_maes, all_successes)
+    
+    # Calculate invalid predictions percentage
+    if total_timesteps > 0:
+        invalid_percentage = (total_invalid_predictions / total_timesteps) * 100
+    else:
+        invalid_percentage = 0.0
+    
+    # Add evaluation metadata
+    end_time = time.perf_counter()
+    eval_time = end_time - start_time
+    final_metrics['eval_time'] = eval_time
+    final_metrics['total_invalid_preds'] = total_invalid_predictions
+    final_metrics['invalid_predictions_percentage'] = invalid_percentage
+    final_metrics['total_batches'] = batch_counter  # Use actual count instead of total_batches
+    final_metrics['total_timesteps'] = total_timesteps
     
     results_file = os.path.join(args.output_dir, args.results_filename)
     with open(results_file, 'w') as f:
