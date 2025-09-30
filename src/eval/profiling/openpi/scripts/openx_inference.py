@@ -104,8 +104,7 @@ def _recalculate_action_stats_from_tensors(action_tensors: list, dataset_name: s
     This is used when action dictionaries are processed to get accurate stats.
     """
     if not action_tensors:
-        logger.warning(f"No action tensors provided for stats calculation for dataset {dataset_name}")
-        return None
+        raise ValueError(f"No action tensors provided for stats calculation for dataset {dataset_name}")
     
     # Convert all tensors to numpy arrays and stack them
     action_arrays = []
@@ -114,8 +113,7 @@ def _recalculate_action_stats_from_tensors(action_tensors: list, dataset_name: s
             action_arrays.append(np.array(tensor))
     
     if not action_arrays:
-        logger.warning(f"No valid action tensors found for dataset {dataset_name}")
-        return None
+        raise ValueError(f"No valid action tensors found for dataset {dataset_name}")
     
     # Stack all actions into a single array (num_samples, action_dim)
     try:
@@ -123,7 +121,7 @@ def _recalculate_action_stats_from_tensors(action_tensors: list, dataset_name: s
         action_dim = stacked_actions.shape[1]
         num_samples = stacked_actions.shape[0]
         
-        logger.info(f"Recalculating stats from {num_samples} action tensors of dimension {action_dim} for dataset {dataset_name}")
+        print(f"Recalculating stats from {num_samples} action tensors of dimension {action_dim} for dataset {dataset_name}")
         
         # Calculate statistics
         action_stats = {
@@ -136,12 +134,11 @@ def _recalculate_action_stats_from_tensors(action_tensors: list, dataset_name: s
             'size': [action_dim]
         }
         
-        logger.info(f"Recalculated action stats: size={action_stats['size']}, count={action_stats['count']}")
+        print(f"Recalculated action stats: size={action_stats['size']}, count={action_stats['count']}")
         return action_stats
         
     except Exception as e:
-        logger.error(f"Error recalculating action stats for dataset {dataset_name}: {e}")
-        return None
+        raise RuntimeError(f"Error recalculating action stats for dataset {dataset_name}: {e}")
 
 
 def _create_action_tensor_from_dict(action_dict: Dict[str, np.ndarray], dataset_name: str) -> np.ndarray:
@@ -153,7 +150,7 @@ def _create_action_tensor_from_dict(action_dict: Dict[str, np.ndarray], dataset_
         return None
     
     action_components = []
-    logger.info(f"Processing action_dict for {dataset_name} with keys: {list(action_dict.keys())}")
+    print(f"Processing action_dict for {dataset_name} with keys: {list(action_dict.keys())}")
     
     # RT1 dataset transform (openx_mobile_manipulation)
     # trajectory["action"] = tf.concat((world_vector, rotation_delta, rel2abs_gripper_actions(gripper_closedness_action)), axis=-1)
@@ -167,7 +164,7 @@ def _create_action_tensor_from_dict(action_dict: Dict[str, np.ndarray], dataset_
             elif world_vector.ndim > 1:
                 world_vector = world_vector.flatten()
             action_components.append(world_vector)
-            logger.info(f"RT1: Added world_vector with shape {world_vector.shape}")
+            print(f"RT1: Added world_vector with shape {world_vector.shape}")
             
             # Add rotation_delta (3D)
             rotation_delta = np.array(action_dict['rotation_delta'])
@@ -176,7 +173,7 @@ def _create_action_tensor_from_dict(action_dict: Dict[str, np.ndarray], dataset_
             elif rotation_delta.ndim > 1:
                 rotation_delta = rotation_delta.flatten()
             action_components.append(rotation_delta)
-            logger.info(f"RT1: Added rotation_delta with shape {rotation_delta.shape}")
+            print(f"RT1: Added rotation_delta with shape {rotation_delta.shape}")
             
             # Add processed gripper_closedness_action (1D) with rel2abs conversion
             gripper_raw = np.array(action_dict['gripper_closedness_action'])
@@ -190,10 +187,9 @@ def _create_action_tensor_from_dict(action_dict: Dict[str, np.ndarray], dataset_
             if gripper_action.ndim == 0:
                 gripper_action = gripper_action.reshape(1)
             action_components.append(gripper_action)
-            logger.info(f"RT1: Added gripper_closedness_action with shape {gripper_action.shape}")
+            print(f"RT1: Added gripper_closedness_action with shape {gripper_action.shape}")
         else:
-            logger.warning(f"RT1 dataset missing required keys: world_vector, rotation_delta, gripper_closedness_action")
-            return None
+            raise KeyError(f"RT1 dataset missing required keys: world_vector, rotation_delta, gripper_closedness_action")
     
     # Bridge OXE dataset transform (openx_single_arm)  
     # trajectory["action"] = tf.concat((world_vector, rotation_delta, tf.cast(open_gripper[:, None], tf.float32)), axis=-1)
@@ -207,7 +203,7 @@ def _create_action_tensor_from_dict(action_dict: Dict[str, np.ndarray], dataset_
             elif world_vector.ndim > 1:
                 world_vector = world_vector.flatten()
             action_components.append(world_vector)
-            logger.info(f"Bridge OXE: Added world_vector with shape {world_vector.shape}")
+            print(f"Bridge OXE: Added world_vector with shape {world_vector.shape}")
             
             # Add rotation_delta (3D)
             rotation_delta = np.array(action_dict['rotation_delta'])
@@ -216,7 +212,7 @@ def _create_action_tensor_from_dict(action_dict: Dict[str, np.ndarray], dataset_
             elif rotation_delta.ndim > 1:
                 rotation_delta = rotation_delta.flatten()
             action_components.append(rotation_delta)
-            logger.info(f"Bridge OXE: Added rotation_delta with shape {rotation_delta.shape}")
+            print(f"Bridge OXE: Added rotation_delta with shape {rotation_delta.shape}")
             
             # Add open_gripper (1D) cast to float32
             gripper_raw = np.array(action_dict['open_gripper'])
@@ -226,19 +222,17 @@ def _create_action_tensor_from_dict(action_dict: Dict[str, np.ndarray], dataset_
                 gripper_raw = gripper_raw.flatten()
             gripper_action = gripper_raw.astype(np.float32)
             action_components.append(gripper_action)
-            logger.info(f"Bridge OXE: Added open_gripper with shape {gripper_action.shape}")
+            print(f"Bridge OXE: Added open_gripper with shape {gripper_action.shape}")
         else:
-            logger.warning(f"Bridge OXE dataset missing required keys: world_vector, rotation_delta, open_gripper")
-            return None
+            raise KeyError(f"Bridge OXE dataset missing required keys: world_vector, rotation_delta, open_gripper")
     
     # Concatenate all action components if we have any
     if action_components:
         action_tensor = np.concatenate(action_components)
-        logger.info(f"Created action tensor with shape {action_tensor.shape} for dataset {dataset_name}")
+        print(f"Created action tensor with shape {action_tensor.shape} for dataset {dataset_name}")
         return action_tensor
     else:
-        logger.warning(f"No valid action components found for dataset {dataset_name}")
-        return None
+        raise ValueError(f"No valid action components found for dataset {dataset_name}")
 
 
 def _calculate_batch_metrics(pred_actions, gt_actions, action_stats=None):
@@ -389,8 +383,7 @@ class OpenXInference:
                 "tokenized_prompt_mask": token_mask
             }
         except Exception as e:
-            logger.error(f"Error preparing observation: {e}")
-            raise
+            raise RuntimeError(f"Error preparing observation: {e}")
 
     def _prepare_images(self, batch: dict) -> tuple:
         """Prepare image observations for model input."""
@@ -437,7 +430,7 @@ class OpenXInference:
             'openx_mobile_manipulation': ['gripper_closed', 'base_pose_tool_reached', 'height_to_bottom', 'yaw', 'orientation_box']  # Robot state sensors (~16 dims)
         }
         
-        logger.info(f"Batch keys: {list(batch.keys())}")
+        print(f"Batch keys: {list(batch.keys())}")
 
         # First check for explicit 'state' key (highest priority)
         if 'state' in batch:
@@ -456,13 +449,13 @@ class OpenXInference:
                         # Stack into (batch_size, features) shape
                         state_array = np.stack(state_arrays)
                         state_components.append(state_array)
-                        logger.info(f"Using explicit 'state' key with shape {state_array.shape}")
+                        print(f"Using explicit 'state' key with shape {state_array.shape}")
                 except Exception as e:
-                    logger.warning(f"Failed to process 'state' key: {e}")
+                    raise RuntimeError(f"Failed to process 'state' key: {e}")
 
         # Fallback: use dataset-specific state fields for known datasets
         if not state_components and dataset_name in dataset_state_fields:
-            logger.info(f"No explicit 'state' key found, using dataset-specific fields for {dataset_name}")
+            raise KeyError(f"No explicit 'state' key found for dataset {dataset_name}")
             target_fields = dataset_state_fields[dataset_name]
             
             for field_name in target_fields:
@@ -479,7 +472,7 @@ class OpenXInference:
                                 elif len(state_array.shape) == 1:
                                     state_array = state_array[:, np.newaxis]
                                 state_components.append(state_array)
-                                logger.info(f"Added dataset-specific state field '{field_name}' with shape {state_array.shape}")
+                                print(f"Added dataset-specific state field '{field_name}' with shape {state_array.shape}")
                             except ValueError as e:
                                 logger.warning(f"Skipping state field '{field_name}' due to dimension mismatch: {e}")
                                 continue
@@ -544,7 +537,7 @@ class OpenXInference:
         model_action_dim = actions.shape[-1]
         effective_action_dim = min(model_action_dim, dataset_action_dim)
 
-        logger.info(f"Dataset: {dataset_name}, Model dim: {model_action_dim}, "
+        print(f"Dataset: {dataset_name}, Model dim: {model_action_dim}, "
                    f"Dataset dim: {dataset_action_dim}, Using: {effective_action_dim}")
 
         # Slice to effective dimension
@@ -614,7 +607,7 @@ class OpenXInference:
                 
                 # Check if this is a dataset that requires action dict processing
                 if dataset in ['openx_mobile_manipulation', 'openx_single_arm']:
-                    logger.info(f"Processing action_dict for dataset {dataset}")
+                    print(f"Processing action_dict for dataset {dataset}")
                     processed_gt_actions = []
                     
                     for i, action_dict in enumerate(action_dicts):
@@ -623,7 +616,7 @@ class OpenXInference:
                             action_tensor = _create_action_tensor_from_dict(action_dict, dataset)
                             if action_tensor is not None:
                                 processed_gt_actions.append(action_tensor)
-                                logger.info(f"Sample {i}: Created action tensor with shape {action_tensor.shape}")
+                                print(f"Sample {i}: Created action tensor with shape {action_tensor.shape}")
                             else:
                                 # Fallback to original action if dict processing fails
                                 processed_gt_actions.append(np.array(gt_actions[i]))
@@ -634,9 +627,9 @@ class OpenXInference:
                     
                     if processed_gt_actions:
                         gt_actions = processed_gt_actions
-                        logger.info(f"Successfully processed {len(processed_gt_actions)} actions from action_dict")
+                        print(f"Successfully processed {len(processed_gt_actions)} actions from action_dict")
                     else:
-                        logger.warning("No valid actions processed from action_dict, using original actions")
+                        raise ValueError("No valid actions processed from action_dict, cannot continue")
             
             # Convert to numpy array format
             gt_actions = np.array([np.array(action) for action in gt_actions])
@@ -649,7 +642,7 @@ class OpenXInference:
             pred_clipped = pred_actions[:, :effective_dim]
             gt_clipped = gt_actions[:, :effective_dim]
 
-            logger.info(f"Comparing actions - Pred shape: {pred_clipped.shape}, GT shape: {gt_clipped.shape}")
+            print(f"Comparing actions - Pred shape: {pred_clipped.shape}, GT shape: {gt_clipped.shape}")
 
             # Store predictions and ground truth
             dataset_results.all_preds.extend(pred_clipped.tolist())
@@ -680,7 +673,7 @@ class OpenXInference:
             dataset_results.total_timesteps += actual_batch_size
 
             counter += 1
-            logger.info(f"Processed batch {counter}")
+            print(f"Processed batch {counter}")
 
             # Memory cleanup between batches
             self._cleanup_memory(obs, processed_actions, pred_clipped, gt_clipped)
@@ -787,7 +780,7 @@ def main():
     tokenizer = PaligemmaTokenizer()
     key = jax.random.key(0)
     model = config.load(_model.restore_params(download.maybe_download("s3://openpi-assets/checkpoints/pi0_base/params")))
-    logger.info('Model loaded')
+    print('Model loaded')
     openx_inference = OpenXInference(model, tokenizer, config)
 
     results_file = os.path.join(args.output_dir, DatasetConfig.RESULTS_FILENAME)
@@ -799,8 +792,7 @@ def main():
     openx_dataset_dir = args.dataset_dir
 
     if not os.path.exists(openx_dataset_dir):
-        print(f"Dataset directory not found: {openx_dataset_dir}")
-        return
+        raise FileNotFoundError(f"Dataset directory not found: {openx_dataset_dir}")
 
     shard_paths = _get_sorted_shard_paths(openx_dataset_dir)
     if args.num_shards:
@@ -828,13 +820,13 @@ def main():
             len(sample_batch['action_dict']) > 0 and 
             dataset_name in ['openx_mobile_manipulation', 'openx_single_arm']):
             needs_stats_recalculation = True
-            logger.info(f"Action dictionary processing detected for {dataset_name}. Will recalculate stats from processed tensors.")
+            print(f"Action dictionary processing detected for {dataset_name}. Will recalculate stats from processed tensors.")
     except Exception as e:
-        logger.warning(f"Error checking for action_dict processing: {e}")
+        raise RuntimeError(f"Error checking for action_dict processing: {e}")
     
     # If we need to recalculate stats, process all batches to collect action tensors
     if needs_stats_recalculation:
-        logger.info("Collecting all processed action tensors to recalculate statistics...")
+        print("Collecting all processed action tensors to recalculate statistics...")
         
         # Recreate dataloader and process all batches
         dataset, dataloader = get_openx_dataloader(shard_paths, args.batch_size, dataset_name)
@@ -851,16 +843,16 @@ def main():
                             processed_action_tensors.append(action_tensor)
             
             if batch_idx % 100 == 0:
-                logger.info(f"Processed {batch_idx} batches for stats calculation, collected {len(processed_action_tensors)} action tensors")
+                print(f"Processed {batch_idx} batches for stats calculation, collected {len(processed_action_tensors)} action tensors")
         
         # Recalculate stats from processed tensors
         if processed_action_tensors:
             recalculated_stats = _recalculate_action_stats_from_tensors(processed_action_tensors, dataset_name)
             if recalculated_stats is not None:
                 dataset_stats_dict = recalculated_stats
-                logger.info(f"Successfully recalculated action stats from {len(processed_action_tensors)} processed action tensors")
+                print(f"Successfully recalculated action stats from {len(processed_action_tensors)} processed action tensors")
             else:
-                logger.warning("Failed to recalculate stats, using original stats")
+                raise RuntimeError("Failed to recalculate stats, cannot continue without proper statistics")
         else:
             logger.warning("No processed action tensors collected, using original stats")
         
@@ -891,9 +883,9 @@ def main():
         json.dump(convert_numpy_arrays(dataset_stats_dict), f, indent=4)
     
     if needs_stats_recalculation:
-        logger.info(f'Recalculated dataset stats saved to {stats_output_path}')
+        print(f'Recalculated dataset stats saved to {stats_output_path}')
     else:
-        logger.info(f'Original dataset stats saved to {stats_output_path}')
+        print(f'Original dataset stats saved to {stats_output_path}')
 
     results = openx_inference.evaluate_model(model, key, config, dataset_stats, dataloader, dataset_name, dataset_stats_dict)
 
