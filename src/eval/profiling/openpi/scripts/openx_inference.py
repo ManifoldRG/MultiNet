@@ -51,12 +51,30 @@ logger = logging.getLogger(__name__)
 def _binarize_gripper_actions(actions: np.ndarray) -> np.ndarray:
     """
     Converts gripper actions from continuous to binary values (0 and 1).
-    Simplified version for numpy arrays.
+    
+    Logic:
+    - Values > 0.95 are considered fully open (1.0)
+    - Values < 0.05 are considered fully closed (0.0)  
+    - Values in between use 0.5 as threshold
+    
+    Args:
+        actions: Continuous gripper actions in range [0, 1]
+        
+    Returns:
+        Binary gripper actions (0.0 for closed, 1.0 for open)
     """
     open_mask = actions > 0.95
     closed_mask = actions < 0.05
-    # For values in between, use 0.5 threshold
-    return np.where(actions > 0.5, 1.0, 0.0)
+    
+    # Apply the three-tier logic:
+    # 1. Definitely open (> 0.95) -> 1.0
+    # 2. Definitely closed (< 0.05) -> 0.0  
+    # 3. Ambiguous values (0.05-0.95) -> use 0.5 threshold
+    result = np.where(open_mask, 1.0, 
+                     np.where(closed_mask, 0.0, 
+                             np.where(actions > 0.5, 1.0, 0.0)))
+    
+    return result
 
 
 def _invert_gripper_actions(actions: np.ndarray) -> np.ndarray:
