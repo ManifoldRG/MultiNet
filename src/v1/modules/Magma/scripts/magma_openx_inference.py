@@ -278,6 +278,8 @@ def _recalculate_action_stats_from_tensors(action_tensors: list, dataset_name: s
             'sum': np.sum(stacked_actions, axis=0).tolist(),
             'mean': np.mean(stacked_actions, axis=0).tolist(),
             'std': np.std(stacked_actions, axis=0).tolist(),
+            'q01': np.quantile(stacked_actions, 0.01, axis=0).tolist(),
+            'q99': np.quantile(stacked_actions, 0.99, axis=0).tolist(),
             'count': num_samples,
             'size': [action_dim]
         }

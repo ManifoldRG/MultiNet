@@ -143,6 +143,8 @@ class OpenXDataset(Dataset):
         return current_shard
 
     def _populate_action_stats(self):
+        all_actions = []  # Store all actions for quantile calculation
+        
         for shard in self.tfds_shards:
             dataset = tf.data.Dataset.load(shard)
 
@@ -183,6 +185,15 @@ class OpenXDataset(Dataset):
                 self._action_stats['max'] = np.maximum(self._action_stats['max'], concatenated_action_float)
                 self._action_stats['sum'] += concatenated_action_float
                 self._action_stats['count'] += 1
+                
+                # Store action for quantile calculation
+                all_actions.append(concatenated_action_float)
+        
+        # Calculate quantiles if we have actions
+        if all_actions:
+            stacked_actions = np.stack(all_actions)
+            self._action_stats['q01'] = np.quantile(stacked_actions, 0.01, axis=0)
+            self._action_stats['q99'] = np.quantile(stacked_actions, 0.99, axis=0)
     
     @property
     def action_stats(self):
@@ -209,7 +220,7 @@ class OpenXDataset(Dataset):
             self._action_stats['size'] = self.action_tensor_size
 
             # Convert numpy arrays to lists for JSON serialization
-            for key in ['min', 'max', 'sum', 'mean', 'std']:
+            for key in ['min', 'max', 'sum', 'mean', 'std', 'q01', 'q99']:
                 if key in self._action_stats and hasattr(self._action_stats[key], 'tolist'):
                     self._action_stats[key] = self._action_stats[key].tolist()
 
