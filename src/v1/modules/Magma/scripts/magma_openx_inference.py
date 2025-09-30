@@ -5,9 +5,7 @@ import json
 import logging
 import re
 import time
-import types
 import gc
-from typing import Optional, Tuple
 import tensorflow as tf
 
 import numpy as np
@@ -18,15 +16,13 @@ from transformers import (
     AutoProcessor,
 )
 from transformers import logging as transformers_logging
-from transformers.modeling_outputs import ModelOutput
-from dataclasses import dataclass
 
 # Add project root to path for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../../')))
 
 from src.data_utils.openx_dataloader import get_openx_dataloader
 from src.v1.modules.Magma.data.openx.action_tokenizer import ActionTokenizer
-from src.v1.modules.Magma.data.openx.datasets.rlds.oxe.transforms import OXE_STANDARDIZATION_TRANSFORMS
+
 from src.eval_utils import (
     quantile_filter,
     calculate_mean,
@@ -43,132 +39,6 @@ logging.basicConfig(
     stream=sys.stdout,
 )
 logger = logging.getLogger(__name__)
-
-@dataclass
-class PatchedMagmaCausalLMOutput(ModelOutput):
-    loss: Optional[torch.FloatTensor] = None
-    logits: torch.FloatTensor = None
-    hidden_states: Optional[Tuple[torch.FloatTensor]] = None
-    attentions: Optional[Tuple[torch.FloatTensor]] = None
-
-def fixed_magma_forward(
-    self,
-    input_ids: torch.LongTensor,
-    pixel_values: torch.FloatTensor,
-    attention_mask: Optional[torch.Tensor] = None,
-    position_ids: Optional[torch.LongTensor] = None,
-    vision_feature_layer: Optional[int] = None,
-    use_cache: Optional[bool] = None,
-    output_attentions: Optional[bool] = None,
-    output_hidden_states: Optional[bool] = None,
-    return_dict: Optional[bool] = None,
-    **kwargs,
-):
-    """Simplified forward method for Magma model inference."""
-    # Set defaults
-    vision_feature_layer = vision_feature_layer if vision_feature_layer is not None else -2
-    use_cache = use_cache if use_cache is not None else False
-    output_attentions = output_attentions if output_attentions is not None else False
-    output_hidden_states = output_hidden_states if output_hidden_states is not None else False
-    return_dict = return_dict if return_dict is not None else True
-    
-    # Extract input embeddings
-    image_token_index = self.config.image_token_index
-    for_inputs_embeds_ids = input_ids.clone()
-    for_inputs_embeds_ids[input_ids == image_token_index] = 0
-    inputs_embeds = self.get_input_embeddings()(for_inputs_embeds_ids)
-    
-    # Ensure input embeddings have the correct dtype
-    if hasattr(self, 'dtype'):
-        inputs_embeds = inputs_embeds.to(dtype=self.dtype)
-    elif hasattr(self.language_model, 'dtype'):
-        inputs_embeds = inputs_embeds.to(dtype=self.language_model.dtype)
-
-    # Process images if present
-    if pixel_values is not None and (input_ids == image_token_index).any():
-        # Get vision features - the vision tower returns a dict with 'clip_vis_dense' key
-        vision_outputs = self.vision_tower(pixel_values)
-        image_features = vision_outputs['clip_vis_dense']
-        
-        # Convert from (B, C, H, W) to (B, H, W, C) format expected by projector
-        # This matches the original Magma code pattern: permute(0, 2, 3, 1)
-        image_features = image_features.permute(0, 2, 3, 1)  # (B, H, W, C)
-        image_features = self.multi_modal_projector(image_features)
-        
-        # Ensure image features have the correct dtype to match text embeddings
-        if hasattr(self, 'dtype'):
-            image_features = image_features.to(dtype=self.dtype)
-        elif hasattr(self.language_model, 'dtype'):
-            image_features = image_features.to(dtype=self.language_model.dtype)
-        
-        # Flatten spatial dimensions to get sequence format (B, H*W, hidden_dim)
-        b, h, w, hidden_dim = image_features.shape
-        image_features = image_features.view(b, h * w, hidden_dim)
-
-        # Merge image features with text embeddings
-        new_inputs_embeds = []
-        for batch_idx, cur_input_ids in enumerate(input_ids):
-            image_token_indices = torch.where(cur_input_ids == image_token_index)[0]
-            
-            if len(image_token_indices) == 0:
-                new_inputs_embeds.append(inputs_embeds[batch_idx])
-                continue
-                
-            # Handle single image token per sequence
-            image_token_idx = image_token_indices[0]
-            pre_image_embeds = inputs_embeds[batch_idx, :image_token_idx]
-            post_image_embeds = inputs_embeds[batch_idx, image_token_idx + 1:]
-            current_image_features = image_features[batch_idx]
-            
-            # Concatenate embeddings
-            full_embeds = torch.cat([
-                pre_image_embeds, 
-                current_image_features, 
-                post_image_embeds
-            ], dim=0)
-            new_inputs_embeds.append(full_embeds)
-            
-        # Stack all embeddings and ensure proper dtype
-        inputs_embeds = torch.stack(new_inputs_embeds, dim=0)
-        # Ensure inputs_embeds has the same dtype as the model
-        if hasattr(self, 'dtype'):
-            inputs_embeds = inputs_embeds.to(dtype=self.dtype)
-        elif hasattr(self.language_model, 'dtype'):
-            inputs_embeds = inputs_embeds.to(dtype=self.language_model.dtype)
-        
-        # Update attention mask and position ids for new sequence length
-        new_sequence_length = inputs_embeds.shape[1]
-        attention_mask = torch.ones(
-            (inputs_embeds.shape[0], new_sequence_length),
-            dtype=torch.long,
-            device=inputs_embeds.device
-        )
-        position_ids = torch.arange(
-            0, new_sequence_length,
-            dtype=torch.long,
-            device=inputs_embeds.device
-        ).unsqueeze(0).expand(inputs_embeds.shape[0], -1)
-
-    # Forward through language model
-    outputs = self.language_model(
-        attention_mask=attention_mask,
-        position_ids=position_ids,
-        inputs_embeds=inputs_embeds,
-        use_cache=use_cache,
-        output_attentions=output_attentions,
-        output_hidden_states=output_hidden_states,
-        return_dict=return_dict,
-    )
-    
-    # Extract logits
-    logits = outputs[0] if not return_dict else outputs.logits
-
-    return PatchedMagmaCausalLMOutput(
-        loss=None,
-        logits=logits,
-        hidden_states=outputs.hidden_states if hasattr(outputs, 'hidden_states') else None,
-        attentions=outputs.attentions if hasattr(outputs, 'attentions') else None,
-    )
 
 def _get_sorted_shard_paths(dataset_dir: str) -> list[str]:
     shard_pattern = re.compile(r'translated_shard_(\d+)$')
@@ -204,66 +74,207 @@ def _calculate_batch_metrics(pred_actions, gt_actions, action_stats):
     return mses, maes
 
 def _calculate_final_metrics(mses, maes, successes):
+    """Calculate comprehensive final metrics for OpenX evaluation."""
     result = {}
+    
+    # Calculate MSE metrics
+    total_dataset_mse = sum(mses)
     num_timesteps = len(mses)
-    result['num_timesteps'] = num_timesteps
-    result['action_success_rate'] = calculate_mean(successes) * 100 if successes else 0.0
-    result['avg_dataset_amse'] = calculate_mean(mses)
-    result['avg_dataset_amae'] = calculate_mean(maes)
+    avg_dataset_mse = total_dataset_mse / num_timesteps if num_timesteps > 0 else 0.0
+    
+    # Calculate normalized MSE
     if num_timesteps > 1:
-        result['normalized_amse'] = calculate_mean(min_max_normalize(mses))
-        result['normalized_amae'] = calculate_mean(min_max_normalize(maes))
+        normalized_mses = min_max_normalize(mses)
+        normalized_amse = calculate_mean(normalized_mses)
+    else:
+        normalized_amse = 0.0
+    
+    # Calculate MAE metrics
+    total_dataset_mae = sum(maes)
+    avg_dataset_mae = calculate_mean(maes)
+    
+    if num_timesteps > 1:
+        normalized_maes = min_max_normalize(maes)
+        normalized_amae = calculate_mean(normalized_maes)
+        
+        # Calculate quantile filtered MAE metrics
         quantile_filtered_maes = quantile_filter(maes)
-        if quantile_filtered_maes:
-            result['normalized_quantile_filtered_amae'] = calculate_mean(min_max_normalize(quantile_filtered_maes))
-        result['max_relative_mae'] = calculate_max_relative_mae(maes)
-        result['proportion_beyond_threshold_mae'] = calculate_proportion_beyond_mae_threshold(maes)
+        normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
+        normalized_quantile_filtered_amae = calculate_mean(normalized_quantile_filtered_maes)
+        
+        # Calculate additional MAE metrics
+        max_rel_mae = calculate_max_relative_mae(maes)
+        prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(maes)
+    else:
+        normalized_amae = 0.0
+        normalized_quantile_filtered_amae = 0.0
+        max_rel_mae = 0.0
+        prop_beyond_threshold_mae = 0.0
+    
+    # Calculate action success rate
+    action_success_rate = None
+    if len(successes) > 0:
+        action_success_rate = (sum(successes) / len(successes)) * 100
+    
+    result['action_success_rate'] = action_success_rate
+    result['total_dataset_amse'] = total_dataset_mse
+    result['total_dataset_amae'] = total_dataset_mae
+    result['num_timesteps'] = num_timesteps
+    result['avg_dataset_amse'] = avg_dataset_mse
+    result['avg_dataset_amae'] = avg_dataset_mae
+    result['normalized_amse'] = normalized_amse
+    result['normalized_amae'] = normalized_amae
+    result['normalized_quantile_filtered_amae'] = normalized_quantile_filtered_amae
+    result['max_relative_mae'] = max_rel_mae
+    result['proportion_beyond_threshold_mae'] = prop_beyond_threshold_mae
+    
     return result
+
+def _rel2abs_gripper_actions(actions: np.ndarray) -> np.ndarray:
+    """
+    Converts relative gripper actions (+1 for closing, -1 for opening) to absolute actions (0 = closed; 1 = open).
+    Simplified version for numpy arrays.
+    """
+    # Note =>> -1 for closing, 1 for opening, 0 for no change
+    opening_mask = actions < -0.1
+    closing_mask = actions > 0.1
+    thresholded_actions = np.where(opening_mask, 1, np.where(closing_mask, -1, 0))
+    
+    # Convert to 0 = closed, 1 = open
+    new_actions = thresholded_actions / 2 + 0.5
+    
+    return new_actions
+
+def _create_action_tensor_from_dict(action_dict: dict, dataset_name: str) -> np.ndarray:
+    """
+    Create action tensor from action dictionary based on dataset type.
+    Follows specific transforms from transforms.py for rt1 and bridge_oxe datasets.
+    """
+    if action_dict is None:
+        return None
+    
+    action_components = []
+    logger.debug(f"Processing action_dict for {dataset_name} with keys: {list(action_dict.keys())}")
+    
+    # RT1 dataset transform (openx_mobile_manipulation)
+    if dataset_name == 'openx_mobile_manipulation':
+        if 'world_vector' in action_dict and 'rotation_delta' in action_dict and 'gripper_closedness_action' in action_dict:
+            # Add world_vector (3D)
+            world_vector = np.array(action_dict['world_vector'])
+            if world_vector.ndim == 0:
+                world_vector = world_vector.reshape(1)
+            elif world_vector.ndim > 1:
+                world_vector = world_vector.flatten()
+            action_components.append(world_vector)
+            
+            # Add rotation_delta (3D)
+            rotation_delta = np.array(action_dict['rotation_delta'])
+            if rotation_delta.ndim == 0:
+                rotation_delta = rotation_delta.reshape(1)
+            elif rotation_delta.ndim > 1:
+                rotation_delta = rotation_delta.flatten()
+            action_components.append(rotation_delta)
+            
+            # Add processed gripper_closedness_action (1D) with rel2abs conversion
+            gripper_raw = np.array(action_dict['gripper_closedness_action'])
+            if gripper_raw.ndim == 0:
+                gripper_raw = gripper_raw.reshape(1)
+            elif gripper_raw.ndim > 1:
+                gripper_raw = gripper_raw.flatten()
+            
+            # Apply rel2abs_gripper_actions transform (RT1 specific)
+            gripper_action = _rel2abs_gripper_actions(gripper_raw)
+            if gripper_action.ndim == 0:
+                gripper_action = gripper_action.reshape(1)
+            action_components.append(gripper_action)
+        else:
+            raise KeyError(f"RT1 dataset missing required keys: world_vector, rotation_delta, gripper_closedness_action")
+    
+    # Bridge OXE dataset transform (openx_single_arm)  
+    elif dataset_name == 'openx_single_arm':
+        if 'world_vector' in action_dict and 'rotation_delta' in action_dict and 'open_gripper' in action_dict:
+            # Add world_vector (3D)
+            world_vector = np.array(action_dict['world_vector'])
+            if world_vector.ndim == 0:
+                world_vector = world_vector.reshape(1)
+            elif world_vector.ndim > 1:
+                world_vector = world_vector.flatten()
+            action_components.append(world_vector)
+            
+            # Add rotation_delta (3D)
+            rotation_delta = np.array(action_dict['rotation_delta'])
+            if rotation_delta.ndim == 0:
+                rotation_delta = rotation_delta.reshape(1)
+            elif rotation_delta.ndim > 1:
+                rotation_delta = rotation_delta.flatten()
+            action_components.append(rotation_delta)
+            
+            # Add open_gripper (1D) cast to float32
+            gripper_raw = np.array(action_dict['open_gripper'])
+            if gripper_raw.ndim == 0:
+                gripper_raw = gripper_raw.reshape(1)
+            elif gripper_raw.ndim > 1:
+                gripper_raw = gripper_raw.flatten()
+            gripper_action = gripper_raw.astype(np.float32)
+            action_components.append(gripper_action)
+        else:
+            raise KeyError(f"Bridge OXE dataset missing required keys: world_vector, rotation_delta, open_gripper")
+    
+    # Concatenate all action components if we have any
+    if action_components:
+        action_tensor = np.concatenate(action_components)
+        logger.debug(f"Created action tensor with shape {action_tensor.shape} for dataset {dataset_name}")
+        return action_tensor
+    else:
+        raise ValueError(f"No valid action components found for dataset {dataset_name}")
+
+def _recalculate_action_stats_from_tensors(action_tensors: list, dataset_name: str) -> dict:
+    """
+    Recalculate action statistics from a list of processed action tensors.
+    This is used when action dictionaries are processed to get accurate stats.
+    """
+    if not action_tensors:
+        raise ValueError(f"No action tensors provided for stats calculation for dataset {dataset_name}")
+    
+    # Convert all tensors to numpy arrays and stack them
+    action_arrays = []
+    for tensor in action_tensors:
+        if tensor is not None:
+            action_arrays.append(np.array(tensor))
+    
+    if not action_arrays:
+        raise ValueError(f"No valid action tensors found for dataset {dataset_name}")
+    
+    # Stack all actions into a single array (num_samples, action_dim)
+    try:
+        stacked_actions = np.stack(action_arrays)
+        action_dim = stacked_actions.shape[1]
+        num_samples = stacked_actions.shape[0]
+        
+        logger.info(f"Recalculating stats from {num_samples} action tensors of dimension {action_dim} for dataset {dataset_name}")
+        
+        # Calculate statistics
+        action_stats = {
+            'min': np.min(stacked_actions, axis=0).tolist(),
+            'max': np.max(stacked_actions, axis=0).tolist(),
+            'sum': np.sum(stacked_actions, axis=0).tolist(),
+            'mean': np.mean(stacked_actions, axis=0).tolist(),
+            'std': np.std(stacked_actions, axis=0).tolist(),
+            'count': num_samples,
+            'size': [action_dim]
+        }
+        
+        logger.info(f"Recalculated action stats: size={action_stats['size']}, count={action_stats['count']}")
+        return action_stats
+        
+    except Exception as e:
+        raise RuntimeError(f"Error recalculating action stats for dataset {dataset_name}: {e}")
 
 def unnormalize_action(normalized_action, action_stats):
     action_low, action_high = np.array(action_stats["min"]), np.array(action_stats["max"])
     return 0.5 * (normalized_action + 1) * (action_high - action_low) + action_low
 
-def apply_dataset_transform(actions, dataset_name):
-    """
-    Apply dataset-specific transforms to predicted actions.
-    
-    Args:
-        actions: numpy array of predicted actions (batch_size, action_dim)
-        dataset_name: name of the dataset to determine which transform to apply
-    
-    Returns:
-        transformed actions as numpy array
-    """
-    if dataset_name not in OXE_STANDARDIZATION_TRANSFORMS:
-        logger.warning(f"No transform found for dataset '{dataset_name}', returning actions unchanged")
-        return actions
-    
-    transform_fn = OXE_STANDARDIZATION_TRANSFORMS[dataset_name]
-    
-    try:
-        # Convert actions to TensorFlow tensor with proper batch dimension
-        actions_tf = tf.constant(actions, dtype=tf.float32)
-        
-        # Create a minimal trajectory structure that transforms expect
-        # Most transforms only operate on the "action" field
-        trajectory = {
-            "action": actions_tf,
-            "observation": {},  # Empty observation dict
-            "language_instruction": tf.constant([""] * actions.shape[0])  # Empty language instructions
-        }
-        
-        # Apply the transform
-        transformed_trajectory = transform_fn(trajectory)
-        
-        # Extract the transformed actions and convert back to numpy
-        transformed_actions = transformed_trajectory["action"].numpy()
-        
-        return transformed_actions
-        
-    except Exception as e:
-        logger.warning(f"Failed to apply transform for {dataset_name}: {e}. Returning original actions.")
-        return actions
+
 
 def run_evaluation(args):
     transformers_logging.set_verbosity_error()
@@ -274,28 +285,12 @@ def run_evaluation(args):
         "microsoft/Magma-8B",
         trust_remote_code=True,
         device_map="auto",
-        torch_dtype=torch.bfloat16,  # Use bfloat16 to match model expectations
+        torch_dtype=torch.bfloat16,
         low_cpu_mem_usage=True,
-        attn_implementation="eager",  # Use eager attention to avoid SDPA compatibility issues
+        attn_implementation="flash_attention_2",
     )
-    
-    # Disable cache in model config to prevent DynamicCache compatibility issues
-    if hasattr(model.config, 'use_cache'):
-        model.config.use_cache = False
     processor = AutoProcessor.from_pretrained("microsoft/Magma-8B", trust_remote_code=True)
-    
-    model.forward = types.MethodType(fixed_magma_forward, model)
-    
-    # Patch the generation method to ensure cache is always disabled
-    original_generate = model.generate
-    def patched_generate(*args, **kwargs):
-        # Force disable cache in all generation calls
-        kwargs['use_cache'] = False
-        kwargs['past_key_values'] = None
-        return original_generate(*args, **kwargs)
-    
-    model.generate = patched_generate
-    logger.info("Final patched forward function and generate method have been applied to the model.")
+    print("Model and processor loaded successfully.")
 
     logger.info(f"Locating data shards in: {args.dataset_dir}")
     shard_paths = _get_sorted_shard_paths(args.dataset_dir)
@@ -314,19 +309,88 @@ def run_evaluation(args):
         if key in action_stats:
             action_stats[key] = np.array(action_stats[key])
     
+    # Check if we need to recalculate stats due to action_dict processing
+    needs_stats_recalculation = False
+    processed_action_tensors = []
+    
+    # Check first batch to see if action_dict processing is needed
+    sample_batch = None
+    try:
+        for batch in dataloader:
+            sample_batch = batch
+            break
+        
+        if (sample_batch is not None and 
+            'action_dict' in sample_batch and 
+            sample_batch['action_dict'] is not None and 
+            len(sample_batch['action_dict']) > 0 and 
+            args.dataset_name in ['openx_mobile_manipulation', 'openx_single_arm']):
+            needs_stats_recalculation = True
+            logger.info(f"Action dictionary processing detected for {args.dataset_name}. Will recalculate stats from processed tensors.")
+    except Exception as e:
+        raise RuntimeError(f"Error checking for action_dict processing: {e}")
+    
+    # If we need to recalculate stats, process all batches to collect action tensors
+    if needs_stats_recalculation:
+        logger.info("Collecting all processed action tensors to recalculate statistics...")
+        
+        # Recreate dataloader and process all batches
+        dataset, dataloader = get_openx_dataloader(shard_paths, args.batch_size, args.dataset_name)
+        
+        for batch_idx, batch in enumerate(dataloader):
+            if ('action_dict' in batch and batch['action_dict'] is not None and 
+                len(batch['action_dict']) > 0):
+                action_dicts = batch['action_dict']
+                
+                for action_dict in action_dicts:
+                    if action_dict is not None and len(action_dict) > 0:
+                        action_tensor = _create_action_tensor_from_dict(action_dict, args.dataset_name)
+                        if action_tensor is not None:
+                            processed_action_tensors.append(action_tensor)
+            
+            if batch_idx % 100 == 0:
+                logger.info(f"Processed {batch_idx} batches for stats calculation, collected {len(processed_action_tensors)} action tensors")
+        
+        # Recalculate stats from processed tensors
+        if processed_action_tensors:
+            recalculated_stats = _recalculate_action_stats_from_tensors(processed_action_tensors, args.dataset_name)
+            if recalculated_stats is not None:
+                action_stats = recalculated_stats
+                # Convert to numpy arrays
+                for key in ['min', 'max', 'mean', 'std']:
+                    if key in action_stats:
+                        action_stats[key] = np.array(action_stats[key])
+                logger.info(f"Successfully recalculated action stats from {len(processed_action_tensors)} processed action tensors")
+            else:
+                raise RuntimeError("Failed to recalculate stats, cannot continue without proper statistics")
+        else:
+            logger.warning("No processed action tensors collected, using original stats")
+        
+        # Recreate dataloader for evaluation
+        dataset, dataloader = get_openx_dataloader(shard_paths, args.batch_size, args.dataset_name)
+    
+    # Save action stats to file
+    stats_output_path = os.path.join(args.output_dir, f'{args.dataset_name}_stats.json')
+    with open(stats_output_path, 'w') as f:
+        # Convert numpy arrays to lists for JSON serialization
+        stats_to_save = {k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in action_stats.items()}
+        json.dump(stats_to_save, f, indent=4)
+    
+    if needs_stats_recalculation:
+        logger.info(f'Recalculated dataset stats saved to {stats_output_path}')
+    else:
+        logger.info(f'Original dataset stats saved to {stats_output_path}')
+    
     logger.info("Action stats calculated and dataloader is ready.")
     
     action_dim = action_stats['min'].shape[0]
     logger.info(f"Action dimension from stats: {action_dim}")
     generation_args = {
-        "max_new_tokens": action_dim, 
-        "min_new_tokens": action_dim,  # Force the model to generate exactly action_dim tokens
-        "temperature": 0.0, 
-        "do_sample": False,
-        "use_cache": False,  # Explicitly disable cache to avoid DynamicCache compatibility issues
-        "past_key_values": None,  # Ensure no cache is used
-        "eos_token_id": None,  # Disable early stopping on EOS token
-        "pad_token_id": processor.tokenizer.pad_token_id,
+        "max_new_tokens": 1000,
+        "temperature": 0.7, 
+        "do_sample": True,
+        "num_beams": 1,
+        "use_cache": True,
     }
     
     all_mses, all_maes, all_successes = [], [], []
@@ -338,7 +402,43 @@ def run_evaluation(args):
         try:
             images = [Image.fromarray(img) for img in batch["image_observation"]]
             instructions = [txt for txt in batch["text_observation"]]
-            gt_actions = np.array(batch['action'])
+            
+            # Process ground truth actions - check for action_dict first
+            gt_actions = batch['action']
+            
+            # Check if action_dict is available and dataset requires special processing
+            if ('action_dict' in batch and batch['action_dict'] is not None and 
+                len(batch['action_dict']) > 0):
+                action_dicts = batch['action_dict']
+                
+                # Check if this is a dataset that requires action dict processing
+                if args.dataset_name in ['openx_mobile_manipulation', 'openx_single_arm']:
+                    logger.debug(f"Processing action_dict for dataset {args.dataset_name}")
+                    processed_gt_actions = []
+                    
+                    for i, action_dict in enumerate(action_dicts):
+                        if action_dict is not None and len(action_dict) > 0:
+                            # Create action tensor from dictionary
+                            action_tensor = _create_action_tensor_from_dict(action_dict, args.dataset_name)
+                            if action_tensor is not None:
+                                processed_gt_actions.append(action_tensor)
+                                logger.debug(f"Sample {i}: Created action tensor with shape {action_tensor.shape}")
+                            else:
+                                # Fallback to original action if dict processing fails
+                                processed_gt_actions.append(np.array(gt_actions[i]))
+                                logger.warning(f"Sample {i}: Falling back to original action")
+                        else:
+                            # Use original action if dict is None or empty
+                            processed_gt_actions.append(np.array(gt_actions[i]))
+                    
+                    if processed_gt_actions:
+                        gt_actions = processed_gt_actions
+                        logger.debug(f"Successfully processed {len(processed_gt_actions)} actions from action_dict")
+                    else:
+                        raise ValueError("No valid actions processed from action_dict, cannot continue")
+            
+            # Convert to numpy array format
+            gt_actions = np.array([np.array(action) for action in gt_actions])
             
             # Use libero-style prompt construction with system message
             prompts = []
@@ -361,25 +461,28 @@ def run_evaluation(args):
                 if hasattr(model.config, 'mm_use_image_start_end') and model.config.mm_use_image_start_end:
                     prompt = prompt.replace("<image>", "<image_start><image><image_end>")
                 prompts.append(prompt)
-            inputs = processor(texts=prompts, images=images, return_tensors="pt", padding=True)
-            inputs = {k: v.to(model.device) for k, v in inputs.items()}
-            if 'pixel_values' in inputs and inputs['pixel_values'] is not None:
-                inputs['pixel_values'] = inputs['pixel_values'].to(dtype=model.dtype)
+            # Process each sample in the batch
+            all_output_ids = []
+            
+            for img, prompt in zip(images, prompts):
+                inputs = processor(images=img, texts=prompt, return_tensors="pt")
+                inputs['pixel_values'] = inputs['pixel_values'].unsqueeze(0)
+                inputs['image_sizes'] = inputs['image_sizes'].unsqueeze(0)
+                inputs = inputs.to("cuda").to(torch.bfloat16)
 
-            with torch.inference_mode():
-                # Ensure no cache is passed through inputs
-                if 'past_key_values' in inputs:
-                    del inputs['past_key_values']
-                generate_ids = model.generate(**inputs, **generation_args)
+                with torch.inference_mode():
+                    generate_ids = model.generate(**inputs, **generation_args)
 
-            output_ids = generate_ids[:, inputs["input_ids"].shape[-1]:]
+                # Extract generated tokens (excluding the input prompt)
+                output_ids = generate_ids[:, inputs["input_ids"].shape[-1]:]
+                all_output_ids.append(output_ids)
+            
+            # Stack all output ids and decode with ActionTokenizer
+            all_output_ids = torch.cat(all_output_ids, dim=0)
             action_tokenizer = ActionTokenizer(processor.tokenizer)
-            normalized_actions = action_tokenizer.decode_token_ids_to_actions(output_ids.cpu().numpy())
-
-            # Debug logging to understand the dimension mismatch
-            logger.info(f"Generated token IDs shape: {output_ids.shape}")
-            logger.info(f"Action stats min shape (expected action dim): {action_stats['min'].shape}")
-            logger.info(f"Normalized actions shape: {np.array(normalized_actions).shape}")
+            normalized_actions = action_tokenizer.decode_token_ids_to_actions(all_output_ids.cpu().numpy())
+            
+            logger.info(f"Normalized actions shape: {normalized_actions.shape}")
             logger.info(f"Ground truth actions shape: {gt_actions.shape}")
             
             # Check if we have the right number of action dimensions
