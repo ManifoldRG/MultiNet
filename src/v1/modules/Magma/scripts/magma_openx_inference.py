@@ -321,9 +321,13 @@ def run_evaluation(args):
     dataset, dataloader = get_openx_dataloader(shard_paths, args.batch_size, args.dataset_name)
     action_stats = dataset.action_stats
 
+    # Convert TensorFlow tensors to numpy arrays
     for key in ['min', 'max', 'mean', 'std']:
         if key in action_stats:
-            action_stats[key] = np.array(action_stats[key])
+            if tf.is_tensor(action_stats[key]):
+                action_stats[key] = action_stats[key].numpy()
+            else:
+                action_stats[key] = np.array(action_stats[key])
     
     # Check if we need to recalculate stats due to action_dict processing
     needs_stats_recalculation = False
@@ -388,8 +392,15 @@ def run_evaluation(args):
     # Save action stats to file
     stats_output_path = os.path.join(args.output_dir, f'{args.dataset_name}_stats.json')
     with open(stats_output_path, 'w') as f:
-        # Convert numpy arrays to lists for JSON serialization
-        stats_to_save = {k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in action_stats.items()}
+        # Convert numpy arrays and TensorFlow tensors to lists for JSON serialization
+        stats_to_save = {}
+        for k, v in action_stats.items():
+            if isinstance(v, np.ndarray):
+                stats_to_save[k] = v.tolist()
+            elif tf.is_tensor(v):
+                stats_to_save[k] = v.numpy().tolist()
+            else:
+                stats_to_save[k] = v
         json.dump(stats_to_save, f, indent=4)
     
     if needs_stats_recalculation:
@@ -406,7 +417,7 @@ def run_evaluation(args):
         "temperature": 0.7, 
         "do_sample": True,
         "num_beams": 1,
-        "use_cache": True,
+        "use_cache": False,  # Disabled to avoid DynamicCache compatibility issues
     }
     
     all_mses, all_maes, all_successes = [], [], []
@@ -417,134 +428,148 @@ def run_evaluation(args):
     start_time = time.perf_counter()
     
     for batch_counter, batch in enumerate(dataloader, 1):
-        try:
-            images = [Image.fromarray(img) for img in batch["image_observation"]]
-            instructions = [txt for txt in batch["text_observation"]]
+        #try:
+        images = [Image.fromarray(img) for img in batch["image_observation"]]
+        instructions = [txt for txt in batch["text_observation"]]
+        
+        # Process ground truth actions - check for action_dict first
+        gt_actions = batch['action']
+    
+        # Check if action_dict is available and dataset requires special processing
+        if ('action_dict' in batch and batch['action_dict'] is not None and 
+            len(batch['action_dict']) > 0):
+            action_dicts = batch['action_dict']
             
-            # Process ground truth actions - check for action_dict first
-            gt_actions = batch['action']
-            
-            # Check if action_dict is available and dataset requires special processing
-            if ('action_dict' in batch and batch['action_dict'] is not None and 
-                len(batch['action_dict']) > 0):
-                action_dicts = batch['action_dict']
+            # Check if this is a dataset that requires action dict processing
+            if args.dataset_name in ['openx_mobile_manipulation', 'openx_single_arm']:
+                logger.debug(f"Processing action_dict for dataset {args.dataset_name}")
+                processed_gt_actions = []
                 
-                # Check if this is a dataset that requires action dict processing
-                if args.dataset_name in ['openx_mobile_manipulation', 'openx_single_arm']:
-                    logger.debug(f"Processing action_dict for dataset {args.dataset_name}")
-                    processed_gt_actions = []
-                    
-                    for i, action_dict in enumerate(action_dicts):
-                        if action_dict is not None and len(action_dict) > 0:
-                            # Create action tensor from dictionary
-                            action_tensor = _create_action_tensor_from_dict(action_dict, args.dataset_name)
-                            if action_tensor is not None:
-                                processed_gt_actions.append(action_tensor)
-                                logger.debug(f"Sample {i}: Created action tensor with shape {action_tensor.shape}")
-                            else:
-                                # Fallback to original action if dict processing fails
-                                processed_gt_actions.append(np.array(gt_actions[i]))
-                                logger.warning(f"Sample {i}: Falling back to original action")
+                for i, action_dict in enumerate(action_dicts):
+                    if action_dict is not None and len(action_dict) > 0:
+                        # Create action tensor from dictionary
+                        action_tensor = _create_action_tensor_from_dict(action_dict, args.dataset_name)
+                        if action_tensor is not None:
+                            processed_gt_actions.append(action_tensor)
+                            logger.debug(f"Sample {i}: Created action tensor with shape {action_tensor.shape}")
                         else:
-                            # Use original action if dict is None or empty
+                            # Fallback to original action if dict processing fails
                             processed_gt_actions.append(np.array(gt_actions[i]))
-                    
-                    if processed_gt_actions:
-                        gt_actions = processed_gt_actions
-                        logger.debug(f"Successfully processed {len(processed_gt_actions)} actions from action_dict")
+                            logger.warning(f"Sample {i}: Falling back to original action")
                     else:
-                        raise ValueError("No valid actions processed from action_dict, cannot continue")
+                        # Use original action if dict is None or empty
+                        processed_gt_actions.append(np.array(gt_actions[i]))
+                
+                if processed_gt_actions:
+                    gt_actions = processed_gt_actions
+                    logger.debug(f"Successfully processed {len(processed_gt_actions)} actions from action_dict")
+                else:
+                    raise ValueError("No valid actions processed from action_dict, cannot continue")
+        
+        # Convert to numpy array format
+        gt_actions = np.array([np.array(action) for action in gt_actions])
+        
+        # Process each image-prompt pair individually (Magma doesn't support batch processing)
+        batch_normalized_actions = []
+        
+        for idx, (image, inst) in enumerate(zip(images, instructions)):
+            convs = [
+                {"role": "user", "content": f"<image>\nWhat action should the robot take to {inst}?"},
+            ]
+            convs = [
+                {
+                    "role": "system",
+                    "content": "You are agent that can see, talk and act.", 
+                },            
+            ] + convs      
+            prompt = processor.tokenizer.apply_chat_template(
+                convs,
+                tokenize=False,
+                add_generation_prompt=True
+            )
+            # Handle image tokens like libero
+            if hasattr(model.config, 'mm_use_image_start_end') and model.config.mm_use_image_start_end:
+                prompt = prompt.replace("<image>", "<image_start><image><image_end>")
             
-            # Convert to numpy array format
-            gt_actions = np.array([np.array(action) for action in gt_actions])
-            
-            # Use libero-style prompt construction with system message
-            prompts = []
-            for inst in instructions:
-                convs = [
-                    {"role": "user", "content": f"<image>\nWhat action should the robot take to {inst}?"},
-                ]
-                convs = [
-                    {
-                        "role": "system",
-                        "content": "You are agent that can see, talk and act.", 
-                    },            
-                ] + convs      
-                prompt = processor.tokenizer.apply_chat_template(
-                    convs,
-                    tokenize=False,
-                    add_generation_prompt=True
-                )
-                # Handle image tokens like libero
-                if hasattr(model.config, 'mm_use_image_start_end') and model.config.mm_use_image_start_end:
-                    prompt = prompt.replace("<image>", "<image_start><image><image_end>")
-                prompts.append(prompt)
-            # Process entire batch at once
-            inputs = processor(texts=prompts, images=images, return_tensors="pt", padding=True)
+            # Process single image with proper dimension handling
+            inputs = processor(images=image, texts=prompt, return_tensors="pt")
+            inputs['pixel_values'] = inputs['pixel_values'].unsqueeze(0)
+            inputs['image_sizes'] = inputs['image_sizes'].unsqueeze(0)
             inputs = {k: v.to("cuda") for k, v in inputs.items()}
             if 'pixel_values' in inputs and inputs['pixel_values'] is not None:
                 inputs['pixel_values'] = inputs['pixel_values'].to(torch.bfloat16)
 
             with torch.inference_mode():
                 generate_ids = model.generate(**inputs, **generation_args)
-
+            
+            action_ids = generate_ids[0, -8:-1].cpu().tolist() 
+            action_ids = np.array(action_ids).astype(np.int64)
+            
             # Extract generated tokens (excluding the input prompt)
-            output_ids = generate_ids[:, inputs["input_ids"].shape[-1]:]
+            #output_ids = generate_ids[:, inputs["input_ids"].shape[-1]:]
             action_tokenizer = ActionTokenizer(processor.tokenizer)
-            normalized_actions = action_tokenizer.decode_token_ids_to_actions(output_ids.cpu().numpy())
+            normalized_action = action_tokenizer.decode_token_ids_to_actions(action_ids)
+            batch_normalized_actions.append(normalized_action)  # Keep full action vector
             
-            logger.info(f"Normalized actions shape: {normalized_actions.shape}")
-            logger.info(f"Ground truth actions shape: {gt_actions.shape}")
+            # Clean up intermediate tensors
+            del inputs, generate_ids, action_ids
+            torch.cuda.empty_cache()
+        
+        # Combine all normalized actions
+        normalized_actions = np.array(batch_normalized_actions)
+        
+        logger.info(f"Normalized actions shape: {normalized_actions.shape}")
+        logger.info(f"Ground truth actions shape: {gt_actions.shape}")
+        
+        # Check if we have the right number of action dimensions
+        if normalized_actions.shape[1] != action_stats['min'].shape[0]:
+            logger.warning(f"Dimension mismatch: predicted {normalized_actions.shape[1]} dims, expected {action_stats['min'].shape[0]} dims")
+            # Pad or truncate to match expected dimensions
+            expected_dim = action_stats['min'].shape[0]
+            if normalized_actions.shape[1] < expected_dim:
+                # Pad with zeros if we have fewer dimensions
+                padding = np.zeros((normalized_actions.shape[0], expected_dim - normalized_actions.shape[1]))
+                normalized_actions = np.concatenate([normalized_actions, padding], axis=1)
+                logger.info(f"Padded actions to shape: {normalized_actions.shape}")
+            else:
+                # Truncate if we have more dimensions
+                normalized_actions = normalized_actions[:, :expected_dim]
+                logger.info(f"Truncated actions to shape: {normalized_actions.shape}")
+
+        # Unnormalize actions
+        pred_actions = np.array([unnormalize_action(act, action_stats) for act in normalized_actions])
+
+        # Dynamic action comparison - clip to minimum dimension for fair comparison
+        effective_dim = min(pred_actions.shape[1], gt_actions.shape[1])
+        pred_clipped = pred_actions[:, :effective_dim]
+        gt_clipped = gt_actions[:, :effective_dim]
+
+        logger.info(f"Comparing actions - Pred shape: {pred_clipped.shape}, GT shape: {gt_clipped.shape}")
+
+        mses, maes, invalid_preds = _calculate_batch_metrics(pred_clipped, gt_clipped, action_stats)
+        total_invalid_predictions += invalid_preds
+        total_timesteps += len(pred_clipped)
+        
+        # Calculate action success (exact match for continuous actions)
+        successes = []
+        for i in range(pred_clipped.shape[0]):
+            if np.array_equal(pred_clipped[i], gt_clipped[i]):
+                successes.append(1)
+            else:
+                successes.append(0)
+        
+        all_mses.extend(mses)
+        all_maes.extend(maes)
+        all_successes.extend(successes)
+
+        logger.info(f"--- Processed Batch {batch_counter}/{total_batches} ---")
             
-            # Check if we have the right number of action dimensions
-            if normalized_actions.shape[1] != action_stats['min'].shape[0]:
-                logger.warning(f"Dimension mismatch: predicted {normalized_actions.shape[1]} dims, expected {action_stats['min'].shape[0]} dims")
-                # Pad or truncate to match expected dimensions
-                expected_dim = action_stats['min'].shape[0]
-                if normalized_actions.shape[1] < expected_dim:
-                    # Pad with zeros if we have fewer dimensions
-                    padding = np.zeros((normalized_actions.shape[0], expected_dim - normalized_actions.shape[1]))
-                    normalized_actions = np.concatenate([normalized_actions, padding], axis=1)
-                    logger.info(f"Padded actions to shape: {normalized_actions.shape}")
-                else:
-                    # Truncate if we have more dimensions
-                    normalized_actions = normalized_actions[:, :expected_dim]
-                    logger.info(f"Truncated actions to shape: {normalized_actions.shape}")
-
-            # Unnormalize actions
-            pred_actions = np.array([unnormalize_action(act, action_stats) for act in normalized_actions])
-
-            # Dynamic action comparison - clip to minimum dimension for fair comparison
-            effective_dim = min(pred_actions.shape[1], gt_actions.shape[1])
-            pred_clipped = pred_actions[:, :effective_dim]
-            gt_clipped = gt_actions[:, :effective_dim]
-
-            logger.info(f"Comparing actions - Pred shape: {pred_clipped.shape}, GT shape: {gt_clipped.shape}")
-
-            mses, maes, invalid_preds = _calculate_batch_metrics(pred_clipped, gt_clipped, action_stats)
-            total_invalid_predictions += invalid_preds
-            total_timesteps += len(pred_clipped)
-            
-            # Calculate action success (exact match for continuous actions)
-            successes = []
-            for i in range(pred_clipped.shape[0]):
-                if np.array_equal(pred_clipped[i], gt_clipped[i]):
-                    successes.append(1)
-                else:
-                    successes.append(0)
-            
-            all_mses.extend(mses)
-            all_maes.extend(maes)
-            all_successes.extend(successes)
-
-            logger.info(f"--- Processed Batch {batch_counter}/{total_batches} ---")
-            
-        except Exception as e:
+        '''except Exception as e:
             logger.error(f"Error in batch {batch_counter}: {e}")
             continue
         finally:
             gc.collect()
-            torch.cuda.empty_cache()
+            torch.cuda.empty_cache()'''
 
     logger.info("Evaluation loop finished. Calculating final metrics...")
     final_metrics = _calculate_final_metrics(all_mses, all_maes, all_successes)
