@@ -229,7 +229,7 @@ def apply_dataset_transform(actions, dataset_name):
     Apply dataset-specific transforms to predicted actions.
     
     Args:
-        actions: numpy array of predicted actions
+        actions: numpy array of predicted actions (batch_size, action_dim)
         dataset_name: name of the dataset to determine which transform to apply
     
     Returns:
@@ -241,30 +241,29 @@ def apply_dataset_transform(actions, dataset_name):
     
     transform_fn = OXE_STANDARDIZATION_TRANSFORMS[dataset_name]
     
-    
-    
-    transformed_actions = []
-    for action in actions:
-        try:
-            # Most transforms expect actions as a simple tensor, but some might expect dict format
-            # We'll try the simple format first, which should work for most cases
-            trajectory = {
-                "action": tf.constant(action[None, :], dtype=tf.float32),  # Add batch dimension
-                "observation": {},  # Empty observation dict
-                "language_instruction": ""  # Empty language instruction
-            }
-            
-            # Apply the transform
-            transformed_trajectory = transform_fn(trajectory)
-            # Extract the transformed action and remove batch dimension
-            transformed_action = transformed_trajectory["action"][0].numpy()
-            transformed_actions.append(transformed_action)
-            
-        except Exception as e:
-            logger.warning(f"Failed to apply transform for {dataset_name} on action {action}: {e}. Using original action.")
-            transformed_actions.append(action)
-    
-    return np.array(transformed_actions)
+    try:
+        # Convert actions to TensorFlow tensor with proper batch dimension
+        actions_tf = tf.constant(actions, dtype=tf.float32)
+        
+        # Create a minimal trajectory structure that transforms expect
+        # Most transforms only operate on the "action" field
+        trajectory = {
+            "action": actions_tf,
+            "observation": {},  # Empty observation dict
+            "language_instruction": tf.constant([""] * actions.shape[0])  # Empty language instructions
+        }
+        
+        # Apply the transform
+        transformed_trajectory = transform_fn(trajectory)
+        
+        # Extract the transformed actions and convert back to numpy
+        transformed_actions = transformed_trajectory["action"].numpy()
+        
+        return transformed_actions
+        
+    except Exception as e:
+        logger.warning(f"Failed to apply transform for {dataset_name}: {e}. Returning original actions.")
+        return actions
 
 def run_evaluation(args):
     transformers_logging.set_verbosity_error()
@@ -318,12 +317,16 @@ def run_evaluation(args):
     logger.info("Action stats calculated and dataloader is ready.")
     
     action_dim = action_stats['min'].shape[0]
+    logger.info(f"Action dimension from stats: {action_dim}")
     generation_args = {
         "max_new_tokens": action_dim, 
+        "min_new_tokens": action_dim,  # Force the model to generate exactly action_dim tokens
         "temperature": 0.0, 
         "do_sample": False,
         "use_cache": False,  # Explicitly disable cache to avoid DynamicCache compatibility issues
         "past_key_values": None,  # Ensure no cache is used
+        "eos_token_id": None,  # Disable early stopping on EOS token
+        "pad_token_id": processor.tokenizer.pad_token_id,
     }
     
     all_mses, all_maes, all_successes = [], [], []
@@ -337,7 +340,27 @@ def run_evaluation(args):
             instructions = [txt for txt in batch["text_observation"]]
             gt_actions = np.array(batch['action'])
             
-            prompts = [processor.tokenizer.apply_chat_template([{"role": "user", "content": f"<image>\n{inst}"}], tokenize=False, add_generation_prompt=True) for inst in instructions]
+            # Use libero-style prompt construction with system message
+            prompts = []
+            for inst in instructions:
+                convs = [
+                    {"role": "user", "content": f"<image>\nWhat action should the robot take to {inst}?"},
+                ]
+                convs = [
+                    {
+                        "role": "system",
+                        "content": "You are agent that can see, talk and act.", 
+                    },            
+                ] + convs      
+                prompt = processor.tokenizer.apply_chat_template(
+                    convs,
+                    tokenize=False,
+                    add_generation_prompt=True
+                )
+                # Handle image tokens like libero
+                if hasattr(model.config, 'mm_use_image_start_end') and model.config.mm_use_image_start_end:
+                    prompt = prompt.replace("<image>", "<image_start><image><image_end>")
+                prompts.append(prompt)
             inputs = processor(texts=prompts, images=images, return_tensors="pt", padding=True)
             inputs = {k: v.to(model.device) for k, v in inputs.items()}
             if 'pixel_values' in inputs and inputs['pixel_values'] is not None:
@@ -353,7 +376,31 @@ def run_evaluation(args):
             action_tokenizer = ActionTokenizer(processor.tokenizer)
             normalized_actions = action_tokenizer.decode_token_ids_to_actions(output_ids.cpu().numpy())
 
+            # Debug logging to understand the dimension mismatch
+            logger.info(f"Generated token IDs shape: {output_ids.shape}")
+            logger.info(f"Action stats min shape (expected action dim): {action_stats['min'].shape}")
+            logger.info(f"Normalized actions shape: {np.array(normalized_actions).shape}")
+            logger.info(f"Ground truth actions shape: {gt_actions.shape}")
+            
+            # Check if we have the right number of action dimensions
+            if normalized_actions.shape[1] != action_stats['min'].shape[0]:
+                logger.warning(f"Dimension mismatch: predicted {normalized_actions.shape[1]} dims, expected {action_stats['min'].shape[0]} dims")
+                # Pad or truncate to match expected dimensions
+                expected_dim = action_stats['min'].shape[0]
+                if normalized_actions.shape[1] < expected_dim:
+                    # Pad with zeros if we have fewer dimensions
+                    padding = np.zeros((normalized_actions.shape[0], expected_dim - normalized_actions.shape[1]))
+                    normalized_actions = np.concatenate([normalized_actions, padding], axis=1)
+                    logger.info(f"Padded actions to shape: {normalized_actions.shape}")
+                else:
+                    # Truncate if we have more dimensions
+                    normalized_actions = normalized_actions[:, :expected_dim]
+                    logger.info(f"Truncated actions to shape: {normalized_actions.shape}")
+
+            # Unnormalize actions
             pred_actions = np.array([unnormalize_action(act, action_stats) for act in normalized_actions])
+            
+            # Apply dataset-specific transforms (includes gripper processing)
             pred_actions = apply_dataset_transform(pred_actions, args.dataset_name)
 
             mses, maes = _calculate_batch_metrics(pred_actions, gt_actions, action_stats)
