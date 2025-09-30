@@ -14,6 +14,7 @@ import numpy as np
 import torch
 from tqdm.auto import tqdm
 from transformers import AutoModelForCausalLM, AutoProcessor
+from sentence_transformers import SentenceTransformer, util
 
 project_dir = next(p for p in Path(__file__).parents if p.parts[-1]=='MultiNet')
 sys.path.append(str(project_dir))
@@ -63,18 +64,26 @@ def _validate_outputs_and_parse(outputs: list) -> list:
             preds.append(None)
     return preds
 
-def _calculate_final_metrics(preds: List[int], trues: List[int]) -> Dict[str, Any]:
+def _calculate_similarity(pred: str, true: str, similarity_model: SentenceTransformer) -> float:
+    emb1 = similarity_model.encode(pred, convert_to_tensor=True)
+    emb2 = similarity_model.encode(true, convert_to_tensor=True)
+    return util.cos_sim(emb1, emb2).item()
+
+def _calculate_final_metrics(preds: List[int], trues: List[int], similarity_model: SentenceTransformer) -> Dict[str, Any]:
     result = {}
     valid_preds, valid_trues = [], []
     invalid_count = 0
     total_samples = len(preds)
 
+    similarity_scores = []
     for pred, true in zip(preds, trues):
         if pred is None:
             invalid_count += 1
+            similarity_scores.append(0.0)
         else:
             valid_preds.append(pred)
             valid_trues.append(true)
+            similarity_scores.append(_calculate_similarity(pred, true, similarity_model))
     percentage_invalids = (invalid_count / total_samples) * 100 if total_samples > 0 else 0.0
 
     if len(valid_preds) > 0:
@@ -84,6 +93,12 @@ def _calculate_final_metrics(preds: List[int], trues: List[int]) -> Dict[str, An
 
     exact_match_rate_with_invalids = get_exact_match_rate(np.array(preds), np.array(trues))
 
+    result["avg_similarity_score"] = np.mean(similarity_scores)
+    result["max_similarity_score"] = np.max(similarity_scores)
+    result["min_similarity_score"] = np.min(similarity_scores)
+    result["similarity_std"] = np.std(similarity_scores)
+    result["high_similarity_percentage"] = np.mean(similarity_scores >= 0.8)
+    result["high_similarity_threshold"] = 0.8
     result["exact_match_rate_without_invalids"] = exact_match_rate
     result["exact_match_rate_with_invalids"] = exact_match_rate_with_invalids
     result["total_predictions"] = total_samples
@@ -110,10 +125,6 @@ def main(args):
         low_cpu_mem_usage=True,
     )
     processor = AutoProcessor.from_pretrained(args.model_name_or_path, trust_remote_code=True)
-
-    if processor.tokenizer.pad_token is None:
-        processor.tokenizer.pad_token = processor.tokenizer.eos_token
-    processor.tokenizer.padding_side = "left"
 
     shard_paths = find_shards(args.data_path)
     dataset, dataloader = get_openx_dataloader(
@@ -161,7 +172,9 @@ def main(args):
             gt_labels.append(label)
 
     parsed_choices = _validate_outputs_and_parse(raw_predictions)
-    final_report = _calculate_final_metrics(parsed_choices, gt_labels)
+
+    similarity_model = SentenceTransformer("all-MiniLM-L6-v2", tokenizer_kwargs={"clean_up_tokenization_spaces": True})
+    final_report = _calculate_final_metrics(parsed_choices, gt_labels, similarity_model)
     final_report['all_outs'] = raw_predictions
     final_report['eval_time'] = time() - start_time
 
