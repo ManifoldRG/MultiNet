@@ -214,7 +214,9 @@ def main(args):
     final_report['all_outs'] = raw_predictions
     final_report['eval_time'] = time() - start_time
 
-    output_path = Path(args.output_dir) / args.results_filename
+    if args.results_filename is None:
+        results_filename = f"{args.dataset}_results.json"
+    output_path = Path(args.output_dir) / results_filename
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(final_report, f, indent=4)
@@ -233,10 +235,6 @@ if __name__ == "__main__":
     parser.add_argument('--temperature', type=float, default=0.0, help="Generation temperature.")
     parser.add_argument('--do_sample', action='store_true', help="Enable sampling for generation.")
     parser.add_argument('--output_dir', type=str, default="./results", help="Directory to save the results file.")
-
-    # args, remaining = parser.parse_known_args()
-    
-    # parser.add_argument('--results_filename', type=str, default=results_filename, help="Name of the output results file.")
+    parser.add_argument('--results_filename', type=str, default=None, help="Name of the output results file.")
     args = parser.parse_args()
-    args.results_filename = f"{args.dataset}_results.json"
     main(args)
