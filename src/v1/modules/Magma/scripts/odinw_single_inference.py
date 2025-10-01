@@ -82,7 +82,7 @@ def _calculate_final_metrics(preds: List[int], trues: List[int], possible_output
             valid_trues.append(true)
 
     preds = np.array([int(pred) for pred in preds])
-    labels = np.array([int(true) for true in labels])
+    labels = np.array([int(true) for true in trues])
 
     if len(valid_preds) > 0:
         exact_match_rate = get_exact_match_rate(np.array(valid_preds), np.array(valid_trues))
@@ -128,8 +128,8 @@ def _calculate_final_metrics(preds: List[int], trues: List[int], possible_output
     result["total_predictions"] = len(preds)
     result["invalid_predictions"] = invalid_count
     result["percentage_invalids"] = (invalid_count / len(preds)) * 100
-    result["preds"] = [p for p in preds]
-    result["gt_labels"] = [t for t in trues]
+    result["preds"] = [int(p) for p in preds]
+    result["gt_labels"] = [int(t) for t in trues]
 
     return result
 
@@ -168,7 +168,11 @@ def main(args):
     }
 
     start_time = time()
+    x = 2
     for batch in tqdm(dataloader, desc="Running Inference"):
+        x -= 1
+        if x < 0:
+            break
         questions = batch["question"]
         labels = batch["correct_option_idx"]
         images = batch["image"]
@@ -230,8 +234,9 @@ if __name__ == "__main__":
     parser.add_argument('--do_sample', action='store_true', help="Enable sampling for generation.")
     parser.add_argument('--output_dir', type=str, default="./results", help="Directory to save the results file.")
 
-    args, remaining = parser.parse_known_args()
+    # args, remaining = parser.parse_known_args()
+    
+    # parser.add_argument('--results_filename', type=str, default=results_filename, help="Name of the output results file.")
+    args = parser.parse_args()
     args.results_filename = f"{args.dataset}_results.json"
-    parser.add_argument('--results_filename', type=str, default=args.results_filename, help="Name of the output results file.")
-    args = parser.parse_args(remaining)
     main(args)
