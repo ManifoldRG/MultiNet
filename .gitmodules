@@ -4,3 +4,4 @@
 [submodule "src/v1/modules/openpi"]
 	path = src/v1/modules/openpi
 	url = https://github.com/ManifoldRG/openpi.git
+	branch = main
