@@ -172,14 +172,14 @@ def _transform_action_tensor(action_tensor: np.ndarray, dataset_name: str) -> np
     
     action_array = np.array(action_tensor)
     
-    # Bimanual dataset transform (openx_bimanual -> utokyo_xarm_bimanual)
+    # Bimanual dataset transform (openx_bimanual -> utokyo_xarm_bimanual) as present in src/v1/modules/Magma/data/openx/datasets/rlds/oxe/transforms.py
     if dataset_name == 'openx_bimanual':
         # Take last 7 dimensions of action
         transformed_action = action_array[..., -7:]
         print(f"Bimanual transform: {action_array.shape} -> {transformed_action.shape}")
         return transformed_action
     
-    # Wheeled robot dataset transform (openx_wheeled_robot -> gnm_dataset)
+    # Wheeled robot dataset transform (openx_wheeled_robot -> gnm_dataset) as present in src/v1/modules/Magma/data/openx/datasets/rlds/oxe/transforms.py
     elif dataset_name == 'openx_wheeled_robot':
         # Concatenate action with three zero tensors of same shape, plus one zero with shape [:1]
         if action_array.ndim == 1:
