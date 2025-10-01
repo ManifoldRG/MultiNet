@@ -149,92 +149,101 @@ def main(args):
         low_cpu_mem_usage=True,
     )
     processor = AutoProcessor.from_pretrained(args.model_name_or_path, trust_remote_code=True)
+    all_datasets = ODinWDefinitions.SUB_DATASET_CATEGORIES.keys() if args.dataset is None else [args.dataset]
 
-    sub_dir = _find_sub_dir(args.data_path, args.dataset)
-    if not sub_dir:
-        raise FileNotFoundError(f"Test dataset not found: {args.dataset}")
+    sub_dirs = {}
+    for ds in all_datasets:
+        sub_dir = _find_sub_dir(args.data_path, ds)
+        if sub_dir is not None:
+            sub_dirs[ds] = sub_dir
 
-    dataset, dataloader = get_odinw_dataloader(
-        sub_dir, args.batch_size
-    )
+    if not sub_dirs:
+        raise FileNotFoundError(f"No test dataset found")
 
-    raw_predictions, gt_labels = [], []
-    generation_args = {
-        "max_new_tokens": args.max_new_tokens,
-        "temperature": args.temperature,
-        "do_sample": args.do_sample,
-        "use_cache": False,
-        "past_key_values": None,
-    }
+    # Check if the files already exist before running any inference to avoid partial runs
+    output_paths = {}
+    for ds in sub_dirs.keys():
+        output_paths[ds] = Path(args.output_dir) / f"{ds}.json"
+        if output_paths[ds].exists():
+            raise FileExistsError(f"Results file already exists: {output_paths[ds]}. "
+                                  "Specify a different output directory or delete the file.")
 
-    start_time = time()
-    x = 2
-    for batch in tqdm(dataloader, desc="Running Inference"):
-        x -= 1
-        if x < 0:
-            break
-        questions = batch["question"]
-        labels = batch["correct_option_idx"]
-        images = batch["image"]
+    # Run inference for each dataset
+    for ds_name, sub_dir in sub_dirs.items():
+        _, dataloader = get_odinw_dataloader(
+            sub_dir, args.batch_size
+        )
 
-        for t in range(len(questions)):
-            img = images[t]
-            if img is None:
-                continue
+        raw_predictions, gt_labels = [], []
+        generation_args = {
+            "max_new_tokens": args.max_new_tokens,
+            "temperature": args.temperature,
+            "do_sample": args.do_sample,
+            "use_cache": False,
+            "past_key_values": None,
+        }
 
-            inst = questions[t]
-            label = labels[t]
-            img = Image.fromarray(img)
-    
-            system_prompt = {"role": "system", "content": ODinWDefinitions.SYSTEM_PROMPT}
-            inst_content = f"<image_start><image><image_end>\n{inst}"
-            user_prompt = {"role": "user", "content": inst_content}
-            prompt_content = [system_prompt, user_prompt]
+        start_time = time()
+        for batch in tqdm(dataloader, desc="Running Inference"):
+            questions = batch["question"]
+            labels = batch["correct_option_idx"]
+            images = batch["image"]
+
+            for t in range(len(questions)):
+                img = images[t]
+                if img is None:
+                    continue
+
+                inst = questions[t]
+                label = labels[t]
+                img = Image.fromarray(img)
         
-            prompt = processor.tokenizer.apply_chat_template(prompt_content, tokenize=False, add_generation_prompt=True)
-            inputs = processor(images=[img], texts=prompt, return_tensors="pt")
-            inputs['pixel_values'] = inputs['pixel_values'].unsqueeze(0)
-            inputs['image_sizes'] = inputs['image_sizes'].unsqueeze(0)
+                system_prompt = {"role": "system", "content": ODinWDefinitions.SYSTEM_PROMPT}
+                inst_content = f"<image_start><image><image_end>\n{inst}"
+                user_prompt = {"role": "user", "content": inst_content}
+                prompt_content = [system_prompt, user_prompt]
             
-            inputs = inputs.to(model.device)
-            inputs['pixel_values'] = inputs['pixel_values'].to(torch_dtype)
+                prompt = processor.tokenizer.apply_chat_template(prompt_content, tokenize=False, add_generation_prompt=True)
+                inputs = processor(images=[img], texts=prompt, return_tensors="pt")
+                inputs['pixel_values'] = inputs['pixel_values'].unsqueeze(0)
+                inputs['image_sizes'] = inputs['image_sizes'].unsqueeze(0)
+                
+                inputs = inputs.to(model.device)
+                inputs['pixel_values'] = inputs['pixel_values'].to(torch_dtype)
 
-            with torch.inference_mode():
-                generate_ids = model.generate(**inputs, **generation_args)
+                with torch.inference_mode():
+                    generate_ids = model.generate(**inputs, **generation_args)
 
-            generate_ids = generate_ids[:, inputs["input_ids"].shape[-1] :]
-            response = processor.decode(generate_ids[0], skip_special_tokens=True).strip()
+                generate_ids = generate_ids[:, inputs["input_ids"].shape[-1] :]
+                response = processor.decode(generate_ids[0], skip_special_tokens=True).strip()
 
-            raw_predictions.append(response)
-            gt_labels.append(label)
+                raw_predictions.append(response)
+                gt_labels.append(label)
 
-    possible_outputs = list(range(ODinWDefinitions.SUB_DATASET_CATEGORIES[args.dataset]))
-    parsed_choices = _validate_outputs_and_parse(raw_predictions, possible_outputs)
-    final_report = _calculate_final_metrics(parsed_choices, gt_labels, possible_outputs)
-    final_report['all_outs'] = raw_predictions
-    final_report['eval_time'] = time() - start_time
+        possible_outputs = list(range(ODinWDefinitions.SUB_DATASET_CATEGORIES[ds_name]))
+        parsed_choices = _validate_outputs_and_parse(raw_predictions, possible_outputs)
+        final_report = _calculate_final_metrics(parsed_choices, gt_labels, possible_outputs)
+        final_report['all_outs'] = raw_predictions
+        final_report['eval_time'] = time() - start_time
 
-    if args.results_filename is None:
-        results_filename = f"{args.dataset}_results.json"
-    output_path = Path(args.output_dir) / results_filename
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(final_report, f, indent=4)
-    logging.info(f"Results saved to {output_path}")
+        output_path = output_paths[ds_name]
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(final_report, f, indent=4)
+        logging.info(f"Results saved to {output_path}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run evaluation on the odinw dataset.")
     parser.add_argument('--model_name_or_path', type=str, default="microsoft/Magma-8B", help="Model identifier.")
     parser.add_argument('--data_path', type=str, required=True, help="Path to the odinw test data folder.")
-    parser.add_argument('--dataset', type=str, required=True, help="Name of the odinw dataset.")
+    parser.add_argument('--dataset', type=str, default=None, help="Name of the odinw dataset. Default is all datasets.")
     parser.add_argument('--dtype', type=str, default="bf16", choices=['fp16', 'bf16', 'fp32'], help="Model data type.")
     parser.add_argument('--batch_size', type=int, default=1, help="Batch size for inference.")
     parser.add_argument('--max_seq_len', type=int, default=1024, help="Maximum sequence length for tokenization.")
     parser.add_argument('--max_new_tokens', type=int, default=75, help="Max new tokens for generation.")
     parser.add_argument('--temperature', type=float, default=0.0, help="Generation temperature.")
     parser.add_argument('--do_sample', action='store_true', help="Enable sampling for generation.")
-    parser.add_argument('--output_dir', type=str, default="./results", help="Directory to save the results file.")
-    parser.add_argument('--results_filename', type=str, default=None, help="Name of the output results file.")
+    parser.add_argument('--output_dir', type=str, default="./results/odinw", help="Directory to save the results file.")
     args = parser.parse_args()
     main(args)
