@@ -1,0 +1,20 @@
+{
+    "openx_mobile_manipulation": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 564.3850574012124,
+        "total_dataset_amae": 1650.7957321160932,
+        "num_timesteps": 17808,
+        "avg_dataset_amse": 0.03169278174984346,
+        "avg_dataset_amae": 0.09269967049169343,
+        "normalized_amse": 0.0590507810903202,
+        "normalized_amae": 0.17880448990489725,
+        "normalized_quantile_filtered_amae": 0.21564382512415362,
+        "max_relative_mae": 5.385524708377189,
+        "proportion_beyond_threshold_mae": 0.0042115902964959566,
+        "eval_time": 8397.772655893,
+        "total_invalid_preds": 0,
+        "invalid_predictions_percentage": 0.0,
+        "total_batches": 1781,
+        "total_timesteps": 17808
+    }
+}
