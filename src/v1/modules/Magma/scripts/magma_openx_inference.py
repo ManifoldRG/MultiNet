@@ -559,7 +559,6 @@ def run_evaluation(args):
                     transformed_gt_actions.append(np.array(action))
             
             if transformed_gt_actions:
-                print('\nTRASNFORMED')
                 gt_actions = transformed_gt_actions
                 logger.debug(f"Successfully transformed {len(transformed_gt_actions)} actions")
             else:
