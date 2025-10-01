@@ -148,14 +148,10 @@ def main(args):
         answers = batch["answer"]
         scene_images = batch.get("scene_image", [None] * len(questions))
 
-        x = 5
         for t in range(len(questions)):
             img = scene_images[t]
             if img is None:
                 continue
-            x -= 1
-            if x == 0:
-                break
 
             inst = questions[t]
             label = answers[t]
