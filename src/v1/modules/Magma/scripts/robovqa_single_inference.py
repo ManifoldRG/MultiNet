@@ -93,6 +93,8 @@ def _calculate_final_metrics(preds: List[int], trues: List[int], similarity_mode
 
     exact_match_rate_with_invalids = get_exact_match_rate(np.array(preds), np.array(trues))
 
+    similarity_scores = np.array(similarity_scores)
+
     result["avg_similarity_score"] = np.mean(similarity_scores)
     result["max_similarity_score"] = np.max(similarity_scores)
     result["min_similarity_score"] = np.min(similarity_scores)
