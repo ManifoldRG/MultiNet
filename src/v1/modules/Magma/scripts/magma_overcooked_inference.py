@@ -352,7 +352,7 @@ def run_evaluation(args):
     # Generation arguments (similar to other Magma scripts)
     generation_args = {
         "max_new_tokens": 512,
-        "temperature": 0.0,
+        "temperature": 0.5,
         "do_sample": True,
         "num_beams": 1,
         "use_cache": False,
@@ -420,19 +420,12 @@ def run_evaluation(args):
                     generate_ids = model.generate(**inputs, **generation_args)
                 
                 # Extract only the generated tokens (skip input prompt)
-                text_ids = generate_ids[:, inputs["input_ids"].shape[-1]:]
-                
-                # Decode output
-                output_text = processor.batch_decode(
-                    text_ids,
-                    skip_special_tokens=True,
-                    clean_up_tokenization_spaces=False
-                )[0]
-                
+                generate_ids = generate_ids[:, inputs["input_ids"].shape[-1] :]
+                output_text = processor.decode(generate_ids[0], skip_special_tokens=True).strip()
                 batch_outputs.append(output_text)
                 
                 # Clean up
-                del inputs, generate_ids, text_ids
+                del inputs, generate_ids
                 torch.cuda.empty_cache()
             
             # Parse text outputs to lists (Magma outputs text, need to parse to list)
