@@ -131,28 +131,60 @@ for file in os.listdir('./genesis/gpt_5/low_reasoning/sqa3d'):
         with open(os.path.join('./genesis/gpt_5/low_reasoning/sqa3d', file)) as f:
             gpt5_sqa3d.append(json.load(f))
 
+#%% load all magma data
+# # load the openx json file
+# with open('./magma/magma_openx_results_final.json') as f:
+#     magma_openx = json.load(f)
+# # load the overcooked json file
+# with open('./magma/magma_overcooked_results.json') as f:
+#     magma_overcooked = json.load(f)
+# # load the hf bfcl inference results json file
+# with open('./magma/magma_bfcl_inference_results.json') as f:
+#     magma_bfcl_inference = json.load(f)
+# load the hf piqa results json file
+with open('./magma/piqa_results.json') as f:
+    magma_piqa = json.load(f)
+# load the hf robovqa results json file
+with open('./magma/robovqa_results.json') as f:
+    magma_robovqa = json.load(f)
+# load the hf sqa3d results json file
+with open('./magma/sqa3d_results.json') as f:
+    magma_sqa3d = json.load(f)
+# load all the json files in the odinw folder
+magma_odinw_results = []
+for file in os.listdir('./magma/odinw/corrected_results'):
+    if file.endswith('.json'):
+        with open(os.path.join('./magma/odinw/corrected_results', file)) as f:
+            magma_odinw_results.append(json.load(f))
+
 #%% extract `exact_match_rate` | `exact_match_accuracy` for gpt5 and pi0 for piqa, 
 gpt5_piqa_emr = extract_key_from_json(gpt5_piqa, key='exact_match_rate')
 pi0_piqa_emr = extract_key_from_json(pi0_hf_piqa, key='exact_match_rate')
-print("pi0 piqa emr:", pi0_piqa_emr, "gpt5 piqa emr:", gpt5_piqa_emr)
+magma_piqa_emr = extract_key_from_json(magma_piqa, key='exact_match_rate')
+print("pi0 piqa emr:", pi0_piqa_emr, "gpt5 piqa emr:", gpt5_piqa_emr, "magma piqa emr:", magma_piqa_emr)
 
 #%% extract emr for pi0 bfcl. GPT-5 bfcl results are going to be referenced from other papers
+gpt5_bfcl_emr = [28.5]
 pi0_bfcl_emr = extract_key_from_json(pi0_hf_bfcl_inference, key='exact_match_accuracy')
+# magma_bfcl_emr = extract_key_from_json(magma_bfcl_inference, key='exact_match_accuracy')
 print("pi0 bfcl emr:", pi0_bfcl_emr)
 
 #%% extract emr for sqa3d
 gpt5_sqa3d_emr = extract_key_from_json(gpt5_sqa3d, key='exact_match_rate')
 pi0_sqa3d_emr = extract_key_from_json(pi0_hf_sqa3d, key='exact_match_rate')
-print("pi0 sqa3d emr:", pi0_sqa3d_emr, "gpt5 sqa3d emr:", gpt5_sqa3d_emr)
+magma_sqa3d_emr = extract_key_from_json(magma_sqa3d, key='exact_match_rate_with_invalids')
+print("pi0 sqa3d emr:", pi0_sqa3d_emr, "gpt5 sqa3d emr:", gpt5_sqa3d_emr, "magma sqa3d emr:", magma_sqa3d_emr)
 
 # %% extract emr for robovqa
 gpt5_robovqa_emr = extract_key_from_json(gpt5_robovqa, key='exact_match_rate')
 pi0_robovqa_emr = extract_key_from_json(pi0_hf_robovqa, key='exact_match_accuracy')
-print("pi0 robovqa emr:", pi0_robovqa_emr, "gpt5 robovqa emr:", gpt5_robovqa_emr)
+magma_robovqa_emr = extract_key_from_json(magma_robovqa, key='exact_match_rate_with_invalids')
+print("pi0 robovqa emr:", pi0_robovqa_emr, "gpt5 robovqa emr:", gpt5_robovqa_emr, "magma robovqa emr:", magma_robovqa_emr)
 
 # %% extract emr for overcooked
 gpt5_overcooked_emr = extract_key_from_json(gpt5_overcooked, key='exact_match')[0]
 pi0_overcooked_emr = extract_key_from_json(pi0_base_overcooked, key='exact_match_rate')
+# magma_overcooked_emr = extract_key_from_json(magma_overcooked, key='exact_match_rate')
 print("pi0 overcooked emr:", pi0_overcooked_emr, "gpt5 overcooked emr:", gpt5_overcooked_emr)
 
 # %% extract emr for odinw
@@ -164,7 +196,12 @@ for result in gpt5_odinw:
 pi0_odinw_emrs = []
 for result in pi0_odinw_results:
     pi0_odinw_emrs.extend(extract_key_from_json(result, key='exact_match_rate'))
-print("pi0 odinw emrs:", pi0_odinw_emrs, "gpt5 odinw emrs:", gpt5_odinw_emrs)
+# iterate through all the magma odinw results and extract the exact match rate   
+magma_odinw_emrs = []
+for result in magma_odinw_results:
+    magma_odinw_emrs.extend(extract_key_from_json(result, key='exact_match_rate_with_invalids'))
+    
+print("pi0 odinw emrs:", pi0_odinw_emrs, "gpt5 odinw emrs:", gpt5_odinw_emrs, "magma odinw emrs:", magma_odinw_emrs)
 # %% create a dataframe for the emrs. Each row should contain the task name, the model name (gpt5 or pi0), and the emr
 data = {
     'Task': ['PIQA', 'BFCL', 'SQA3D', 'RoboVQA', 'ODINW', 'Overcooked'],
@@ -179,7 +216,14 @@ data = {
                              np.mean(pi0_sqa3d_emr), 
                              np.mean(pi0_robovqa_emr), 
                              np.mean(pi0_odinw_emrs), 
-                             np.mean(pi0_overcooked_emr)]
+                             np.mean(pi0_overcooked_emr)],
+    "Magma":[np.mean(magma_piqa_emr), 
+                            None, #  np.mean(magma__bfcl_emr),
+                             np.mean(magma_sqa3d_emr), 
+                             np.mean(magma_robovqa_emr), 
+                             np.mean(magma_odinw_emrs), 
+                            None#  np.mean(magma_overcooked_emr)
+                            ]
 }
 df = pd.DataFrame(data)
 df
@@ -187,8 +231,8 @@ df
 # if a data is 0, add a tiny value so it can be visualized on a barplot
 df = df.replace(0, 0.01)
 # reshape the dataframe to have a column for model and a column for emr
-df_melted = df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0'], var_name='Model', value_name='Exact Match Rate')
-barplot(df_melted, title='Exact Match Rate Comparison between GPT-5 and Pi-0', ylabel='Exact Match Rate', xlabel='Task', save_path='./emr_comparison.pdf')
+df_melted = df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='Exact Match Rate')
+barplot(df_melted, title='Exact Match Rate Comparison between GPT-5, Pi-0 and Magma', ylabel='Exact Match Rate', xlabel='Task', save_path='./emr_comparison.pdf')
 
 
 # %% for openx, extract per subtask `normalized_amse` for gpt5 and pi0
