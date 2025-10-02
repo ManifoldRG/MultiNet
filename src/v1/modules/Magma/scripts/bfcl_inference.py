@@ -33,12 +33,12 @@ sys.path.append(str(project_dir))
 # Import BFCL dataloader
 from src.data_utils.bfcl_dataloader import get_bfcl_test_dataloader
 
-# BFCL system prompt for function calling tasks
-BFCL_SYSTEM_PROMPT = """You are an AI assistant that can call functions to complete tasks. You will be presented with multi-turn conversations where each turn may require function calls.
-
-For each turn, analyze the user's request and output the exact sequence of function calls needed for each turn.
-Format each function call as: function_name(param1=value1, param2=value2, ...)
-Use only the exact function names available in the provided set of functions and append appropriate parameters.
+# BFCL system prompt for function calling tasks                                                                                                                                                                                                   
+BFCL_SYSTEM_PROMPT = """You are an AI assistant that can call functions to complete tasks. You will be presented with conversation histories where each turn may require function calls.                                                          
+                                                                                                                                                                                                                                                  
+For each turn, analyze the conversation history, which may include previous assistant responses in addition to user prompts, and respond with the correct function to call.                                                                       
+Format each function call as: function_name(param1=value1, param2=value2, ...)                                                                                                                                                                    
+Use only the exact function names available in the provided set of functions and append appropriate parameters.                                                                                                                                   
 Output only the function calls, no explanations or additional text."""
 
 @dataclass
