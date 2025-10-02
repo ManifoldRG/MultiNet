@@ -360,7 +360,7 @@ def run_evaluation(args):
         "temperature": 0.0,
         "do_sample": False,
         "num_beams": 1,
-        "use_cache": False,
+        "use_cache": True,
     }
     
     # Storage for all metrics
