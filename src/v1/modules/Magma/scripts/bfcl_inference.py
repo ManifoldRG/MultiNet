@@ -283,48 +283,97 @@ def main(args):
     }
 
     for batch_idx, batch in enumerate(tqdm(dataloader, desc="Running Inference")):
-        prompts = batch["prompt"]
         ground_truth_functions = batch["ground_truth_functions"]
+        user_turns_batch = batch["turns"]
+        initial_user_prompts = batch["prompt"]
+        batch_size = len(user_turns_batch)
 
-        # Format prompts with system prompt
-        formatted_prompts = [f"{BFCL_SYSTEM_PROMPT}\n\n{p}" for p in prompts]
+        # Initialize histories for each sample in the batch
+        batch_chat_histories = [
+            [
+                {"role": "system", "content": BFCL_SYSTEM_PROMPT}, 
+                {"role": "user", "content": initial_user_prompts[i]}
+            ] for i in range(batch_size)
+        ]
+        # Store all predicted calls for each sample
+        batch_all_predicted_calls = [[] for _ in range(batch_size)]
 
-        # Prepare chats
-        chats = [[{"role": "user", "content": prompt}] for prompt in formatted_prompts]
+        # Determine the number of turns to process (max in batch)
+        num_turns = max(len(s) for s in user_turns_batch)
 
-        # Apply chat template
-        input_ids = processor.tokenizer.apply_chat_template(
-            chats,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=args.max_seq_len,
-            add_generation_prompt=True,
-        )
+        for turn_idx in range(num_turns):
+            turn_batch_inputs = []
+            
+            # Prepare inputs for the current turn for all samples in the batch
+            for i in range(batch_size):
+                # Check if the current sample has this many turns
+                if turn_idx < len(user_turns_batch[i]):
+                    # Add user messages for the current turn
+                    user_messages_for_turn = user_turns_batch[i][turn_idx]
+                    batch_chat_histories[i].extend(user_messages_for_turn)
+                
+                turn_batch_inputs.append(batch_chat_histories[i])
 
-        input_ids = input_ids.to(model.device)
+            
+            # Tokenize the batch of conversations for the current turn
+            input_ids = processor.tokenizer.apply_chat_template(
+                turn_batch_inputs,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=args.max_seq_len,
+                add_generation_prompt=True,
+            ).to(model.device)
 
-        with torch.inference_mode():
-            generate_ids = model.generate(input_ids=input_ids, **generation_args)
-            input_token_len = input_ids.shape[1]
-            responses = processor.batch_decode(
-                generate_ids[:, input_token_len:],
-                skip_special_tokens=True,
-            )
+            # Generate responses for the batch
+            with torch.inference_mode():
+                generate_ids = model.generate(input_ids=input_ids, **generation_args)
+                input_token_len = input_ids.shape[1]
+                turn_responses = processor.batch_decode(
+                    generate_ids[:, input_token_len:],
+                    skip_special_tokens=True,
+                )
 
-        # Validate and calculate metrics for batch
-        exact_matches, similarity_scores, predicted_calls, invalid_preds = _validate_outputs_and_calculate_metrics(
-            similarity_model, responses, ground_truth_functions
+            # Process outputs and update histories for the next turn
+            for i in range(batch_size):
+                if turn_idx < len(user_turns_batch[i]):
+                    response_text = turn_responses[i].strip()
+                    
+                    # Parse the generated string into a list of function calls
+                    predicted_calls_for_turn = [line.strip() for line in response_text.split('\n') if line.strip()]
+                    batch_all_predicted_calls[i].append(predicted_calls_for_turn)
+                    
+                    # Add the model's output to the history as the assistant's turn
+                    if response_text: # Only add assistant message if something was generated
+                        batch_chat_histories[i].append({"role": "assistant", "content": response_text})
+
+        # Consolidate all predicted calls for the batch to match metric function input
+        final_batch_outputs = []
+        final_batch_predicted_calls = []
+        for sample_predicted_turns in batch_all_predicted_calls:
+            # Flatten the list of lists of calls into a single list
+            flattened_calls = [call for turn_calls in sample_predicted_turns for call in turn_calls]
+
+            # [["func1", "func2"], ["func3"]] -> ["func1", "func2", "func3"]
+            final_batch_predicted_calls.append(flattened_calls)
+            
+            # Join into a single string for validation and similarity scoring
+            # "func1\nfunc2\nfunc3"
+            final_batch_outputs.append("\n".join(flattened_calls))
+
+        # Validate and calculate metrics for the completed batch
+        exact_matches, similarity_scores, _, invalid_preds = _validate_outputs_and_calculate_metrics(
+            similarity_model, final_batch_outputs, ground_truth_functions
         )
 
         # Update results
         dataset_results.total_batches = batch_idx + 1
-        dataset_results.total_samples += len(prompts)
+        dataset_results.total_samples += len(user_turns_batch)
         dataset_results.all_exact_matches.extend(exact_matches)
         dataset_results.all_similarity_scores.extend(similarity_scores)
-        dataset_results.all_predicted_calls.extend(predicted_calls)
+        dataset_results.all_predicted_calls.extend(final_batch_predicted_calls)
         dataset_results.all_ground_truth_calls.extend(ground_truth_functions)
-        dataset_results.all_original_outputs.extend([res.strip() for res in responses])
+        dataset_results.all_original_outputs.extend(batch_all_predicted_calls)
         dataset_results.total_invalid_predictions += invalid_preds
 
         # Progress update
@@ -397,8 +446,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run evaluation on the BFCL dataset using Magma model.")
     parser.add_argument('--model_name_or_path', type=str, default="microsoft/Magma-8B", help="Model identifier.")
     parser.add_argument('--dataset_dir', type=str, required=True, help="Directory containing the BFCL test dataset.")
-    parser.add_argument('--dtype', type=str, default="fp16", choices=['fp16', 'bf16', 'fp32'], help="Model data type.")
-    parser.add_argument('--batch_size', type=int, default=4, help="Batch size for inference.")
+    parser.add_argument('--dtype', type=str, default="bf16", choices=['fp16', 'bf16', 'fp32'], help="Model data type.")
+    parser.add_argument('--batch_size', type=int, default=2, help="Batch size for inference.")
     parser.add_argument('--max_seq_len', type=int, default=1024, help="Maximum sequence length for tokenization.")
     parser.add_argument('--max_new_tokens', type=int, default=150, help="Max new tokens for generation.")
     parser.add_argument('--temperature', type=float, default=0.0, help="Generation temperature.")
