@@ -328,8 +328,7 @@ def run_evaluation(args):
         trust_remote_code=True,
         device_map="auto",
         torch_dtype=torch.bfloat16,
-        low_cpu_mem_usage=True,
-        attn_implementation="flash_attention_2",
+        low_cpu_mem_usage=True
     )
     processor = AutoProcessor.from_pretrained("microsoft/Magma-8B", trust_remote_code=True)
     logger.info("Model and processor loaded successfully.")
@@ -352,8 +351,8 @@ def run_evaluation(args):
     # Generation arguments (similar to other Magma scripts)
     generation_args = {
         "max_new_tokens": 512,
-        "temperature": 0.1,
-        "do_sample": True,
+        "temperature": 0.0,
+        "do_sample": False,
         "num_beams": 1,
         "use_cache": False,
     }
