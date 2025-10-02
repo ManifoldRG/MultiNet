@@ -1,22 +1,14 @@
 """
 Magma inference script for OpenX quadrupedal robot dataset (utokyo_saytap).
 
-This script evaluates the Magma vision-language model on quadrupedal locomotion tasks.
+This script evaluates the Magma vision-language model on the OpenX quadrupedal locomotion task.
 It combines:
 - OpenX data loading and metrics (similar to magma_openx_inference.py)
 - Vision-language inference approach (similar to overcooked_single_inference.py and openx_module.py)
 - Standard OpenX prompt formatting using definitions (same as openx_module.py)
 
 The quadrupedal dataset contains 12 motor joint positions for controlling a quadruped robot
-across various gaits (trotting, pacing, bounding).
-
-Usage:
-    python magma_openx_quadrupedal_inference.py \\
-        --dataset_dir /path/to/utokyo_saytap/dataset \\
-        --output_dir ./results \\
-        --dataset_name openx_quadrupedal \\
-        --batch_size 4 \\
-        --num_shards 2
+across various gaits.
 """
 
 import os
@@ -28,6 +20,7 @@ import logging
 import time
 import gc
 import re
+from glob import glob
 
 import numpy as np
 import torch
@@ -64,13 +57,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def _validate_text_output(output: Any, shape: tuple[int]) -> np.array:
+def _validate_text_output(output: any, shape: tuple) -> np.array:
     if output is None or not isinstance(output, list) or len(output) != shape[0] or any(isinstance(x, (str, np.string_, set)) for x in output):
         return False
     return True
 
 
-def _get_sorted_shard_paths(dataset_dir: str) -> list[str]:
+def _get_sorted_shard_paths(dataset_dir: str) -> list:
     """Find and sort translated shard directories."""
     try:
         dataset_dir = glob(f"{dataset_dir}/test/")[0]
@@ -78,7 +71,7 @@ def _get_sorted_shard_paths(dataset_dir: str) -> list[str]:
         tfds_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
         return tfds_shards
     except IndexError:
-        print(f"Cannot identify the directory to the dataset {dataset}. Skipping this dataset.")
+        print(f"Cannot identify the directory to the dataset {dataset_dir}. Skipping this dataset.")
         return []
 
 
