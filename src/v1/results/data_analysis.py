@@ -132,9 +132,9 @@ for file in os.listdir('./genesis/gpt_5/low_reasoning/sqa3d'):
             gpt5_sqa3d.append(json.load(f))
 
 #%% load all magma data
-# # load the openx json file
-# with open('./magma/magma_openx_results_final.json') as f:
-#     magma_openx = json.load(f)
+# load the openx json file
+with open('./magma/magma_openx_results_final.json') as f:
+    magma_openx = json.load(f)
 # # load the overcooked json file
 # with open('./magma/magma_overcooked_results.json') as f:
 #     magma_overcooked = json.load(f)
@@ -239,9 +239,12 @@ barplot(df_melted, title='Exact Match Rate Comparison between GPT-5, Pi-0 and Ma
 gpt5_openx_namse = {}
 for result in gpt5_openx:
     gpt5_openx_namse.update(extract_per_subtask_metric(result, metric_key='normalized_amse'))
-pi0_openx_namse = extract_per_subtask_metric(pi0_base_openx, metric_key='normalized_amse') 
+pi0_openx_namse = extract_per_subtask_metric(pi0_base_openx, metric_key='normalized_amse')
+magma_openx_namse = extract_per_subtask_metric(magma_openx, metric_key='normalized_amse')
 # map the keys in pi0_openx_namse using the openx_subtasks_mapping
 pi0_openx_namse_mapped = {openx_subtasks_mapping.get(k, k): v for k, v in pi0_openx_namse.items()}
+# map the keys in magma_openx_namse using the openx_subtasks_mapping
+magma_openx_namse_mapped = {openx_subtasks_mapping.get(k, k): v for k, v in magma_openx_namse.items()}
 # map the keys in gpt5_openx_namse using the openx_subtasks_mapping
 gpt5_openx_namse_mapped = {openx_subtasks_mapping.get(k, k): v for k, v in gpt5_openx_namse.items()}
 # turn the two dicts into a dataframe
@@ -250,13 +253,14 @@ task_names = list(set(openx_subtasks_mapping.values()))
 # 
 openx_data = {'Task': task_names,
               'GPT-5': [gpt5_openx_namse_mapped.get(task, 0) for task in task_names],
-              'Pi-0': [pi0_openx_namse_mapped.get(task, 0) for task in task_names]}
+              'Pi-0': [pi0_openx_namse_mapped.get(task, 0) for task in task_names],
+              'Magma': [magma_openx_namse_mapped.get(task, 0) for task in task_names]}
 openx_df = pd.DataFrame(openx_data)
 openx_df
 #%% visualize the openx normalized amse results.
 # replace 0 with a tiny value so it can be visualized on a barplot
 openx_df = openx_df.replace(0, 0.01)
 # make it a melted dataframe
-openx_df_melted = openx_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0'], var_name='Model', value_name='Normalized AMSE')
+openx_df_melted = openx_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='Normalized AMSE')
 barplot(openx_df_melted, title='Normalized AMSE Comparison between GPT-5 and Pi-0 on OpenX', ylabel='Normalized AMSE', xlabel='Task', y='Normalized AMSE', save_path='./openx_namse_comparison.pdf')
 
