@@ -1,0 +1,61 @@
+{
+    "exact_match_rate_without_invalids": 0.8888888888888888,
+    "exact_match_rate_with_invalids": 0.8888888888888888,
+    "recall": 0.8888888888888888,
+    "precision": 0.8888888888888888,
+    "precision_without_invalids": 0.8888888888888888,
+    "f1": 0.8888888888888888,
+    "f1_without_invalids": 0.8888888888888888,
+    "macro_precision": 0.4444444444444444,
+    "macro_recall": 0.5,
+    "macro_f1": 0.47058823529411764,
+    "class_precisions": {
+        "0": 0.0,
+        "1": 0.8888888888888888
+    },
+    "class_recalls": {
+        "0": 0.0,
+        "1": 1.0
+    },
+    "class_f1s": {
+        "0": 0.0,
+        "1": 0.9411764705882353
+    },
+    "total_predictions": 9,
+    "invalid_predictions": 0,
+    "percentage_invalids": 0.0,
+    "preds": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+    ],
+    "gt_labels": [
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1
+    ],
+    "eval_time": 1.375131607055664,
+    "all_outs": [
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1"
+    ]
+}

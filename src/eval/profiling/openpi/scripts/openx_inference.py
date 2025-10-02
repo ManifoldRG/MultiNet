@@ -455,7 +455,7 @@ class OpenXInference:
 
         # Fallback: use dataset-specific state fields for known datasets
         if not state_components and dataset_name in dataset_state_fields:
-            raise KeyError(f"No explicit 'state' key found for dataset {dataset_name}")
+            logger.warning(f"No explicit 'state' key found for dataset {dataset_name}, using dataset-specific state fields")
             target_fields = dataset_state_fields[dataset_name]
             
             for field_name in target_fields:
