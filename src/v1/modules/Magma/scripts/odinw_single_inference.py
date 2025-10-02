@@ -49,6 +49,10 @@ def _validate_output(output, possible_outputs) -> bool:
     """Validate that output is a valid integer within the possible outputs"""
     # Handle string outputs that might contain the choice
     if isinstance(output, str):
+        ## specific to Magma
+        if output.startswith("Coordinate"):
+            return False
+            
         try:
             numbers = re.findall(r'\d+', output)
             int_num = int(numbers[0])
