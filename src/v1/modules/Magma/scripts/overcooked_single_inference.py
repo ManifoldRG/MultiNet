@@ -350,11 +350,11 @@ def run_evaluation(args):
     
     # Generation arguments (similar to other Magma scripts)
     generation_args = {
-        "max_new_tokens": 512,
+        "max_new_tokens": 256,
         "temperature": 0.0,
         "do_sample": False,
         "num_beams": 1,
-        "use_cache": False,
+        "use_cache": True,
     }
     
     # Storage for all metrics
