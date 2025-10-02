@@ -162,6 +162,49 @@ def _rel2abs_gripper_actions(actions: np.ndarray) -> np.ndarray:
     
     return new_actions
 
+def _transform_action_tensor(action_tensor: np.ndarray, dataset_name: str) -> np.ndarray:
+    """
+    Transform action tensor based on dataset type.
+    Follows specific transforms from transforms.py for datasets that use direct action tensors.
+    """
+    if action_tensor is None:
+        return None
+    
+    action_array = np.array(action_tensor)
+    
+    # Bimanual dataset transform (openx_bimanual -> utokyo_xarm_bimanual) as present in src/v1/modules/Magma/data/openx/datasets/rlds/oxe/transforms.py
+    if dataset_name == 'openx_bimanual':
+        # Take last 7 dimensions of action
+        transformed_action = action_array[..., -7:]
+        print(f"Bimanual transform: {action_array.shape} -> {transformed_action.shape}")
+        return transformed_action
+    
+    # Wheeled robot dataset transform (openx_wheeled_robot -> gnm_dataset) as present in src/v1/modules/Magma/data/openx/datasets/rlds/oxe/transforms.py
+    elif dataset_name == 'openx_wheeled_robot':
+        # Concatenate action with three zero tensors of same shape, plus one zero with shape [:1]
+        if action_array.ndim == 1:
+            # Single action vector
+            transformed_action = np.concatenate([
+                action_array,
+                np.zeros_like(action_array),
+                np.zeros_like(action_array),
+                np.zeros(1),
+            ])
+        else:
+            # Should not happen for single timestep, but handle batched case
+            transformed_action = np.concatenate([
+                action_array,
+                np.zeros_like(action_array),
+                np.zeros_like(action_array),
+                np.zeros((action_array.shape[0], 1)),
+            ], axis=-1)
+        print(f"Wheeled robot transform: {action_array.shape} -> {transformed_action.shape}")
+        return transformed_action
+    
+    else:
+        # No transformation needed for other datasets
+        return action_array
+
 def _create_action_tensor_from_dict(action_dict: dict, dataset_name: str) -> np.ndarray:
     """
     Create action tensor from action dictionary based on dataset type.
@@ -334,26 +377,38 @@ def run_evaluation(args):
             else:
                 action_stats[key] = np.array(action_stats[key])
     
-    # Check if we need to recalculate stats due to action_dict processing
+    # Check if we need to recalculate stats due to action processing
     needs_stats_recalculation = False
     processed_action_tensors = []
     
-    # Check first batch to see if action_dict processing is needed
+    # Datasets that require action_dict processing
+    action_dict_datasets = ['openx_mobile_manipulation', 'openx_single_arm']
+    # Datasets that require action tensor transformation
+    action_transform_datasets = ['openx_bimanual', 'openx_wheeled_robot']
+    
+    # Check first batch to see if action processing is needed
     sample_batch = None
     try:
         for batch in dataloader:
             sample_batch = batch
             break
         
+        # Check for action_dict processing
         if (sample_batch is not None and 
             'action_dict' in sample_batch and 
             sample_batch['action_dict'] is not None and 
             len(sample_batch['action_dict']) > 0 and 
-            args.dataset_name in ['openx_mobile_manipulation', 'openx_single_arm']):
+            args.dataset_name in action_dict_datasets):
             needs_stats_recalculation = True
             logger.info(f"Action dictionary processing detected for {args.dataset_name}. Will recalculate stats from processed tensors.")
+        
+        # Check for action tensor transformation
+        elif (sample_batch is not None and 
+              args.dataset_name in action_transform_datasets):
+            needs_stats_recalculation = True
+            logger.info(f"Action tensor transformation detected for {args.dataset_name}. Will recalculate stats from transformed tensors.")
     except Exception as e:
-        raise RuntimeError(f"Error checking for action_dict processing: {e}")
+        raise RuntimeError(f"Error checking for action processing: {e}")
     
     # If we need to recalculate stats, process all batches to collect action tensors
     if needs_stats_recalculation:
@@ -363,7 +418,9 @@ def run_evaluation(args):
         dataset, dataloader = get_openx_dataloader(shard_paths, args.batch_size, args.dataset_name)
         
         for batch_idx, batch in enumerate(dataloader):
-            if ('action_dict' in batch and batch['action_dict'] is not None and 
+            # Handle action_dict datasets
+            if (args.dataset_name in action_dict_datasets and
+                'action_dict' in batch and batch['action_dict'] is not None and 
                 len(batch['action_dict']) > 0):
                 action_dicts = batch['action_dict']
                 
@@ -372,6 +429,16 @@ def run_evaluation(args):
                         action_tensor = _create_action_tensor_from_dict(action_dict, args.dataset_name)
                         if action_tensor is not None:
                             processed_action_tensors.append(action_tensor)
+            
+            # Handle action tensor transformation datasets
+            elif args.dataset_name in action_transform_datasets:
+                actions = batch['action']
+                
+                for action in actions:
+                    if action is not None:
+                        transformed_action = _transform_action_tensor(action, args.dataset_name)
+                        if transformed_action is not None:
+                            processed_action_tensors.append(transformed_action)
             
             if batch_idx % 100 == 0:
                 logger.info(f"Processed {batch_idx} batches for stats calculation, collected {len(processed_action_tensors)} action tensors")
@@ -438,16 +505,14 @@ def run_evaluation(args):
         images = [Image.fromarray(img) for img in batch["image_observation"]]
         instructions = [txt for txt in batch["text_observation"]]
         
-        # Process ground truth actions - check for action_dict first
+        # Process ground truth actions - check dataset type first
         gt_actions = batch['action']
     
-        # Check if action_dict is available and dataset requires special processing
-        if ('action_dict' in batch and batch['action_dict'] is not None and 
-            len(batch['action_dict']) > 0):
-            action_dicts = batch['action_dict']
-            
-            # Check if this is a dataset that requires action dict processing
-            if args.dataset_name in ['openx_mobile_manipulation', 'openx_single_arm']:
+        # Check if this is a dataset that requires action dict processing
+        if args.dataset_name in action_dict_datasets:
+            if ('action_dict' in batch and batch['action_dict'] is not None and 
+                len(batch['action_dict']) > 0):
+                action_dicts = batch['action_dict']
                 logger.debug(f"Processing action_dict for dataset {args.dataset_name}")
                 processed_gt_actions = []
                 
@@ -471,6 +536,33 @@ def run_evaluation(args):
                     logger.debug(f"Successfully processed {len(processed_gt_actions)} actions from action_dict")
                 else:
                     raise ValueError("No valid actions processed from action_dict, cannot continue")
+            else:
+                raise ValueError(f"Dataset {args.dataset_name} requires action_dict but it's not available in batch")
+        
+        # Check if this is a dataset that requires action tensor transformation
+        elif args.dataset_name in action_transform_datasets:
+            logger.debug(f"Transforming action tensors for dataset {args.dataset_name}")
+            transformed_gt_actions = []
+            
+            for i, action in enumerate(gt_actions):
+                if action is not None:
+                    transformed_action = _transform_action_tensor(action, args.dataset_name)
+                    if transformed_action is not None:
+                        transformed_gt_actions.append(transformed_action)
+                        logger.debug(f"Sample {i}: Transformed action tensor with shape {transformed_action.shape}")
+                    else:
+                        # Fallback to original action if transformation fails
+                        transformed_gt_actions.append(np.array(action))
+                        logger.warning(f"Sample {i}: Falling back to original action")
+                else:
+                    # Use original action if None
+                    transformed_gt_actions.append(np.array(action))
+            
+            if transformed_gt_actions:
+                gt_actions = transformed_gt_actions
+                logger.debug(f"Successfully transformed {len(transformed_gt_actions)} actions")
+            else:
+                raise ValueError("No valid actions transformed, cannot continue")
         
         # Convert to numpy array format
         gt_actions = np.array([np.array(action) for action in gt_actions])
