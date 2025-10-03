@@ -17,7 +17,7 @@ import sys
 import time
 from dataclasses import dataclass, fields, field
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 
 import numpy as np
 import torch
@@ -48,16 +48,16 @@ class DatasetResults:
     all_similarity_scores: List[float] = field(default_factory=list)
     all_predicted_calls: List[List[str]] = field(default_factory=list)
     all_ground_truth_calls: List[List[List[str]]] = field(default_factory=list)  # Nested: sample -> turn -> calls
-    all_original_outputs: List[str] = field(default_factory=list)
+    all_original_outputs: List[List[List[str]]] = field(default_factory=list)
+    all_turn_exact_matches: List[List[float]] = field(default_factory=list)
     
     total_batches: int = 0
     total_samples: int = 0
     eval_time: float = 0
-    total_invalid_predictions: int = 0
+    total_invalid_turns: int = 0
     
     # Final metrics
     exact_match_accuracy: float = 0
-    exact_match_accuracy_without_invalids: float = 0
     function_level_accuracy: float = 0
     avg_similarity_score: float = 0
     max_similarity_score: float = 0
@@ -65,112 +65,103 @@ class DatasetResults:
     similarity_std: float = 0
     high_similarity_percentage: float = 0
     high_similarity_threshold: float = 0.8
-    invalid_percentage: float = 0
+    invalid_turn_rate: float = 0
     total_predicted_functions: int = 0
     total_ground_truth_functions: int = 0
     avg_predicted_functions_per_sample: float = 0
     avg_ground_truth_functions_per_sample: float = 0
-
+    turn_level_accuracy: Dict[str, float] = field(default_factory=dict)
+    avg_turn_of_first_failure: float = 0
+    
     def to_dict(self) -> dict:
         return {
             field.name: getattr(self, field.name)
             for field in fields(self)
         }
 
-def _validate_output(output: str) -> bool:
-    """Validate that output contains content."""
-    return isinstance(output, str) and bool(output.strip())
-
-def _validate_outputs_and_calculate_metrics(similarity_model: SentenceTransformer, outputs: List[str], ground_truth_list: List[List[List[str]]]):
-    """Validate outputs and calculate exact match and similarity metrics for BFCL.
-    
-    Args:
-        similarity_model: SentenceTransformer model for computing similarity scores
-        outputs: List of model outputs (one per sample)
-        ground_truth_list: List of ground truth function calls per sample.
-                          Each sample contains multiple turns, each turn contains multiple function calls.
-                          Format: [[[turn1_func1, turn1_func2], [turn2_func1]], ...]
+def _validate_outputs_and_calculate_metrics(
+    similarity_model: SentenceTransformer,
+    predicted_calls_per_sample: List[List[List[str]]],
+    ground_truth_per_sample: List[List[List[str]]]
+) -> Tuple[List[float], List[List[float]], List[float], int]:
     """
-    exact_matches = []
-    similarity_scores = []
-    predicted_calls_list = []
-    total_invalid_preds = 0
-    
-    for i, output in enumerate(outputs):
-        if _validate_output(output):
-            # Split output into lines (predicted function calls)
-            predicted_calls = [line.strip() for line in output.strip().split('\n') if line.strip()]
-            predicted_calls_list.append(predicted_calls)
-            
-            # Get ground truth for this sample
-            gt_turns = ground_truth_list[i] if i < len(ground_truth_list) else []
-            
-            # Flatten ground truth turns into a single list of function calls
-            flattened_gt_calls = []
-            for turn_calls in gt_turns:
-                if isinstance(turn_calls, list):
-                    for call in turn_calls:
-                        if isinstance(call, str) and call.strip():
-                            flattened_gt_calls.append(call.strip())
-                elif isinstance(turn_calls, str) and turn_calls.strip():
-                    flattened_gt_calls.append(turn_calls.strip())
-            
-            # Calculate exact match (order matters for function sequences)
-            exact_match = 1.0 if predicted_calls == flattened_gt_calls else 0.0
-            exact_matches.append(exact_match)
-            
-            # For similarity scoring, join function calls into text
-            predicted_text = "\n".join(predicted_calls)
-            gt_text = "\n".join(flattened_gt_calls)
-            
-            # Calculate similarity score using sentence embeddings
-            try:
-                emb1 = similarity_model.encode(predicted_text, convert_to_tensor=True)
-                emb2 = similarity_model.encode(gt_text, convert_to_tensor=True)
-                similarity = util.cos_sim(emb1, emb2).item()
-                similarity_scores.append(similarity)
-            except Exception as e:
-                print(f"Warning: Similarity calculation failed for sample {i}: {e}")
-                similarity_scores.append(0.0)
-        else:
-            # Invalid output
-            exact_matches.append(0.0)
-            similarity_scores.append(0.0)
-            predicted_calls_list.append([])
-            total_invalid_preds += 1
-    
-    return exact_matches, similarity_scores, predicted_calls_list, total_invalid_preds
+    Calculates conversation-level and turn-level metrics, and counts empty predictions.
 
-def _calculate_final_metrics(exact_matches: List[float], similarity_scores: List[float], total_invalid_preds: int, 
-                           predicted_calls: List[List[str]], ground_truth_calls: List[List[List[str]]]) -> Dict[str, Any]:
-    """Calculate comprehensive final metrics for BFCL evaluation.
-    
     Args:
-        exact_matches: List of exact match scores (0.0 or 1.0) per sample
-        similarity_scores: List of similarity scores per sample
-        total_invalid_preds: Number of invalid predictions
-        predicted_calls: List of predicted function calls per sample
-        ground_truth_calls: List of ground truth function calls per sample (nested: sample -> turn -> calls)
+        similarity_model: SentenceTransformer model for computing similarity.
+        predicted_calls_per_sample: A batch of predictions, structured as [sample][turn][calls].
+        ground_truth_per_sample: A batch of ground truths, structured as [sample][turn][calls].
+
+    Returns:
+        A tuple containing:
+        - all_convo_exact_matches: List of 1.0/0.0 scores for each conversation.
+        - all_turn_exact_matches: List of lists with 1.0/0.0 scores for each turn.
+        - all_convo_similarity_scores: List of similarity scores for each conversation.
+        - total_invalid_turns: Count of turns where model predicted nothing but should have.
     """
+    all_convo_exact_matches = []
+    all_turn_exact_matches = []
+    all_convo_similarity_scores = []
+    total_invalid_turns = 0 # Initialize counter for the batch
+
+    for i, predicted_turns in enumerate(predicted_calls_per_sample):
+        gt_turns = ground_truth_per_sample[i]
+
+        # Conversation-Level Metrics
+        flattened_preds = [call for turn in predicted_turns for call in turn]
+        flattened_gt = [call for turn in gt_turns for call in turn]
+        
+        convo_exact_match = 1.0 if flattened_preds == flattened_gt else 0.0
+        all_convo_exact_matches.append(convo_exact_match)
+
+        predicted_text = "\n".join(flattened_preds)
+        gt_text = "\n".join(flattened_gt)
+        try:
+            emb1 = similarity_model.encode(predicted_text, convert_to_tensor=True)
+            emb2 = similarity_model.encode(gt_text, convert_to_tensor=True)
+            all_convo_similarity_scores.append(util.cos_sim(emb1, emb2).item())
+        except Exception:
+            all_convo_similarity_scores.append(0.0)
+
+        # Turn-Level Metrics
+        turn_matches = []
+        num_turns = max(len(predicted_turns), len(gt_turns))
+        for turn_idx in range(num_turns):
+            pred_calls_for_turn = predicted_turns[turn_idx] if turn_idx < len(predicted_turns) else []
+            gt_calls_for_turn = gt_turns[turn_idx] if turn_idx < len(gt_turns) else []
+            
+            # Prediction is empty but ground truth is not.
+            if not pred_calls_for_turn and gt_calls_for_turn:
+                total_invalid_turns += 1
+            
+            turn_exact_match = 1.0 if pred_calls_for_turn == gt_calls_for_turn else 0.0
+            turn_matches.append(turn_exact_match)
+        
+        all_turn_exact_matches.append(turn_matches)
+
+    return all_convo_exact_matches, all_turn_exact_matches, all_convo_similarity_scores, total_invalid_turns
+    
+def _calculate_final_metrics(
+    exact_matches: List[float], 
+    similarity_scores: List[float], 
+    predicted_calls: List[List[str]], 
+    ground_truth_calls: List[List[List[str]]],
+    all_turn_exact_matches: List[List[float]],
+    total_invalid_turns: int
+) -> Dict[str, Any]:
+    """Calculate comprehensive final metrics for BFCL evaluation."""
     result = {}
-    
     total_samples = len(exact_matches)
     
     # Calculate accuracy metrics
     exact_match_accuracy = sum(exact_matches) / total_samples if total_samples > 0 else 0.0
-    exact_match_accuracy_without_invalids = sum(exact_matches) / (total_samples - total_invalid_preds) if total_samples - total_invalid_preds > 0 else 0.0
     
     # Flatten ground truth for function-level metrics
     flattened_ground_truth = []
     for sample_gt in ground_truth_calls:
         sample_flattened = []
         for turn_calls in sample_gt:
-            if isinstance(turn_calls, list):
-                for call in turn_calls:
-                    if isinstance(call, str) and call.strip():
-                        sample_flattened.append(call.strip())
-            elif isinstance(turn_calls, str) and turn_calls.strip():
-                sample_flattened.append(turn_calls.strip())
+            sample_flattened.extend(turn_calls)
         flattened_ground_truth.append(sample_flattened)
     
     # Calculate function-level metrics
@@ -201,11 +192,33 @@ def _calculate_final_metrics(exact_matches: List[float], similarity_scores: List
     high_similarity_count = sum(1 for score in similarity_scores if score >= high_similarity_threshold)
     high_similarity_percentage = (high_similarity_count / total_samples * 100) if total_samples > 0 else 0.0
     
-    # Calculate invalid prediction percentage
-    invalid_percentage = (total_invalid_preds / total_samples * 100) if total_samples > 0 else 0.0
+    # Calculate Turn-by-Turn Accuracy
+    turn_accuracies = {}
+    if all_turn_exact_matches:
+        max_turns = max(len(turns) for turns in all_turn_exact_matches)
+        for i in range(max_turns):
+            turn_scores = [sample_turns[i] for sample_turns in all_turn_exact_matches if i < len(sample_turns)]
+            if turn_scores:
+                turn_accuracies[f"turn_{i+1}_accuracy"] = sum(turn_scores) / len(turn_scores)
+    result['turn_level_accuracy'] = turn_accuracies
+
+    # Calculate Average Turn of First Failure
+    first_failure_turns = []
+    for sample_turns in all_turn_exact_matches:
+        failed_turns = [i + 1 for i, match in enumerate(sample_turns) if match == 0.0]
+        if failed_turns:
+            first_failure_turns.append(min(failed_turns))
+        else:
+            # If a sample never fails, its "first failure" is after the last turn
+            first_failure_turns.append(len(sample_turns) + 1)
     
+    result['avg_turn_of_first_failure'] = sum(first_failure_turns) / len(first_failure_turns) if first_failure_turns else 0.0
+    
+    total_ground_truth_turns = sum(len(gt_turns) for gt_turns in ground_truth_calls)
+    result['total_invalid_turns'] = total_invalid_turns
+    result['invalid_turn_rate'] = (total_invalid_turns / total_ground_truth_turns * 100) if total_ground_truth_turns > 0 else 0.0
+
     result['exact_match_accuracy'] = exact_match_accuracy
-    result['exact_match_accuracy_without_invalids'] = exact_match_accuracy_without_invalids
     result['function_level_accuracy'] = function_level_accuracy
     result['avg_similarity_score'] = avg_similarity_score
     result['max_similarity_score'] = max_similarity_score
@@ -214,8 +227,6 @@ def _calculate_final_metrics(exact_matches: List[float], similarity_scores: List
     result['high_similarity_percentage'] = high_similarity_percentage
     result['high_similarity_threshold'] = high_similarity_threshold
     result['total_samples'] = total_samples
-    result['total_invalid_preds'] = total_invalid_preds
-    result['invalid_percentage'] = invalid_percentage
     result['total_predicted_functions'] = total_predicted_functions
     result['total_ground_truth_functions'] = total_ground_truth_functions
     result['avg_predicted_functions_per_sample'] = total_predicted_functions / total_samples if total_samples > 0 else 0.0
@@ -280,6 +291,7 @@ def main(args):
         "max_new_tokens": args.max_new_tokens,
         "temperature": args.temperature,
         "do_sample": args.do_sample,
+        "use_cache": True,
     }
 
     for batch_idx, batch in enumerate(tqdm(dataloader, desc="Running Inference")):
@@ -347,34 +359,26 @@ def main(args):
                     if response_text: # Only add assistant message if something was generated
                         batch_chat_histories[i].append({"role": "assistant", "content": response_text})
 
-        # Consolidate all predicted calls for the batch to match metric function input
-        final_batch_outputs = []
-        final_batch_predicted_calls = []
-        for sample_predicted_turns in batch_all_predicted_calls:
-            # Flatten the list of lists of calls into a single list
-            flattened_calls = [call for turn_calls in sample_predicted_turns for call in turn_calls]
 
-            # [["func1", "func2"], ["func3"]] -> ["func1", "func2", "func3"]
-            final_batch_predicted_calls.append(flattened_calls)
-            
-            # Join into a single string for validation and similarity scoring
-            # "func1\nfunc2\nfunc3"
-            final_batch_outputs.append("\n".join(flattened_calls))
-
-        # Validate and calculate metrics for the completed batch
-        exact_matches, similarity_scores, _, invalid_preds = _validate_outputs_and_calculate_metrics(
-            similarity_model, final_batch_outputs, ground_truth_functions
+        # Validate and calculate metrics using the new function and structured data
+        convo_exact_matches, turn_exact_matches, convo_similarity_scores, invalid_turns = _validate_outputs_and_calculate_metrics(
+            similarity_model, batch_all_predicted_calls, ground_truth_functions
         )
 
         # Update results
         dataset_results.total_batches = batch_idx + 1
         dataset_results.total_samples += len(user_turns_batch)
-        dataset_results.all_exact_matches.extend(exact_matches)
-        dataset_results.all_similarity_scores.extend(similarity_scores)
-        dataset_results.all_predicted_calls.extend(final_batch_predicted_calls)
+        dataset_results.all_exact_matches.extend(convo_exact_matches)
+        dataset_results.all_similarity_scores.extend(convo_similarity_scores)
+        dataset_results.all_turn_exact_matches.extend(turn_exact_matches)
+        
+        # Store both the structured and a flattened version of predictions
+        dataset_results.all_predicted_calls.extend(
+            [[call for turn in sample for call in turn] for sample in batch_all_predicted_calls]
+        )
         dataset_results.all_ground_truth_calls.extend(ground_truth_functions)
         dataset_results.all_original_outputs.extend(batch_all_predicted_calls)
-        dataset_results.total_invalid_predictions += invalid_preds
+        dataset_results.total_invalid_turns += invalid_turns
 
         # Progress update
         if (batch_idx + 1) % 10 == 0:
@@ -395,14 +399,18 @@ def main(args):
     final_metrics = _calculate_final_metrics(
         dataset_results.all_exact_matches,
         dataset_results.all_similarity_scores,
-        dataset_results.total_invalid_predictions,
         dataset_results.all_predicted_calls,
-        dataset_results.all_ground_truth_calls
+        dataset_results.all_ground_truth_calls,
+        dataset_results.all_turn_exact_matches,
+        dataset_results.total_invalid_turns,
     )
 
     # Update dataset results
+    dataset_results.total_invalid_turns = final_metrics["total_invalid_turns"]
+    dataset_results.invalid_turn_rate = final_metrics["invalid_turn_rate"]
+    dataset_results.turn_level_accuracy = final_metrics["turn_level_accuracy"]
+    dataset_results.avg_turn_of_first_failure = final_metrics["avg_turn_of_first_failure"]
     dataset_results.exact_match_accuracy = final_metrics["exact_match_accuracy"]
-    dataset_results.exact_match_accuracy_without_invalids = final_metrics["exact_match_accuracy_without_invalids"]
     dataset_results.function_level_accuracy = final_metrics["function_level_accuracy"]
     dataset_results.avg_similarity_score = final_metrics["avg_similarity_score"]
     dataset_results.max_similarity_score = final_metrics["max_similarity_score"]
@@ -410,7 +418,6 @@ def main(args):
     dataset_results.similarity_std = final_metrics["similarity_std"]
     dataset_results.high_similarity_percentage = final_metrics["high_similarity_percentage"]
     dataset_results.high_similarity_threshold = final_metrics["high_similarity_threshold"]
-    dataset_results.invalid_percentage = final_metrics["invalid_percentage"]
     dataset_results.total_predicted_functions = final_metrics["total_predicted_functions"]
     dataset_results.total_ground_truth_functions = final_metrics["total_ground_truth_functions"]
     dataset_results.avg_predicted_functions_per_sample = final_metrics["avg_predicted_functions_per_sample"]
@@ -423,14 +430,13 @@ def main(args):
     print(f"Device: {model.device}")
     print(f"Total samples: {dataset_results.total_samples}")
     print(f"Exact Match Accuracy: {dataset_results.exact_match_accuracy:.4f}")
-    print(f"Exact Match Accuracy (without invalids): {dataset_results.exact_match_accuracy_without_invalids:.4f}")
     print(f"Function-Level Accuracy: {dataset_results.function_level_accuracy:.4f}")
     print(f"Average Similarity Score: {dataset_results.avg_similarity_score:.4f}")
     print(f"Max Similarity Score: {dataset_results.max_similarity_score:.4f}")
     print(f"Min Similarity Score: {dataset_results.min_similarity_score:.4f}")
     print(f"Similarity Std Dev: {dataset_results.similarity_std:.4f}")
     print(f"High Similarity (≥{dataset_results.high_similarity_threshold}): {dataset_results.high_similarity_percentage:.2f}%")
-    print(f"Invalid predictions: {dataset_results.total_invalid_predictions} ({dataset_results.invalid_percentage:.2f}%)")
+    print(f"Invalid turns: {dataset_results.total_invalid_turns} ({dataset_results.invalid_turn_rate:.2f}%)")
     print(f"Average predicted functions per sample: {dataset_results.avg_predicted_functions_per_sample:.2f}")
     print(f"Average ground truth functions per sample: {dataset_results.avg_ground_truth_functions_per_sample:.2f}")
     print(f"Evaluation time: {dataset_results.eval_time:.2f} seconds")
