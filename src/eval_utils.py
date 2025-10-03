@@ -227,7 +227,7 @@ def min_max_normalize(values: list[float]) -> list[float]:
     min_val = min(values)
     max_val = max(values)
     normalized_values = np.array(values)
-    return (normalized_values - min_val) / (max_val - min_val) if max_val != min_val else np.zeros_like(normalized_values)
+    return (normalized_values - min_val) / (max_val - min_val) if max_val != min_val else np.nan
 
 def calculate_mean(values: list[float]) -> float:
     """Calculate average of a list of values"""
