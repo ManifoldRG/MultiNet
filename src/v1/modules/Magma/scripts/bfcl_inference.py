@@ -58,7 +58,7 @@ class DatasetResults:
     
     # Final metrics
     exact_match_accuracy: float = 0
-    function_level_accuracy: float = 0
+    avg_function_level_accuracy_until_turn_failure: float = 0
     avg_similarity_score: float = 0
     max_similarity_score: float = 0
     min_similarity_score: float = 0
@@ -144,7 +144,7 @@ def _validate_outputs_and_calculate_metrics(
 def _calculate_final_metrics(
     exact_matches: List[float], 
     similarity_scores: List[float], 
-    predicted_calls: List[List[str]], 
+    predicted_calls: List[List[List[str]]], 
     ground_truth_calls: List[List[List[str]]],
     all_turn_exact_matches: List[List[float]],
     total_invalid_turns: int
@@ -155,31 +155,23 @@ def _calculate_final_metrics(
     
     # Calculate accuracy metrics
     exact_match_accuracy = sum(exact_matches) / total_samples if total_samples > 0 else 0.0
-    
-    # Flatten ground truth for function-level metrics
+
+    # Calculate function-level metrics
+    flattened_predicted_calls = []
+    for sample_pred in predicted_calls:
+        sample_flattened = []
+        for turn_calls in sample_pred:
+            sample_flattened.extend(turn_calls)
+        flattened_predicted_calls.append(sample_flattened)
+    total_predicted_functions = sum(len(calls) for calls in flattened_predicted_calls)
+
     flattened_ground_truth = []
     for sample_gt in ground_truth_calls:
         sample_flattened = []
         for turn_calls in sample_gt:
             sample_flattened.extend(turn_calls)
         flattened_ground_truth.append(sample_flattened)
-    
-    # Calculate function-level metrics
-    total_predicted_functions = sum(len(calls) for calls in predicted_calls)
     total_ground_truth_functions = sum(len(calls) for calls in flattened_ground_truth)
-    
-    # Calculate per-turn metrics
-    correct_function_counts = 0
-    total_function_comparisons = 0
-    
-    for pred_calls, gt_calls in zip(predicted_calls, flattened_ground_truth):
-        # Count correct functions (regardless of order for this metric)
-        for pred_call in pred_calls:
-            if pred_call in gt_calls:
-                correct_function_counts += 1
-        total_function_comparisons += max(len(pred_calls), len(gt_calls))
-    
-    function_level_accuracy = correct_function_counts / total_function_comparisons if total_function_comparisons > 0 else 0.0
     
     # Calculate similarity metrics
     avg_similarity_score = sum(similarity_scores) / total_samples if total_samples > 0 else 0.0
@@ -211,15 +203,31 @@ def _calculate_final_metrics(
         else:
             # If a sample never fails, its "first failure" is after the last turn
             first_failure_turns.append(len(sample_turns) + 1)
+
+    # Calcuate the average of the percentage of functions calls that are correct within a turn, where order matters
+    # correct is equal to the number of calls that are correct in the turn in order until the first incorrect call
+    function_level_accuracies = []
+    for all_pred_turns, all_gt_turns in zip(predicted_calls, ground_truth_calls):
+        function_level_matches = 0
+        for pred_turn, gt_turn in zip(all_pred_turns, all_gt_turns):
+            for pred_call, gt_call in zip(pred_turn, gt_turn):
+                if pred_call == gt_call:
+                    function_level_matches += 1
+                else:
+                    break
+            max_possible_comparisons = len(gt_turn)
+        function_level_accuracies.append(function_level_matches / max_possible_comparisons)
+    avg_percentage_of_correct_calls_until_turn_failure = sum(function_level_accuracies) / len(function_level_accuracies) if function_level_accuracies else 0.0
     
     result['avg_turn_of_first_failure'] = sum(first_failure_turns) / len(first_failure_turns) if first_failure_turns else 0.0
+    result['avg_percentage_of_correct_calls_until_turn_failure'] = avg_percentage_of_correct_calls_until_turn_failure
     
     total_ground_truth_turns = sum(len(gt_turns) for gt_turns in ground_truth_calls)
     result['total_invalid_turns'] = total_invalid_turns
     result['invalid_turn_rate'] = (total_invalid_turns / total_ground_truth_turns * 100) if total_ground_truth_turns > 0 else 0.0
 
     result['exact_match_accuracy'] = exact_match_accuracy
-    result['function_level_accuracy'] = function_level_accuracy
+    result['avg_function_level_accuracy_until_turn_failure'] = avg_percentage_of_correct_calls_until_turn_failure
     result['avg_similarity_score'] = avg_similarity_score
     result['max_similarity_score'] = max_similarity_score
     result['min_similarity_score'] = min_similarity_score
@@ -233,7 +241,7 @@ def _calculate_final_metrics(
     result['avg_ground_truth_functions_per_sample'] = total_ground_truth_functions / total_samples if total_samples > 0 else 0.0
     result['exact_matches'] = exact_matches
     result['similarity_scores'] = similarity_scores
-    result['predicted_function_calls'] = predicted_calls
+    result['predicted_function_calls'] = flattened_predicted_calls
     result['ground_truth_function_calls'] = flattened_ground_truth
     
     return result
@@ -399,7 +407,7 @@ def main(args):
     final_metrics = _calculate_final_metrics(
         dataset_results.all_exact_matches,
         dataset_results.all_similarity_scores,
-        dataset_results.all_predicted_calls,
+        dataset_results.all_original_outputs,
         dataset_results.all_ground_truth_calls,
         dataset_results.all_turn_exact_matches,
         dataset_results.total_invalid_turns,
@@ -410,8 +418,8 @@ def main(args):
     dataset_results.invalid_turn_rate = final_metrics["invalid_turn_rate"]
     dataset_results.turn_level_accuracy = final_metrics["turn_level_accuracy"]
     dataset_results.avg_turn_of_first_failure = final_metrics["avg_turn_of_first_failure"]
+    dataset_results.avg_function_level_accuracy_until_turn_failure = final_metrics["avg_function_level_accuracy_until_turn_failure"]
     dataset_results.exact_match_accuracy = final_metrics["exact_match_accuracy"]
-    dataset_results.function_level_accuracy = final_metrics["function_level_accuracy"]
     dataset_results.avg_similarity_score = final_metrics["avg_similarity_score"]
     dataset_results.max_similarity_score = final_metrics["max_similarity_score"]
     dataset_results.min_similarity_score = final_metrics["min_similarity_score"]
@@ -430,7 +438,7 @@ def main(args):
     print(f"Device: {model.device}")
     print(f"Total samples: {dataset_results.total_samples}")
     print(f"Exact Match Accuracy: {dataset_results.exact_match_accuracy:.4f}")
-    print(f"Function-Level Accuracy: {dataset_results.function_level_accuracy:.4f}")
+    print(f"Function-Level Accuracy: {dataset_results.avg_function_level_accuracy_until_turn_failure:.4f}")
     print(f"Average Similarity Score: {dataset_results.avg_similarity_score:.4f}")
     print(f"Max Similarity Score: {dataset_results.max_similarity_score:.4f}")
     print(f"Min Similarity Score: {dataset_results.min_similarity_score:.4f}")
