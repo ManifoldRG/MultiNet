@@ -126,8 +126,6 @@ def _validate_outputs_and_calculate_metrics(
 
         predicted_text = "\n".join(full_responses_per_sample[i])
         gt_text = "\n".join(flattened_gt)
-        print(predicted_turns)
-        print(predicted_text, gt_text)
         try:
             emb1 = similarity_model.encode(predicted_text, convert_to_tensor=True)
             emb2 = similarity_model.encode(gt_text, convert_to_tensor=True)
