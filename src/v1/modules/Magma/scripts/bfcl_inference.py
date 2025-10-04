@@ -489,7 +489,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run evaluation on the BFCL dataset using Magma model.")
     parser.add_argument('--model_name_or_path', type=str, default="microsoft/Magma-8B", help="Model identifier.")
-    parser.add_argument('--dataset_dir', type=str, default="/home/leakylagoons/projects/MultiNet/data/bfcl/test", help="Directory containing the BFCL test dataset.")
+    parser.add_argument('--dataset_dir', type=str, required=True, help="Directory containing the BFCL test dataset.")
     parser.add_argument('--dtype', type=str, default="bf16", choices=['fp16', 'bf16', 'fp32'], help="Model data type.")
     parser.add_argument('--batch_size', type=int, default=2, help="Batch size for inference.")
     parser.add_argument('--max_seq_len', type=int, default=1024, help="Maximum sequence length for tokenization.")
