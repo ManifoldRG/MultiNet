@@ -51,8 +51,12 @@ class DatasetResults:
     all_ground_truth_calls: List[List[List[str]]] = field(default_factory=list)  # Nested: sample -> turn -> calls
     all_extracted_function_calls: List[List[List[str]]] = field(default_factory=list)
     all_full_responses: List[List[str]] = field(default_factory=list)
+    # Accuracy for each turn
     all_turn_exact_matches: List[List[float]] = field(default_factory=list)
-    all_turn_accuracies_until_failure: List[List[float]] = field(default_factory=list)
+
+    # Within a turn, counts exact matched function until the first time the function 
+    # does not equal to the ground truth function
+    all_turn_recalls_until_failure: List[List[float]] = field(default_factory=list)
     total_batches: int = 0
     total_samples: int = 0
     eval_time: float = 0
@@ -67,15 +71,17 @@ class DatasetResults:
     similarity_std: float = 0
     high_similarity_percentage: float = 0
     high_similarity_threshold: float = 0.8
-    invalid_turn_rate: float = 0
-    invalid_conversation_rate: float = 0
+    invalid_turn_percentage: float = 0
+    invalid_conversation_percentage: float = 0
     total_predicted_functions: int = 0
     total_ground_truth_functions: int = 0
     avg_valid_predicted_functions_per_sample: float = 0
     avg_ground_truth_functions_per_sample: float = 0
     turn_level_accuracy: Dict[str, float] = field(default_factory=dict)
+
+    # Average turn of first failure
     avg_turn_of_first_failure: float = 0
-    turn_level_accuracy_until_failure: Dict[str, float] = field(default_factory=dict)
+    turn_level_recalls_until_failure: Dict[str, float] = field(default_factory=dict)
     def to_dict(self) -> dict:
         return {
             field.name: getattr(self, field.name)
@@ -110,8 +116,8 @@ def _validate_outputs_and_calculate_metrics(
     all_convo_exact_matches = []
     all_turn_exact_matches = []
     all_convo_similarity_scores = []
-    all_turn_accuracies_until_failure = []
-    total_invalid_turns = 0 # Initialize counter for the batch
+    all_turn_recalls_until_failure = []
+    total_invalid_turns = 0 
     total_invalid_conversations = 0
 
     for i, predicted_turns in enumerate(predicted_calls_per_sample):
@@ -135,7 +141,7 @@ def _validate_outputs_and_calculate_metrics(
 
         # Turn-Level Metrics
         turn_matches = []
-        turn_accuracies_until_failure = []
+        turn_recalls_until_failure = []
         num_turns = max(len(predicted_turns), len(gt_turns))
 
         invalid_conversation = False
@@ -157,13 +163,13 @@ def _validate_outputs_and_calculate_metrics(
                     function_matches += 1
                 else:
                     break
-            turn_accuracies_until_failure.append(function_matches / len(gt_calls_for_turn))
+            turn_recalls_until_failure.append(function_matches / len(gt_calls_for_turn))
         
         all_turn_exact_matches.append(turn_matches)
-        all_turn_accuracies_until_failure.append(turn_accuracies_until_failure)
+        all_turn_recalls_until_failure.append(turn_recalls_until_failure)
         if invalid_conversation:
             total_invalid_conversations += 1
-    return all_convo_exact_matches, all_turn_exact_matches, all_convo_similarity_scores, total_invalid_turns, all_turn_accuracies_until_failure, total_invalid_conversations
+    return all_convo_exact_matches, all_turn_exact_matches, all_convo_similarity_scores, total_invalid_turns, all_turn_recalls_until_failure, total_invalid_conversations
     
 def _calculate_final_metrics(
     exact_matches: List[float], 
@@ -172,7 +178,7 @@ def _calculate_final_metrics(
     ground_truth_calls: List[List[List[str]]],
     all_turn_exact_matches: List[List[float]],
     total_invalid_turns: int,
-    all_turn_accuracies_until_failure: List[List[float]],
+    all_turn_recalls_until_failure: List[List[float]],
     total_invalid_conversations: int
 ) -> Dict[str, Any]:
     """Calculate comprehensive final metrics for BFCL evaluation."""
@@ -221,14 +227,14 @@ def _calculate_final_metrics(
     result['turn_level_accuracy'] = turn_accuracies
 
     # Calculate Turn-by-Turn Accuracy Until Failure
-    turn_accuracies_until_failure = {}
-    if all_turn_accuracies_until_failure:
-        max_turns = max(len(turns) for turns in all_turn_accuracies_until_failure)
+    turn_recalls_until_failure = {}
+    if all_turn_recalls_until_failure:
+        max_turns = max(len(turns) for turns in all_turn_recalls_until_failure)
         for i in range(max_turns):
-            turn_scores = [sample_turns[i] for sample_turns in all_turn_accuracies_until_failure if i < len(sample_turns)]
+            turn_scores = [sample_turns[i] for sample_turns in all_turn_recalls_until_failure if i < len(sample_turns)]
             if turn_scores:
-                turn_accuracies_until_failure[f"turn_{i+1}_accuracy_until_failure"] = sum(turn_scores) / len(turn_scores)
-    result['turn_level_accuracy_until_failure'] = turn_accuracies_until_failure
+                turn_recalls_until_failure[f"turn_{i+1}_recall_until_failure"] = sum(turn_scores) / len(turn_scores)
+    result['turn_level_recalls_until_failure'] = turn_recalls_until_failure
 
     # Calculate Average Turn of First Failure
     first_failure_turns = []
@@ -244,11 +250,11 @@ def _calculate_final_metrics(
 
     total_ground_truth_turns = sum(len(gt_turns) for gt_turns in ground_truth_calls)
     result['total_invalid_turns'] = total_invalid_turns
-    result['invalid_turn_rate'] = (total_invalid_turns / total_ground_truth_turns * 100) if total_ground_truth_turns > 0 else 0.0
+    result['invalid_turn_percentage'] = (total_invalid_turns / total_ground_truth_turns * 100) if total_ground_truth_turns > 0 else 0.0
     result['total_invalid_conversations'] = total_invalid_conversations
-    result['invalid_conversation_rate'] = (total_invalid_conversations / total_samples * 100) if total_samples > 0 else 0.0
+    result['invalid_conversation_percentage'] = (total_invalid_conversations / total_samples * 100) if total_samples > 0 else 0.0
     result['exact_match_accuracy'] = exact_match_accuracy
-    result['turn_level_accuracy_until_failure'] = turn_accuracies_until_failure
+    result['turn_level_recalls_until_failure'] = turn_recalls_until_failure
     result['avg_similarity_score'] = avg_similarity_score
     result['max_similarity_score'] = max_similarity_score
     result['min_similarity_score'] = min_similarity_score
@@ -393,7 +399,7 @@ def main(args):
                         batch_chat_histories[i].append({"role": "assistant", "content": response_text})
 
         # Validate and calculate metrics using the new function and structured data
-        convo_exact_matches, turn_exact_matches, convo_similarity_scores, invalid_turns, turn_accuracies_until_failure, invalid_conversations = _validate_outputs_and_calculate_metrics(
+        convo_exact_matches, turn_exact_matches, convo_similarity_scores, invalid_turns, turn_recalls_until_failure, invalid_conversations = _validate_outputs_and_calculate_metrics(
             similarity_model, batch_all_predicted_calls, ground_truth_functions, batch_all_full_responses
         )
 
@@ -403,7 +409,7 @@ def main(args):
         dataset_results.all_exact_matches.extend(convo_exact_matches)
         dataset_results.all_similarity_scores.extend(convo_similarity_scores)
         dataset_results.all_turn_exact_matches.extend(turn_exact_matches)
-        dataset_results.all_turn_accuracies_until_failure.extend(turn_accuracies_until_failure)
+        dataset_results.all_turn_recalls_until_failure.extend(turn_recalls_until_failure)
         # Store both the structured and a flattened version of predictions
         dataset_results.all_predicted_calls.extend(
             [[call for turn in sample for call in turn] for sample in batch_all_predicted_calls]
@@ -438,18 +444,18 @@ def main(args):
         dataset_results.all_ground_truth_calls,
         dataset_results.all_turn_exact_matches,
         dataset_results.total_invalid_turns,
-        dataset_results.all_turn_accuracies_until_failure,
+        dataset_results.all_turn_recalls_until_failure,
         dataset_results.total_invalid_conversations
     )
 
     # Update dataset results
     dataset_results.total_invalid_turns = final_metrics["total_invalid_turns"]
-    dataset_results.invalid_turn_rate = final_metrics["invalid_turn_rate"]
+    dataset_results.invalid_turn_percentage = final_metrics["invalid_turn_percentage"]
     dataset_results.total_invalid_conversations = final_metrics["total_invalid_conversations"]
-    dataset_results.invalid_conversation_rate = final_metrics["invalid_conversation_rate"]
+    dataset_results.invalid_conversation_percentage = final_metrics["invalid_conversation_percentage"]
     dataset_results.turn_level_accuracy = final_metrics["turn_level_accuracy"]
     dataset_results.avg_turn_of_first_failure = final_metrics["avg_turn_of_first_failure"]
-    dataset_results.turn_level_accuracy_until_failure = final_metrics["turn_level_accuracy_until_failure"]
+    dataset_results.turn_level_recalls_until_failure = final_metrics["turn_level_recalls_until_failure"]
     dataset_results.exact_match_accuracy = final_metrics["exact_match_accuracy"]
     dataset_results.avg_similarity_score = final_metrics["avg_similarity_score"]
     dataset_results.max_similarity_score = final_metrics["max_similarity_score"]
@@ -474,7 +480,7 @@ def main(args):
     print(f"Min Similarity Score: {dataset_results.min_similarity_score:.4f}")
     print(f"Similarity Std Dev: {dataset_results.similarity_std:.4f}")
     print(f"High Similarity (≥{dataset_results.high_similarity_threshold}): {dataset_results.high_similarity_percentage:.2f}%")
-    print(f"Invalid turns: {dataset_results.total_invalid_turns} ({dataset_results.invalid_turn_rate:.2f}%)")
+    print(f"Invalid turns: {dataset_results.total_invalid_turns} ({dataset_results.invalid_turn_percentage:.2f}%)")
     print(f"Average predicted functions per sample: {dataset_results.avg_valid_predicted_functions_per_sample:.2f}")
     print(f"Average ground truth functions per sample: {dataset_results.avg_ground_truth_functions_per_sample:.2f}")
     print(f"Evaluation time: {dataset_results.eval_time:.2f} seconds")
@@ -496,8 +502,8 @@ if __name__ == "__main__":
     parser.add_argument('--max_new_tokens', type=int, default=150, help="Max new tokens for generation.")
     parser.add_argument('--temperature', type=float, default=0.0, help="Generation temperature.")
     parser.add_argument('--do_sample', action='store_true', help="Enable sampling for generation.")
-    parser.add_argument('--output_dir', type=str, default="./bfcl_magma_results", help="Directory to save the results file.")
-    parser.add_argument('--results_filename', type=str, default="bfcl_results.json", help="Name of the output results file.")
+    parser.add_argument('--output_dir', type=str, default="./results", help="Directory to save the results file.")
+    parser.add_argument('--results_filename', type=str, default="bfcl_magma_results.json", help="Name of the output results file.")
     parser.add_argument('--max_samples', type=int, default=None, help="Maximum number of samples to process (default: all samples)")
     args = parser.parse_args()
     
