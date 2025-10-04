@@ -129,24 +129,7 @@ class BFCLDataset(Dataset):
             prompt_parts.append(f"Available Tool Classes: {', '.join(involved_classes)}")
             prompt_parts.append(f"Available Functions: {', '.join([func.split('.')[-1] for func in path])}")
             prompt_parts.append("")
-        
-        # Add multi-turn conversation
-        prompt_parts.append("Multi-turn Conversation:")
-        for turn_idx, turn_messages in enumerate(turns):
-            prompt_parts.append(f"\n=== Turn {turn_idx + 1} ===")
-            
-            # Add user messages for this turn
-            for msg in turn_messages:
-                role = msg.get('role', 'user')
-                content = msg.get('content', '')
-                prompt_parts.append(f"{role.capitalize()}: {content}")
-        
-        # Add instruction
-        prompt_parts.append("\n" + "="*50)
-        prompt_parts.append("Task: For each turn in the conversation above, provide the sequence of function calls needed to complete the user's request.")
-        prompt_parts.append("Format: Each function call should be in the format: function_name(param1=value1, param2=value2,...)")
-        prompt_parts.append("Output the function calls for each turn in order.")
-        
+
         return "\n".join(prompt_parts)
     
     def get_dataset_info(self) -> Dict[str, Any]:
