@@ -248,12 +248,12 @@ openx_df = openx_df.replace(0, 0.01)
 openx_df_melted = openx_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='Normalized AMSE')
 barplot(openx_df_melted, 'Normalized AMSE Comparison between GPT-5, Pi-0 and Magma on OpenX', 'Normalized AMSE', 'Task', './openx_namse_comparison.pdf', y='Normalized AMSE')
 
-#%% average MAE comparison
+#%% normalized AMA comparison
 gpt5_openx_amae = {}
 for result in gpt5_openx:
-    gpt5_openx_amae.update(extract_per_subtask_metric(result, 'avg_dataset_amae'))
-pi0_openx_amae = extract_per_subtask_metric(pi0_base_openx, 'avg_dataset_amae')
-magma_openx_amae = extract_per_subtask_metric(magma_openx, 'avg_dataset_amae')
+    gpt5_openx_amae.update(extract_per_subtask_metric(result, 'normalized_amae'))
+pi0_openx_amae = extract_per_subtask_metric(pi0_base_openx, 'normalized_amae')
+magma_openx_amae = extract_per_subtask_metric(magma_openx, 'normalized_amae')
 
 gpt5_openx_amae_mapped = {openx_subtasks_mapping.get(k, k): v for k, v in gpt5_openx_amae.items()}
 pi0_openx_amae_mapped = {openx_subtasks_mapping.get(k, k): v for k, v in pi0_openx_amae.items()}
@@ -262,11 +262,63 @@ magma_openx_amae_mapped = {openx_subtasks_mapping.get(k, k): v for k, v in magma
 amae_task_names = task_names + ['Overcooked']
 amae_df = pd.DataFrame({
     'Task': amae_task_names,
-    'GPT-5': [gpt5_openx_amae_mapped.get(task, 0) for task in task_names] + [extract_key_from_json(gpt5_overcooked, 'avg_dataset_amae')[0]],
+    'GPT-5': [gpt5_openx_amae_mapped.get(task, 0) for task in task_names] + [extract_key_from_json(gpt5_overcooked, 'normalized_amae')[0]],
     'Pi-0': [pi0_openx_amae_mapped.get(task, 0) for task in task_names] + [np.nan],
     'Magma': [magma_openx_amae_mapped.get(task, 0) for task in task_names] + [np.nan]
 })
 
-amae_df_melted = amae_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='Average MAE')
-barplot(amae_df_melted, 'Average MAE Comparison across Models', 'Average MAE', 'Task', './amae_comparison.pdf', y='Average MAE', ylim=None)
+amae_df_melted = amae_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='Normalized AMA')
+barplot(amae_df_melted, 'Normalized AMA Comparison across Models', 'Normalized AMA', 'Task', './amae_comparison.pdf', y='Normalized AMA', ylim=None)
+
+#%% similarity score comparison with error bars
+similarity_sources = {
+    ('RoboVQA', 'GPT-5'): gpt5_robovqa,
+    ('RoboVQA', 'Pi-0'): pi0_hf_robovqa,
+    ('RoboVQA', 'Magma'): magma_robovqa,
+    ('SQA3D', 'GPT-5'): gpt5_sqa3d,
+    ('SQA3D', 'Pi-0'): pi0_hf_sqa3d,
+    ('SQA3D', 'Magma'): magma_sqa3d,
+    ('BFCL', 'GPT-5'): None,
+    ('BFCL', 'Pi-0'): pi0_hf_bfcl_inference,
+    ('BFCL', 'Magma'): None,
+}
+
+similarity_rows = []
+model_order = ['GPT-5', 'Pi-0', 'Magma']
+task_order = ['RoboVQA', 'SQA3D', 'BFCL']
+
+for task in task_order:
+    for model in model_order:
+        source = similarity_sources.get((task, model))
+        if source is None:
+            similarity_rows.append({'Task': task, 'Model': model, 'Similarity Score': np.nan, 'Std': np.nan})
+            continue
+        scores = extract_key_from_json(source, 'avg_similarity_score')
+        stds = extract_key_from_json(source, 'similarity_std')
+        similarity_rows.append({
+            'Task': task,
+            'Model': model,
+            'Similarity Score': safe_mean(scores),
+            'Std': safe_mean(stds)
+        })
+
+similarity_df = pd.DataFrame(similarity_rows)
+plot_data = similarity_df.dropna(subset=['Similarity Score']).copy()
+plot_data['Model'] = pd.Categorical(plot_data['Model'], categories=model_order, ordered=True)
+plot_data = plot_data.sort_values(['Task', 'Model'])
+
+plt.figure(figsize=(10, 6))
+ax = sns.barplot(data=plot_data, x='Task', y='Similarity Score', hue='Model', order=task_order, hue_order=model_order)
+
+for patch, (_, row) in zip(ax.patches, plot_data.iterrows()):
+    std = row['Std']
+    if not np.isnan(std):
+        ax.errorbar(patch.get_x() + patch.get_width() / 2, patch.get_height(), yerr=std, ecolor='black', capsize=4, linewidth=1)
+
+ax.set_title('Average Similarity Score Comparison across Models')
+ax.set_ylabel('Average Similarity Score')
+ax.set_xlabel('Task')
+plt.tight_layout()
+plt.savefig('./similarity_score_comparison.pdf')
+plt.show()
 
