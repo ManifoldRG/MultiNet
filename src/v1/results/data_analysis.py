@@ -139,6 +139,10 @@ with open('./magma/robovqa_results.json') as f:
     magma_robovqa = json.load(f)
 with open('./magma/sqa3d_results.json') as f:
     magma_sqa3d = json.load(f)
+with open('./magma/magma_overcooked_results.json') as f:
+    magma_overcooked = json.load(f)
+with open('./magma/bfcl_results.json') as f:
+    magma_bfcl = json.load(f)
 magma_odinw_results = []
 for file in os.listdir('./magma/odinw/corrected_results'):
     if file.endswith('.json'):
@@ -151,6 +155,7 @@ pi0_piqa_emr = extract_key_from_json(pi0_hf_piqa, 'exact_match_rate')
 magma_piqa_emr = extract_key_from_json(magma_piqa, 'exact_match_rate')
 
 pi0_bfcl_emr = extract_key_from_json(pi0_hf_bfcl_inference, 'exact_match_accuracy')
+magma_bfcl_emr = extract_key_from_json(magma_bfcl, 'exact_match_accuracy')
 gpt5_bfcl_emr = [0.285]  # referenced from literature
 
 gpt5_sqa3d_emr = extract_key_from_json(gpt5_sqa3d, 'exact_match_rate')
@@ -161,9 +166,10 @@ gpt5_robovqa_emr = extract_key_from_json(gpt5_robovqa, 'exact_match_rate')
 pi0_robovqa_emr = extract_key_from_json(pi0_hf_robovqa, 'exact_match_accuracy')
 magma_robovqa_emr = extract_key_from_json(magma_robovqa, 'exact_match_rate_with_invalids')
 
-gpt5_overcooked_emr = extract_key_from_json(gpt5_overcooked, 'exact_match')
-gpt5_overcooked_emr = gpt5_overcooked_emr[0] if gpt5_overcooked_emr else np.nan
+gpt5_overcooked_emr_values = extract_key_from_json(gpt5_overcooked, 'exact_match')
+gpt5_overcooked_emr = np.mean(gpt5_overcooked_emr_values) if gpt5_overcooked_emr_values else np.nan
 pi0_overcooked_emr = extract_key_from_json(pi0_base_overcooked, 'exact_match_rate')
+magma_overcooked_emr = extract_key_from_json(magma_overcooked, 'exact_match_rate')
 
 gpt5_odinw_emrs = extract_key_from_json(gpt5_odinw, 'exact_match_rate')
 pi0_odinw_emrs = extract_key_from_json(pi0_odinw_results, 'exact_match_rate')
@@ -172,23 +178,23 @@ magma_odinw_emrs = extract_key_from_json(magma_odinw_results, 'exact_match_rate_
 data = {
     'Task': ['PIQA', 'BFCL', 'SQA3D', 'RoboVQA', 'ODINW', 'Overcooked'],
     'GPT-5': [np.mean(gpt5_piqa_emr),
-                              None,
-                              np.mean(gpt5_sqa3d_emr),
-                              np.mean(gpt5_robovqa_emr),
-                              np.mean(gpt5_odinw_emrs),
-                              np.mean([gpt5_overcooked_emr])],
+              np.mean(gpt5_bfcl_emr),
+              np.mean(gpt5_sqa3d_emr),
+              np.mean(gpt5_robovqa_emr),
+              np.mean(gpt5_odinw_emrs),
+              gpt5_overcooked_emr],
     'Pi-0': [np.mean(pi0_piqa_emr),
-                             np.mean(pi0_bfcl_emr),
-                             np.mean(pi0_sqa3d_emr),
-                             np.mean(pi0_robovqa_emr),
-                             np.mean(pi0_odinw_emrs),
-                             np.mean(pi0_overcooked_emr)],
+             np.mean(pi0_bfcl_emr),
+             np.mean(pi0_sqa3d_emr),
+             np.mean(pi0_robovqa_emr),
+             np.mean(pi0_odinw_emrs),
+             np.mean(pi0_overcooked_emr)],
     'Magma': [np.mean(magma_piqa_emr),
-                              None,
-                               np.mean(magma_sqa3d_emr),
-                               np.mean(magma_robovqa_emr),
-                               np.mean(magma_odinw_emrs),
-                              None]
+              np.mean(magma_bfcl_emr),
+              np.mean(magma_sqa3d_emr),
+              np.mean(magma_robovqa_emr),
+              np.mean(magma_odinw_emrs),
+              np.mean(magma_overcooked_emr)]
 }
 df = pd.DataFrame(data)
 
@@ -200,8 +206,8 @@ barplot(df_melted, 'Exact Match Rate Comparison between GPT-5, Pi-0 and Magma', 
 recall_df = pd.DataFrame({
     'Task': ['ODINW', 'Overcooked'],
     'GPT-5': [np.mean(extract_key_from_json(gpt5_odinw, 'recall')), np.mean(extract_key_from_json(gpt5_overcooked, 'recall'))],
-    'Pi-0': [np.mean(extract_key_from_json(pi0_odinw_results, 'recall')), 0],
-    'Magma': [np.mean(extract_key_from_json(magma_odinw_results, 'recall')), 0]
+    'Pi-0': [np.mean(extract_key_from_json(pi0_odinw_results, 'recall')), np.mean(extract_key_from_json(pi0_base_overcooked, 'micro_recall'))],
+    'Magma': [np.mean(extract_key_from_json(magma_odinw_results, 'recall')), np.mean(extract_key_from_json(magma_overcooked, 'micro_recall'))]
 })
 recall_melted = recall_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='Recall')
 barplot(recall_melted, 'Recall Comparison across Models', 'Recall', 'Task', './recall_comparison.pdf', y='Recall')
@@ -210,8 +216,8 @@ barplot(recall_melted, 'Recall Comparison across Models', 'Recall', 'Task', './r
 precision_df = pd.DataFrame({
     'Task': ['ODINW', 'Overcooked'],
     'GPT-5': [np.mean(extract_key_from_json(gpt5_odinw, 'precision')), np.mean(extract_key_from_json(gpt5_overcooked, 'precision'))],
-    'Pi-0': [np.mean(extract_key_from_json(pi0_odinw_results, 'precision')), 0],
-    'Magma': [np.mean(extract_key_from_json(magma_odinw_results, 'precision')), 0]
+    'Pi-0': [np.mean(extract_key_from_json(pi0_odinw_results, 'precision')), np.mean(extract_key_from_json(pi0_base_overcooked, 'micro_precision'))],
+    'Magma': [np.mean(extract_key_from_json(magma_odinw_results, 'precision')), np.mean(extract_key_from_json(magma_overcooked, 'micro_precision'))]
 })
 precision_melted = precision_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='Precision')
 barplot(precision_melted, 'Precision Comparison across Models', 'Precision', 'Task', './precision_comparison.pdf', y='Precision')
@@ -220,8 +226,8 @@ barplot(precision_melted, 'Precision Comparison across Models', 'Precision', 'Ta
 f1_df = pd.DataFrame({
     'Task': ['ODINW', 'Overcooked'],
     'GPT-5': [np.mean(extract_key_from_json(gpt5_odinw, 'f1')), np.mean(extract_key_from_json(gpt5_overcooked, 'f1'))],
-    'Pi-0': [np.mean(extract_key_from_json(pi0_odinw_results, 'f1')), 0],
-    'Magma': [np.mean(extract_key_from_json(magma_odinw_results, 'f1')), 0]
+    'Pi-0': [np.mean(extract_key_from_json(pi0_odinw_results, 'f1')), np.mean(extract_key_from_json(pi0_base_overcooked, 'micro_f1'))],
+    'Magma': [np.mean(extract_key_from_json(magma_odinw_results, 'f1')), np.mean(extract_key_from_json(magma_overcooked, 'micro_f1'))]
 })
 f1_melted = f1_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='F1')
 barplot(f1_melted, 'F1 Comparison across Models', 'F1 Score', 'Task', './f1_comparison.pdf', y='F1')
@@ -262,9 +268,9 @@ magma_openx_amae_mapped = {openx_subtasks_mapping.get(k, k): v for k, v in magma
 amae_task_names = task_names + ['Overcooked']
 amae_df = pd.DataFrame({
     'Task': amae_task_names,
-    'GPT-5': [gpt5_openx_amae_mapped.get(task, 0) for task in task_names] + [extract_key_from_json(gpt5_overcooked, 'normalized_amae')[0]],
+    'GPT-5': [gpt5_openx_amae_mapped.get(task, 0) for task in task_names] + [np.mean(extract_key_from_json(gpt5_overcooked, 'normalized_amae'))],
     'Pi-0': [pi0_openx_amae_mapped.get(task, 0) for task in task_names] + [np.nan],
-    'Magma': [magma_openx_amae_mapped.get(task, 0) for task in task_names] + [np.nan]
+    'Magma': [magma_openx_amae_mapped.get(task, 0) for task in task_names] + [np.mean(extract_key_from_json(magma_overcooked, 'normalized_amae'))]
 })
 
 amae_df_melted = amae_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='Normalized AMA')
@@ -280,7 +286,7 @@ similarity_sources = {
     ('SQA3D', 'Magma'): magma_sqa3d,
     ('BFCL', 'GPT-5'): None,
     ('BFCL', 'Pi-0'): pi0_hf_bfcl_inference,
-    ('BFCL', 'Magma'): None,
+    ('BFCL', 'Magma'): magma_bfcl,
 }
 
 similarity_rows = []
