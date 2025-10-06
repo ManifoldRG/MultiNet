@@ -1191,33 +1191,8 @@
   },
   {
     "dataset": "sqa3d",
-    "expected_format": "short normalized token (object/attribute/yes-no/count)",
-    "total_unique_gibberish": 6,
-    "tokens": [
-      {
-        "text": "0",
-        "count_files": 1
-      },
-      {
-        "text": "1",
-        "count_files": 1
-      },
-      {
-        "text": "2",
-        "count_files": 1
-      },
-      {
-        "text": "3",
-        "count_files": 1
-      },
-      {
-        "text": "4",
-        "count_files": 1
-      },
-      {
-        "text": "6",
-        "count_files": 1
-      }
-    ]
+    "expected_format": "short normalized token (object/attribute/yes-no/count) or integer count",
+    "total_unique_gibberish": 0,
+    "tokens": []
   }
 ]

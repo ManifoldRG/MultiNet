@@ -158,7 +158,7 @@ def derive_expected_format(fp: str, data: Any) -> str:
         if 'robovqa' in path_low:
             return 'concise action phrase/instruction'
         if 'sqa3d' in path_low:
-            return 'short normalized token (object/attribute/yes-no/count)'
+            return 'short normalized token (object/attribute/yes-no/count) or integer count'
         if 'piqa' in path_low:
             return 'binary choice (A/B) or option text'
         if 'odinw' in path_low:
@@ -172,7 +172,7 @@ def derive_expected_format(fp: str, data: Any) -> str:
         if 'robovqa' in path_low or avg_words > 4:
             return 'concise action phrase/instruction'
         if 'sqa3d' in path_low:
-            return 'short normalized token (object/attribute/yes-no/count)'
+            return 'short normalized token (object/attribute/yes-no/count) or integer count'
         return 'short categorical text label'
     if types <= {int}:
         # Integer indices
@@ -194,11 +194,13 @@ def analyze_file(fp: str) -> Tuple[Set[str], int, str]:
     path_low = fp.lower()
     is_vqa = any(key in path_low for key in ['robovqa', 'sqa3d', 'piqa', 'odinw'])
     is_odinw = 'odinw' in path_low
+    is_sqa3d = 'sqa3d' in path_low
     if is_vqa:
         # For VQA datasets:
         # - ODINW: allow single integer outputs; only flag coordinate-like strings
-        # - Others (RoboVQA, PIQA, SQA3D): flag numeric-only and coordinate-like
-        if is_odinw:
+        # - SQA3D: allow integer outputs; only flag coordinate-like strings
+        # - Others (RoboVQA, PIQA): flag numeric-only and coordinate-like
+        if is_odinw or is_sqa3d:
             gib = {normalize_text(o) for o in outs if is_coordinate_like(o)}
         else:
             gib = {normalize_text(o) for o in outs if is_numeric_only(o) or is_coordinate_like(o)}

@@ -250,9 +250,3 @@ robovqa,"Mark sticky note, place on cup.",1
 robovqa,"Mark the green cup on the pink cup, stack the orange glass on the yellow glass, put the orange glass on the backward stack, stack the cup, stack the red glass, stack the blue glass, put the star block in the box, put the heart block in the box.",1
 robovqa,Mark the white glass on the table and push it off the table onto the floor.,1
 robovqa,Step 1: Drag the key towards the edge of the table. Step 2: Pick up the key. Step 3: Unlock the lock of the drawer. Step 4: Open the upper drawer. Step 5: Place the blue marker in the pen stand.,1
-sqa3d,0,1
-sqa3d,1,1
-sqa3d,2,1
-sqa3d,3,1
-sqa3d,4,1
-sqa3d,6,1

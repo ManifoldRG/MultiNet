@@ -28,4 +28,4 @@ openx,short categorical text or index
 overcooked,short categorical text or index
 piqa,binary choice index (0/1); prefer A/B text
 robovqa,concise action phrase/instruction
-sqa3d,short normalized token (object/attribute/yes-no/count)
+sqa3d,short normalized token (object/attribute/yes-no/count) or integer count
