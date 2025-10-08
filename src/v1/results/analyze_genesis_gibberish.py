@@ -5,7 +5,7 @@ from typing import Any, Dict, Iterable, List, Set, Tuple
 import csv
 
 
-ROOT = os.path.join('src', 'v1', 'results', 'magma')
+ROOT = os.path.join('src', 'v1', 'results', 'genesis', 'gpt_5', 'low_reasoning')
 
 
 def normalize_text(text: str) -> str:
@@ -69,9 +69,14 @@ def is_coordinate_like(s: Any) -> bool:
     if not s_norm:
         return False
     low = s_norm.lower()
-    # Keywords indicating coordinates
-    if 'coordinate' in low or 'mark' in low:
+    
+    # Keywords indicating coordinates (be more specific to avoid false positives)
+    if 'coordinate:' in low or 'coordinate ' in low:
         return True
+    # Look for "mark" followed by a number to avoid flagging "marker"
+    if re.search(r'\bmark\s+\d+', low):
+        return True
+    
     # Parentheses or brackets with two numeric components
     if re.search(r"\(\s*[+-]?\d+(?:\.\d+)?\s*,\s*[+-]?\d+(?:\.\d+)?\s*\)", s_norm):
         return True
@@ -80,6 +85,44 @@ def is_coordinate_like(s: Any) -> bool:
     # Multiple bracketed coordinate-like pairs
     if re.search(r"\[(?:\s*\d+\s*,\s*\d+\s*\]){1,}", s_norm):
         return True
+    return False
+
+
+def is_robot_vqa_gibberish(s: Any) -> bool:
+    """Detect gibberish specifically for Robot VQA tasks where instructional text is expected.
+    Only flags truly malformed outputs while allowing legitimate action instructions.
+    """
+    if not isinstance(s, str):
+        return True
+    s_norm = normalize_text(s)
+    if not s_norm:
+        return True
+    
+    # Allow normal instructional text - don't flag based on length or instruction verbs
+    # Only flag truly problematic patterns:
+    
+    # Contains unusual symbols or encoding issues
+    if re.search(r'[{}\[\]<>]|_{3,}|\*{3,}|={3,}|/{3,}|\\{2,}', s_norm):
+        return True
+    
+    # Repeated characters suggesting encoding issues (but allow normal repetition like "...")
+    if re.search(r'(.)\1{4,}', s_norm) and not re.search(r'\.{3,}', s_norm):
+        return True
+    
+    # Contains coordinate-like patterns (which shouldn't appear in action instructions)
+    if is_coordinate_like(s):
+        return True
+    
+    # Contains binary/hex-like patterns
+    if re.search(r'\b[01]{8,}\b|\b[0-9a-fA-F]{8,}\b', s_norm):
+        return True
+    
+    # Contains excessive special characters relative to text
+    special_chars = len(re.findall(r'[^a-zA-Z0-9\s,.]', s_norm))
+    total_chars = len(s_norm.replace(' ', ''))
+    if total_chars > 0 and special_chars / total_chars > 0.3:
+        return True
+    
     return False
 
 
@@ -155,7 +198,7 @@ def derive_expected_format(fp: str, data: Any) -> str:
     # Heuristics based on dataset and label value types
     if not labels:
         # Fallback by dataset name
-        if 'robovqa' in path_low:
+        if 'robot_vqa' in path_low:
             return 'concise action phrase/instruction'
         if 'sqa3d' in path_low:
             return 'short normalized token (object/attribute/yes-no/count) or integer count'
@@ -169,7 +212,7 @@ def derive_expected_format(fp: str, data: Any) -> str:
     if types == {str}:
         # Distinguish short labels vs instructions by average word count
         avg_words = sum(len(str(x).split()) for x in labels) / max(1, len(labels))
-        if 'robovqa' in path_low or avg_words > 4:
+        if 'robot_vqa' in path_low or avg_words > 4:
             return 'concise action phrase/instruction'
         if 'sqa3d' in path_low:
             return 'short normalized token (object/attribute/yes-no/count) or integer count'
@@ -192,20 +235,22 @@ def analyze_file(fp: str) -> Tuple[Set[str], int, str]:
     outs = collect_outputs(data)
     # Dataset-aware behavior
     path_low = fp.lower()
-    is_vqa = any(key in path_low for key in ['robovqa', 'sqa3d', 'piqa', 'odinw'])
+    is_robot_vqa = 'robot_vqa' in path_low
     is_odinw = 'odinw' in path_low
     is_sqa3d = 'sqa3d' in path_low
-    if is_vqa:
-        # For VQA datasets:
-        # - ODINW: allow single integer outputs; only flag coordinate-like strings
-        # - SQA3D: allow integer outputs; only flag coordinate-like strings
-        # - Others (RoboVQA, PIQA): flag numeric-only and coordinate-like
-        if is_odinw or is_sqa3d:
-            gib = {normalize_text(o) for o in outs if is_coordinate_like(o)}
-        else:
-            gib = {normalize_text(o) for o in outs if is_numeric_only(o) or is_coordinate_like(o)}
+    is_piqa = 'piqa' in path_low
+    
+    if is_robot_vqa:
+        # For Robot VQA: use specialized gibberish detection that allows instructional text
+        gib = {normalize_text(o) for o in outs if is_robot_vqa_gibberish(o)}
+    elif is_odinw or is_sqa3d:
+        # For ODINW/SQA3D: allow single integer outputs; only flag coordinate-like strings
+        gib = {normalize_text(o) for o in outs if is_coordinate_like(o)}
+    elif is_piqa:
+        # For PIQA: flag numeric-only and coordinate-like (should be A/B or choice text)
+        gib = {normalize_text(o) for o in outs if is_numeric_only(o) or is_coordinate_like(o)}
     else:
-        # For non-VQA datasets, use default broader gibberish heuristic
+        # For other datasets, use default broader gibberish heuristic
         gib = {normalize_text(o if isinstance(o, str) else str(o)) for o in outs if is_gibberish_default(o)}
     exp_fmt = derive_expected_format(fp, data)
     return gib, len(outs), exp_fmt
@@ -218,7 +263,7 @@ def main():
             if fn.endswith('.json'):
                 json_files.append(os.path.join(dirpath, fn))
 
-    print(f'Found {len(json_files)} magma result JSON files under {ROOT}')
+    print(f'Found {len(json_files)} Genesis GPT-5 low reasoning result JSON files under {ROOT}')
 
     # Aggregate per dataset
     per_dataset: Dict[str, Dict[str, int]] = {}
@@ -233,10 +278,11 @@ def main():
             return f'odinw/{base}'
         # Common single-file datasets
         mapping = {
-            'robovqa_results.json': 'robovqa',
+            'robovqa_results.json': 'robot_vqa',
+            'robot_vqa_results.json': 'robot_vqa',
             'sqa3d_results.json': 'sqa3d',
             'piqa_results.json': 'piqa',
-            'magma_overcooked_results.json': 'overcooked',
+            'overcooked_ai_results.json': 'overcooked_ai',
         }
         for fname, name in mapping.items():
             if p.endswith(fname):
@@ -272,7 +318,7 @@ def main():
 
     # Write JSON report per dataset
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    report_json_path = os.path.join(current_dir, 'magma_gibberish_report.json')
+    report_json_path = os.path.join(current_dir, 'genesis_gibberish_report.json')
     report = []
     for ds in sorted(per_dataset.keys()):
         entries = per_dataset[ds]
@@ -289,7 +335,8 @@ def main():
         json.dump(report, f, indent=2)
 
     # Write CSV report (dataset, token, count_files)
-    report_csv_path = os.path.join(current_dir, 'magma_gibberish_report.csv')
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    report_csv_path = os.path.join(current_dir, 'genesis_gibberish_report.csv')
     with open(report_csv_path, 'w', newline='') as f:
         w = csv.writer(f)
         w.writerow(['dataset', 'token', 'count_files'])
@@ -298,7 +345,7 @@ def main():
                 w.writerow([ds, tok, cnt])
 
     # Write expected formats CSV
-    formats_csv_path = os.path.join(current_dir, 'magma_expected_formats.csv')
+    formats_csv_path = os.path.join(current_dir, 'genesis_expected_formats.csv')
     with open(formats_csv_path, 'w', newline='') as f:
         w = csv.writer(f)
         w.writerow(['dataset', 'expected_format'])

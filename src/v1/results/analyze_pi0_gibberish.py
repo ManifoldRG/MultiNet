@@ -5,7 +5,7 @@ from typing import Any, Dict, Iterable, List, Set, Tuple
 import csv
 
 
-ROOT = os.path.join('src', 'v1', 'results', 'magma')
+ROOT = os.path.join('src', 'v1', 'results', 'pi0')
 
 
 def normalize_text(text: str) -> str:
@@ -69,9 +69,14 @@ def is_coordinate_like(s: Any) -> bool:
     if not s_norm:
         return False
     low = s_norm.lower()
-    # Keywords indicating coordinates
-    if 'coordinate' in low or 'mark' in low:
+    
+    # Keywords indicating coordinates (be more specific to avoid false positives)
+    if 'coordinate:' in low or 'coordinate ' in low:
         return True
+    # Look for "mark" followed by a number to avoid flagging "marker"
+    if re.search(r'\bmark\s+\d+', low):
+        return True
+    
     # Parentheses or brackets with two numeric components
     if re.search(r"\(\s*[+-]?\d+(?:\.\d+)?\s*,\s*[+-]?\d+(?:\.\d+)?\s*\)", s_norm):
         return True
@@ -83,12 +88,38 @@ def is_coordinate_like(s: Any) -> bool:
     return False
 
 
+def is_pi0_increa_gibberish(s: Any) -> bool:
+    """Detect the specific pi0 gibberish pattern: '{token} increa increa increa...'
+    This is the characteristic failure mode of pi0 models.
+    """
+    if not isinstance(s, str):
+        return False
+    s_norm = normalize_text(s)
+    if not s_norm:
+        return False
+    
+    # Look for the specific "increa increa increa" repetition pattern
+    # Pattern: word followed by multiple "increa" repetitions
+    if re.search(r'\bincrea\s+increa\s+increa', s_norm.lower()):
+        return True
+    
+    # Also catch single word followed by many increas
+    if re.search(r'\w+\s+(?:increa\s+){3,}', s_norm.lower()):
+        return True
+    
+    return False
+
+
 def is_gibberish_default(s: Any) -> bool:
     # Non-string or empty
     if not isinstance(s, str):
         return True
     s_norm = normalize_text(s)
     if not s_norm:
+        return True
+
+    # Check for pi0-specific gibberish first
+    if is_pi0_increa_gibberish(s):
         return True
 
     # Overly long free-form text (likely sentences/instructions)
@@ -121,9 +152,20 @@ def collect_outputs(obj: Any) -> List[str]:
     outs: List[str] = []
     if isinstance(obj, dict):
         for k, v in obj.items():
-            # Check multiple output fields
-            if k in ['all_outs', 'all_original_outputs', 'all_preds', 'all_full_responses'] and isinstance(v, list):
-                outs.extend([x for x in v if isinstance(x, (str, int, float))])
+            # Look for various output fields in pi0 results
+            output_fields = [
+                'all_outs', 'all_full_responses', 'predictions', 
+                'all_original_outputs', 'normalized_preds', 'preds', 'all_preds'
+            ]
+            if k in output_fields and isinstance(v, list):
+                # Handle nested lists (like pi0's all_full_responses)
+                for item in v:
+                    if isinstance(item, list):
+                        # Nested list - extract strings from it
+                        outs.extend([x for x in item if isinstance(x, (str, int, float))])
+                    elif isinstance(item, (str, int, float)):
+                        # Direct value
+                        outs.append(item)
             else:
                 outs.extend(collect_outputs(v))
     elif isinstance(obj, list):
@@ -163,6 +205,8 @@ def derive_expected_format(fp: str, data: Any) -> str:
             return 'binary choice (A/B) or option text'
         if 'odinw' in path_low:
             return 'class index (0..N-1) or textual class label'
+        if 'bfcl' in path_low:
+            return 'function call or structured response'
         return 'short categorical text or index'
 
     types = {type(x) for x in labels}
@@ -186,29 +230,56 @@ def derive_expected_format(fp: str, data: Any) -> str:
     return 'mixed labels; short text or indices'
 
 
-def analyze_file(fp: str) -> Tuple[Set[str], int, str]:
+def analyze_file(fp: str) -> Tuple[Dict[str, int], int, str]:
     with open(fp, 'r') as f:
         data = json.load(f)
     outs = collect_outputs(data)
     # Dataset-aware behavior
     path_low = fp.lower()
-    is_vqa = any(key in path_low for key in ['robovqa', 'sqa3d', 'piqa', 'odinw'])
+    is_robovqa = 'robovqa' in path_low
     is_odinw = 'odinw' in path_low
     is_sqa3d = 'sqa3d' in path_low
-    if is_vqa:
-        # For VQA datasets:
-        # - ODINW: allow single integer outputs; only flag coordinate-like strings
-        # - SQA3D: allow integer outputs; only flag coordinate-like strings
-        # - Others (RoboVQA, PIQA): flag numeric-only and coordinate-like
-        if is_odinw or is_sqa3d:
-            gib = {normalize_text(o) for o in outs if is_coordinate_like(o)}
+    is_piqa = 'piqa' in path_low
+    is_bfcl = 'bfcl' in path_low
+    is_overcooked = 'overcooked' in path_low
+    is_openx = 'openx' in path_low
+    
+    # For pi0, we want to catch the specific "increa" gibberish across all datasets
+    # but still be dataset-aware for other types of gibberish
+    
+    gib_counts = {}  # Dict[str, int] to count occurrences
+    for o in outs:
+        o_norm = normalize_text(o if isinstance(o, str) else str(o))
+        
+        # Always check for pi0-specific increa gibberish first
+        if is_pi0_increa_gibberish(o):
+            gib_counts[o_norm] = gib_counts.get(o_norm, 0) + 1
+            continue
+            
+        # Then apply dataset-specific logic for other gibberish types
+        if is_robovqa:
+            # For Robot VQA: only flag coordinate-like or truly malformed outputs
+            if is_coordinate_like(o):
+                gib_counts[o_norm] = gib_counts.get(o_norm, 0) + 1
+        elif is_odinw or is_sqa3d:
+            # For ODINW/SQA3D: only flag coordinate-like strings
+            if is_coordinate_like(o):
+                gib_counts[o_norm] = gib_counts.get(o_norm, 0) + 1
+        elif is_piqa:
+            # For PIQA: flag numeric-only and coordinate-like (should be A/B or choice text)
+            if is_numeric_only(o) or is_coordinate_like(o):
+                gib_counts[o_norm] = gib_counts.get(o_norm, 0) + 1
+        elif is_overcooked or is_openx:
+            # For Overcooked/OpenX: numeric action indices are expected, only flag increa pattern and coordinate-like
+            if is_coordinate_like(o):
+                gib_counts[o_norm] = gib_counts.get(o_norm, 0) + 1
         else:
-            gib = {normalize_text(o) for o in outs if is_numeric_only(o) or is_coordinate_like(o)}
-    else:
-        # For non-VQA datasets, use default broader gibberish heuristic
-        gib = {normalize_text(o if isinstance(o, str) else str(o)) for o in outs if is_gibberish_default(o)}
+            # For other datasets (like BFCL), use default broader gibberish heuristic
+            if is_gibberish_default(o):
+                gib_counts[o_norm] = gib_counts.get(o_norm, 0) + 1
+    
     exp_fmt = derive_expected_format(fp, data)
-    return gib, len(outs), exp_fmt
+    return gib_counts, len(outs), exp_fmt
 
 
 def main():
@@ -218,87 +289,107 @@ def main():
             if fn.endswith('.json'):
                 json_files.append(os.path.join(dirpath, fn))
 
-    print(f'Found {len(json_files)} magma result JSON files under {ROOT}')
+    print(f'Found {len(json_files)} pi0 result JSON files under {ROOT}')
 
-    # Aggregate per dataset
-    per_dataset: Dict[str, Dict[str, int]] = {}
+    # Aggregate per dataset - now tracking both file counts and total occurrences
+    per_dataset: Dict[str, Dict[str, Dict[str, int]]] = {}  # dataset -> token -> {count_files, count_occurrences}
     per_dataset_format: Dict[str, Set[str]] = {}
-    per_file_summary: List[Tuple[str, int, int]] = []  # (file, num_gib, total_outs)
+    per_file_summary: List[Tuple[str, int, int, int]] = []  # (file, num_unique_gib, total_gib_occurrences, total_outs)
 
     def dataset_name_from_path(p: str) -> str:
         pl = p.replace('\\', '/').lower()
         # ODINW sub-dataset
         if '/odinw/' in pl and p.endswith('.json'):
+            # Extract dataset name from pi0 odinw filename format
             base = os.path.splitext(os.path.basename(p))[0]
+            # Remove pi0_hf_odinw_ prefix and _inference_results suffix
+            if base.startswith('pi0_hf_odinw_') and base.endswith('_inference_results'):
+                dataset_name = base[len('pi0_hf_odinw_'):-len('_inference_results')]
+                return f'odinw/{dataset_name}'
             return f'odinw/{base}'
+        
         # Common single-file datasets
         mapping = {
-            'robovqa_results.json': 'robovqa',
-            'sqa3d_results.json': 'sqa3d',
-            'piqa_results.json': 'piqa',
-            'magma_overcooked_results.json': 'overcooked',
+            'pi0_hf_robovqa_inference_results.json': 'robovqa',
+            'pi0_hf_sqa3d_inference_results.json': 'sqa3d',
+            'pi0_hf_piqa_inference_results.json': 'piqa',
+            'pi0_hf_bfcl_inference_results.json': 'bfcl',
+            'pi0_base_overcooked_results.json': 'overcooked',
+            'pi0_base_openx_results.json': 'openx',
+            'pi0_base_openx_results_final.json': 'openx_final',
         }
         for fname, name in mapping.items():
             if p.endswith(fname):
                 return name
-        # OpenX and others
-        if 'openx' in pl:
-            return 'openx'
+        
+        # Fallback to filename
         return os.path.splitext(os.path.basename(p))[0]
 
     # Walk files and aggregate
     total_gib_unique = 0
+    total_gib_occurrences = 0
     for fp in sorted(json_files):
         try:
-            gib_set, total, exp_fmt = analyze_file(fp)
+            gib_counts, total, exp_fmt = analyze_file(fp)
         except Exception as e:
             print(f'- {fp}: ERROR parsing ({e})')
             continue
-        per_file_summary.append((fp, len(gib_set), total))
+        
+        file_gib_occurrences = sum(gib_counts.values())
+        per_file_summary.append((fp, len(gib_counts), file_gib_occurrences, total))
+        
         ds = dataset_name_from_path(fp)
         if ds not in per_dataset:
             per_dataset[ds] = {}
             per_dataset_format[ds] = set()
-        for g in gib_set:
-            per_dataset[ds][g] = per_dataset[ds].get(g, 0) + 1
+        
+        for token, count in gib_counts.items():
+            if token not in per_dataset[ds]:
+                per_dataset[ds][token] = {'count_files': 0, 'count_occurrences': 0}
+            per_dataset[ds][token]['count_files'] += 1
+            per_dataset[ds][token]['count_occurrences'] += count
+        
         if exp_fmt:
             per_dataset_format[ds].add(exp_fmt)
-        total_gib_unique += len(gib_set)
+        total_gib_unique += len(gib_counts)
+        total_gib_occurrences += file_gib_occurrences
 
     # Emit stdout summary
-    for fp, n_gib, total in per_file_summary:
-        print(f'- {fp}: {n_gib} unique gibberish candidates (out of {total} outputs)')
+    for fp, n_unique_gib, n_gib_occurrences, total in per_file_summary:
+        print(f'- {fp}: {n_unique_gib} unique gibberish candidates ({n_gib_occurrences} total occurrences out of {total} outputs)')
     print(f'Total unique gibberish candidates across files: {total_gib_unique}')
+    print(f'Total gibberish occurrences across files: {total_gib_occurrences}')
 
     # Write JSON report per dataset
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    report_json_path = os.path.join(current_dir, 'magma_gibberish_report.json')
+    report_json_path = os.path.join(current_dir, 'pi0_gibberish_report.json')
     report = []
     for ds in sorted(per_dataset.keys()):
         entries = per_dataset[ds]
-        # Sort tokens for stable output
-        toks = sorted(entries.items(), key=lambda kv: (kv[1] * -1, kv[0]))
+        # Sort tokens by total occurrences (descending), then by token text
+        toks = sorted(entries.items(), key=lambda kv: (kv[1]['count_occurrences'] * -1, kv[0]))
         fmts = sorted(per_dataset_format.get(ds, set()))
         report.append({
             'dataset': ds,
             'expected_format': ' | '.join(fmts) if fmts else 'unknown',
             'total_unique_gibberish': len(entries),
-            'tokens': [{'text': t, 'count_files': c} for t, c in toks]
+            'total_gibberish_occurrences': sum(entry['count_occurrences'] for entry in entries.values()),
+            'tokens': [{'text': t, 'count_files': counts['count_files'], 'count_occurrences': counts['count_occurrences']} for t, counts in toks]
         })
     with open(report_json_path, 'w') as f:
         json.dump(report, f, indent=2)
 
-    # Write CSV report (dataset, token, count_files)
-    report_csv_path = os.path.join(current_dir, 'magma_gibberish_report.csv')
+    # Write CSV report (dataset, token, count_files, count_occurrences)
+    report_csv_path = os.path.join(current_dir, 'pi0_gibberish_report.csv')
     with open(report_csv_path, 'w', newline='') as f:
         w = csv.writer(f)
-        w.writerow(['dataset', 'token', 'count_files'])
+        w.writerow(['dataset', 'token', 'count_files', 'count_occurrences'])
         for ds in sorted(per_dataset.keys()):
-            for tok, cnt in sorted(per_dataset[ds].items(), key=lambda kv: (kv[1] * -1, kv[0])):
-                w.writerow([ds, tok, cnt])
+            for tok, counts in sorted(per_dataset[ds].items(), key=lambda kv: (kv[1]['count_occurrences'] * -1, kv[0])):
+                w.writerow([ds, tok, counts['count_files'], counts['count_occurrences']])
 
     # Write expected formats CSV
-    formats_csv_path = os.path.join(current_dir, 'magma_expected_formats.csv')
+    formats_csv_path = os.path.join(current_dir, 'pi0_expected_formats.csv')
     with open(formats_csv_path, 'w', newline='') as f:
         w = csv.writer(f)
         w.writerow(['dataset', 'expected_format'])

@@ -51,6 +51,10 @@ def safe_mean(values):
     filtered = [v for v in values if pd.notna(v)]
     if not filtered:
         return np.nan
+    # add a tiny value if mean is zero for visualization purposes
+    mean = np.mean(filtered)
+    if mean == 0:
+        return 0.01
     return float(np.mean(filtered))
 
 
@@ -303,7 +307,7 @@ amae_df = pd.DataFrame({
 })
 
 amae_df_melted = amae_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='Normalized AMA')
-barplot(amae_df_melted, 'Normalized AMA Comparison across Models', 'Normalized AMA', 'Task', './amae_comparison.pdf', y='Normalized AMA', ylim=None)
+barplot(amae_df_melted, 'Normalized AMAE Comparison across Models', 'Normalized AMA', 'Task', './amae_comparison.pdf', y='Normalized AMA', ylim=None)
 
 #%% similarity score comparison with error bars
 similarity_sources = {
