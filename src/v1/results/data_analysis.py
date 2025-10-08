@@ -361,3 +361,258 @@ plt.tight_layout()
 plt.savefig('./similarity_score_comparison.pdf')
 plt.show()
 
+#%% confusion matrix analysis
+from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
+
+def calculate_confusion_matrices():
+    """Calculate and visualize multiclass confusion matrices for all three models on OdinW and PIQA datasets."""
+    
+    # Function to plot confusion matrix
+    def plot_confusion_matrix(cm, title, labels=None, save_path=None):
+        plt.figure(figsize=(10, 8))
+        if labels is not None:
+            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                       xticklabels=labels, yticklabels=labels)
+        else:
+            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+        plt.title(title)
+        plt.ylabel('True Label')
+        plt.xlabel('Predicted Label')
+        plt.tight_layout()
+        if save_path:
+            plt.savefig(save_path)
+        plt.show()
+    
+    # Function to process OdinW datasets for all models
+    def process_odinw_all_models():
+        """Process OdinW datasets for all three models."""
+        odinw_cms = {'Pi-0': {}, 'GPT-5': {}, 'Magma': {}}
+        
+        # Get dataset names from Pi-0 files
+        odinw_dataset_names = []
+        for filename in os.listdir('./pi0/odinw'):
+            if filename.endswith('.json') and 'odinw' in filename:
+                # Extract dataset name from filename
+                # Expected format: pi0_hf_odinw_DatasetName_inference_results.json
+                parts = filename.replace('.json', '').split('_')
+                if len(parts) >= 4:
+                    dataset_name = parts[3]  # DatasetName part
+                    odinw_dataset_names.append(dataset_name)
+        
+        # Process each dataset for all models
+        for dataset_name in odinw_dataset_names:
+            print(f"Processing OdinW dataset: {dataset_name}")
+            
+            # Pi-0 processing
+            pi0_filepath = f'./pi0/odinw/pi0_hf_odinw_{dataset_name}_inference_results.json'
+            if os.path.exists(pi0_filepath):
+                with open(pi0_filepath, 'r') as f:
+                    pi0_data = json.load(f)
+                
+                if 'all_preds' in pi0_data and 'all_gt' in pi0_data:
+                    preds = np.array(pi0_data['all_preds'])
+                    gts = np.array(pi0_data['all_gt'])
+                    
+                    # Filter out invalid predictions (-1)
+                    valid_mask = (preds != -1) & (gts != -1)
+                    if np.sum(valid_mask) > 0:
+                        valid_preds = preds[valid_mask]
+                        valid_gts = gts[valid_mask]
+                        
+                        if len(valid_preds) > 0:
+                            unique_labels = sorted(list(set(valid_gts) | set(valid_preds)))
+                            cm = confusion_matrix(valid_gts, valid_preds, labels=unique_labels)
+                            odinw_cms['Pi-0'][dataset_name] = {
+                                'confusion_matrix': cm,
+                                'labels': unique_labels,
+                                'num_samples': len(valid_preds)
+                            }
+            
+            # GPT-5 processing
+            genesis_filepath = f'./genesis/gpt_5/low_reasoning/odinw/{dataset_name}_results.json'
+            if os.path.exists(genesis_filepath):
+                with open(genesis_filepath, 'r') as f:
+                    genesis_data = json.load(f)
+                
+                # Genesis data is nested under dataset name
+                if dataset_name in genesis_data:
+                    data = genesis_data[dataset_name]
+                    if 'preds' in data and 'gt_actions' in data:
+                        preds = np.array(data['preds'])
+                        gts = np.array(data['gt_actions'])
+                        
+                        # Filter out invalid predictions (assuming -1 or negative values)
+                        valid_mask = (preds >= 0) & (gts >= 0)
+                        if np.sum(valid_mask) > 0:
+                            valid_preds = preds[valid_mask]
+                            valid_gts = gts[valid_mask]
+                            
+                            if len(valid_preds) > 0:
+                                unique_labels = sorted(list(set(valid_gts) | set(valid_preds)))
+                                cm = confusion_matrix(valid_gts, valid_preds, labels=unique_labels)
+                                odinw_cms['GPT-5'][dataset_name] = {
+                                    'confusion_matrix': cm,
+                                    'labels': unique_labels,
+                                    'num_samples': len(valid_preds)
+                                }
+            
+            # Magma processing
+            magma_filepath = f'./magma/odinw/corrected_results/{dataset_name}.json'
+            if os.path.exists(magma_filepath):
+                with open(magma_filepath, 'r') as f:
+                    magma_data = json.load(f)
+                
+                if 'preds' in magma_data and 'gt_labels' in magma_data:
+                    preds = np.array(magma_data['preds'])
+                    gts = np.array(magma_data['gt_labels'])
+                    
+                    # Filter out invalid predictions
+                    valid_mask = (preds >= 0) & (gts >= 0)
+                    if np.sum(valid_mask) > 0:
+                        valid_preds = preds[valid_mask]
+                        valid_gts = gts[valid_mask]
+                        
+                        if len(valid_preds) > 0:
+                            unique_labels = sorted(list(set(valid_gts) | set(valid_preds)))
+                            cm = confusion_matrix(valid_gts, valid_preds, labels=unique_labels)
+                            odinw_cms['Magma'][dataset_name] = {
+                                'confusion_matrix': cm,
+                                'labels': unique_labels,
+                                'num_samples': len(valid_preds)
+                            }
+        
+        return odinw_cms
+    
+    # Function to process PIQA dataset for all models
+    def process_piqa_all_models():
+        """Process PIQA dataset for all three models."""
+        piqa_cms = {}
+        
+        # Pi-0 PIQA
+        if 'all_preds' in pi0_hf_piqa and 'all_gt' in pi0_hf_piqa:
+            preds = np.array(pi0_hf_piqa['all_preds'])
+            gts = np.array(pi0_hf_piqa['all_gt'])
+            
+            # Filter out invalid predictions (-1)
+            valid_mask = (preds != -1) & (gts != -1)
+            if np.sum(valid_mask) > 0:
+                valid_preds = preds[valid_mask]
+                valid_gts = gts[valid_mask]
+                
+                labels = [0, 1]  # PIQA is binary classification
+                cm = confusion_matrix(valid_gts, valid_preds, labels=labels)
+                piqa_cms['Pi-0'] = {
+                    'confusion_matrix': cm,
+                    'labels': labels,
+                    'num_samples': len(valid_preds)
+                }
+        
+        # Genesis PIQA
+        if len(gpt5_piqa) > 0 and 'piqa' in gpt5_piqa[0]:
+            piqa_data = gpt5_piqa[0]['piqa']
+            if 'preds' in piqa_data and 'gt_labels' in piqa_data:
+                preds = np.array(piqa_data['preds'])
+                gts = np.array(piqa_data['gt_labels'])
+                
+                # Filter out invalid predictions (assuming -1 or None)
+                valid_mask = (preds >= 0) & (gts >= 0)
+                if np.sum(valid_mask) > 0:
+                    valid_preds = preds[valid_mask]
+                    valid_gts = gts[valid_mask]
+                    
+                    labels = [0, 1]  # PIQA is binary classification
+                    cm = confusion_matrix(valid_gts, valid_preds, labels=labels)
+                    piqa_cms['GPT-5'] = {
+                        'confusion_matrix': cm,
+                        'labels': labels,
+                        'num_samples': len(valid_preds)
+                    }
+        
+        # Magma PIQA
+        if 'preds' in magma_piqa and 'gt_labels' in magma_piqa:
+            preds = np.array(magma_piqa['preds'])
+            gts = np.array(magma_piqa['gt_labels'])
+            
+            # Filter out invalid predictions
+            valid_mask = (preds >= 0) & (gts >= 0)
+            if np.sum(valid_mask) > 0:
+                valid_preds = preds[valid_mask]
+                valid_gts = gts[valid_mask]
+                
+                labels = [0, 1]  # PIQA is binary classification
+                cm = confusion_matrix(valid_gts, valid_preds, labels=labels)
+                piqa_cms['Magma'] = {
+                    'confusion_matrix': cm,
+                    'labels': labels,
+                    'num_samples': len(valid_preds)
+                }
+        
+        return piqa_cms
+    
+    # Process OdinW datasets for all models
+    print("Processing OdinW datasets for all models...")
+    odinw_cms = process_odinw_all_models()
+    
+    # Plot confusion matrices for OdinW datasets
+    for model_name in ['Pi-0', 'GPT-5', 'Magma']:
+        for dataset_name, cm_data in odinw_cms[model_name].items():
+            # Only plot if we have reasonable amount of data and not too many classes
+            if cm_data['num_samples'] >= 10 and len(cm_data['labels']) <= 20:
+                plot_confusion_matrix(
+                    cm_data['confusion_matrix'], 
+                    f'{model_name} Confusion Matrix - OdinW {dataset_name}',
+                    labels=cm_data['labels'],
+                    save_path=f'./confusion_matrix_{model_name.lower().replace("-", "")}_odinw_{dataset_name}.pdf'
+                )
+    
+    # Process PIQA dataset for all models
+    print("Processing PIQA dataset for all models...")
+    piqa_cms = process_piqa_all_models()
+    
+    # Plot PIQA confusion matrices
+    for model_name, cm_data in piqa_cms.items():
+        plot_confusion_matrix(
+            cm_data['confusion_matrix'],
+            f'{model_name} Confusion Matrix - PIQA',
+            labels=['Option A', 'Option B'],
+            save_path=f'./confusion_matrix_{model_name.lower()}_piqa.pdf'
+        )
+    
+    # Print summary statistics
+    print("\n=== Confusion Matrix Analysis Summary ===")
+    
+    print(f"\nOdinW Datasets:")
+    for model_name in ['Pi-0', 'GPT-5', 'Magma']:
+        print(f"  {model_name}:")
+        if odinw_cms[model_name]:
+            for dataset_name, cm_data in odinw_cms[model_name].items():
+                print(f"    {dataset_name}: {cm_data['num_samples']} valid samples, {len(cm_data['labels'])} classes")
+        else:
+            print(f"    No valid data found")
+    
+    print(f"\nPIQA Dataset:")
+    for model_name, cm_data in piqa_cms.items():
+        print(f"  {model_name}: {cm_data['num_samples']} valid samples")
+        
+        # Calculate accuracy from confusion matrix
+        cm = cm_data['confusion_matrix']
+        accuracy = np.trace(cm) / np.sum(cm)
+        print(f"    Accuracy: {accuracy:.4f}")
+    
+    return {
+        'odinw_all_models': odinw_cms,
+        'piqa_all_models': piqa_cms
+    }
+
+# Calculate confusion matrices
+confusion_matrices = calculate_confusion_matrices()
+
+print("\n=== Confusion Matrix Function Added ===")
+print("You can now call calculate_confusion_matrices() to generate confusion matrices for:")
+print("- OdinW datasets: GPT-5 and Magma models (Pi-0 has no valid predictions)")
+print("- PIQA dataset: All three models (GPT-5, Pi-0, Magma)")
+print("Generated confusion matrix PDFs will be saved in the current directory.")
+
+
+# %%
