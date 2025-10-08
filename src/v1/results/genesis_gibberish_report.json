@@ -1,1 +1,176 @@
-[]
+[
+  {
+    "dataset": "odinw/AerialMaritimeDrone_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/AmericanSignLanguageLetters_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/Aquarium_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/BCCD_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/ChessPieces_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/DroneControl_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/EgoHands_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/HardHatWorkers_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/MaskWearing_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/NorthAmericaMushrooms_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/OxfordPets_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/PKLot_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/ShellfishOpenImages_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/ThermalCheetah_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/UnoCards_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/VehiclesOpenImages_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/boggleBoards_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/brackishUnderwater_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/dice_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/openPoetryVision_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/plantdoc_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/selfdrivingCar_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/thermalDogsAndPeople_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/websiteScreenshots_results",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "openx",
+    "expected_format": "short categorical text or index",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "overcooked_ai",
+    "expected_format": "short categorical text or index",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "piqa",
+    "expected_format": "binary choice index (0/1); prefer A/B text",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "robot_vqa",
+    "expected_format": "concise action phrase/instruction",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "sqa3d",
+    "expected_format": "short normalized token (object/attribute/yes-no/count) or integer count",
+    "total_unique_gibberish": 0,
+    "tokens": []
+  }
+]

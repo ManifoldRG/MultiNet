@@ -1,1 +1,31 @@
 dataset,expected_format
+bfcl_results,short categorical text or index
+odinw/AerialMaritimeDrone,class index (0..N-1) or textual class label
+odinw/AmericanSignLanguageLetters,class index (0..N-1) or textual class label
+odinw/Aquarium,class index (0..N-1) or textual class label
+odinw/BCCD,class index (0..N-1) or textual class label
+odinw/ChessPieces,class index (0..N-1) or textual class label
+odinw/DroneControl,class index (0..N-1) or textual class label
+odinw/EgoHands,class index (0..N-1) or textual class label
+odinw/HardHatWorkers,class index (0..N-1) or textual class label
+odinw/MaskWearing,class index (0..N-1) or textual class label
+odinw/NorthAmericaMushrooms,class index (0..N-1) or textual class label
+odinw/OxfordPets,class index (0..N-1) or textual class label
+odinw/PKLot,class index (0..N-1) or textual class label
+odinw/ShellfishOpenImages,class index (0..N-1) or textual class label
+odinw/ThermalCheetah,class index (0..N-1) or textual class label
+odinw/UnoCards,class index (0..N-1) or textual class label
+odinw/VehiclesOpenImages,class index (0..N-1) or textual class label
+odinw/boggleBoards,class index (0..N-1) or textual class label
+odinw/brackishUnderwater,class index (0..N-1) or textual class label
+odinw/dice,class index (0..N-1) or textual class label
+odinw/openPoetryVision,class index (0..N-1) or textual class label
+odinw/plantdoc,class index (0..N-1) or textual class label
+odinw/selfdrivingCar,class index (0..N-1) or textual class label
+odinw/thermalDogsAndPeople,class index (0..N-1) or textual class label
+odinw/websiteScreenshots,class index (0..N-1) or textual class label
+openx,short categorical text or index
+overcooked,short categorical text or index
+piqa,binary choice index (0/1); prefer A/B text
+robovqa,concise action phrase/instruction
+sqa3d,short normalized token (object/attribute/yes-no/count) or integer count
