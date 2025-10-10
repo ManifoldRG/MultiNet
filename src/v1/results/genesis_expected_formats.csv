@@ -1,0 +1,30 @@
+dataset,expected_format
+odinw/AerialMaritimeDrone_results,class index (0..N-1) or textual class label
+odinw/AmericanSignLanguageLetters_results,class index (0..N-1) or textual class label
+odinw/Aquarium_results,class index (0..N-1) or textual class label
+odinw/BCCD_results,class index (0..N-1) or textual class label
+odinw/ChessPieces_results,class index (0..N-1) or textual class label
+odinw/DroneControl_results,class index (0..N-1) or textual class label
+odinw/EgoHands_results,class index (0..N-1) or textual class label
+odinw/HardHatWorkers_results,class index (0..N-1) or textual class label
+odinw/MaskWearing_results,class index (0..N-1) or textual class label
+odinw/NorthAmericaMushrooms_results,class index (0..N-1) or textual class label
+odinw/OxfordPets_results,class index (0..N-1) or textual class label
+odinw/PKLot_results,class index (0..N-1) or textual class label
+odinw/ShellfishOpenImages_results,class index (0..N-1) or textual class label
+odinw/ThermalCheetah_results,class index (0..N-1) or textual class label
+odinw/UnoCards_results,class index (0..N-1) or textual class label
+odinw/VehiclesOpenImages_results,class index (0..N-1) or textual class label
+odinw/boggleBoards_results,class index (0..N-1) or textual class label
+odinw/brackishUnderwater_results,class index (0..N-1) or textual class label
+odinw/dice_results,class index (0..N-1) or textual class label
+odinw/openPoetryVision_results,class index (0..N-1) or textual class label
+odinw/plantdoc_results,class index (0..N-1) or textual class label
+odinw/selfdrivingCar_results,class index (0..N-1) or textual class label
+odinw/thermalDogsAndPeople_results,class index (0..N-1) or textual class label
+odinw/websiteScreenshots_results,class index (0..N-1) or textual class label
+openx,short categorical text or index
+overcooked_ai,short categorical text or index
+piqa,binary choice index (0/1); prefer A/B text
+robot_vqa,concise action phrase/instruction
+sqa3d,short normalized token (object/attribute/yes-no/count) or integer count

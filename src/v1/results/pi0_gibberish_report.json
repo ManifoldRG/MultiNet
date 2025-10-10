@@ -1,0 +1,306 @@
+[
+  {
+    "dataset": "bfcl",
+    "expected_format": "function call or structured response",
+    "total_unique_gibberish": 12,
+    "total_gibberish_occurrences": 151,
+    "tokens": [
+      {
+        "text": "daf increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 50
+      },
+      {
+        "text": "suspic increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 46
+      },
+      {
+        "text": "LXXX increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 12
+      },
+      {
+        "text": "adri increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 12
+      },
+      {
+        "text": "fluo increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 10
+      },
+      {
+        "text": "LXXX reluct increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 7
+      },
+      {
+        "text": "centrif increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 4
+      },
+      {
+        "text": "nutr increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 3
+      },
+      {
+        "text": "tanong accla increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 3
+      },
+      {
+        "text": "yz increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 2
+      },
+      {
+        "text": "casio increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 1
+      },
+      {
+        "text": "opio accla increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 1
+      }
+    ]
+  },
+  {
+    "dataset": "odinw/AerialMaritimeDrone",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/AmericanSignLanguageLetters",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/Aquarium",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/BCCD",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/ChessPieces",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/DroneControl",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/EgoHands",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/HardHatWorkers",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/MaskWearing",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/NorthAmericaMushrooms",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/OxfordPets",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/PKLot",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/ShellfishOpenImages",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/ThermalCheetah",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/UnoCards",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/VehiclesOpenImages",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/boggleBoards",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/brackishUnderwater",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/dice",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/openPoetryVision",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/plantdoc",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/selfdrivingCar",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/thermalDogsAndPeople",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "odinw/websiteScreenshots",
+    "expected_format": "class index (0..N-1) or textual class label",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "openx",
+    "expected_format": "short categorical text or index",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "openx_final",
+    "expected_format": "short categorical text or index",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "overcooked",
+    "expected_format": "short categorical text or index",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "piqa",
+    "expected_format": "binary choice (A/B) or option text",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "robovqa",
+    "expected_format": "concise action phrase/instruction",
+    "total_unique_gibberish": 0,
+    "total_gibberish_occurrences": 0,
+    "tokens": []
+  },
+  {
+    "dataset": "sqa3d",
+    "expected_format": "short normalized token (object/attribute/yes-no/count) or integer count",
+    "total_unique_gibberish": 5,
+    "total_gibberish_occurrences": 6940,
+    "tokens": [
+      {
+        "text": "centrif increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 6736
+      },
+      {
+        "text": "daf increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 150
+      },
+      {
+        "text": "contribut increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 40
+      },
+      {
+        "text": "suspic increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 12
+      },
+      {
+        "text": "affor increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa increa",
+        "count_files": 1,
+        "count_occurrences": 2
+      }
+    ]
+  }
+]
