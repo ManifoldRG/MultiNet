@@ -70,7 +70,7 @@ Also related to the MultiNet effort is <a href="https://github.com/eihli/mugato"
   <img src="assets/Multinet v1 release visual final.png" alt="Multinet v1.0 Figure" style="width: 700px; height: auto; vertical-align: middle;">
 </p>
 
-<br>
+<!-- <br>
 
 <p align="center">
   <img src="assets/v0_2_visual.jpg" alt="Multinet v0.2 Figure" style="width: 700px; height: auto; vertical-align: middle;">
@@ -80,7 +80,7 @@ Also related to the MultiNet effort is <a href="https://github.com/eihli/mugato"
 
 <p align="center">
   <img src="assets/Multinet v0.1 release visual 3.0.png" alt="Multinet Figure" style="width: 700px; height: auto; vertical-align: middle;">
-</p>
+</p> -->
 
 ## 🚀 Getting Started
 
