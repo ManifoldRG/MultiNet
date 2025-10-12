@@ -65,6 +65,15 @@ def aggregate_by_mapping(metric_map, mapping):
         aggregated.setdefault(task, []).append(value)
     return {task: safe_mean(values) for task, values in aggregated.items()}
 
+
+def log_count(label, values):
+    try:
+        count = len(values)
+    except TypeError:
+        count = 'N/A'
+    print(f"{label}: {count} values")
+
+
 def barplot(dataframe, title, ylabel, xlabel, save_path, y='Exact Match Rate', ylim=(0, 1)):
     sns.set_theme(style='darkgrid')
     plt.figure(figsize=(10, 6))
@@ -177,6 +186,8 @@ magma_piqa_emr = extract_key_from_json(magma_piqa, 'exact_match_rate')
 pi0_bfcl_emr = extract_key_from_json(pi0_hf_bfcl_inference, 'exact_match_accuracy')
 magma_bfcl_emr = extract_key_from_json(magma_bfcl, 'exact_match_accuracy')
 gpt5_bfcl_emr = [0.285]  # referenced from literature
+log_count('Pi-0 BFCL exact match', pi0_bfcl_emr)
+log_count('Magma BFCL exact match', magma_bfcl_emr)
 
 gpt5_sqa3d_emr = extract_key_from_json(gpt5_sqa3d, 'exact_match_rate')
 pi0_sqa3d_emr = extract_key_from_json(pi0_hf_sqa3d, 'exact_match_rate')
@@ -184,16 +195,40 @@ magma_sqa3d_emr = extract_key_from_json(magma_sqa3d, 'exact_match_rate_with_inva
 
 gpt5_robovqa_emr = extract_key_from_json(gpt5_robovqa, 'exact_match_rate')
 pi0_robovqa_emr = extract_key_from_json(pi0_hf_robovqa, 'exact_match_accuracy')
+log_count('Pi-0 RoboVQA exact match', pi0_robovqa_emr)
 magma_robovqa_emr = extract_key_from_json(magma_robovqa, 'exact_match_rate_with_invalids')
+log_count('Magma RoboVQA exact match', magma_robovqa_emr)
 
-gpt5_overcooked_emr_values = extract_key_from_json(gpt5_overcooked, 'exact_match')
+gpt5_overcooked_emr_values = [
+    result.get('overcooked_ai', {}).get('exact_match')
+    for result in gpt5_overcooked
+    if isinstance(result, dict) and 'overcooked_ai' in result
+]
+gpt5_overcooked_emr_values = [v for v in gpt5_overcooked_emr_values if v is not None]
+log_count('GPT-5 Overcooked exact match', gpt5_overcooked_emr_values)
 gpt5_overcooked_emr = safe_mean(gpt5_overcooked_emr_values)
-pi0_overcooked_emr = extract_key_from_json(pi0_base_overcooked, 'exact_match_rate')
-magma_overcooked_emr = extract_key_from_json(magma_overcooked, 'exact_match_rate')
+
+pi0_overcooked_emr_values = [
+    pi0_base_overcooked.get('overcooked', {}).get('exact_match_rate')
+]
+pi0_overcooked_emr_values = [v for v in pi0_overcooked_emr_values if v is not None]
+log_count('Pi-0 Overcooked exact match', pi0_overcooked_emr_values)
+pi0_overcooked_emr = safe_mean(pi0_overcooked_emr_values)
+
+magma_overcooked_emr_values = [
+    magma_overcooked.get('overcooked', {}).get('exact_match_rate')
+]
+magma_overcooked_emr_values = [v for v in magma_overcooked_emr_values if v is not None]
+log_count('Magma Overcooked exact match', magma_overcooked_emr_values)
+magma_overcooked_emr = safe_mean(magma_overcooked_emr_values)
+
 
 gpt5_odinw_emrs = extract_key_from_json(gpt5_odinw, 'exact_match_rate')
+log_count('GPT-5 OdinW exact match', gpt5_odinw_emrs)
 pi0_odinw_emrs = extract_key_from_json(pi0_odinw_results, 'exact_match_rate')
+log_count('Pi-0 OdinW exact match', pi0_odinw_emrs)
 magma_odinw_emrs = extract_key_from_json(magma_odinw_results, 'exact_match_rate_with_invalids')
+log_count('Magma OdinW exact match', magma_odinw_emrs)
 
 data = {
     'Task': ['PIQA', 'BFCL', 'SQA3D', 'RoboVQA', 'ODINW', 'Overcooked'],
@@ -223,31 +258,178 @@ df_melted = df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var
 barplot(df_melted, 'Exact Match Rate Comparison between GPT-5, Pi-0 and Magma', 'Exact Match Rate', 'Task', './emr_comparison.pdf')
 
 #%% recall comparison
+gpt5_odinw_recall_values = extract_key_from_json(gpt5_odinw, 'recall')
+pi0_odinw_recall_values = extract_key_from_json(pi0_odinw_results, 'recall')
+magma_odinw_recall_values = extract_key_from_json(magma_odinw_results, 'recall')
+gpt5_overcooked_recall_values = [
+    result.get('overcooked_ai', {}).get('recall')
+    for result in gpt5_overcooked
+    if isinstance(result, dict) and 'overcooked_ai' in result
+]
+gpt5_overcooked_recall_values = [v for v in gpt5_overcooked_recall_values if v is not None]
+pi0_overcooked_recall_values = [pi0_base_overcooked.get('overcooked', {}).get('micro_recall')]
+magma_overcooked_recall_values = [magma_overcooked.get('overcooked', {}).get('micro_recall')]
+
+log_count('GPT-5 OdinW recall', gpt5_odinw_recall_values)
+log_count('Pi-0 OdinW recall', pi0_odinw_recall_values)
+log_count('Magma OdinW recall', magma_odinw_recall_values)
+log_count('GPT-5 Overcooked recall', gpt5_overcooked_recall_values)
+log_count('Pi-0 Overcooked recall', pi0_overcooked_recall_values)
+log_count('Magma Overcooked recall', magma_overcooked_recall_values)
+
 recall_df = pd.DataFrame({
     'Task': ['ODINW', 'Overcooked'],
-    'GPT-5': [safe_mean(extract_key_from_json(gpt5_odinw, 'recall')), safe_mean(extract_key_from_json(gpt5_overcooked, 'recall'))],
-    'Pi-0': [safe_mean(extract_key_from_json(pi0_odinw_results, 'recall')), safe_mean(extract_key_from_json(pi0_base_overcooked, 'micro_recall'))],
-    'Magma': [safe_mean(extract_key_from_json(magma_odinw_results, 'recall')), safe_mean(extract_key_from_json(magma_overcooked, 'micro_recall'))]
+    'GPT-5': [safe_mean(gpt5_odinw_recall_values), safe_mean(gpt5_overcooked_recall_values)],
+    'Pi-0': [safe_mean(pi0_odinw_recall_values), safe_mean(pi0_overcooked_recall_values)],
+    'Magma': [safe_mean(magma_odinw_recall_values), safe_mean(magma_overcooked_recall_values)]
 })
 recall_melted = recall_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='Recall')
 barplot(recall_melted, 'Recall Comparison across Models', 'Recall', 'Task', './recall_comparison.pdf', y='Recall')
 
 #%% precision comparison
+gpt5_odinw_precision_values = extract_key_from_json(gpt5_odinw, 'precision')
+pi0_odinw_precision_values = extract_key_from_json(pi0_odinw_results, 'precision')
+magma_odinw_precision_values = extract_key_from_json(magma_odinw_results, 'precision')
+gpt5_overcooked_precision_values = [
+    result.get('overcooked_ai', {}).get('precision')
+    for result in gpt5_overcooked
+    if isinstance(result, dict) and 'overcooked_ai' in result
+]
+gpt5_overcooked_precision_values = [v for v in gpt5_overcooked_precision_values if v is not None]
+pi0_overcooked_precision_values = [pi0_base_overcooked.get('overcooked', {}).get('micro_precision')]
+magma_overcooked_precision_values = [magma_overcooked.get('overcooked', {}).get('micro_precision')]
+
+log_count('GPT-5 OdinW precision', gpt5_odinw_precision_values)
+log_count('Pi-0 OdinW precision', pi0_odinw_precision_values)
+log_count('Magma OdinW precision', magma_odinw_precision_values)
+log_count('GPT-5 Overcooked precision', gpt5_overcooked_precision_values)
+log_count('Pi-0 Overcooked precision', pi0_overcooked_precision_values)
+log_count('Magma Overcooked precision', magma_overcooked_precision_values)
+
 precision_df = pd.DataFrame({
     'Task': ['ODINW', 'Overcooked'],
-    'GPT-5': [safe_mean(extract_key_from_json(gpt5_odinw, 'precision')), safe_mean(extract_key_from_json(gpt5_overcooked, 'precision'))],
-    'Pi-0': [safe_mean(extract_key_from_json(pi0_odinw_results, 'precision')), safe_mean(extract_key_from_json(pi0_base_overcooked, 'micro_precision'))],
-    'Magma': [safe_mean(extract_key_from_json(magma_odinw_results, 'precision')), safe_mean(extract_key_from_json(magma_overcooked, 'micro_precision'))]
+    'GPT-5': [safe_mean(gpt5_odinw_precision_values), safe_mean(gpt5_overcooked_precision_values)],
+    'Pi-0': [safe_mean(pi0_odinw_precision_values), safe_mean(pi0_overcooked_precision_values)],
+    'Magma': [safe_mean(magma_odinw_precision_values), safe_mean(magma_overcooked_precision_values)]
 })
 precision_melted = precision_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='Precision')
 barplot(precision_melted, 'Precision Comparison across Models', 'Precision', 'Task', './precision_comparison.pdf', y='Precision')
 
+#%% macro precision comparison
+gpt5_odinw_macro_precision_values = extract_key_from_json(gpt5_odinw, 'macro_precision')
+pi0_odinw_macro_precision_values = extract_key_from_json(pi0_odinw_results, 'macro_precision')
+magma_odinw_macro_precision_values = extract_key_from_json(magma_odinw_results, 'macro_precision')
+
+gpt5_overcooked_macro_precision_values = [
+    result.get('overcooked_ai', {}).get('macro_precision')
+    for result in gpt5_overcooked
+    if isinstance(result, dict) and 'overcooked_ai' in result
+]
+gpt5_overcooked_macro_precision_values = [v for v in gpt5_overcooked_macro_precision_values if v is not None]
+pi0_overcooked_macro_precision_values = [pi0_base_overcooked.get('overcooked', {}).get('macro_precision')]
+magma_overcooked_macro_precision_values = [magma_overcooked.get('overcooked', {}).get('macro_precision')]
+
+log_count('GPT-5 OdinW macro precision', gpt5_odinw_macro_precision_values)
+log_count('Pi-0 OdinW macro precision', pi0_odinw_macro_precision_values)
+log_count('Magma OdinW macro precision', magma_odinw_macro_precision_values)
+log_count('GPT-5 Overcooked macro precision', gpt5_overcooked_macro_precision_values)
+log_count('Pi-0 Overcooked macro precision', pi0_overcooked_macro_precision_values)
+log_count('Magma Overcooked macro precision', magma_overcooked_macro_precision_values)
+
+macro_precision_df = pd.DataFrame({
+    'Task': ['ODINW', 'Overcooked'],
+    'GPT-5': [safe_mean(gpt5_odinw_macro_precision_values), safe_mean(gpt5_overcooked_macro_precision_values)],
+    'Pi-0': [safe_mean(pi0_odinw_macro_precision_values), safe_mean(pi0_overcooked_macro_precision_values)],
+    'Magma': [safe_mean(magma_odinw_macro_precision_values), safe_mean(magma_overcooked_macro_precision_values)]
+})
+macro_precision_melted = macro_precision_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='Macro Precision')
+barplot(macro_precision_melted, 'Macro Precision Comparison across Models', 'Macro Precision', 'Task', './macro_precision_comparison.pdf', y='Macro Precision')
+
+#%% macro recall comparison
+gpt5_odinw_macro_recall_values = extract_key_from_json(gpt5_odinw, 'macro_recall')
+pi0_odinw_macro_recall_values = extract_key_from_json(pi0_odinw_results, 'macro_recall')
+magma_odinw_macro_recall_values = extract_key_from_json(magma_odinw_results, 'macro_recall')
+
+gpt5_overcooked_macro_recall_values = [
+    result.get('overcooked_ai', {}).get('macro_recall')
+    for result in gpt5_overcooked
+    if isinstance(result, dict) and 'overcooked_ai' in result
+]
+gpt5_overcooked_macro_recall_values = [v for v in gpt5_overcooked_macro_recall_values if v is not None]
+pi0_overcooked_macro_recall_values = [pi0_base_overcooked.get('overcooked', {}).get('macro_recall')]
+magma_overcooked_macro_recall_values = [magma_overcooked.get('overcooked', {}).get('macro_recall')]
+
+log_count('GPT-5 OdinW macro recall', gpt5_odinw_macro_recall_values)
+log_count('Pi-0 OdinW macro recall', pi0_odinw_macro_recall_values)
+log_count('Magma OdinW macro recall', magma_odinw_macro_recall_values)
+log_count('GPT-5 Overcooked macro recall', gpt5_overcooked_macro_recall_values)
+log_count('Pi-0 Overcooked macro recall', pi0_overcooked_macro_recall_values)
+log_count('Magma Overcooked macro recall', magma_overcooked_macro_recall_values)
+
+macro_recall_df = pd.DataFrame({
+    'Task': ['ODINW', 'Overcooked'],
+    'GPT-5': [safe_mean(gpt5_odinw_macro_recall_values), safe_mean(gpt5_overcooked_macro_recall_values)],
+    'Pi-0': [safe_mean(pi0_odinw_macro_recall_values), safe_mean(pi0_overcooked_macro_recall_values)],
+    'Magma': [safe_mean(magma_odinw_macro_recall_values), safe_mean(magma_overcooked_macro_recall_values)]
+})
+macro_recall_melted = macro_recall_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='Macro Recall')
+barplot(macro_recall_melted, 'Macro Recall Comparison across Models', 'Macro Recall', 'Task', './macro_recall_comparison.pdf', y='Macro Recall')
+
+#%% macro f1 comparison
+gpt5_odinw_macro_f1_values = extract_key_from_json(gpt5_odinw, 'macro_f1')
+pi0_odinw_macro_f1_values = extract_key_from_json(pi0_odinw_results, 'macro_f1')
+magma_odinw_macro_f1_values = extract_key_from_json(magma_odinw_results, 'macro_f1')
+
+gpt5_overcooked_macro_f1_values = [
+    result.get('overcooked_ai', {}).get('macro_f1')
+    for result in gpt5_overcooked
+    if isinstance(result, dict) and 'overcooked_ai' in result
+]
+gpt5_overcooked_macro_f1_values = [v for v in gpt5_overcooked_macro_f1_values if v is not None]
+pi0_overcooked_macro_f1_values = [pi0_base_overcooked.get('overcooked', {}).get('macro_f1')]
+magma_overcooked_macro_f1_values = [magma_overcooked.get('overcooked', {}).get('macro_f1')]
+
+log_count('GPT-5 OdinW macro f1', gpt5_odinw_macro_f1_values)
+log_count('Pi-0 OdinW macro f1', pi0_odinw_macro_f1_values)
+log_count('Magma OdinW macro f1', magma_odinw_macro_f1_values)
+log_count('GPT-5 Overcooked macro f1', gpt5_overcooked_macro_f1_values)
+log_count('Pi-0 Overcooked macro f1', pi0_overcooked_macro_f1_values)
+log_count('Magma Overcooked macro f1', magma_overcooked_macro_f1_values)
+
+macro_f1_df = pd.DataFrame({
+    'Task': ['ODINW', 'Overcooked'],
+    'GPT-5': [safe_mean(gpt5_odinw_macro_f1_values), safe_mean(gpt5_overcooked_macro_f1_values)],
+    'Pi-0': [safe_mean(pi0_odinw_macro_f1_values), safe_mean(pi0_overcooked_macro_f1_values)],
+    'Magma': [safe_mean(magma_odinw_macro_f1_values), safe_mean(magma_overcooked_macro_f1_values)]
+})
+macro_f1_melted = macro_f1_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='Macro F1')
+barplot(macro_f1_melted, 'Macro F1 Comparison across Models', 'Macro F1', 'Task', './macro_f1_comparison.pdf', y='Macro F1')
+
 #%% f1 comparison
+gpt5_odinw_f1_values = extract_key_from_json(gpt5_odinw, 'f1')
+pi0_odinw_f1_values = extract_key_from_json(pi0_odinw_results, 'f1')
+magma_odinw_f1_values = extract_key_from_json(magma_odinw_results, 'f1')
+gpt5_overcooked_f1_values = [
+    result.get('overcooked_ai', {}).get('f1')
+    for result in gpt5_overcooked
+    if isinstance(result, dict) and 'overcooked_ai' in result
+]
+gpt5_overcooked_f1_values = [v for v in gpt5_overcooked_f1_values if v is not None]
+pi0_overcooked_f1_values = [pi0_base_overcooked.get('overcooked', {}).get('micro_f1')]
+magma_overcooked_f1_values = [magma_overcooked.get('overcooked', {}).get('micro_f1')]
+
+log_count('GPT-5 OdinW f1', gpt5_odinw_f1_values)
+log_count('Pi-0 OdinW f1', pi0_odinw_f1_values)
+log_count('Magma OdinW f1', magma_odinw_f1_values)
+log_count('GPT-5 Overcooked f1', gpt5_overcooked_f1_values)
+log_count('Pi-0 Overcooked f1', pi0_overcooked_f1_values)
+log_count('Magma Overcooked f1', magma_overcooked_f1_values)
+
 f1_df = pd.DataFrame({
     'Task': ['ODINW', 'Overcooked'],
-    'GPT-5': [safe_mean(extract_key_from_json(gpt5_odinw, 'f1')), safe_mean(extract_key_from_json(gpt5_overcooked, 'f1'))],
-    'Pi-0': [safe_mean(extract_key_from_json(pi0_odinw_results, 'f1')), safe_mean(extract_key_from_json(pi0_base_overcooked, 'micro_f1'))],
-    'Magma': [safe_mean(extract_key_from_json(magma_odinw_results, 'f1')), safe_mean(extract_key_from_json(magma_overcooked, 'micro_f1'))]
+    'GPT-5': [safe_mean(gpt5_odinw_f1_values), safe_mean(gpt5_overcooked_f1_values)],
+    'Pi-0': [safe_mean(pi0_odinw_f1_values), safe_mean(pi0_overcooked_f1_values)],
+    'Magma': [safe_mean(magma_odinw_f1_values), safe_mean(magma_overcooked_f1_values)]
 })
 f1_melted = f1_df.melt(id_vars=['Task'], value_vars=['GPT-5', 'Pi-0', 'Magma'], var_name='Model', value_name='F1')
 barplot(f1_melted, 'F1 Comparison across Models', 'F1 Score', 'Task', './f1_comparison.pdf', y='F1')
@@ -260,8 +442,11 @@ for result in gpt5_openx:
     gpt5_openx_namse_raw.update(extract_per_subtask_metric(result, 'normalized_amse'))
 
 pi0_openx_namse_mapped = aggregate_by_mapping(pi0_openx_namse_raw, openx_subtasks_mapping)
+log_count('Pi-0 OpenX NAMSE tasks', list(pi0_openx_namse_mapped.keys()))
 magma_openx_namse_mapped = aggregate_by_mapping(magma_openx_namse_raw, openx_subtasks_mapping)
+log_count('Magma OpenX NAMSE tasks', list(magma_openx_namse_mapped.keys()))
 gpt5_openx_namse_mapped = aggregate_by_mapping(gpt5_openx_namse_raw, openx_subtasks_mapping)
+log_count('GPT-5 OpenX NAMSE tasks', list(gpt5_openx_namse_mapped.keys()))
 
 base_tasks = list(dict.fromkeys(openx_subtasks_mapping.values()))
 extra_tasks = sorted((set(gpt5_openx_namse_mapped.keys()) |
@@ -286,8 +471,11 @@ pi0_openx_amae_raw = extract_per_subtask_metric(pi0_base_openx, 'normalized_amae
 magma_openx_amae_raw = extract_per_subtask_metric(magma_openx, 'normalized_amae')
 
 gpt5_openx_amae_mapped = aggregate_by_mapping(gpt5_openx_amae_raw, openx_subtasks_mapping)
+log_count('GPT-5 OpenX AMAE tasks', list(gpt5_openx_amae_mapped.keys()))
 pi0_openx_amae_mapped = aggregate_by_mapping(pi0_openx_amae_raw, openx_subtasks_mapping)
+log_count('Pi-0 OpenX AMAE tasks', list(pi0_openx_amae_mapped.keys()))
 magma_openx_amae_mapped = aggregate_by_mapping(magma_openx_amae_raw, openx_subtasks_mapping)
+log_count('Magma OpenX AMAE tasks', list(magma_openx_amae_mapped.keys()))
 
 amae_tasks = task_names.copy()
 extra_amae_tasks = sorted((set(gpt5_openx_amae_mapped.keys()) |
