@@ -168,7 +168,8 @@ python procgen_inference_fast.py --output_dir < path to the directory where you 
 
 ## 📊 Evaluation and submission process to the Multinet benchmark
 
-Here are steps to follow to evaluate your team's model on Multinet data and submit results to our benchmark:
+Stay tuned!
+<!-- Here are steps to follow to evaluate your team's model on Multinet data and submit results to our benchmark:
 
 ### 📥 Obtaining test data
 *   Download the desired dataset using the download+translate SDK that we provide by following the steps mentioned above.
@@ -189,7 +190,7 @@ Here are steps to follow to evaluate your team's model on Multinet data and subm
 *  Once the results are ready, you should open a PR that contains the code that can produce the results you report, and the final results in the correct format. Make sure to provide all necessary details for reproducibility - especially the seed values used in the inference pipeline. Associate this PR with the Issue opened in the second step mentioned above.
 *   Upon review by our team, we will either merge the PR or request changes/modifications/clarifications.
     *   Once further queries are resolved, the PR will be merged and Issue closed.
-*   Once the PR is merged and results are accepted, we will display the results on our [website](https://multinet.ai/)!
+*   Once the PR is merged and results are accepted, we will display the results on our [website](https://multinet.ai/)! -->
 
 
 ## 📜 Citation
