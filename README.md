@@ -61,6 +61,7 @@ This repo provides the following:
 2. Ability to translate control data of various formats and from various sources to a unified [Tensorflow Dataset format](https://www.tensorflow.org/datasets/api_docs/python/tfds). 
 3. Evaluate the performance of SoTA VLMs and VLAs such as GPT-5, Pi0, and Magma in a zero-shot setting on a wide-variety of tasks detaied [here](https://multinet.ai/static/pages/Multinetv1.html).
 4. A [general framework](https://github.com/ManifoldRG/MultiNet/tree/main/src/v1/modules) for mapping VLMs to other modality classes, with particular emphasis on action spaces. This framework allows one to adapt a wide range of models to multiple types of tasks or datasets for scaling effectively while reducing the amount of engineering effort required.  In MultiNet v1.0, GenESIS is used to evaluate GPT 5 on the OpenX, Overcooked, PIQA, ODINW, and SQA3D datasets.
+5. Test splits of Multinet datasets and clear guidelines required to evaluate your model on them and add the results to our leaderboard in order to compare performance against SoTA VLMs and VLAs.
 
 Also related to the MultiNet effort is <a href="https://github.com/eihli/mugato"><img src="https://img.shields.io/badge/%CE%BCGATO%E2%A0%80%E2%A0%80-dimgray?style=flat-square&logo=github" alt="μGATO on GitHub" style="vertical-align: middle;"></a> - a small, simple, open-source implementation of what is described in DeepMind's GATO paper. This project marks our initial step towards building a multimodal generalist action model.
 
