@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/Website-blue?style=flat-square&logo=googlechrome" alt="Website"></a> 
-  <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/MultinetV1-Release-blue?style=flat-square&logo=Blogger" alt="Multinet v1.0 release"></a>
+  <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/Multinet%20v1.0-Release-blue?style=flat-square&logo=Blogger" alt="Multinet v1.0 release"></a>
   <a href="https://arxiv.org/abs/2505.05540"><img src="https://img.shields.io/badge/Multinet%20v0.2%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.2 paper"></a> 
   <a href="https://arxiv.org/abs/2411.05821"><img src="https://img.shields.io/badge/Multinet%20v0.1%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.1 paper"></a> 
   <a href="https://github.com/ManifoldRG/MultiNet/tree/main/src/modules"><img src="https://img.shields.io/badge/GenESIS%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-blueviolet?style=flat-square&logo=github" alt="GenESIS framework"></a> 
