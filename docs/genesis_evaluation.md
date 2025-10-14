@@ -197,7 +197,7 @@ python send_batch_jobs_vlm_single_ds.py \
     - `openx_single_arm`
     - `openx_bimanual`
     - `openx_wheeled_robot`
-    - `open_quadrupedal`
+    - `openx_quadrupedal`
 - `--model`: **Required** - GPT model name (see `src/config.json`)
 - `--metadata_dir`: **Required** - Directory to save batch information
 - `--batch_size`: Batch size for evaluation (default: 1)

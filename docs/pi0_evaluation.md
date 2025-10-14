@@ -20,6 +20,15 @@ GIT_LFS_SKIP_SMUDGE=1 uv sync
 GIT_LFS_SKIP_SMUDGE=1 uv pip install -e .
 ```
 
+### Additional Setup for Vision-Language Datasets
+
+For evaluating vision-language datasets (ODINW, PIQA, SQA3D, RoboVQA, BFCL), you need to clone the openpi submodule:
+
+```bash
+cd MultiNet/src/v1/modules
+git submodule update --init openpi
+```
+
 ## Dataset Evaluations
 
 ### 1. ODINW (Object Detection in the Wild)
