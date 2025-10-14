@@ -66,6 +66,8 @@ python odinw_single_inference.py \
 - `--model_name_or_path`: Model identifier (default: "microsoft/Magma-8B")
 - `--data_path`: **Required** - Path to the ODINW test data folder
 - `--dataset`: Name of the ODINW subdataset (default: None, evaluates all datasets)
+  - See `definitions/odinw.py` for accepted dataset names
+  - Examples: `AerialMaritimeDrone`, `AmericanSignLanguageLetters`, `Aquarium`, `BCCD`, `ChessPieces`, `selfdrivingCar`, etc.
 - `--dtype`: Model data type - choices: ['fp16', 'bf16', 'fp32'] (default: "bf16")
 - `--batch_size`: Batch size for inference (default: 1)
 - `--max_seq_len`: Maximum sequence length for tokenization (default: 1024)
