@@ -1,7 +1,7 @@
 <p align="center">
   <kbd>
   <img src="assets/multinet_logo_square copy.png" alt="Multinet Logo" style="height:200px; border-radius:50%;">
-  <h1 align="center" style="display: inline-block; vertical-align: middle; margin-left: 20px;">MultiNet: A Comprehensive Benchmark for Evaluating Vision-Language-Action Models Across Diverse Domains</h1>
+  <h1 align="center" style="display: inline-block; vertical-align: middle; margin-left: 20px;">MultiNet: A Generalist Benchmark for the Next Generation of Multimodal Models</h1>
   </kbd>
 </p>
 
@@ -10,7 +10,6 @@
   <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/MultinetV1-Release-blue?style=flat-square&logo=Blogger" alt="Multinet v1.0 release"></a>
   <a href="https://arxiv.org/abs/2505.05540"><img src="https://img.shields.io/badge/Multinet%20v0.2%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.2 paper"></a> 
   <a href="https://arxiv.org/abs/2411.05821"><img src="https://img.shields.io/badge/Multinet%20v0.1%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.1 paper"></a> 
-  <a href="https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf"><img src="https://img.shields.io/badge/Dataset%20Spec-green?style=flat-square&logo=readthedocs" alt="Dataset Spec paper"></a> 
   <a href="https://github.com/ManifoldRG/MultiNet/tree/main/src/modules"><img src="https://img.shields.io/badge/GenESIS%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-blueviolet?style=flat-square&logo=github" alt="GenESIS framework"></a> 
   <a href="https://discord.gg/Rk4gAq5aYr"><img src="https://img.shields.io/badge/Contribute%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-7289DA?style=flat-square&logo=discord" alt="Contribute"></a>
 </p>
@@ -106,7 +105,7 @@ python centralized_downloader --download <name of dataset you would like to down
 
 ```bash
 cd Multinet/src/v1
-python centralized_translation --input_dir <path to the downloaded dataset> --output_dir <directory where you would like to store the translated file>
+python centralized_processor --input_dir <path to the downloaded dataset> --output_dir <directory where you would like to store the translated file>
 ```
 
 #### To translate multiple files/shards of your desired control dataset (downloaded using the downloader script in this repo) to the TFDS format 
