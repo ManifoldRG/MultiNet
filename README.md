@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/Website-blue?style=flat-square&logo=googlechrome" alt="Website"></a> 
-  <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/Website-blue?style=flat-square&logo=googlechrome" alt="Multinet v1.0 release"></a>
+  <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/MultinetV1-Release-blue?style=flat-square&logo=Blogger" alt="Multinet v1.0 release"></a>
   <a href="https://arxiv.org/abs/2505.05540"><img src="https://img.shields.io/badge/Multinet%20v0.2%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.2 paper"></a> 
   <a href="https://arxiv.org/abs/2411.05821"><img src="https://img.shields.io/badge/Multinet%20v0.1%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.1 paper"></a> 
   <a href="https://multinet.ai/static/pdfs/MultiNet_Dataset_Spec_Paper.pdf"><img src="https://img.shields.io/badge/Dataset%20Spec-green?style=flat-square&logo=readthedocs" alt="Dataset Spec paper"></a> 
@@ -117,81 +117,22 @@ cd Multinet/src/v1
 python wrapper_centralized_processor.py --input_dir <path to the downloaded dataset> --output_dir <directory where you would like to store the translated file>
 ```
 
-#### To evaluate GPT 5 (in a zero-shot setting) using the [GenESIS framework](https://github.com/ManifoldRG/MultiNet/tree/main/src/modules) 
+#### To evaluate models on MultiNet datasets
 
-To get the predictions:
+We provide comprehensive evaluation guides for different models:
 
-```bash
-cd Multinet/scripts/eval_vlm
-python send_batch_jobs_vlm.py --data_root_dir < path to the translated datasets > --dataset_family < dataset name > --model < gpt model name and version (see models values in https://github.com/ManifoldRG/MultiNet/blob/main/src/config.json) > --metadata_dir < path to save batch info > --batch_size < batch size >
-```
+**Magma Model Evaluation:**
+For detailed instructions on evaluating Magma on ODINW, PIQA, SQA3D, RoboVQA, Overcooked, BFCL, and OpenX datasets, see the [Magma Evaluation Guide](docs/magma_evaluation.md).
 
-> **Note:** Enter the OpenAI API key when prompted.
+**Pi0 Base Model Evaluation:**
+For detailed instructions on evaluating Pi0 Base on ODINW, PIQA, SQA3D, RoboVQA, BFCL, Overcooked, and OpenX datasets, see the [Pi0 Evaluation Guide](docs/pi0_evaluation.md).
 
-To evaluate the predictions:
-
-```bash
-python run_batch_eval_vlm.py --batch_job_info_path < path where batch info is saved from prev step >/< dataset name >_batchlist{timestamp}.json --results_path < path to store results >.json
-```
-
-#### To evaluate Pi0 Base and Pi0 with FAST (in a zero-shot setting)
-
-We set up our conda environment and ran evaluations for Pi0 Base and Pi0 with FAST on GCP Instances with A100 40 GB VRAM GPUs. If you are using our code out-of-the-box, we recommend using the same infrastructure.
-
-For setup, create a new conda environment and download the packages present in src/eval/profiling/openpi/pyproject.toml. [Install uv](https://docs.astral.sh/uv/getting-started/installation/) before running the following commands:
-
-```bash
-cd Multinet/src/eval/profiling/openpi
-GIT_LFS_SKIP_SMUDGE=1 uv sync
-GIT_LFS_SKIP_SMUDGE=1 uv pip install -e .
-```
-
-> **Note:** Before running evaluations, make sure you have the correct path for the dataset statistics json files (similar to the one present [here](https://github.com/ManifoldRG/MultiNet/blob/main/definitions/procgen_dataset_statistics.json) )
-
-To run evaluations for Pi0 Base on Procgen:
-
-> **Note:** For Pi0 Base, modify the path of the dataset statistics json in the inference script based on the correct path [here](https://github.com/ManifoldRG/MultiNet/blob/282e6c9c7b588f98b2f04e685974eb2d45f59766/src/eval/profiling/openpi/scripts/procgen_inference.py#L412)
-
-```bash
-cd Multinet/src/eval/profiling/openpi
-python procgen_inference.py --output_dir < path to the directory where you would like to save your results  > --dataset_dir < path to the root directory containing the different subdatasets of Procgen > --batch_size < batch size > 
-```
-
-To run evaluations for Pi0 with FAST on Procgen
-
-> **Note:** Make sure to replace the processing_action_tokenizer.py which is usually located in ~/.cache/huggingface/modules/transformers_modules/physical-intelligence/fast/<snapshot id>/processing_action_tokenizer.py with the [one we use](https://github.com/ManifoldRG/MultiNet/blob/main/src/eval/profiling/openpi/scripts/processing_action_tokenizer.py). We have made some changes to the original action tokenizer code to adapt it to a discrete action space.
-
-```bash
-cd Multinet/src/eval/profiling/openpi
-python procgen_inference_fast.py --output_dir < path to the directory where you would like to save your results  > --dataset_dir < path to the root directory containing the different subdatasets of Procgen > --dataset_stats_dir < path to dataset statistics json file > --batch_size < batch size > 
-```
+**GPT Model Evaluation (GenESIS Framework):**
+For detailed instructions on evaluating GPT-5 using the GenESIS framework on ODINW, PIQA, SQA3D, RoboVQA, Overcooked, and OpenX datasets, see the [GenESIS Evaluation Guide](docs/genesis_evaluation.md).
 
 ## 📊 Evaluation and submission process to the Multinet benchmark
 
-Stay tuned!
-<!-- Here are steps to follow to evaluate your team's model on Multinet data and submit results to our benchmark:
-
-### 📥 Obtaining test data
-*   Download the desired dataset using the download+translate SDK that we provide by following the steps mentioned above.
-*   Open an issue on our Github with the tag `evaluate`. The issue title should be: "Add < your model name > to Multinet benchmark". 
-*  You can access the list of test episodes for a specific dataset at [src/eval/profiling/test_data](src/eval/profiling/test_data). These test episodes can then be translated from the downloaded data using the download+translate SDK by following the steps mentioned above.
-
-### ⚙️ Running evaluation
-*   We break down the required components to run evals using a model into 3 categories:
-    *   **Ingestion pipeline**: Pipeline to feed the model with the test data with necessary input processing. This can be similar to the dataloaders we have implemented in [src/data_utils](src/data_utils)
-    *   **Model adaptation**: Adapt your model to ingest the test data and produce actions in the appropriate format. This can be similar to how we have implemented model adaptations for various models such as [Genesis for VLMs](src/modules/), and custom adaptations for VLAs such as [OpenVLA](https://github.com/ManifoldRG/MultiNet/blob/main/src/eval/profiling/openvla/experiments/robot/openvla_profiling.py), [Pi0 Base](https://github.com/ManifoldRG/MultiNet/blob/main/src/eval/profiling/openpi/scripts/procgen_inference.py), and [Pi0 FAST](https://github.com/ManifoldRG/MultiNet/blob/main/src/eval/profiling/openpi/scripts/procgen_inference_fast.py)
-    *   **Inference pipeline**: The inference pipeline should include a `predict_action` function that takes in the observations of a timestep/batch of timesteps as input, produces the action(s) for a given timestep/batch of timesteps, and processes it to ensure the outputs are in the appropriate format.
-        *   **You must implement deterministic inference by setting explicit seed values for all stochastic operations within the model inference pipeline. This requirement applies to any component that introduces non-determinism during the inference process.**
-*   You can then run inference on the test data to obtain zero-shot predictions for all the timesteps.
-    *   Once all the predictions are obtained, they can be evaluated using the metrics we implement and report. You can find the helper functions that implement all the metrics in [src/eval_utils.py](src/eval_utils.py)
-    *   The results should consist of a JSON file for each subdataset of the test dataset where the keys are the names of the metrics and the values are metric values. These JSON files should also contain the predictions of the model. You can use the results files in [src/v02_results/](src/v0_2results/) as reference.
-
-### 📤 Submission process
-*  Once the results are ready, you should open a PR that contains the code that can produce the results you report, and the final results in the correct format. Make sure to provide all necessary details for reproducibility - especially the seed values used in the inference pipeline. Associate this PR with the Issue opened in the second step mentioned above.
-*   Upon review by our team, we will either merge the PR or request changes/modifications/clarifications.
-    *   Once further queries are resolved, the PR will be merged and Issue closed.
-*   Once the PR is merged and results are accepted, we will display the results on our [website](https://multinet.ai/)! -->
-
+Our standardized evaluation harness is currently being developed and is expected to be live soon. If you'd like to get your model on the MultiNet benchmark before the harness is released, please submit a PR with your evaluation code and results, or contact us directly.
 
 ## 📜 Citation
 
