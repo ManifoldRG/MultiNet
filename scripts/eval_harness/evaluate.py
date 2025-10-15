@@ -254,25 +254,25 @@ def main():
     
     # Required arguments
     parser.add_argument('--dataset', type=str, required=True,
-                       help="Dataset name (overcooked_ai, any openx morphology, piqa, sqa3d, robovqa, odinw, bfcl)")
+                        help="Dataset name (overcooked_ai, any openx morphology, piqa, sqa3d, robovqa, odinw, bfcl)")
     parser.add_argument('--model_adapter_module_path', type=str, required=True,
-                       help="Path to Python module containing ModelAdapter implementation")
+                        help="Path to Python module containing ModelAdapter implementation")
     parser.add_argument('--output_path', type=str, required=True,
-                       help="Directory to save predictions and results")
+                        help="Directory to save predictions and results")
 
     # Optional arguments
     parser.add_argument('--disk_root_dir', type=str, default='/mnt/disks/mount_dir/MultiNet/src/v1/processed',
-                       help="Root directory containing translated dataset files")
+                        help="Root directory containing translated dataset files")
     parser.add_argument('--data_split', type=str, default='public', choices=['public', 'private'],
-                       help="Data split to use ('public' for public samples, 'private' for private eval data)")
+                        help="Data split to use ('public' for public samples, 'private' for private eval data)")
     parser.add_argument('--batch_size', type=int, default=1,
-                       help="Batch size for evaluation")
+                        help="Batch size for evaluation")
     parser.add_argument('--max_samples', type=int, default=None,
-                       help="Maximum number of samples to evaluate")
+                        help="Maximum number of samples to evaluate")
     parser.add_argument('--device', type=str, default='auto', choices=['auto', 'cuda', 'cpu'],
-                       help="Device to use for evaluation")
+                        help="Device to use for evaluation")
     parser.add_argument('--seed', type=int, default=42,
-                       help="Random seed for deterministic evaluation")
+                        help="Random seed for deterministic evaluation")
     
     args = parser.parse_args()
 
@@ -296,19 +296,20 @@ def main():
     
     # Step 3: Run and save predictions to file
     bordered_print("STEP 3: RUNNING PREDICTIONS")
+    if not isinstance(data_loader, list):
+        data_loaders = [data_loader]
+    else:
+        data_loaders = data_loader
     
-    # Get predictions and ground truth actions
-    predictions = []
-    ground_truth_actions = []
-    # Process all batches from the dataloader
-    for batch in data_loader:
-        batch_predictions = model_adapter.batch_predict_actions(batch)
-        predictions.extend(batch_predictions)
-        ground_truth_actions.extend(batch['action'])
+    for dl in data_loaders:
+        predictions = []
+        ground_truth_actions = []
+        for batch in dl:
+            batch_predictions = model_adapter.batch_predict_actions(batch)
+            predictions.extend(batch_predictions)
+            ground_truth_actions.extend(batch['action'])
+        save_predictions(predictions, config)
 
-    # save predictions to file
-    save_predictions(predictions, config)
-    
     # Step 4: Calculate metrics
     bordered_print("STEP 4: CALCULATING METRICS")
     

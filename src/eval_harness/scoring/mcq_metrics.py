@@ -133,7 +133,7 @@ class MCQMetricsCalculator:
         """
         if len(predictions) != len(ground_truth_choices):
             raise ValueError(f"Number of predictions ({len(predictions)}) must match "
-                           f"number of ground truth choices ({len(ground_truth_choices)})")
+                            f"number of ground truth choices ({len(ground_truth_choices)})")
         
         # Process predictions
         predicted_choices = []

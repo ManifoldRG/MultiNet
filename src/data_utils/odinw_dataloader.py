@@ -242,15 +242,14 @@ def get_odinw_multi_dataloader(dataset_dirs: List[str],
         tuple: (dataset, dataloader) similar to other implementations
     """
     datasets = [ODinWDataset(dataset_dir, transform=transform) for dataset_dir in dataset_dirs]
-    dataset = ConcatDataset(datasets)
-    dataloader = DataLoader(
-        dataset,
+    dataloaders = [DataLoader(
+        ds,
         batch_size=batch_size,
         shuffle=shuffle,
         num_workers=num_workers,
         collate_fn=custom_collate
-    )
-    return dataset, dataloader
+    ) for ds in datasets]
+    return datasets, dataloaders
         
 
 def get_odinw_classification_info(dataset_dir: str) -> Dict[str, Any]:
