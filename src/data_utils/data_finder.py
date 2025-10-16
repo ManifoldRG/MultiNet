@@ -3,6 +3,7 @@ This module is used to find the translated TFDS shards for given datasets.
 """
 
 from glob import glob
+from pathlib import Path
 from typing import Optional
 
 def find_data_files(dataset_family: str, disk_root_dir: str, dataset: str = None, split: str = 'public') -> list[str]:
@@ -18,15 +19,19 @@ def find_data_files(dataset_family: str, disk_root_dir: str, dataset: str = None
     elif dataset_family == 'piqa':
         return _find_piqa_jsons(disk_root_dir, split_dir)
     elif dataset_family == 'odinw':
-        return _find_odinw_datasets(disk_root_dir, split_dir)
+        return _find_odinw_dir(disk_root_dir, dataset, split_dir)
+    elif dataset_family == 'sqa3d':
+        return _find_sqa3d_data(disk_root_dir, split_dir)
+    elif dataset_family == 'bfcl':
+        return _find_bfcl_data(disk_root_dir, split_dir)
     else:
-        raise ValueError(f"Invalid dataset type: {dataset}")
+        raise ValueError(f"Invalid dataset type: {dataset_family}")
 
 # Finding the translated TFDS shards.
 def _find_openx_shards(disk_root_dir: str = None, dataset: Optional[str] = None, split_dir: str = 'test') -> list[str]:
     """
     Find the translated TFDS shards for the OpenX dataset.
-    If dataset is None, find all shards for all datasets.
+    If dataset is None, find all shards for all OpenX datasets.
     """
     if dataset is None: # find all shards for all datasets
         path = f"{disk_root_dir}/openx_*/{split_dir}/"
@@ -44,7 +49,7 @@ def _find_openx_shards(disk_root_dir: str = None, dataset: Optional[str] = None,
         all_shards = sorted(shard_files, key=lambda x: int(x.split('_')[-1]))
 
     if not all_shards:
-        raise ValueError(f"Could not find shards for {dataset}")
+        raise ValueError(f"Could not find shards in {path}")
 
     return all_shards
 
@@ -58,7 +63,7 @@ def _find_overcooked_pickles(disk_root_dir: str = None, split_dir: str = 'test')
     # Use glob to find .pickle files
     pickle_files = glob(dataset_dir)
     if not pickle_files:
-        raise ValueError(f"Could not find pickles for {dataset_dir}")
+        raise ValueError(f"Could not find pickles in {dataset_dir}")
     return pickle_files
         
 def _find_piqa_jsons(disk_root_dir: str = None, split_dir: str = 'test') -> list[str]:
@@ -68,26 +73,26 @@ def _find_piqa_jsons(disk_root_dir: str = None, split_dir: str = 'test') -> list
     dataset_dir = f"{disk_root_dir}/piqa/{split_dir}/*.jsonl"
     jsonl_files = glob(dataset_dir)
     if not jsonl_files:
-        raise ValueError(f"Could not find JSONL files for {dataset_dir}")
+        raise ValueError(f"Could not find JSONL files in {dataset_dir}")
     return jsonl_files
 
-def _find_odinw_datasets(disk_root_dir: str = None, split_dir: str = 'test') -> list[str]:
+def _find_odinw_dir(disk_root_dir: str = None, dataset: str = None, split_dir: str = 'test') -> list[str]:
     """
-    Find the datasets for the ODinW dataset.
+    Find the directory for the ODinW dataset.
     """
-    dataset_dir = f"{disk_root_dir}/odinw/{split_dir}/*"
-    dataset_dirs = glob(dataset_dir)
-    if not dataset_dirs:
-        raise ValueError(f"Could not find datasets for {dataset_dir}")
-    return dataset_dirs
+    dataset_dir = f"{disk_root_dir}/odinw/{split_dir}/{dataset}"
+    if not Path(dataset_dir).exists():
+        raise ValueError(f"Could not find directory in {dataset_dir}")
+    return [dataset_dir]
 
-def _find_sqa3d_datasets(disk_root_dir: str = None, split_dir: str = 'test') -> list[dict]:
+def _find_sqa3d_data(disk_root_dir: str = None, split_dir: str = 'test') -> list[dict]:
     """
     Find the datasets for the SQA3D dataset.
     """
-    dataset_dir = f"{disk_root_dir}/sqa3d/{split_dir}/*"
-    datafiles = glob(dataset_dir)
-    
+    dataset_dir = f"{disk_root_dir}/sqa3d/{split_dir}"
+    datafiles = glob(dataset_dir + "/*")
+    if not datafiles:
+        raise ValueError(f"Could not find datafiles in {dataset_dir}")
     question_files = [f for f in datafiles if "question" in f]
     annotation_files = [f for f in datafiles if "annotation" in f]
 
@@ -104,7 +109,7 @@ def _find_sqa3d_datasets(disk_root_dir: str = None, split_dir: str = 'test') -> 
         data.append(data_dict)
     return data
 
-def find_bfcl_datasets(disk_root_dir: str = None, split_dir: str = 'test') -> list[dict]:
+def _find_bfcl_data(disk_root_dir: str = None, split_dir: str = 'test') -> list[dict]:
     """
     Find the datasets for the BFCL dataset.
     """
@@ -115,7 +120,7 @@ def find_bfcl_datasets(disk_root_dir: str = None, split_dir: str = 'test') -> li
     if len(question_files) != len(answer_files):
         raise ValueError(f"Number of question files and answer files do not match for {dataset_dir}")
     if len(question_files) == 0:
-        raise ValueError(f"Could not find question files for {dataset_dir}")
+        raise ValueError(f"Could not find question files in {dataset_dir}")
     data = []
     for q, a in zip(question_files, answer_files):
         data_dict = {
