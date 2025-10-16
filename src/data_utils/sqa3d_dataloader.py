@@ -206,8 +206,8 @@ class SQA3DDataset(Dataset):
         # Create formatted question text similar to PIQA
         question_parts = []
         
-        # Add scene context
-        question_parts.append(f"Scene: {scene_id}")
+        # # Add scene context
+        # question_parts.append(f"Scene: {scene_id}")
         
         # Add situation if available
         if situation:
@@ -216,12 +216,12 @@ class SQA3DDataset(Dataset):
         # Add the main question
         question_parts.append(f"Question: {original_question}")
         
-        # Add alternative context if available
-        if alternative_situation:
-            question_parts.append(f"Alternative Situation: {alternative_situation}")
+        # # Add alternative context if available
+        # if alternative_situation:
+        #     question_parts.append(f"Alternative Situation: {alternative_situation}")
         
         # Add instruction for VQA task
-        question_parts.append("Please answer the question based on the provided scene image and context situation/alternative situation in one word only and nothing more.")
+        question_parts.append("Please answer the question based on the provided scene image and context situation in one word only and nothing more.")
         
         # Combine all parts into formatted question
         formatted_question = "\n".join(question_parts)

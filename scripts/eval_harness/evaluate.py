@@ -60,7 +60,7 @@ class EvaluationConfig:
         gameplay_datasets = ['overcooked_ai']
         robotics_datasets = ['openx']
         mcq_datasets = ['piqa']
-        vqa_datasets = ['sqa3d', 'robovqa']
+        vqa_datasets = ['sqa3d', 'robot_vqa']
         grounding_datasets = ['odinw']
         tool_use_datasets = ['bfcl']
         
@@ -71,21 +71,19 @@ class EvaluationConfig:
         elif self.dataset in mcq_datasets:
             return 'multiple_choice'
         elif self.dataset in vqa_datasets:
-            return 'text_generation'
+            return 'visual_question_answering'
         elif self.dataset in grounding_datasets:
-            return 'grounding'
+            return 'visual_grounding'
         elif self.dataset in tool_use_datasets:
             return 'tool_use'
         else:
-            # Default to discrete action for unknown datasets
-            print(f"Warning: Unknown dataset '{self.dataset}', defaulting to discrete_action task type")
-            return 'discrete_action'
+            raise ValueError(f"Invalid dataset name: {self.dataset}")
 
 def get_dataset_and_dataloader(config: EvaluationConfig) -> tuple:
     # Find data files
     if 'openx' in config.dataset:
         files, path = find_data_files('openx', config.disk_root_dir, dataset=config.dataset, split=config.data_split)
-    elif 'robovqa' in config.dataset:
+    elif 'robot_vqa' in config.dataset:
         files, path = find_data_files('openx', config.disk_root_dir, dataset='openx_multi_embodiment', split=config.data_split)
     else:
         files, path = find_data_files(config.dataset, config.disk_root_dir, split=config.data_split)
@@ -99,7 +97,7 @@ def get_dataset_and_dataloader(config: EvaluationConfig) -> tuple:
         dataset, data_loader = get_openx_dataloader(
             files, batch_size=config.batch_size, dataset_name=config.dataset
         )
-    elif config.dataset == 'robovqa':
+    elif config.dataset == 'robot_vqa':
         dataset, data_loader = get_openx_dataloader(
             files, batch_size=config.batch_size, dataset_name='robot_vqa'
         )
@@ -150,7 +148,7 @@ def get_metrics_calculator(config: EvaluationConfig, dataset: torch.utils.data.D
     if 'openx' in config.dataset:
         action_stats = dataset.action_stats
         metrics_calculator = RoboticsMetricsCalculator(action_stats)
-    elif config.dataset == 'robovqa':
+    elif config.dataset == 'robot_vqa':
         metrics_calculator = VQAMetricsCalculator()
     elif config.dataset == 'overcooked_ai':
         metrics_calculator = OvercookedAIMetricsCalculator()
@@ -254,7 +252,7 @@ def main():
     
     # Required arguments
     parser.add_argument('--dataset', type=str, required=True,
-                        help="Dataset name (overcooked_ai, any openx morphology, piqa, sqa3d, robovqa, odinw, bfcl)")
+                        help="Dataset name (overcooked_ai, any openx morphology, piqa, sqa3d, robot_vqa, odinw, bfcl)")
     parser.add_argument('--model_adapter_module_path', type=str, required=True,
                         help="Path to Python module containing ModelAdapter implementation")
     parser.add_argument('--output_path', type=str, required=True,

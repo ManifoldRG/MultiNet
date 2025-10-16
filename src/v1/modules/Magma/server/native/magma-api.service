@@ -1,0 +1,23 @@
+[Unit]
+Description=Magma API Service
+After=network.target
+
+[Service]
+Type=simple
+# Replace USER with your username
+User=USER
+Group=USER
+# Replace path/to/Magma with the path to your Magma repository
+WorkingDirectory=%h/path/to/Magma
+Environment="HOME=%h"
+Environment="PATH=%h/miniconda3/bin:%h/anaconda3/bin:$PATH"
+# Make sure to use the same path here as in WorkingDirectory
+ExecStart=/bin/bash %h/path/to/Magma/server/native/run_magma_api.sh
+Restart=on-failure
+# Restart service after 10 seconds if service crashes
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

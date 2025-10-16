@@ -35,7 +35,12 @@ class OpenXDataset(Dataset):
                 elem['reward'] = None                
             concatenated_action_float = elem['action']
             float_action_tensors = []
+            # Store the original action dictionary if it's a dict, otherwise None
+            action_dict = None
             if isinstance(elem['action'], dict):
+                # Store the original action dictionary
+                action_dict = {key: tensor.numpy() for key, tensor in elem['action'].items()}
+                
                 elem['action'] = dict(sorted(elem['action'].items()))
                 #Input processing
                 for key, tensor in elem['action'].items():
@@ -115,13 +120,20 @@ class OpenXDataset(Dataset):
                 text_answer = elem['observation']['raw_text_answer'].numpy().decode('utf-8')
 
             if self.dataset_name == "robot_vqa":
-                text_observation_multi_embodiment = f"Task and Context: {text_observation.split(' Q: ',1)[0].strip()}\n Question: {text_observation.split(' Q: ',1)[1].strip()}"
+                parts = text_observation.split('Q:', 1)
+                if len(parts) == 1:
+                    text_observation_multi_embodiment = text_observation
+                elif len(parts) == 2 and text_observation.startswith("Q:"):
+                    text_observation_multi_embodiment = f"Question: {parts[1].strip()}"
+                else:
+                    text_observation_multi_embodiment = f"Task and Context: {parts[0].strip()}\n Question: {parts[1].strip()}"
 
             # Extract relevant features from the example
             step_data = {
                 'text_observation': text_observation if self.dataset_name != "robot_vqa" else text_observation_multi_embodiment,
                 'image_observation': image_observation,
                 'action': concatenated_action_float,
+                'action_dict': action_dict,
                 'reward': elem['reward'].numpy() if self.dataset_name != "robot_vqa" else elem['reward'],
                 'is_last': elem['is_last'].numpy(),
                 'text_answer': text_answer
@@ -131,6 +143,8 @@ class OpenXDataset(Dataset):
         return current_shard
 
     def _populate_action_stats(self):
+        all_actions = []  # Store all actions for quantile calculation
+        
         for shard in self.tfds_shards:
             dataset = tf.data.Dataset.load(shard)
 
@@ -170,8 +184,16 @@ class OpenXDataset(Dataset):
                 self._action_stats['min'] = np.minimum(self._action_stats['min'], concatenated_action_float)
                 self._action_stats['max'] = np.maximum(self._action_stats['max'], concatenated_action_float)
                 self._action_stats['sum'] += concatenated_action_float
-                self._action_stats['sum_of_squares'] += concatenated_action_float ** 2
                 self._action_stats['count'] += 1
+                
+                # Store action for quantile calculation
+                all_actions.append(concatenated_action_float)
+        
+        # Calculate quantiles if we have actions
+        if all_actions:
+            stacked_actions = np.stack(all_actions)
+            self._action_stats['q01'] = np.quantile(stacked_actions, 0.01, axis=0)
+            self._action_stats['q99'] = np.quantile(stacked_actions, 0.99, axis=0)
     
     @property
     def action_stats(self):
@@ -189,25 +211,24 @@ class OpenXDataset(Dataset):
                     'count': 0,
                     'size': (0,)
                 }
-            
+
             self._action_stats['mean'] = self._action_stats['sum'] / self._action_stats['count']
             # Compute variance using E[X²] - E[X]²
             mean_of_squares = self._action_stats['sum_of_squares'] / self._action_stats['count']
             variance = mean_of_squares - (self._action_stats['mean'] ** 2)
             self._action_stats['std'] = np.sqrt(variance + 1e-8)
             self._action_stats['size'] = self.action_tensor_size
-            
+
             # Convert numpy arrays to lists for JSON serialization
-            for key in ['min', 'max', 'sum', 'mean', 'std']:
+            for key in ['min', 'max', 'sum', 'mean', 'std', 'q01', 'q99']:
                 if key in self._action_stats and hasattr(self._action_stats[key], 'tolist'):
                     self._action_stats[key] = self._action_stats[key].tolist()
-            
+
             # Convert action_tensor_size tuple to list for JSON compatibility
             if hasattr(self.action_tensor_size, '__iter__'):
                 self._action_stats['size'] = list(self.action_tensor_size)
             else:
                 self._action_stats['size'] = [self.action_tensor_size] if self.action_tensor_size is not None else []
-                    
         return self._action_stats
         
 
@@ -254,6 +275,7 @@ class OpenXDataset(Dataset):
         image_observation = []
         etc_observations = {}
         concatenated_action_float = []
+        action_dict = []
         reward = []
         is_last = []
         text_answer = []
@@ -265,6 +287,8 @@ class OpenXDataset(Dataset):
             timestep.pop('image_observation')
             concatenated_action_float.append(timestep['action'])
             timestep.pop('action')
+            action_dict.append(timestep['action_dict'])
+            timestep.pop('action_dict')
             reward.append(timestep['reward'])
             timestep.pop('reward')
             is_last.append(timestep['is_last'])
@@ -281,6 +305,7 @@ class OpenXDataset(Dataset):
             'text_observation': text_observation,
             'image_observation': image_observation,
             'action': concatenated_action_float,
+            'action_dict': action_dict,
             'reward': reward,
             'is_last': is_last,
             'text_answer': text_answer

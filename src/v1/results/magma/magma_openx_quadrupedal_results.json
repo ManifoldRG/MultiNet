@@ -1,0 +1,20 @@
+{
+    "openx_quadrupedal": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 134341.37676080765,
+        "total_dataset_amae": 15118.610942254943,
+        "num_timesteps": 2264,
+        "avg_dataset_amse": 59.33806394028606,
+        "avg_dataset_amae": 6.6778316882749404,
+        "normalized_amse": NaN,
+        "normalized_amae": NaN,
+        "normalized_quantile_filtered_amae": NaN,
+        "max_relative_mae": 1.0,
+        "proportion_beyond_threshold_mae": 0.0,
+        "eval_time": 9689.789526985001,
+        "total_invalid_preds": 2264,
+        "invalid_predictions_percentage": 100.0,
+        "total_batches": 567,
+        "total_timesteps": 2264
+    }
+}

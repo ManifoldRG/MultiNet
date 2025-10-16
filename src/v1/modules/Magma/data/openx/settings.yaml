@@ -1,0 +1,59 @@
+# Define the path
+dataset_folder: "epic_kitchens"
+target_folder: "epic_kitchens"
+video_folder: "release_2022"
+annotation_file: "release_2022/epic-kitchens-100-annotations/EPIC_100_train.csv"
+trace_folder: "visual_trace"
+sft_folder: "sft_data"
+
+# tracker settings
+tracker:
+  ckpt_path: "./checkpoints/scaled_offline.pth"
+  grid_size: 16
+  grid_query_frame: 0
+  backward_tracking: True
+  save_dir: "./"
+
+# sft settings
+trace_processor:
+  num_clusters: 5
+  postive_factor_threshold: 0.3  # this will times the max value of the trace to get the threshold
+  postive_speed_threshold: 1 # this is the speed threshold for the positive trace
+  spatial_quant_size: 256  
+trace_planner:
+  step_rightmost_ratio: 0.7 # the ratio of the rightmost point to set as the start frame
+gpt4o:
+  description_prompt: |
+    You are an excellent visual analysist and required to tell students what you see in the image. 
+    You are given an image and a short description of the task.
+    You need to focus on the contents that are related to the task, and give a short instruction to the user about "What you are seeing?". 
+  instruction_prompt: |
+    You are an excellent coach and required to teach students how to complete daily tasks. 
+    Given two images where the first image is the initial state and the second image as the final state of a sub-task.
+    You need to focus on the differences between two images, particularly the motions, movements and actions of humans and objects, and give a short instruction to the user about "What should I do next?", as if you only see the first image. 
+    Avoid listing the items, avoid repeating the task, and decribe the instruction very concisely. Explicitly mention the direction, orientation, and the relative position of the objects in the scene. 
+    # Good examples:
+      - 'Move your left hand away from the mold, releasing your grip on the left side.'.
+      - 'Tilt the pitcher downwards, directing the spout towards the center of the container to pour the blue liquid into it.'.
+      - "Tilt the bowl towards the rectangular container, allowing the blue liquid to flow into the container. Ensure the spout of the bowl is aligned with the container's opening for a smooth pour.".
+    # Bad examples: 
+      - 'To transition from the first image to the final image, follow these steps:\n\n1. **Position the container**: Ensure the rectangular container is placed securely on a flat surface.\n2. **Hold the pitcher**: Grasp the pitcher containing the blue liquid.\n3. **Align the pitcher**: Move the pitcher towards the container, positioning it so that the spout is over the container.\n4. **Pour the liquid**: Tilt the pitcher to pour the blue liquid into the container, ensuring the liquid flows smoothly from the spout into the container.\n\nThis will result in the blue liquid being transferred from the pitcher into the container.'.
+      - 'The images show a process of pouring a blue liquid into a rectangular container. Here’s what you should do next:\n\n1. **Maintain the pouring angle**: Keep the bowl tilted to ensure a steady flow of the blue liquid into the container.\n2. **Adjust the bowl position**: Slightly move the bowl towards the left side of the container to distribute the liquid evenly.\n\nThis will help in filling the container uniformly.'.
+      - 'The first four images are identical, and the final image shows a slight change. Here’s what you should do next:\n\nMove the spatula downwards and to the left, scraping the mayonnaise from the yellow bowl into the larger bowl.'
+      - "The images show a consistent action of pouring a blue liquid into a rectangular container. Since there is no visible change between the first four images, focus on the final image:\n\n- Slightly tilt the bowl further downwards to continue pouring the blue liquid into the container, ensuring the spout remains aligned with the container's opening."
+    Basically, avoid mention some opening words like "To transition from the first image to the final image, follow these steps:".
+  instruction_prompt_w_som: |
+    You are an excellent coach and required to teach students how to complete daily tasks. 
+    Given a sequence of images annotated with numeric marks, you need to give a short instruction to the user about "What you see?" and "What you should do next?", as if you only see the first image. 
+    When decribing "what you see", only look at the first image and describe the scene with the marks.
+    When describing "what you should do next", try the best to ground your descriptions on the marks in the two images. Focus on the differences between two images, particularly the motions, movements and actions of humans and objects labeled by the numeric marks, 
+    Avoid listing the items, avoid repeating the task, and decribe the instruction very concisely. Explicitly mention the direction, orientation, and the relative position of the objects in the scene. 
+    # Good examples:
+      - 'Move your left hand away from the mold, releasing your grip on the left side.'.
+      - 'Tilt the pitcher (marked 9) downwards, directing the spout (marked 11) towards the center of the container (marked 6) to pour the blue liquid (marked 8) into it.'.
+      - "Tilt the bowl (marked 4) towards the rectangular container (marked 2), allowing the blue liquid to flow into the container. Ensure the spout of the bowl is aligned with the container's opening for a smooth pour.".
+    # Bad examples: 
+      - 'To transition from the first image to the final image, follow these steps:\n\n1. **Position the container**: Ensure the rectangular container (marked 6) is placed securely on a flat surface.\n2. **Hold the pitcher**: Grasp the pitcher (marked 8) containing the blue liquid.\n3. **Align the pitcher**: Move the pitcher towards the container, positioning it so that the spout (marked 11) is over the container.\n4. **Pour the liquid**: Tilt the pitcher to pour the blue liquid into the container, ensuring the liquid flows smoothly from the spout into the container.\n\nThis will result in the blue liquid being transferred from the pitcher into the container.'.
+      - 'The images show a process of pouring a blue liquid into a rectangular container. Here’s what you should do next:\n\n1. **Maintain the pouring angle**: Keep the bowl (marked 2) tilted to ensure a steady flow of the blue liquid (marked 5) into the container.\n2. **Adjust the bowl position**: Slightly move the bowl towards the left side of the container (towards mark 12) to distribute the liquid evenly.\n\nThis will help in filling the container uniformly.'.
+      - 'The first four images are identical, and the final image shows a slight change. Here’s what you should do next:\n\nMove the spatula (marked 10) downwards and to the left, scraping the mayonnaise from the yellow bowl (marked 3) into the larger bowl (marked 13).'
+    Basically, avoid mention some opening words like "To transition from the first image to the final image, follow these steps:".
