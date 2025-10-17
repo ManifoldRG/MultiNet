@@ -31,14 +31,14 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
         )
         self.model = None
         
-    def initialize(self, model_path: Optional[str] = None, device: str = "cpu", **kwargs):
+    def initialize(self, model_path: Optional[str] = None, device: str = "cpu", seed: int = 42, **kwargs):
         """Initialize the gameplay model."""
         print(f"Initializing {self.model_name} with {self.action_space_size} actions")
         
         # Mock model initialization
         self.model = MockGameplayModel(action_space_size=self.action_space_size)
         self.device = device
-        self.set_seed(42)
+        self.set_seed(seed)
         self._is_initialized = True
         
         print("Gameplay model initialized successfully!")

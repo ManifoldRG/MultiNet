@@ -1,4 +1,4 @@
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, ConcatDataset
 from PIL import Image
 from typing import List, Dict, Any, Optional
 from collections import defaultdict
@@ -224,6 +224,34 @@ def get_odinw_dataloader(dataset_dir: str,
     )
     return dataset, dataloader
 
+def get_odinw_multi_dataloader(dataset_dirs: List[str], 
+                               batch_size: int, 
+                               num_workers: int = 0, 
+                               transform=None,
+                               shuffle: bool = False) -> tuple:
+    """
+    Create ODinW classification dataloader for multiple sub-datasets.
+    
+    Args:
+        dataset_dirs: List of paths to specific ODinW sub-dataset directories
+        batch_size: Batch size for the dataloader
+        num_workers: Number of worker processes for data loading
+        transform: Optional image transforms to apply
+        shuffle: Whether to shuffle the data
+    
+    Returns:
+        tuple: (dataset, dataloader) similar to other implementations
+    """
+    datasets = [ODinWDataset(dataset_dir, transform=transform) for dataset_dir in dataset_dirs]
+    dataloaders = [DataLoader(
+        ds,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        collate_fn=custom_collate
+    ) for ds in datasets]
+    return datasets, dataloaders
+        
 
 def get_odinw_classification_info(dataset_dir: str) -> Dict[str, Any]:
     """
