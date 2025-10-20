@@ -136,7 +136,7 @@ class ModelAdapter(ABC):
         """
         pass
     
-    def preprocess_observation(
+    def _preprocess_observation(
         self,
         observation: Dict[str, Any],
         dataset_name: str,
@@ -158,7 +158,7 @@ class ModelAdapter(ABC):
         """
         return observation
     
-    def postprocess_action(
+    def _postprocess_action(
         self,
         action: Union[np.ndarray, List[float], int, str],
         dataset_name: str,
