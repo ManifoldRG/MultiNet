@@ -10,20 +10,19 @@ from src.eval_utils import (
 def _validate_output(output: Any, shape: tuple[int]) -> bool:
     """Validate that output is a valid action vector."""
 
-    # TODO: correctly handle other types of errors, breaking this out into different functions for 
-    # different models if necessary
     if output is None or not isinstance(output, (list, tuple, np.ndarray)) or len(output) != shape[0]:
         return False
 
-    # check each element of output is a float or float-like
-    # TODO: do we allow outputs that are partially correctly formatted?
+    # TODO: Allow outputs that are partially correctly formatted,
+    # and give max penalty (max - min of action stats) for invalid dimensions
     for item in output:
-        if not isinstance(item, (float, int, np.floating, int, np.integer)):
+        if not isinstance(item, (float, int, np.floating, np.integer)):
             return False
         
-        # TODO: do we allow nan/inf?
+        # Disallow nan/inf
         if np.isnan(item) or np.isinf(item):
             return False
+    
     return True
 
 class RoboticsMetricsCalculator:
