@@ -231,6 +231,9 @@ def min_max_normalize(values: list[float]) -> list[float]:
 
 def calculate_mean(values: list[float]) -> float:
     """Calculate average of a list of values"""
+    # Handle case where values is actually np.nan from min_max_normalize
+    if np.isscalar(values) and np.isnan(values):
+        return np.nan
     if len(values) == 0:
         raise ValueError("No values collected")
     return np.mean(values)

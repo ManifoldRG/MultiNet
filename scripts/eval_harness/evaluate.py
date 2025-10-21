@@ -175,6 +175,7 @@ def get_metrics_calculator(config: EvaluationConfig, dataset: torch.utils.data.D
     else:
         raise ValueError(f"Invalid dataset name: {config.dataset}")
     return metrics_calculator
+    
 def get_ground_truth_key(config: EvaluationConfig) -> str:
     """
     Get the correct ground truth key for each dataset.
