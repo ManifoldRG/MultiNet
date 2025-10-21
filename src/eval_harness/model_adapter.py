@@ -73,6 +73,7 @@ class ModelAdapter(ABC):
         observation: Dict[str, Any],
         instruction: Optional[str] = None,
         dataset_name: Optional[str] = None,
+        history: Optional[List[Dict[str, str]]] = None,
         **kwargs
     ) -> Union[np.ndarray, List[float], int, str]:
         """
@@ -92,6 +93,9 @@ class ModelAdapter(ABC):
                 - 'video_frames': List of video frames
             instruction: Task instruction string (for VLAs and instruction-following tasks)
             dataset_name: Name of the dataset (for dataset-specific processing)
+            history: Optional conversation history for multi-turn tasks. Format:
+                [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}, ...]
+                The model adapter should format this history appropriately for the model.
             **kwargs: Additional prediction parameters
             
         Returns:
@@ -116,6 +120,7 @@ class ModelAdapter(ABC):
         observations: List[Dict[str, Any]],
         instructions: Optional[List[str]] = None,
         dataset_name: Optional[str] = None,
+        histories: Optional[List[List[Dict[str, str]]]] = None,
         **kwargs
     ) -> List[Union[np.ndarray, List[float], int, str]]:
         """
@@ -129,6 +134,9 @@ class ModelAdapter(ABC):
             observations: List of observation dictionaries
             instructions: Optional list of task instruction strings
             dataset_name: Name of the dataset
+            histories: Optional list of conversation histories for multi-turn tasks.
+                Each history is a list of message dicts: [{"role": "user", "content": "..."}, ...]
+                The model adapter should format each history appropriately for the model.
             **kwargs: Additional prediction parameters
             
         Returns:
@@ -264,6 +272,7 @@ class MultipleChoiceAdapter(ModelAdapter):
         observation: Dict[str, Any],
         instruction: Optional[str] = None,
         dataset_name: Optional[str] = None,
+        history: Optional[List[Dict[str, str]]] = None,
         return_probabilities: bool = False,
         **kwargs
     ) -> Union[int, Dict[str, Any]]:
@@ -274,6 +283,7 @@ class MultipleChoiceAdapter(ModelAdapter):
             observation: Observation containing 'question', 'choices', and optionally 'image'
             instruction: Optional task instruction
             dataset_name: Name of the dataset
+            history: Optional conversation history (typically not used for MCQ tasks)
             return_probabilities: Whether to return choice probabilities
             **kwargs: Additional prediction parameters
             
@@ -311,6 +321,7 @@ class TextGenerationAdapter(ModelAdapter):
         observation: Dict[str, Any],
         instruction: Optional[str] = None,
         dataset_name: Optional[str] = None,
+        history: Optional[List[Dict[str, str]]] = None,
         **kwargs
     ) -> str:
         """
@@ -320,6 +331,7 @@ class TextGenerationAdapter(ModelAdapter):
             observation: Observation containing 'image' and 'question' or prompt
             instruction: Optional task instruction
             dataset_name: Name of the dataset
+            history: Optional conversation history (typically not used for single-turn VQA)
             **kwargs: Additional prediction parameters
             
         Returns:
@@ -354,6 +366,7 @@ class GroundingAdapter(ModelAdapter):
         observation: Dict[str, Any],
         instruction: Optional[str] = None,
         dataset_name: Optional[str] = None,
+        history: Optional[List[Dict[str, str]]] = None,
         **kwargs
     ) -> Union[int, List[int], Dict[str, int]]:
         """
@@ -367,6 +380,7 @@ class GroundingAdapter(ModelAdapter):
                 - 'entities': List of entity mentions
             instruction: Optional task instruction
             dataset_name: Name of the dataset
+            history: Optional conversation history (typically not used for grounding tasks)
             **kwargs: Additional prediction parameters
             
         Returns:
@@ -403,6 +417,7 @@ class DiscreteActionAdapter(ModelAdapter):
         observation: Dict[str, Any],
         instruction: Optional[str] = None,
         dataset_name: Optional[str] = None,
+        history: Optional[List[Dict[str, str]]] = None,
         return_probabilities: bool = False,
         **kwargs
     ) -> Union[int, Dict[str, Any]]:
@@ -413,6 +428,7 @@ class DiscreteActionAdapter(ModelAdapter):
             observation: Observation containing 'image' and optional 'state'
             instruction: Optional task instruction
             dataset_name: Name of the dataset
+            history: Optional conversation history (typically not used for action prediction)
             return_probabilities: Whether to return action probabilities
             **kwargs: Additional prediction parameters
             
@@ -452,6 +468,7 @@ class ContinuousActionAdapter(ModelAdapter):
         observation: Dict[str, Any],
         instruction: Optional[str] = None,
         dataset_name: Optional[str] = None,
+        history: Optional[List[Dict[str, str]]] = None,
         **kwargs
     ) -> np.ndarray:
         """
@@ -461,6 +478,7 @@ class ContinuousActionAdapter(ModelAdapter):
             observation: Observation containing images, state, etc.
             instruction: Optional task instruction
             dataset_name: Name of the dataset
+            history: Optional conversation history (typically not used for action prediction)
             **kwargs: Additional prediction parameters
             
         Returns:
@@ -481,6 +499,12 @@ class ToolUseAdapter(ModelAdapter):
     - Memory and dynamic decision-making in multi-step scenarios
     - Long-horizon reasoning and stateful agentic behavior
     - Ability to abstain when appropriate
+    
+    Multi-turn History:
+    - For multi-turn benchmarks, the evaluation harness manages conversation history
+    - The adapter receives the full conversation history via the 'history' parameter
+    - The adapter should format the history appropriately for the model (e.g., apply chat template)
+    - The adapter is stateless: it receives full context and returns a single response
     """
     
     def __init__(
@@ -500,23 +524,21 @@ class ToolUseAdapter(ModelAdapter):
         observation: Dict[str, Any],
         instruction: Optional[str] = None,
         dataset_name: Optional[str] = None,
+        history: Optional[List[Dict[str, str]]] = None,
         **kwargs
-    ) -> Union[str, Dict[str, Any], None]:
+    ) -> Dict[str, Any]:
         """
         Predict function calls or tool invocations.
 
         Args:
-            observation: Observation containing:
-                - 'available_functions': List of available functions/tools
-                - 'state': Current environment state (for stateful scenarios)
-            instruction: User query or instruction requiring tool use
+            observation: Observation containing available functions and state
+            instruction: User query requiring tool use
             dataset_name: Name of the dataset
+            history: Optional conversation history for multi-turn scenarios
             **kwargs: Additional prediction parameters
             
         Returns:
-            Function call response, which can be:
-            - Function call string (e.g., JSON with function name and arguments)
-            - Dictionary with function call details
+            Dictionary with "raw_output" and "extracted_calls" keys
         """
         pass
     
