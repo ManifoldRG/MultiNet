@@ -171,7 +171,7 @@ def get_metrics_calculator(config: EvaluationConfig, dataset: torch.utils.data.D
         num_classes = dataset.get_num_classes()
         metrics_calculator = ClassificationMetricsCalculator(num_classes=num_classes)
     elif config.dataset == 'bfcl':
-        metrics_calculator = VQAMetricsCalculator()
+        metrics_calculator = BFCLMetricsCalculator()
     else:
         raise ValueError(f"Invalid dataset name: {config.dataset}")
     return metrics_calculator
@@ -288,10 +288,156 @@ def save_results(metrics: Dict[str, Any], config: EvaluationConfig, sub_dataset_
     
     print(f"Metrics saved to: {results_file}")
 
+def is_multiturn_dataset(dataset_name: str) -> bool:
+    """
+    Determine if a dataset requires multi-turn evaluation with conversation history.
+    
+    Multi-turn datasets require the harness to maintain conversation state across turns
+    and pass history to the model adapter.
+    
+    Args:
+        dataset_name: Name of the dataset
+        
+    Returns:
+        True if dataset requires multi-turn evaluation, False otherwise
+    """
+    multiturn_datasets = ['bfcl']  # Add 'osworld' and others as they are implemented
+    return dataset_name in multiturn_datasets
+
 def bordered_print(text: str):
     print(f"\n{'='*60}")
     print(text)
     print(f"{'='*60}")
+
+def profile_and_save_results_multiturn(
+    model_adapter: ModelAdapter,
+    dataset: torch.utils.data.Dataset,
+    data_loader: torch.utils.data.DataLoader,
+    config: EvaluationConfig,
+    sub_dataset_name: Optional[str] = None
+):
+    """Evaluation function for multi-turn datasets with conversation history."""
+    all_predictions = []
+    all_ground_truths = []
+    
+    print(f"Running multi-turn evaluation for {config.dataset}")
+    
+    for batch_idx, batch in enumerate(data_loader):
+        batch_size = len(batch['conversation_id'])
+        
+        max_turns = max(len(turns) for turns in batch['turns'])
+        
+        batch_histories = [[] for _ in range(batch_size)]
+        batch_predictions = [[] for _ in range(batch_size)]
+        batch_ground_truths = [[] for _ in range(batch_size)]
+        
+        for turn_idx in range(max_turns):
+            turn_observations = []
+            turn_instructions = []
+            turn_histories = []
+            active_conv_indices = []
+            
+            for conv_idx in range(batch_size):
+                if turn_idx < len(batch['turns'][conv_idx]):
+                    active_conv_indices.append(conv_idx)
+                    
+                    user_messages_for_turn = batch['turns'][conv_idx][turn_idx]
+                    for msg in user_messages_for_turn:
+                        batch_histories[conv_idx].append(msg)
+                    
+                    observation = {
+                        'conversation_id': batch['conversation_id'][conv_idx],
+                        'turn_index': turn_idx,
+                        'initial_config': batch['initial_config'][conv_idx],
+                        'involved_classes': batch['involved_classes'][conv_idx],
+                        'path': batch['path'][conv_idx],
+                    }
+                    
+                    current_instruction = user_messages_for_turn[-1].get('content', '') if user_messages_for_turn else ''
+                    
+                    turn_observations.append(observation)
+                    turn_instructions.append(current_instruction)
+                    turn_histories.append(batch_histories[conv_idx].copy())
+            
+            if not turn_observations:
+                continue
+            
+            responses = model_adapter.batch_predict_actions(
+                observations=turn_observations,
+                instructions=turn_instructions,
+                dataset_name=config.dataset,
+                histories=turn_histories
+            )
+            
+            for i, conv_idx in enumerate(active_conv_indices):
+                response = responses[i]
+                
+                if response and isinstance(response, dict):
+                    raw_output = response.get('raw_output', '')
+                    
+                    if raw_output:
+                        batch_histories[conv_idx].append({"role": "assistant", "content": raw_output})
+                    
+                    batch_predictions[conv_idx].append(response)
+                else:
+                    response_str = str(response) if response else ''
+                    if response_str:
+                        batch_histories[conv_idx].append({"role": "assistant", "content": response_str})
+                    
+                    batch_predictions[conv_idx].append({
+                        'raw_output': response_str,
+                        'extracted_calls': []
+                    })
+                
+                batch_ground_truths[conv_idx].append(
+                    batch['ground_truth_functions'][conv_idx][turn_idx]
+                )
+        
+        for conv_idx in range(batch_size):
+            all_predictions.append({
+                'conversation_id': batch['conversation_id'][conv_idx],
+                'predictions': batch_predictions[conv_idx],
+                'num_turns': len(batch_predictions[conv_idx])
+            })
+            all_ground_truths.append({
+                'conversation_id': batch['conversation_id'][conv_idx],
+                'ground_truth': batch_ground_truths[conv_idx],
+                'num_turns': len(batch_ground_truths[conv_idx])
+            })
+        
+        if (batch_idx + 1) % 10 == 0:
+            print(f"Processed {batch_idx + 1} batches ({len(all_predictions)} conversations)")
+    
+    print(f"Completed evaluation of {len(all_predictions)} conversations")
+    
+    # Save predictions
+    save_predictions(all_predictions, config, sub_dataset_name=sub_dataset_name)
+    
+    # Calculate metrics using the appropriate metrics calculator
+    metrics_calculator = get_metrics_calculator(config, dataset)
+    
+    # BFCLMetricsCalculator expects structured multi-turn data
+    # Other metrics calculators may need flattened data
+    if isinstance(metrics_calculator, BFCLMetricsCalculator):
+        # Pass structured multi-turn data directly
+        metrics = metrics_calculator.calculate_metrics(all_predictions, all_ground_truths)
+    else:
+        # Fallback: flatten predictions and ground truths for standard metric calculators
+        flattened_predictions = []
+        flattened_ground_truths = []
+        for pred, gt in zip(all_predictions, all_ground_truths):
+            flattened_predictions.extend(pred['predictions'])
+            flattened_ground_truths.extend(gt['ground_truth'])
+        
+        metrics = metrics_calculator.calculate_metrics(flattened_predictions, flattened_ground_truths)
+    
+    # Add multi-turn specific metadata
+    metrics['evaluation_mode'] = 'multi_turn'
+    metrics['total_conversations'] = len(all_predictions)
+    metrics['total_turns'] = sum(p['num_turns'] for p in all_predictions)
+    metrics['avg_turns_per_conversation'] = metrics['total_turns'] / metrics['total_conversations'] if metrics['total_conversations'] > 0 else 0
+    
+    save_results(metrics, config, sub_dataset_name=sub_dataset_name)
 
 def profile_and_save_results(model_adapter: ModelAdapter,
                              dataset: torch.utils.data.Dataset,
@@ -364,16 +510,26 @@ def main():
     
     bordered_print("RUNNING EVALUATION")
 
+    # Determine if this is a multi-turn dataset
+    is_multiturn = is_multiturn_dataset(config.dataset)
+    
+    if is_multiturn:
+        print(f"Detected multi-turn dataset: {config.dataset}")
+        print("Using conversation history management")
+        evaluation_function = profile_and_save_results_multiturn
+    else:
+        evaluation_function = profile_and_save_results
+
     if len(datasets) > 1:
         for dataset, data_loader in zip(datasets, data_loaders):
             # Get sub-dataset name for multi-dataset evaluation (like ODinW)
             sub_dataset_name = dataset.get_dataset_name() if hasattr(dataset, 'get_dataset_name') else None
             print(f"Running evaluation for {config.dataset} {sub_dataset_name if sub_dataset_name else ''}")
-            profile_and_save_results(model_adapter, dataset, data_loader, config, sub_dataset_name=sub_dataset_name)
+            evaluation_function(model_adapter, dataset, data_loader, config, sub_dataset_name=sub_dataset_name)
             
     else:
         print(f"Running evaluation for {config.dataset}")
-        profile_and_save_results(model_adapter, datasets[0], data_loaders[0], config)
+        evaluation_function(model_adapter, datasets[0], data_loaders[0], config)
         
 
     bordered_print("EVALUATION COMPLETE!")
