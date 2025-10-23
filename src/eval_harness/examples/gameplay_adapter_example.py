@@ -34,7 +34,7 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
         self.set_seed(seed)
         self._is_initialized = True
         
-        print("Gameplay model initialized successfully!")
+        print("Gameplay model initialized")
         
     def predict_action(
         self,
@@ -43,7 +43,7 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
         dataset_name: Optional[str] = None,
         return_probabilities: bool = True,
         **kwargs
-    ) -> Union[int, Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """Predict discrete action for gameplay."""
         
         if not self._is_initialized:
@@ -59,11 +59,11 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
         processed_obs = self.preprocess_observation(observation, dataset_name or "overcooked")
         
         if dataset_name == "overcooked" and instruction:
-            action_idx, probabilities = self.model.predict_with_instruction(
+            raw_output, action_idx, probabilities = self.model.predict_with_instruction(
                 processed_obs['image_observation'], instruction
             )
         else:
-            action_idx, probabilities = self.model.predict_action(
+            raw_output, action_idx, probabilities = self.model.predict_action(
                 processed_obs['image_observation']
             )
         
@@ -71,14 +71,15 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
             print(f"Warning: Model predicted action {action_idx} >= {self.action_space_size}, clipping")
             action_idx = self.action_space_size - 1
         
-        if return_probabilities:
-            return {
-                'action': action_idx,
-                'probabilities': probabilities,
-                'action_space_size': self.action_space_size
-            }
+        result = {
+            "raw_output": raw_output,
+            "extracted_outputs": action_idx
+        }
         
-        return action_idx
+        if return_probabilities:
+            result["probabilities"] = probabilities
+        
+        return result
         
     def batch_predict_actions(
         self,
@@ -87,7 +88,7 @@ class SimpleGameplayAdapter(DiscreteActionAdapter):
         dataset_name: Optional[str] = None,
         return_probabilities: bool = True,
         **kwargs
-    ) -> List[Union[int, Dict[str, Any]]]:
+    ) -> List[Dict[str, Any]]:
         """Predict actions for a batch of gameplay observations."""
         
         if instructions is None:
@@ -142,7 +143,7 @@ class MockGameplayModel:
         self, 
         image: Image.Image, 
         state: Optional[np.ndarray] = None
-    ) -> tuple[int, np.ndarray]:
+    ) -> tuple[str, int, np.ndarray]:
         """Mock action prediction."""
         
         logits = np.random.uniform(-1, 1, self.action_space_size)
@@ -151,15 +152,17 @@ class MockGameplayModel:
             
         probabilities = np.exp(logits) / np.sum(np.exp(logits))
         action_idx = np.argmax(probabilities)
+        
+        raw_output = f"Action {action_idx} selected with probability {probabilities[action_idx]:.3f}"
 
-        return action_idx, probabilities
+        return raw_output, action_idx, probabilities
         
     def predict_with_instruction(
         self, 
         image: Image.Image, 
         instruction: str,
         state: Optional[np.ndarray] = None
-    ) -> tuple[int, np.ndarray]:
+    ) -> tuple[str, int, np.ndarray]:
         """Mock instruction-following prediction."""
         
         logits = np.random.uniform(-1, 1, self.action_space_size)
@@ -174,8 +177,10 @@ class MockGameplayModel:
             
         probabilities = np.exp(logits) / np.sum(np.exp(logits))
         action_idx = np.argmax(probabilities)
+        
+        raw_output = f"Following instruction '{instruction}': Action {action_idx} selected"
 
-        return action_idx, probabilities
+        return raw_output, action_idx, probabilities
 
 
 def test_gameplay_adapter():

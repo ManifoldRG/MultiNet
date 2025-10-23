@@ -27,6 +27,44 @@ from src.data_utils import *
 from src.eval_harness.scoring import *
 
 
+def validate_structured_prediction(pred: Any, dataset_name: str) -> Dict[str, Any]:
+    """
+    Validate that a prediction has the correct structured format.
+    
+    Args:
+        pred: Prediction from model adapter
+        dataset_name: Name of the dataset
+        
+    Returns:
+        Validated prediction dictionary
+        
+    Raises:
+        ValueError: If prediction format is invalid
+    """
+    if not isinstance(pred, dict):
+        raise ValueError(
+            f"Expected prediction to be a dict with 'raw_output' and 'extracted_outputs', "
+            f"but got {type(pred).__name__}"
+        )
+    
+    if "raw_output" not in pred:
+        raise ValueError(
+            f"Prediction dict must contain 'raw_output' key. Got keys: {list(pred.keys())}"
+        )
+    
+    if "extracted_outputs" not in pred:
+        raise ValueError(
+            f"Prediction dict must contain 'extracted_outputs' key. Got keys: {list(pred.keys())}"
+        )
+    
+    if not isinstance(pred["raw_output"], str):
+        raise ValueError(
+            f"'raw_output' must be a string, got {type(pred['raw_output']).__name__}"
+        )
+    
+    return pred
+
+
 class EvaluationConfig:
     """Configuration class for evaluation parameters."""
     
@@ -343,21 +381,18 @@ def profile_and_save_results_multiturn(
                     active_conv_indices.append(conv_idx)
                     
                     user_messages_for_turn = batch['turns'][conv_idx][turn_idx]
-                    for msg in user_messages_for_turn:
-                        batch_histories[conv_idx].append(msg)
                     
+                    # Pass text_observation from batch['prompt'] as persistent context
                     observation = {
-                        'conversation_id': batch['conversation_id'][conv_idx],
-                        'turn_index': turn_idx,
-                        'initial_config': batch['initial_config'][conv_idx],
-                        'involved_classes': batch['involved_classes'][conv_idx],
-                        'path': batch['path'][conv_idx],
+                        'text_observation': batch['prompt'][conv_idx]  # Persistent context from dataloader
                     }
                     
+                    # Extract instruction from the last user message
                     current_instruction = user_messages_for_turn[-1].get('content', '') if user_messages_for_turn else ''
                     
                     turn_observations.append(observation)
                     turn_instructions.append(current_instruction)
+                    # Pass history WITHOUT current turn's user messages
                     turn_histories.append(batch_histories[conv_idx].copy())
             
             if not turn_observations:
@@ -370,12 +405,28 @@ def profile_and_save_results_multiturn(
                 histories=turn_histories
             )
             
+            # Validate responses have correct structured format
+            validated_responses = []
+            for response in responses:
+                try:
+                    validated_response = validate_structured_prediction(response, config.dataset)
+                    validated_responses.append(validated_response)
+                except ValueError as e:
+                    raise ValueError(
+                        f"Invalid prediction format from model adapter for dataset '{config.dataset}': {e}"
+                    )
+            
             for i, conv_idx in enumerate(active_conv_indices):
-                response = responses[i]
+                response = validated_responses[i]
+                
+                # Add user messages from current turn to history
+                user_messages_for_turn = batch['turns'][conv_idx][turn_idx]
+                batch_histories[conv_idx].extend(user_messages_for_turn)
                 
                 if response and isinstance(response, dict):
                     raw_output = response.get('raw_output', '')
                     
+                    # Add assistant response to history
                     if raw_output:
                         batch_histories[conv_idx].append({"role": "assistant", "content": raw_output})
                     
@@ -440,6 +491,96 @@ def profile_and_save_results_multiturn(
     
     save_results(metrics, config, sub_dataset_name=sub_dataset_name)
 
+def extract_observations_and_instructions(
+    batch: Dict[str, Any],
+    dataset_name: str
+) -> tuple:
+    """
+    Extract standardized observations and instructions from batch.
+    
+    Returns:
+        observations: List of dicts with 'text_observation' and/or 'image_observation', or None for PIQA
+        instructions: List of instruction strings, or None if dataset has no instructions
+    """
+    # Determine batch size from a known key
+    if 'openx' in dataset_name or dataset_name == 'robot_vqa' or dataset_name == 'overcooked_ai':
+        batch_size = len(batch['image_observation'])
+    elif dataset_name == 'piqa':
+        batch_size = len(batch['question'])
+    elif dataset_name == 'sqa3d':
+        batch_size = len(batch['scene_image'])
+    elif dataset_name == 'odinw':
+        batch_size = len(batch['image'])
+    else:
+        raise ValueError(f"Unknown dataset: {dataset_name}")
+    
+    observations = []
+    instructions = []
+    
+    if 'openx' in dataset_name:
+        # OpenX: instruction is in text_observation, observation only has image
+        for i in range(batch_size):
+            observations.append({
+                'image_observation': batch['image_observation'][i]
+            })
+            instructions.append(batch['text_observation'][i])
+    
+    elif dataset_name == 'robot_vqa':
+        # Robot VQA: instruction is the question, observation only has image
+        for i in range(batch_size):
+            observations.append({
+                'image_observation': batch['image_observation'][i]
+            })
+            instructions.append(batch['text_observation'][i])
+    
+    elif dataset_name == 'piqa':
+        # PIQA: instruction is the question, no observation (text-only)
+        # Observation is None for pure text tasks
+        for i in range(batch_size):
+            observations.append(None)
+            instructions.append(batch['question'][i])
+    
+    elif dataset_name == 'sqa3d':
+        # SQA3D: instruction is the question, observation only has image
+        for i in range(batch_size):
+            observations.append({
+                'image_observation': batch['scene_image'][i]
+            })
+            instructions.append(batch['question'][i])
+    
+    elif dataset_name == 'odinw':
+        # ODinW: instruction is the question, observation only has image
+        for i in range(batch_size):
+            observations.append({
+                'image_observation': batch['image'][i]
+            })
+            instructions.append(batch['question'][i])
+    
+    elif dataset_name == 'overcooked_ai':
+        # Overcooked: observation has layout + time info, no instruction yet
+        # TODO: Add action space as instruction in the future
+        for i in range(batch_size):
+            # Format text observation with time information
+            text_obs = batch['text_observation'][i]
+            time_left = batch['time_left'][i]
+            time_elapsed = batch['time_elapsed'][i]
+            
+            # Combine into single text observation
+            combined_text = f"Layout: {text_obs}\nTime left: {time_left:.1f}s\nTime elapsed: {time_elapsed:.1f}s"
+            
+            observations.append({
+                'text_observation': combined_text,
+                'image_observation': batch['image_observation'][i]
+            })
+        # TODO: Add action space description as instruction
+        # For now, return None instead of list of Nones
+        instructions = None
+    
+    else:
+        raise ValueError(f"Unknown dataset: {dataset_name}")
+    
+    return observations, instructions
+
 def profile_and_save_results(model_adapter: ModelAdapter,
                              dataset: torch.utils.data.Dataset,
                              data_loader: torch.utils.data.DataLoader, 
@@ -448,10 +589,32 @@ def profile_and_save_results(model_adapter: ModelAdapter,
     predictions = []
     ground_truth_actions = []
     for batch in data_loader:
-        batch_predictions = model_adapter.batch_predict_actions(batch)
-        predictions.extend(batch_predictions)
+        # Extract standardized observations and instructions
+        observations, instructions = extract_observations_and_instructions(
+            batch, config.dataset
+        )
         
+        # Call batch_predict_actions with proper signature
+        batch_predictions = model_adapter.batch_predict_actions(
+            observations=observations,
+            instructions=instructions,
+            dataset_name=config.dataset
+        )
+        
+        # Validate predictions have correct structured format
+        validated_predictions = []
+        for pred in batch_predictions:
+            try:
+                validated_pred = validate_structured_prediction(pred, config.dataset)
+                validated_predictions.append(validated_pred)
+            except ValueError as e:
+                raise ValueError(
+                    f"Invalid prediction format from model adapter for dataset '{config.dataset}': {e}"
+                )
+        
+        predictions.extend(validated_predictions)
         ground_truth_actions.extend(batch[get_ground_truth_key(config)])
+        
     save_predictions(predictions, config, sub_dataset_name=sub_dataset_name)
 
     metrics_calculator = get_metrics_calculator(config, dataset)

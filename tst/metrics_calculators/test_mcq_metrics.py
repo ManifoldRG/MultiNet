@@ -8,69 +8,46 @@ import pytest
 
 from src.eval_harness.scoring.mcq_metrics import (
     _validate_choice_output,
-    _extract_choice,
     MCQMetricsCalculator,
 )
 
 
 def test_validate_choice_output():
-    """Test choice validation for different input types."""
-    # Valid integer choices
+    """Test choice validation - adapter should have already extracted to int."""
+    # Valid integer choices (adapter already extracted)
     assert _validate_choice_output(0, 2)
     assert _validate_choice_output(1, 2)
     assert not _validate_choice_output(2, 2)  # Out of range
-    assert not _validate_choice_output(-1, 2)  # Out of range
+    assert not _validate_choice_output(-1, 2)  # Adapter returns -1 for invalid
     
-    # Valid string choices
-    assert _validate_choice_output("0", 2)
-    assert _validate_choice_output("1", 2)
-    assert _validate_choice_output("choice 0", 2)
-    assert _validate_choice_output("answer: 1", 2)
-    assert not _validate_choice_output("2", 2)  # Out of range
-    assert not _validate_choice_output("invalid", 2)  # No numbers
+    # Adapter should return int, not string (these should fail validation)
+    assert not _validate_choice_output("0", 2)
+    assert not _validate_choice_output("1", 2)
+    assert not _validate_choice_output("choice 0", 2)
+    assert not _validate_choice_output("answer: 1", 2)
     
-    # Valid float choices
-    assert _validate_choice_output(0.0, 2)
-    assert _validate_choice_output(1.0, 2)
-    assert _validate_choice_output(0.7, 2)  # Rounds to 1
-    assert not _validate_choice_output(2.0, 2)  # Out of range
+    # Adapter should return int, not float (these should fail validation)
+    assert not _validate_choice_output(0.0, 2)
+    assert not _validate_choice_output(1.0, 2)
+    assert not _validate_choice_output(0.7, 2)
     
     # Invalid inputs
     assert not _validate_choice_output(None, 2)
     assert not _validate_choice_output("", 2)
-    assert not _validate_choice_output([0, 1], 2)  # List not supported
-
-
-def test_extract_choice():
-    """Test choice extraction from different input types."""
-    # Integer inputs
-    assert _extract_choice(0, 2) == 0
-    assert _extract_choice(1, 2) == 1
-    assert _extract_choice(2, 2) == -1  # Invalid
-    
-    # String inputs
-    assert _extract_choice("0", 2) == 0
-    assert _extract_choice("1", 2) == 1
-    assert _extract_choice("choice 0", 2) == 0
-    assert _extract_choice("answer: 1", 2) == 1
-    assert _extract_choice("invalid", 2) == -1
-    
-    # Float inputs
-    assert _extract_choice(0.0, 2) == 0
-    assert _extract_choice(1.0, 2) == 1
-    assert _extract_choice(0.7, 2) == 1  # Rounds to 1
-    assert _extract_choice(2.0, 2) == -1  # Invalid
-    
-    # Invalid inputs
-    assert _extract_choice(None, 2) == -1
-    assert _extract_choice("", 2) == -1
+    assert not _validate_choice_output([0, 1], 2)
 
 
 def test_mcq_metrics_calculator_perfect_predictions():
     """Test MCQ metrics calculator with perfect predictions."""
     calc = MCQMetricsCalculator(num_choices=2)
     
-    predictions = [0, 1, 0, 1, 0]
+    predictions = [
+        {"raw_output": "Choice 0", "extracted_outputs": 0},
+        {"raw_output": "Choice 1", "extracted_outputs": 1},
+        {"raw_output": "Choice 0", "extracted_outputs": 0},
+        {"raw_output": "Choice 1", "extracted_outputs": 1},
+        {"raw_output": "Choice 0", "extracted_outputs": 0},
+    ]
     ground_truth = [0, 1, 0, 1, 0]
     metrics = calc.calculate_metrics(predictions, ground_truth)
     
@@ -85,8 +62,14 @@ def test_mcq_metrics_calculator_with_invalid():
     """Test MCQ metrics with some invalid predictions."""
     calc = MCQMetricsCalculator(num_choices=2)
     
-    # 2 correct, 1 wrong, 2 invalid
-    predictions = [0, 1, "invalid", 0, 2]
+    # 2 correct, 1 wrong, 2 invalid (adapter returned -1 for invalid)
+    predictions = [
+        {"raw_output": "Choice 0", "extracted_outputs": 0},
+        {"raw_output": "Choice 1", "extracted_outputs": 1},
+        {"raw_output": "Invalid text", "extracted_outputs": -1},  # Adapter returned -1
+        {"raw_output": "Choice 0", "extracted_outputs": 0},
+        {"raw_output": "Choice 2 (out of range)", "extracted_outputs": -1},  # Adapter returned -1
+    ]
     ground_truth = [0, 1, 1, 1, 1]
     metrics = calc.calculate_metrics(predictions, ground_truth)
     
@@ -100,24 +83,38 @@ def test_mcq_metrics_calculator_with_invalid():
 
 
 def test_mcq_metrics_calculator_string_predictions():
-    """Test with string predictions."""
+    """Test with adapter that properly extracted strings to integers."""
     calc = MCQMetricsCalculator(num_choices=2)
     
-    predictions = ["0", "choice 1", "answer: 0", "1", "invalid text"]
+    # Adapter should have extracted these to integers
+    predictions = [
+        {"raw_output": "0", "extracted_outputs": 0},  # Adapter extracted
+        {"raw_output": "choice 1", "extracted_outputs": 1},  # Adapter extracted
+        {"raw_output": "answer: 0", "extracted_outputs": 0},  # Adapter extracted
+        {"raw_output": "1", "extracted_outputs": 1},  # Adapter extracted
+        {"raw_output": "invalid text", "extracted_outputs": -1},  # Adapter returned -1
+    ]
     ground_truth = [0, 1, 0, 1, 0]
     metrics = calc.calculate_metrics(predictions, ground_truth)
     
-    # 4 out of 5 correct
+    # 4 out of 5 correct (invalid is wrong)
     assert math.isclose(metrics['overall_accuracy'], 4/5)
     assert metrics['total_invalid_preds'] == 1
     assert metrics['valid_predictions'] == 4
 
 
 def test_mcq_metrics_calculator_all_invalid():
-    """Test edge case with all invalid predictions."""
+    """Test edge case with all invalid predictions (adapter returned -1)."""
     calc = MCQMetricsCalculator(num_choices=2)
     
-    predictions = ["invalid", None, "bad", 2, -1]
+    # All predictions are invalid - adapter returned -1 for all
+    predictions = [
+        {"raw_output": "invalid", "extracted_outputs": -1},
+        {"raw_output": "None", "extracted_outputs": -1},
+        {"raw_output": "bad", "extracted_outputs": -1},
+        {"raw_output": "2 (out of range)", "extracted_outputs": -1},
+        {"raw_output": "-5 (negative)", "extracted_outputs": -1},
+    ]
     ground_truth = [0, 1, 0, 1, 0]
     metrics = calc.calculate_metrics(predictions, ground_truth)
     
@@ -131,7 +128,13 @@ def test_mcq_metrics_calculator_choice_distribution():
     """Test that choice distribution is correctly tracked."""
     calc = MCQMetricsCalculator(num_choices=2)
     
-    predictions = [0, 0, 0, 1, 1]
+    predictions = [
+        {"raw_output": "0", "extracted_outputs": 0},
+        {"raw_output": "0", "extracted_outputs": 0},
+        {"raw_output": "0", "extracted_outputs": 0},
+        {"raw_output": "1", "extracted_outputs": 1},
+        {"raw_output": "1", "extracted_outputs": 1},
+    ]
     ground_truth = [0, 0, 1, 1, 1]
     metrics = calc.calculate_metrics(predictions, ground_truth)
     
@@ -144,7 +147,13 @@ def test_mcq_metrics_calculator_different_num_choices():
     """Test with different numbers of choices (e.g., 4 for some MCQ tasks)."""
     calc_4 = MCQMetricsCalculator(num_choices=4)
     
-    predictions = [0, 1, 2, 3, 0]
+    predictions = [
+        {"raw_output": "0", "extracted_outputs": 0},
+        {"raw_output": "1", "extracted_outputs": 1},
+        {"raw_output": "2", "extracted_outputs": 2},
+        {"raw_output": "3", "extracted_outputs": 3},
+        {"raw_output": "0", "extracted_outputs": 0},
+    ]
     ground_truth = [0, 1, 2, 3, 0]
     metrics = calc_4.calculate_metrics(predictions, ground_truth)
     
@@ -161,14 +170,24 @@ def test_mcq_metrics_calculator_mismatched_lengths():
     calc = MCQMetricsCalculator(num_choices=2)
     
     with pytest.raises(ValueError):
-        calc.calculate_metrics([0, 1], [0, 1, 0])
+        calc.calculate_metrics([
+            {"raw_output": "0", "extracted_outputs": 0},
+            {"raw_output": "1", "extracted_outputs": 1},
+        ], [0, 1, 0])
 
 
 def test_mcq_metrics_calculator_float_inputs():
-    """Test float inputs are properly rounded."""
+    """Test that floats are treated as invalid (adapter should have converted to int)."""
     calc = MCQMetricsCalculator(num_choices=2)
     
-    predictions = [0.0, 1.0, 0.3, 0.7]  # Should round to [0, 1, 0, 1]
+    # Floats should be invalid - adapter should have rounded them to int
+    # These would fail validation in the new approach
+    predictions = [
+        {"raw_output": "0.0", "extracted_outputs": 0},  # Adapter rounded to int
+        {"raw_output": "1.0", "extracted_outputs": 1},  # Adapter rounded to int
+        {"raw_output": "0.3", "extracted_outputs": 0},  # Adapter rounded to int
+        {"raw_output": "0.7", "extracted_outputs": 1},  # Adapter rounded to int
+    ]
     ground_truth = [0, 1, 0, 1]
     metrics = calc.calculate_metrics(predictions, ground_truth)
     

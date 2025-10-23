@@ -46,7 +46,7 @@ class RoboticsMetricsCalculator:
         Calculate metrics for predictions vs ground truth.
         
         Args:
-            predictions: List of model predictions
+            predictions: List of structured predictions with "extracted_outputs" key
             ground_truth_actions: List of ground truth action vectors
             
         Returns:
@@ -55,7 +55,10 @@ class RoboticsMetricsCalculator:
         mses, maes = [], []
         total_invalid_preds = 0
         
-        for i, pred in enumerate(predictions):
+        for i, pred_dict in enumerate(predictions):
+            # Extract action vector from structured format
+            pred = pred_dict["extracted_outputs"] if isinstance(pred_dict, dict) else pred_dict
+            
             if _validate_output(pred, shape=ground_truth_actions[i].shape):
                 pred = [float(item) for item in pred]
                 mses.append(calculate_mse(pred, ground_truth_actions[i]))

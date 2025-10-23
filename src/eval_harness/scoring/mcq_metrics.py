@@ -5,10 +5,10 @@ import re
 
 def _validate_choice_output(output: Any, num_choices: int = 2) -> bool:
     """
-    Validate that output is a valid choice for multiple choice questions.
+    Validate that output is a valid choice index (adapter should have extracted).
     
     Args:
-        output: The model output to validate
+        output: The extracted choice index from adapter
         num_choices: Number of valid choices (e.g., 2 for binary choice)
         
     Returns:
@@ -17,67 +17,12 @@ def _validate_choice_output(output: Any, num_choices: int = 2) -> bool:
     if output is None:
         return False
     
-    # Handle string outputs that might contain the choice
-    if isinstance(output, str):
-        # Extract numbers from string (e.g., "0", "1", "choice 0", "answer: 1")
-        numbers = re.findall(r'\d+', output.strip())
-        
-        # Extract the first number
-        if numbers:
-            try:
-                return 0 <= int(numbers[0]) < num_choices
-            except Exception:
-                return False
-        return False
-    
-    # Handle integer outputs
+    # Should be an integer in valid range
     if isinstance(output, (int, np.integer)):
         return 0 <= int(output) < num_choices
     
-    # Handle float outputs (round to nearest integer)
-    if isinstance(output, (float, np.floating)):
-        # Disallow nan/inf
-        if not np.isfinite(output):
-            return False
-        
-        try:
-            rounded = int(np.round(output))
-            return 0 <= rounded < num_choices
-        except Exception:
-            return False
-    
+    # Adapter should have returned int or -1, so this is invalid
     return False
-
-
-def _extract_choice(output: Any, num_choices: int = 2) -> int:
-    """
-    Extract choice index from model output.
-    
-    Args:
-        output: The model output
-        num_choices: Number of valid choices
-        
-    Returns:
-        Choice index (0 to num_choices-1) or -1 if invalid
-    """
-    if not _validate_choice_output(output, num_choices):
-        return -1
-    
-    # Handle string outputs
-    if isinstance(output, str):
-        numbers = re.findall(r'\d+', output.strip())
-        if numbers:
-            return int(numbers[0])
-        return -1
-    
-    # Handle numeric outputs
-    if isinstance(output, (int, np.integer)):
-        return int(output)
-    
-    if isinstance(output, (float, np.floating)):
-        return int(np.round(output))
-    
-    return -1
 
 
 class MCQMetricsCalculator:
@@ -101,14 +46,14 @@ class MCQMetricsCalculator:
     
     def calculate_metrics(
         self, 
-        predictions: List[Union[int, str]], 
+        predictions: List[Any], 
         ground_truth_choices: List[int]
     ) -> Dict[str, Any]:
         """
         Calculate metrics for MCQ predictions.
         
         Args:
-            predictions: List of model predictions (choice indices)
+            predictions: List of structured predictions with "extracted_outputs" key
             ground_truth_choices: List of ground truth choice indices
             
         Returns:
@@ -127,10 +72,16 @@ class MCQMetricsCalculator:
         predicted_choices = []
         total_invalid_preds = 0
         
-        for pred in predictions:
-            choice = _extract_choice(pred, self.num_choices)
-            predicted_choices.append(choice)
-            if choice == -1:
+        for pred_dict in predictions:
+            # Extract choice from structured format
+            pred = pred_dict["extracted_outputs"] if isinstance(pred_dict, dict) else pred_dict
+            
+            # Validate only - adapter should have done extraction
+            if _validate_choice_output(pred, self.num_choices):
+                predicted_choices.append(int(pred))
+            else:
+                # Invalid - treat as -1 (will naturally be incorrect)
+                predicted_choices.append(-1)
                 total_invalid_preds += 1
         
         predicted_choices = np.array(predicted_choices)

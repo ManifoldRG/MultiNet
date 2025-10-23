@@ -40,12 +40,12 @@ class VQAMetricsCalculator:
         """
         self.similarity_model = SentenceTransformer(similarity_model_name)
     
-    def calculate_metrics(self, predictions: List[str], ground_truth_answers: List[str]) -> Dict[str, Any]:
+    def calculate_metrics(self, predictions: List[Any], ground_truth_answers: List[str]) -> Dict[str, Any]:
         """
         Calculate metrics for text predictions vs ground truth answers.
         
         Args:
-            predictions: List of model text predictions
+            predictions: List of structured predictions with "extracted_outputs" key
             ground_truth_answers: List of ground truth text answers
             
         Returns:
@@ -55,14 +55,15 @@ class VQAMetricsCalculator:
         similarity_scores = []
         total_invalid_preds = 0
         
-        for i, pred in enumerate(predictions):
+        for i, pred_dict in enumerate(predictions):
+            # Extract answer from structured format
+            pred = pred_dict["extracted_outputs"] if isinstance(pred_dict, dict) else pred_dict
             if _validate_text_output(pred):
-                # Normalize both prediction and ground truth for fair comparison
-                normalized_pred = _normalize_text(pred)
+                # Adapter already normalized prediction - only normalize ground truth
                 normalized_gt = _normalize_text(ground_truth_answers[i])
                 
-                # Calculate exact match
-                exact_match = 1.0 if normalized_pred == normalized_gt else 0.0
+                # Calculate exact match (pred is already normalized by adapter)
+                exact_match = 1.0 if pred == normalized_gt else 0.0
                 exact_matches.append(exact_match)
                 
                 # Calculate similarity score using sentence embeddings

@@ -2,13 +2,14 @@
 Classification Model Adapter Example
 
 This example demonstrates how to implement the ModelAdapter interface
-for visual classification tasks like ODinW and multiple choice tasks like PIQA.
+for visual classification tasks like ODinW
 """
 import os, sys
 # Adding the root directory to the system path
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 sys.path.append(ROOT_DIR)
 
+import re
 import numpy as np
 from PIL import Image
 from typing import Dict, Any, List, Optional, Union
@@ -17,11 +18,10 @@ from src.eval_harness.model_adapter import MultipleChoiceAdapter
 
 class SimpleClassificationAdapter(MultipleChoiceAdapter):
     """
-    Example adapter for classification and multiple choice tasks.
+    Example adapter for multiple choice classification taks
     
     This shows how to implement a model for:
     - ODinW: Visual classification (image -> category selection)
-    - PIQA: Text-based multiple choice reasoning (text -> choice selection)
     
     The model selects one option from multiple choices.
     """
@@ -29,7 +29,7 @@ class SimpleClassificationAdapter(MultipleChoiceAdapter):
     def __init__(self, num_choices: int = 4):
         super().__init__(
             model_name="SimpleClassificationModel",
-            supported_datasets=["odinw", "piqa"],
+            supported_datasets=["odinw"],
             num_choices=num_choices
         )
         self.model = None
@@ -43,16 +43,15 @@ class SimpleClassificationAdapter(MultipleChoiceAdapter):
         self.device = device
         self.set_seed(seed)
         self._is_initialized = True
-        print("Classification model initialized successfully!")
+        print("Classification model initialized")
         
     def predict_action(
         self,
         observation: Dict[str, Any],
         instruction: Optional[str] = None,
         dataset_name: Optional[str] = None,
-        return_probabilities: bool = False,
         **kwargs
-    ) -> Union[int, Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """Predict class/choice for classification task."""
         
         if not self._is_initialized:
@@ -62,56 +61,79 @@ class SimpleClassificationAdapter(MultipleChoiceAdapter):
         if dataset_name and not self.is_dataset_supported(dataset_name):
             raise NotImplementedError(f"Dataset {dataset_name} not supported")
             
-        # Extract components from observation
-        image = observation.get('image', None)
-        question = observation.get('question', None)
-        options = observation.get('options', None)
+        # Extract image from standardized observation
+        image = observation.get('image_observation', None)
         
-        if question is None:
-            raise ValueError("No question found in observation. Expected 'question' key.")
-        
-        # Determine number of choices from options if available
-        num_classes = len(options) if options else self.num_choices
+        # Question comes from instruction parameter
+        if instruction is None:
+            raise ValueError("No instruction provided. Classification tasks require an instruction (the question).")
         
         # Preprocess observation
         processed_obs = self.preprocess_observation(observation, dataset_name or "odinw")
         
         # Run inference
-        class_idx, probabilities = self.model.predict_class(
-            processed_obs.get('image'),
-            question,
-            num_classes,
-            options
+        raw_output, class_output = self.model.predict_class(
+            processed_obs.get('image_observation'),
+            instruction,
+            self.num_choices
         )
         
-        # Validate class is in valid range
-        if not (0 <= class_idx < num_classes):
-            print(f"Warning: Model predicted invalid class {class_idx}, using 0")
-            class_idx = 0
+        # Adapter handles ALL extraction and validation
+        final_class = self._extract_and_validate_class(class_output, self.num_choices)
         
-        if return_probabilities:
-            return {
-                'choice': class_idx,
-                'probabilities': probabilities
-            }
+        return {
+            "raw_output": raw_output,
+            "extracted_outputs": final_class  # Always int in [0, num_classes-1] or -1
+        }
+    
+    def _extract_and_validate_class(self, output: Any, num_classes: int) -> int:
+        """
+        Extract and validate class index from model output.
+        Returns -1 if invalid (out of range, wrong type, unparseable).
+        """
+        FLOAT_NUM_TOLERANCE = 0.01
         
-        return class_idx
+        if output is None:
+            return -1
+        
+        # Handle string outputs - parse numbers
+        if isinstance(output, str):
+            numbers = re.findall(r'\d+', output.strip())
+            if numbers:
+                class_idx = int(numbers[0])
+                return class_idx if 0 <= class_idx < num_classes else -1
+            return -1
+        
+        # Handle integer outputs
+        if isinstance(output, (int, np.integer)):
+            class_idx = int(output)
+            return class_idx if 0 <= class_idx < num_classes else -1
+        
+        # Handle float outputs with tolerance
+        if isinstance(output, (float, np.floating)):
+            if not np.isfinite(output):
+                return -1
+            # Check if close enough to an integer
+            rounded = np.round(output)
+            if abs(output - rounded) > FLOAT_NUM_TOLERANCE:
+                return -1
+            class_idx = int(rounded)
+            return class_idx if 0 <= class_idx < num_classes else -1
+        
+        # Unknown type
+        return -1
         
     def batch_predict_actions(
         self,
-        batch: Dict[str, Any],
+        observations: List[Dict[str, Any]],
+        instructions: Optional[List[str]] = None,
+        dataset_name: Optional[str] = None,
+        histories: Optional[List[List[Dict[str, str]]]] = None,
         **kwargs
-    ) -> List[int]:
+    ) -> List[Dict[str, Any]]:
         """Predict classes/choices for a batch of observations."""
         
-        # Extract batch components
-        # ODinW uses: image, question, options
-        # PIQA uses: question (no image)
-        images = batch.get('image', [])
-        questions = batch.get('question', [])
-        options_list = batch.get('options', [])
-        
-        batch_size = len(questions) if questions else 0
+        batch_size = len(observations)
         
         if batch_size == 0:
             return []
@@ -121,26 +143,21 @@ class SimpleClassificationAdapter(MultipleChoiceAdapter):
         results = []
         for i in range(batch_size):
             try:
-                # Build observation for this item
-                observation = {}
-                
-                if images and i < len(images) and images[i] is not None:
-                    observation['image'] = images[i]
-                
-                if questions and i < len(questions):
-                    observation['question'] = questions[i]
-                
-                if options_list and i < len(options_list):
-                    observation['options'] = options_list[i]
+                # Get observation and instruction for this item
+                observation = observations[i]
+                instruction = instructions[i] if instructions else None
                 
                 # Predict class
-                class_idx = self.predict_action(observation, **kwargs)
-                results.append(class_idx)
+                result = self.predict_action(observation, instruction, dataset_name, **kwargs)
+                results.append(result)
                 
             except Exception as e:
-                # For failed predictions, return 0 (first class)
+                # For failed predictions, return -1 (invalid)
                 print(f"Warning: Prediction failed for item {i}: {e}")
-                results.append(0)
+                results.append({
+                    "raw_output": f"Error: {str(e)}",
+                    "extracted_outputs": -1
+                })
             
         return results
         
@@ -154,9 +171,9 @@ class SimpleClassificationAdapter(MultipleChoiceAdapter):
         
         processed_obs = observation.copy()
         
-        # Preprocess image if present (ODinW has images, PIQA doesn't)
-        if 'image' in processed_obs and processed_obs['image'] is not None:
-            image = processed_obs['image']
+        # Preprocess image from standardized key
+        if 'image_observation' in processed_obs and processed_obs['image_observation'] is not None:
+            image = processed_obs['image_observation']
             
             # Convert to PIL if needed
             if isinstance(image, np.ndarray):
@@ -169,15 +186,7 @@ class SimpleClassificationAdapter(MultipleChoiceAdapter):
             if image.size != target_size:
                 image = image.resize(target_size, Image.Resampling.LANCZOS)
                 
-            processed_obs['image'] = image
-        
-        # Normalize question text
-        if 'question' in processed_obs:
-            question = processed_obs['question']
-            # Strip whitespace
-            if isinstance(question, str):
-                question = question.strip()
-                processed_obs['question'] = question
+            processed_obs['image_observation'] = image
                         
         return processed_obs
         
@@ -185,7 +194,6 @@ class SimpleClassificationAdapter(MultipleChoiceAdapter):
         """Get target image size for different datasets."""
         size_map = {
             "odinw": (224, 224),
-            "piqa": (224, 224)  # PIQA doesn't use images, but just in case
         }
         return size_map.get(dataset_name, (224, 224))
         
@@ -206,15 +214,17 @@ class MockClassificationModel:
         self, 
         image: Optional[Image.Image], 
         question: str,
-        num_classes: int,
-        options: Optional[List[str]] = None
-    ) -> tuple[int, List[float]]:
-        """Mock classification prediction."""
+        num_classes: int
+    ) -> tuple[str, Any]:
+        """
+        Mock classification prediction.
+        Returns (raw_output: str, class_idx: Any) where class_idx can be int, float, or str.
+        """
         
         if not question:
             # Default to first class if no question
-            probabilities = [1.0] + [0.0] * (num_classes - 1)
-            return 0, probabilities
+            raw_output = "Choosing first class (no question provided)"
+            return raw_output, 0
         
         # Simple heuristic-based prediction
         question_lower = question.lower()
@@ -223,24 +233,17 @@ class MockClassificationModel:
         # This is just for demonstration - real models would use actual inference
         class_scores = np.ones(num_classes) * 0.1  # Base score
         
-        # If we have options, use them to inform the choice
-        if options:
-            for i, option in enumerate(options):
-                option_lower = option.lower()
-                # Simple keyword matching
-                if any(word in question_lower for word in option_lower.split()):
-                    class_scores[i] += 0.5
-        
         # Add some randomness
         class_scores += np.random.random(num_classes) * 0.3
-        
-        # Normalize to probabilities
-        probabilities = class_scores / class_scores.sum()
         
         # Pick the highest scoring class
         class_idx = int(np.argmax(class_scores))
         
-        return class_idx, probabilities.tolist()
+        # Generate raw output text
+        raw_output = f"Question: {question[:50]}... Predicted class: {class_idx}"
+        
+        # Return the class (adapter will handle extraction/validation)
+        return raw_output, class_idx
     
     def reset(self):
         """Reset model state if needed."""
@@ -266,82 +269,60 @@ def test_classification_adapter():
     print("--- Testing ODinW (visual classification) ---")
     bbox_image = Image.new('RGB', (128, 128), color='blue')
     
+    odinw_instruction = 'What object is shown in this image from the AerialMaritimeDrone dataset?\nOption 0: boat\nOption 1: dock\nOption 2: jetski\nOption 3: lift\nOutput the number (0-3) of the correct option only.'
+    options = ['boat', 'dock', 'jetski', 'lift']
+    
     odinw_observation = {
-        'image': bbox_image,
-        'question': 'What object is shown in this image from the AerialMaritimeDrone dataset?\nOption 0: boat\nOption 1: dock\nOption 2: jetski\nOption 3: lift\nOutput the number (0-3) of the correct option only.',
-        'options': ['boat', 'dock', 'jetski', 'lift']
+        'image_observation': bbox_image
     }
     
-    class_idx = adapter.predict_action(
-        odinw_observation,
+    result = adapter.predict_action(
+        observation=odinw_observation,
+        instruction=odinw_instruction,
         dataset_name="odinw"
     )
-    print(f"Question: {odinw_observation['question'][:80]}...")
-    print(f"Options: {odinw_observation['options']}")
-    print(f"Predicted class: {class_idx} ({odinw_observation['options'][class_idx]})\n")
-    
-    # Test with return_probabilities
-    result = adapter.predict_action(
-        odinw_observation,
-        dataset_name="odinw",
-        return_probabilities=True
-    )
-    print(f"With probabilities:")
-    print(f"  Class: {result['choice']}")
-    print(f"  Probabilities: {[f'{p:.3f}' for p in result['probabilities']]}\n")
-    
-    # Test PIQA style observation (text only, binary choice/MCQ)
-    print("--- Testing PIQA (text-based multiple choice) ---")
-    adapter_binary = SimpleClassificationAdapter(num_choices=2)
-    adapter_binary.initialize()
-    
-    piqa_observation = {
-        'question': 'Goal: To remove rust from a knife.\nSolution 0: Soak the knife in lemon juice.\nSolution 1: Soak the knife in sugar water.\nWhich solution is better for the given goal? Output 0 or 1 only.'
-    }
-    
-    choice = adapter_binary.predict_action(
-        piqa_observation,
-        dataset_name="piqa"
-    )
-    print(f"Question: {piqa_observation['question'][:100]}...")
-    print(f"Predicted choice: {choice}\n")
+    print(f"Question: {odinw_instruction[:80]}...")
+    print(f"Options: {options}")
+    print(f"Structured result:")
+    print(f"  raw_output: {result['raw_output']}")
+    print(f"  extracted_outputs: {result['extracted_outputs']} ({options[result['extracted_outputs']]})\n")
     
     # Test batch processing
     print("--- Testing batch classification ---")
-    batch = {
-        'image': [bbox_image, bbox_image, bbox_image],
-        'question': [
-            'What object is shown? Option 0: boat Option 1: dock Option 2: jetski Option 3: lift',
-            'What object is shown? Option 0: boat Option 1: dock Option 2: jetski Option 3: lift',
-            'What object is shown? Option 0: boat Option 1: dock Option 2: jetski Option 3: lift'
-        ],
-        'options': [
-            ['boat', 'dock', 'jetski', 'lift'],
-            ['boat', 'dock', 'jetski', 'lift'],
-            ['boat', 'dock', 'jetski', 'lift']
-        ]
-    }
+    batch_observations = [
+        {'image_observation': bbox_image},
+        {'image_observation': bbox_image},
+        {'image_observation': bbox_image}
+    ]
+    batch_instructions = [
+        'What object is shown? Option 0: boat Option 1: dock Option 2: jetski Option 3: lift',
+        'What object is shown? Option 0: boat Option 1: dock Option 2: jetski Option 3: lift',
+        'What object is shown? Option 0: boat Option 1: dock Option 2: jetski Option 3: lift'
+    ]
     
-    batch_results = adapter.batch_predict_actions(batch, dataset_name="odinw")
+    batch_results = adapter.batch_predict_actions(
+        observations=batch_observations,
+        instructions=batch_instructions,
+        dataset_name="odinw"
+    )
     print(f"Batch results: {len(batch_results)} predictions")
-    for i, class_idx in enumerate(batch_results):
-        print(f"  Sample {i+1}: class={class_idx} ({batch['options'][i][class_idx]})")
+    for i, result in enumerate(batch_results):
+        print(f"  Sample {i+1}: extracted_outputs={result['extracted_outputs']} ({options[result['extracted_outputs']]})")
     
     # Test error handling
     print("\n--- Testing error handling ---")
     
     try:
-        # Test missing question
-        bad_obs = {'image': bbox_image}
-        adapter.predict_action(bad_obs, dataset_name="odinw")
+        # Test missing instruction
+        adapter.predict_action(observation=odinw_observation, instruction=None, dataset_name="odinw")
     except Exception as e:
-        print(f"Expected error for missing question: {e}")
+        print(f"Expected error for missing instruction: {e}")
     
     # Test multiple predictions to show variation
     print("\n--- Testing prediction variation ---")
     for i in range(3):
-        class_idx = adapter.predict_action(odinw_observation, dataset_name="odinw")
-        print(f"Prediction {i+1}: class={class_idx} ({odinw_observation['options'][class_idx]})")
+        result = adapter.predict_action(observation=odinw_observation, instruction=odinw_instruction, dataset_name="odinw")
+        print(f"Prediction {i+1}: extracted_outputs={result['extracted_outputs']} ({options[result['extracted_outputs']]})")
         
     print("\n=== Classification adapter test completed! ===")
 

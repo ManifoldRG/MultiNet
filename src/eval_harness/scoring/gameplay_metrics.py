@@ -94,10 +94,16 @@ class GameplayMetricsCalculator:
         return False
 
     def _is_valid_probability_prediction_format(self, prediction: List[float]) -> bool:
-        if not isinstance(prediction, (np.ndarray, list)) or not all([isinstance(d, (float, np.floating)) for d in prediction]):
+        if not isinstance(prediction, (np.ndarray, list)):
             return False
         
-        return len(prediction) == self.num_actions and all([0.0 <= d <= 1.0 for d in prediction]) and abs(sum(prediction) - 1.0) < 1e-5
+        # Check if all elements are numeric (int, float, or numpy numeric types)
+        try:
+            numeric_pred = [float(d) for d in prediction]
+        except (ValueError, TypeError):
+            return False
+        
+        return len(numeric_pred) == self.num_actions and all([0.0 <= d <= 1.0 for d in numeric_pred]) and abs(sum(numeric_pred) - 1.0) < 1e-5
 
     def process_prediction(
         self, 
@@ -143,7 +149,7 @@ class GameplayMetricsCalculator:
     
     def calculate_metrics(
         self,
-        predictions: Union[List[List[float]], List[int]],
+        predictions: List[Dict[str, Any]],
         ground_truth_actions: List[int],
         with_probabilities: bool = True
     ) -> Dict[str, float]:
@@ -151,14 +157,26 @@ class GameplayMetricsCalculator:
         Calculate gameplay metrics for a batch of predictions.
         
         Args:
-            predictions: List of model predictions, where each element is a list of probabilities 
-                if with_probabilities is True, or an integer in the range [0, num_actions - 1] if with_probabilities is False
+            predictions: List of structured predictions with "extracted_outputs"
+                        If with_probabilities=True, extracted_outputs should be List[float] (probabilities)
+                        If with_probabilities=False, extracted_outputs should be int (action index)
             ground_truth_actions: List of ground truth action indices
             with_probabilities: Whether predictions include probabilities
             
         Returns:
             Dictionary containing calculated metrics
         """
+        if len(predictions) != len(ground_truth_actions):
+            raise ValueError(f"Predictions length ({len(predictions)}) != ground truth length ({len(ground_truth_actions)})")
+        
+        # Extract predictions from structured format
+        extracted_preds = []
+        for pred_dict in predictions:
+            extracted_preds.append(pred_dict["extracted_outputs"])
+        
+        # Use extracted predictions for the rest of the calculation
+        predictions = extracted_preds
+        
         if len(predictions) != len(ground_truth_actions):
             raise ValueError(f"Predictions length ({len(predictions)}) != ground truth length ({len(ground_truth_actions)})")
         
@@ -420,7 +438,7 @@ class OvercookedAIMetricsCalculator(GameplayMetricsCalculator):
     
     def calculate_metrics(
         self,
-        predictions: Union[List[List[float]], List[int]],
+        predictions: List[Dict[str, Any]],
         ground_truth_actions: List[int],
         with_probabilities: bool = True
     ) -> Dict[str, float]:
@@ -428,7 +446,9 @@ class OvercookedAIMetricsCalculator(GameplayMetricsCalculator):
         Calculate gameplay metrics for OvercookedAI, including per-player metrics.
         
         Args:
-            predictions: List of model predictions (probabilities or action indices)
+            predictions: List of structured predictions with "extracted_outputs"
+                        If with_probabilities=True, extracted_outputs should be List[float] (probabilities)
+                        If with_probabilities=False, extracted_outputs should be int (action index)
             ground_truth_actions: List of ground truth joint action indices
             with_probabilities: Whether predictions include probabilities
             
@@ -437,6 +457,14 @@ class OvercookedAIMetricsCalculator(GameplayMetricsCalculator):
         """
         if len(predictions) != len(ground_truth_actions):
             raise ValueError(f"Predictions length ({len(predictions)}) != ground truth length ({len(ground_truth_actions)})")
+        
+        # Extract predictions from structured format
+        extracted_preds = []
+        for pred_dict in predictions:
+            extracted_preds.append(pred_dict["extracted_outputs"])
+        
+        # Use extracted predictions for the rest of the calculation
+        predictions = extracted_preds
         
         # Track per-player metrics
         player0_maes = []

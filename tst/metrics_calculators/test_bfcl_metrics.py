@@ -25,7 +25,7 @@ class TestBFCLMetricsCalculator:
                 'predictions': [
                     {
                         'raw_output': 'get_weather(city="London")',
-                        'extracted_calls': ['get_weather(city="London")']
+                        'extracted_outputs': ['get_weather(city="London")']
                     }
                 ],
                 'num_turns': 1
@@ -59,11 +59,11 @@ class TestBFCLMetricsCalculator:
                 'predictions': [
                     {
                         'raw_output': 'the function call is get_weather(city="London")!',
-                        'extracted_calls': ['get_weather(city="London")']
+                        'extracted_outputs': ['get_weather(city="London")']
                     },
                     {
                         'raw_output': 'call set_reminder(time="tomorrow", message="bring umbrella")',
-                        'extracted_calls': ['set_reminder(time="tomorrow", message="bring umbrella")']
+                        'extracted_outputs': ['set_reminder(time="tomorrow", message="bring umbrella")']
                     }
                 ],
                 'num_turns': 2
@@ -96,11 +96,11 @@ class TestBFCLMetricsCalculator:
                 'predictions': [
                     {
                         'raw_output': 'get_weather(city="London")',
-                        'extracted_calls': ['get_weather(city="London")']
+                        'extracted_outputs': ['get_weather(city="London")']
                     },
                     {
                         'raw_output': 'set_reminder(time="today")',
-                        'extracted_calls': ['set_reminder(time="today")']
+                        'extracted_outputs': ['set_reminder(time="today")']
                     }
                 ],
                 'num_turns': 2
@@ -133,7 +133,7 @@ class TestBFCLMetricsCalculator:
                 'predictions': [
                     {
                         'raw_output': 'get_weather(city="London") get_time()',
-                        'extracted_calls': ['get_weather(city="London")', 'get_time()']
+                        'extracted_outputs': ['get_weather(city="London")', 'get_time()']
                     }
                 ],
                 'num_turns': 1
@@ -164,7 +164,7 @@ class TestBFCLMetricsCalculator:
                 'predictions': [
                     {
                         'raw_output': '',
-                        'extracted_calls': []  # No calls extracted
+                        'extracted_outputs': []  # No calls extracted
                     }
                 ],
                 'num_turns': 1
@@ -195,7 +195,7 @@ class TestBFCLMetricsCalculator:
                 'predictions': [
                     {
                         'raw_output': 'I cannot help with that request. Please try again.',
-                        'extracted_calls': []  # Model failed to extract function calls
+                        'extracted_outputs': []  # Model failed to extract function calls
                     }
                 ],
                 'num_turns': 1
@@ -229,7 +229,7 @@ class TestBFCLMetricsCalculator:
                 'predictions': [
                     {
                         'raw_output': 'get_weather(city="London")',
-                        'extracted_calls': ['get_weather(city="London")']
+                        'extracted_outputs': ['get_weather(city="London")']
                     }
                 ],
                 'num_turns': 1
@@ -262,7 +262,7 @@ class TestBFCLMetricsCalculator:
                 'predictions': [
                     {
                         'raw_output': 'func1() func2() func3_wrong()',
-                        'extracted_calls': ['func1()', 'func2()', 'func3_wrong()']
+                        'extracted_outputs': ['func1()', 'func2()', 'func3_wrong()']
                     }
                 ],
                 'num_turns': 1
@@ -309,7 +309,7 @@ class TestBFCLMetricsCalculator:
         # Should handle string predictions gracefully
         metrics = calculator.calculate_metrics(predictions, ground_truths)
         
-        # With backward compatibility, extracted_calls is empty for strings
+        # With backward compatibility, extracted_outputs is empty for strings
         assert metrics['total_samples'] == 1
         assert 'exact_match_accuracy' in metrics
     
@@ -321,7 +321,7 @@ class TestBFCLMetricsCalculator:
                 'predictions': [
                     {
                         'raw_output': 'func1()',
-                        'extracted_calls': ['func1()']
+                        'extracted_outputs': ['func1()']
                     },
                     'func2()',  # String format (legacy)
                 ],
@@ -352,7 +352,7 @@ class TestBFCLMetricsCalculator:
                 'predictions': [
                     {
                         'raw_output': 'func1()',
-                        'extracted_calls': ['func1()']
+                        'extracted_outputs': ['func1()']
                     }
                 ],
                 'num_turns': 1
@@ -362,7 +362,7 @@ class TestBFCLMetricsCalculator:
                 'predictions': [
                     {
                         'raw_output': 'func2()',
-                        'extracted_calls': ['func2()']
+                        'extracted_outputs': ['func2()']
                     }
                 ],
                 'num_turns': 1
@@ -395,7 +395,7 @@ class TestBFCLMetricsCalculator:
                 'predictions': [
                     {
                         'raw_output': 'I will call get_weather with city London',
-                        'extracted_calls': ['get_weather(city="London")']
+                        'extracted_outputs': ['get_weather(city="London")']
                     }
                 ],
                 'num_turns': 1
@@ -428,15 +428,15 @@ class TestBFCLMetricsCalculator:
             {
                 'conversation_id': 'conv_012',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
-                    {'raw_output': 'func2()', 'extracted_calls': ['func2()']},
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
+                    {'raw_output': 'func2()', 'extracted_outputs': ['func2()']},
                 ],
                 'num_turns': 2
             },
             {
                 'conversation_id': 'conv_013',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
                 ],
                 'num_turns': 1
             }
@@ -471,7 +471,7 @@ class TestBFCLMetricsCalculator:
                 'predictions': [
                     {
                         'raw_output': 'and get_weather(city="London")',
-                        'extracted_calls': ['get_weather(city="London")']
+                        'extracted_outputs': ['get_weather(city="London")']
                     }
                 ],
                 'num_turns': 1
@@ -510,11 +510,11 @@ class TestBFCLMetricsCalculator:
                 'predictions': [
                     {
                         'raw_output': 'the function calls are func1() func2()',
-                        'extracted_calls': ['func1()', 'func2()']
+                        'extracted_outputs': ['func1()', 'func2()']
                     },
                     {
                         'raw_output': 'the function call is func3()',
-                        'extracted_calls': ['func3()']
+                        'extracted_outputs': ['func3()']
                     }
                 ],
                 'num_turns': 2
@@ -568,30 +568,30 @@ class TestBatchedMultiTurnEvaluation:
             {
                 'conversation_id': 'conv_batch_1',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
-                    {'raw_output': 'func2()', 'extracted_calls': ['func2()']},
-                    {'raw_output': 'func3()', 'extracted_calls': ['func3()']},
-                    {'raw_output': 'func4()', 'extracted_calls': ['func4()']},
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
+                    {'raw_output': 'func2()', 'extracted_outputs': ['func2()']},
+                    {'raw_output': 'func3()', 'extracted_outputs': ['func3()']},
+                    {'raw_output': 'func4()', 'extracted_outputs': ['func4()']},
                 ],
                 'num_turns': 4
             },
             {
                 'conversation_id': 'conv_batch_2',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
-                    {'raw_output': 'func2()', 'extracted_calls': ['func2()']},
-                    {'raw_output': 'func3()', 'extracted_calls': ['func3()']},
-                    {'raw_output': 'func4()', 'extracted_calls': ['func4()']},
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
+                    {'raw_output': 'func2()', 'extracted_outputs': ['func2()']},
+                    {'raw_output': 'func3()', 'extracted_outputs': ['func3()']},
+                    {'raw_output': 'func4()', 'extracted_outputs': ['func4()']},
                 ],
                 'num_turns': 4
             },
             {
                 'conversation_id': 'conv_batch_3',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
-                    {'raw_output': 'func2()', 'extracted_calls': ['func2()']},
-                    {'raw_output': 'func3()', 'extracted_calls': ['func3()']},
-                    {'raw_output': 'func4()', 'extracted_calls': ['func4()']},
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
+                    {'raw_output': 'func2()', 'extracted_outputs': ['func2()']},
+                    {'raw_output': 'func3()', 'extracted_outputs': ['func3()']},
+                    {'raw_output': 'func4()', 'extracted_outputs': ['func4()']},
                 ],
                 'num_turns': 4
             }
@@ -628,31 +628,31 @@ class TestBatchedMultiTurnEvaluation:
             {
                 'conversation_id': 'conv_len_4_a',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
-                    {'raw_output': 'func2()', 'extracted_calls': ['func2()']},
-                    {'raw_output': 'func3()', 'extracted_calls': ['func3()']},
-                    {'raw_output': 'func4()', 'extracted_calls': ['func4()']},
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
+                    {'raw_output': 'func2()', 'extracted_outputs': ['func2()']},
+                    {'raw_output': 'func3()', 'extracted_outputs': ['func3()']},
+                    {'raw_output': 'func4()', 'extracted_outputs': ['func4()']},
                 ],
                 'num_turns': 4
             },
             {
                 'conversation_id': 'conv_len_4_b',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
-                    {'raw_output': 'func2()', 'extracted_calls': ['func2()']},
-                    {'raw_output': 'func3()', 'extracted_calls': ['func3()']},
-                    {'raw_output': 'func4()', 'extracted_calls': ['func4()']},
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
+                    {'raw_output': 'func2()', 'extracted_outputs': ['func2()']},
+                    {'raw_output': 'func3()', 'extracted_outputs': ['func3()']},
+                    {'raw_output': 'func4()', 'extracted_outputs': ['func4()']},
                 ],
                 'num_turns': 4
             },
             {
                 'conversation_id': 'conv_len_5',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
-                    {'raw_output': 'func2()', 'extracted_calls': ['func2()']},
-                    {'raw_output': 'func3()', 'extracted_calls': ['func3()']},
-                    {'raw_output': 'func4()', 'extracted_calls': ['func4()']},
-                    {'raw_output': 'func5()', 'extracted_calls': ['func5()']},
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
+                    {'raw_output': 'func2()', 'extracted_outputs': ['func2()']},
+                    {'raw_output': 'func3()', 'extracted_outputs': ['func3()']},
+                    {'raw_output': 'func4()', 'extracted_outputs': ['func4()']},
+                    {'raw_output': 'func5()', 'extracted_outputs': ['func5()']},
                 ],
                 'num_turns': 5
             }
@@ -694,27 +694,27 @@ class TestBatchedMultiTurnEvaluation:
             {
                 'conversation_id': 'conv_short_perfect',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
-                    {'raw_output': 'func2()', 'extracted_calls': ['func2()']},
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
+                    {'raw_output': 'func2()', 'extracted_outputs': ['func2()']},
                 ],
                 'num_turns': 2
             },
             {
                 'conversation_id': 'conv_long_fail_at_turn_3',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
-                    {'raw_output': 'func2()', 'extracted_calls': ['func2()']},
-                    {'raw_output': 'func_wrong()', 'extracted_calls': ['func_wrong()']},
-                    {'raw_output': 'func4()', 'extracted_calls': ['func4()']},
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
+                    {'raw_output': 'func2()', 'extracted_outputs': ['func2()']},
+                    {'raw_output': 'func_wrong()', 'extracted_outputs': ['func_wrong()']},
+                    {'raw_output': 'func4()', 'extracted_outputs': ['func4()']},
                 ],
                 'num_turns': 4
             },
             {
                 'conversation_id': 'conv_medium_perfect',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
-                    {'raw_output': 'func2()', 'extracted_calls': ['func2()']},
-                    {'raw_output': 'func3()', 'extracted_calls': ['func3()']},
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
+                    {'raw_output': 'func2()', 'extracted_outputs': ['func2()']},
+                    {'raw_output': 'func3()', 'extracted_outputs': ['func3()']},
                 ],
                 'num_turns': 3
             }
@@ -760,8 +760,8 @@ class TestBatchedMultiTurnEvaluation:
             {
                 'conversation_id': 'single_conv',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
-                    {'raw_output': 'func2()', 'extracted_calls': ['func2()']},
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
+                    {'raw_output': 'func2()', 'extracted_outputs': ['func2()']},
                 ],
                 'num_turns': 2
             }
@@ -786,14 +786,14 @@ class TestBatchedMultiTurnEvaluation:
             {
                 'conversation_id': 'very_short',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
                 ],
                 'num_turns': 1
             },
             {
                 'conversation_id': 'medium',
                 'predictions': [
-                    {'raw_output': f'func{i}()', 'extracted_calls': [f'func{i}()']}
+                    {'raw_output': f'func{i}()', 'extracted_outputs': [f'func{i}()']}
                     for i in range(1, 6)
                 ],
                 'num_turns': 5
@@ -801,7 +801,7 @@ class TestBatchedMultiTurnEvaluation:
             {
                 'conversation_id': 'very_long',
                 'predictions': [
-                    {'raw_output': f'func{i}()', 'extracted_calls': [f'func{i}()']}
+                    {'raw_output': f'func{i}()', 'extracted_outputs': [f'func{i}()']}
                     for i in range(1, 11)
                 ],
                 'num_turns': 10
@@ -843,16 +843,16 @@ class TestBatchedMultiTurnEvaluation:
             {
                 'conversation_id': 'conv_with_empty',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
-                    {'raw_output': '', 'extracted_calls': []},  # Empty on turn 2
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
+                    {'raw_output': '', 'extracted_outputs': []},  # Empty on turn 2
                 ],
                 'num_turns': 2
             },
             {
                 'conversation_id': 'conv_perfect',
                 'predictions': [
-                    {'raw_output': 'func1()', 'extracted_calls': ['func1()']},
-                    {'raw_output': 'func2()', 'extracted_calls': ['func2()']},
+                    {'raw_output': 'func1()', 'extracted_outputs': ['func1()']},
+                    {'raw_output': 'func2()', 'extracted_outputs': ['func2()']},
                 ],
                 'num_turns': 2
             }

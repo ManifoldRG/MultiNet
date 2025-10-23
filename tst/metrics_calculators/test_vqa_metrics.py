@@ -52,12 +52,13 @@ def test_vqa_metrics_calculator_with_mocked_similarity(monkeypatch):
 
     calc = VQAMetricsCalculator()
 
+    # Adapter has already normalized the text in extracted_outputs
     predictions = [
-        "A cat on a mat",
-        "a CAT on a mat!", 
-        "A cat outside",
-        None,                # invalid
-        "   ",              # invalid
+        {"raw_output": "A cat on a mat", "extracted_outputs": "a cat on a mat"},  # Adapter normalized
+        {"raw_output": "a CAT on a mat!", "extracted_outputs": "a cat on a mat"},  # Adapter normalized
+        {"raw_output": "A cat outside", "extracted_outputs": "a cat outside"},  # Adapter normalized
+        {"raw_output": "", "extracted_outputs": ""},  # invalid (empty after normalization)
+        {"raw_output": "   ", "extracted_outputs": ""},  # invalid (empty after normalization)
     ]
 
     gts = [
@@ -70,16 +71,17 @@ def test_vqa_metrics_calculator_with_mocked_similarity(monkeypatch):
 
     metrics = calc.calculate_metrics(predictions, gts)
 
-    # exact matches: first two are matches -> 2/5
+    # exact matches: first two are matches after GT normalization -> 2/5
     assert math.isclose(metrics["exact_match_accuracy"], 2 / 5)
 
     # similarity scores per pair (using fake_cos_sim):
-    # 1) equal? True -> 1.0
-    # 2) equal? True -> 1.0
-    # 3) equal? False -> 0.25
+    # Similarity compares normalized pred vs ORIGINAL (unnormalized) GT
+    # 1) "a cat on a mat" vs "A cat on a mat" -> not equal (different case) -> 0.25
+    # 2) "a cat on a mat" vs "a CAT on a mat!" -> not equal (different case/punct) -> 0.25
+    # 3) "a cat outside" vs "A cat on a mat" -> not equal -> 0.25
     # 4) invalid -> 0.0
     # 5) invalid -> 0.0
-    expected_sims = [1.0, 1.0, 0.25, 0.0, 0.0]
+    expected_sims = [0.25, 0.25, 0.25, 0.0, 0.0]
     assert math.isclose(metrics["avg_similarity_score"], sum(expected_sims) / 5)
     assert math.isclose(metrics["max_similarity_score"], max(expected_sims))
     assert math.isclose(metrics["min_similarity_score"], min(expected_sims))
