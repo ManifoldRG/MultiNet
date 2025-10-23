@@ -18,15 +18,12 @@ from src.eval_utils import (
 )
 
 
-FLOAT_NUM_TOLERANCE = 0.01
-
-
 def _validate_class_output(output: Any, num_classes: int = 2) -> bool:
     """
-    Validate that output is a valid class index for classification tasks.
+    Validate that output is a valid class index (adapter should have extracted).
     
     Args:
-        output: The model output to validate
+        output: The extracted class index from adapter
         num_classes: Number of valid classes (default 2)
         
     Returns:
@@ -35,67 +32,12 @@ def _validate_class_output(output: Any, num_classes: int = 2) -> bool:
     if output is None:
         return False
     
-    # Handle string outputs that might contain the class index
-    if isinstance(output, str):
-        # Extract numbers from string (e.g., "0", "1", "class 0", "prediction: 1")
-        numbers = re.findall(r'\d+', output.strip())
-        
-        # Extract the first number
-        if numbers:
-            try:
-                return 0 <= int(numbers[0]) < num_classes
-            except Exception:
-                return False
-        return False
-    
-    # Handle integer outputs
+    # Should be an integer in valid range
     if isinstance(output, (int, np.integer)):
         return 0 <= int(output) < num_classes
     
-    # Handle float outputs (round to nearest integer)
-    if isinstance(output, (float, np.floating)):
-        # Check if the class is within the tolerance
-        if abs(output - int(np.round(output))) > FLOAT_NUM_TOLERANCE:
-            return False
-
-        # Disallow nan/inf
-        try:
-            return 0 <= int(np.round(output)) < num_classes
-        except Exception:
-            return False
-    
+    # Adapter should have returned int or -1
     return False
-
-
-def _extract_class_index(output: Any, num_classes: int = 2) -> int:
-    """
-    Extract class index from model output.
-    
-    Args:
-        output: The model output
-        num_classes: Number of valid classes
-        
-    Returns:
-        Class index (0 to num_classes-1) or -1 if invalid
-    """
-    if not _validate_class_output(output, num_classes):
-        return -1
-    
-    # Handle string outputs
-    if isinstance(output, str):
-        numbers = re.findall(r'\d+', output.strip())
-        if numbers:
-            return int(numbers[0])
-        return -1
-    
-    # Handle numeric outputs
-    if isinstance(output, (int, np.integer)):
-        return int(output)
-    
-    if isinstance(output, (float, np.floating)):
-        return int(np.round(output))
-    
-    return -1
 
 
 class ClassificationMetricsCalculator:
@@ -119,7 +61,7 @@ class ClassificationMetricsCalculator:
     
     def calculate_metrics(
         self, 
-        predictions: List[Union[int, str]], 
+        predictions: List[Any], 
         ground_truth_classes: List[int]
     ) -> Dict[str, Any]:
         """
@@ -140,10 +82,16 @@ class ClassificationMetricsCalculator:
         predicted_classes = []
         total_invalid_preds = 0
         
-        for pred in predictions:
-            class_idx = _extract_class_index(pred, self.num_classes)
-            predicted_classes.append(class_idx)
-            if class_idx == -1:
+        for pred_dict in predictions:
+            # Extract class from structured format
+            pred = pred_dict["extracted_outputs"] if isinstance(pred_dict, dict) else pred_dict
+            
+            # Validate only - adapter should have done extraction
+            if _validate_class_output(pred, self.num_classes):
+                predicted_classes.append(int(pred))
+            else:
+                # Invalid - treat as -1 (will naturally be incorrect)
+                predicted_classes.append(-1)
                 total_invalid_preds += 1
         
         # Convert to numpy arrays for easier computation

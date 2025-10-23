@@ -9,6 +9,7 @@ import os, sys
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 sys.path.append(ROOT_DIR)
 
+import re
 import numpy as np
 from PIL import Image
 from typing import Dict, Any, List, Optional
@@ -40,7 +41,7 @@ class SimpleVQAAdapter(TextGenerationAdapter):
         self.device = device
         self.set_seed(seed)
         self._is_initialized = True
-        print("VQA model initialized successfully!")
+        print("VQA model initialized")
         
     def predict_action(
         self,
@@ -48,7 +49,7 @@ class SimpleVQAAdapter(TextGenerationAdapter):
         instruction: Optional[str] = None,
         dataset_name: Optional[str] = None,
         **kwargs
-    ) -> str:
+    ) -> Dict[str, Any]:
         """Generate text answer for a visual question."""
         
         if not self._is_initialized:
@@ -58,21 +59,20 @@ class SimpleVQAAdapter(TextGenerationAdapter):
         if dataset_name and not self.is_dataset_supported(dataset_name):
             raise NotImplementedError(f"Dataset {dataset_name} not supported")
             
-        # Extract components from observation
-        # Handle different observation formats (robot_vqa vs sqa3d)
-        image = observation.get('image', observation.get('scene_image', None))
-        question = observation.get('question', observation.get('text_observation', None))
-            
-        if question is None:
-            raise ValueError("No question found in observation. Expected 'question' or 'text_observation' key.")
+        # Extract image from standardized observation
+        image = observation.get('image_observation', None)
+        
+        # Question comes from instruction parameter
+        if instruction is None:
+            raise ValueError("No instruction provided. VQA tasks require an instruction (the question).")
         
         # Preprocess observation
         processed_obs = self.preprocess_observation(observation, dataset_name or "robot_vqa")
         
         # Run inference
         answer = self.model.answer_question(
-            processed_obs.get('image'),
-            question
+            processed_obs.get('image_observation'),
+            instruction
         )
         
         # Validate answer is a string
@@ -84,22 +84,35 @@ class SimpleVQAAdapter(TextGenerationAdapter):
         if len(answer) > self.max_answer_length:
             answer = answer[:self.max_answer_length]
         
-        return answer
+        # Normalize the answer (adapter's responsibility)
+        normalized_answer = self._normalize_text(answer)
+        
+        return {
+            "raw_output": answer,  # Keep original for debugging
+            "extracted_outputs": normalized_answer  # Normalized for fair comparison
+        }
+    
+    def _normalize_text(self, text: str) -> str:
+        """Normalize text by removing punctuation and extra spaces."""
+        if not isinstance(text, str):
+            return ""
+        # Remove punctuation and convert to lowercase
+        text = re.sub(r'[^\w\s]', '', text.lower())
+        # Remove extra whitespace
+        text = ' '.join(text.split())
+        return text
         
     def batch_predict_actions(
         self,
-        batch: Dict[str, Any],
+        observations: List[Dict[str, Any]],
+        instructions: Optional[List[str]] = None,
+        dataset_name: Optional[str] = None,
+        histories: Optional[List[List[Dict[str, str]]]] = None,
         **kwargs
-    ) -> List[str]:
+    ) -> List[Dict[str, Any]]:
         """Predict answers for a batch of VQA observations."""
         
-        # Extract batch components - handle different dataset formats
-        # robot_vqa uses: image_observation, text_observation
-        # sqa3d uses: scene_image, question
-        images = batch.get('image_observation', batch.get('scene_image', []))
-        questions = batch.get('text_observation', batch.get('question', []))
-        
-        batch_size = len(questions) if questions else len(images)
+        batch_size = len(observations)
         
         if batch_size == 0:
             return []
@@ -109,23 +122,21 @@ class SimpleVQAAdapter(TextGenerationAdapter):
         results = []
         for i in range(batch_size):
             try:
-                # Build observation for this item
-                observation = {}
-                
-                if images and i < len(images) and images[i] is not None:
-                    observation['image'] = images[i]
-                
-                if questions and i < len(questions):
-                    observation['question'] = questions[i]
+                # Get observation and instruction for this item
+                observation = observations[i]
+                instruction = instructions[i] if instructions else None
                 
                 # Predict answer
-                answer = self.predict_action(observation, **kwargs)
-                results.append(answer)
+                result = self.predict_action(observation, instruction, dataset_name, **kwargs)
+                results.append(result)
                 
             except Exception as e:
                 # For failed predictions, return empty string
                 print(f"Warning: Prediction failed for item {i}: {e}")
-                results.append("")
+                results.append({
+                    "raw_output": f"Error: {str(e)}",
+                    "extracted_outputs": ""
+                })
             
         return results
         
@@ -139,15 +150,9 @@ class SimpleVQAAdapter(TextGenerationAdapter):
         
         processed_obs = observation.copy()
         
-        # Preprocess image - handle both 'image' and 'scene_image' keys
-        image_key = None
-        if 'image' in processed_obs:
-            image_key = 'image'
-        elif 'scene_image' in processed_obs:
-            image_key = 'scene_image'
-            
-        if image_key:
-            image = processed_obs[image_key]
+        # Preprocess image from standardized key
+        if 'image_observation' in processed_obs:
+            image = processed_obs['image_observation']
             
             # Convert to PIL if needed
             if isinstance(image, np.ndarray):
@@ -160,17 +165,7 @@ class SimpleVQAAdapter(TextGenerationAdapter):
             if image.size != target_size:
                 image = image.resize(target_size, Image.Resampling.LANCZOS)
             
-            # Store as 'image' for consistency
-            processed_obs['image'] = image
-        
-        # Normalize question text
-        question_key = 'question' if 'question' in processed_obs else 'text_observation'
-        if question_key in processed_obs:
-            question = processed_obs[question_key]
-            # Strip whitespace
-            if isinstance(question, str):
-                question = question.strip()
-                processed_obs[question_key] = question
+            processed_obs['image_observation'] = image
                         
         return processed_obs
         

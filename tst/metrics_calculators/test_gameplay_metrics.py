@@ -60,8 +60,6 @@ def test_gameplay_metrics():
     print("TEST CASE 1: Basic Joint Action Prediction")
     print("="*80)
     
-    use_probabilities = True
-
     metrics_calculator = OvercookedAIMetricsCalculator()
 
     assert metrics_calculator.num_actions == JOINT_ACTION_SPACE_SIZE, \
@@ -70,46 +68,139 @@ def test_gameplay_metrics():
         f"Expected noop action {NOOP_ACTION}, got {metrics_calculator.noop_action}"
     print(f"PASS Metrics calculator initialized with {JOINT_ACTION_SPACE_SIZE} joint actions")
 
-    predictions = []
-    ground_truth_actions = []
+    # Test with probabilities=True
+    print("\n--- Testing with probabilities=True ---")
+    predictions_probs = []
+    ground_truth_actions_probs = []
     
     # Perfect predictions (exact matches)
     for action in [0, 7, 14, 21, 28, 35]:
-        predictions.append(create_joint_probability_distribution(action))
-        ground_truth_actions.append(action)
+        probs = create_joint_probability_distribution(action)
+        predictions_probs.append({
+            "raw_output": f"Action {action} selected",
+            "extracted_outputs": probs  # Probabilities go directly in extracted_outputs
+        })
+        ground_truth_actions_probs.append(action)
     
     # Incorrect but valid predictions
-    predictions.append(create_joint_probability_distribution(5))
-    ground_truth_actions.append(10)
+    probs_5 = create_joint_probability_distribution(5)
+    predictions_probs.append({
+        "raw_output": "Action 5 selected",
+        "extracted_outputs": probs_5  # Probabilities go directly in extracted_outputs
+    })
+    ground_truth_actions_probs.append(10)
     
-    predictions.append(create_joint_probability_distribution(20))
-    ground_truth_actions.append(15)
+    probs_20 = create_joint_probability_distribution(20)
+    predictions_probs.append({
+        "raw_output": "Action 20 selected",
+        "extracted_outputs": probs_20  # Probabilities go directly in extracted_outputs
+    })
+    ground_truth_actions_probs.append(15)
     
-    predictions.append(create_random_joint_probability(seed=42))
-    ground_truth_actions.append(8)
+    probs_random_1 = create_random_joint_probability(seed=42)
+    predictions_probs.append({
+        "raw_output": "Random action from distribution",
+        "extracted_outputs": probs_random_1  # Probabilities go directly in extracted_outputs
+    })
+    ground_truth_actions_probs.append(8)
     
-    predictions.append(create_random_joint_probability(seed=123))
-    ground_truth_actions.append(25)
+    probs_random_2 = create_random_joint_probability(seed=123)
+    predictions_probs.append({
+        "raw_output": "Random action from distribution",
+        "extracted_outputs": probs_random_2  # Probabilities go directly in extracted_outputs
+    })
+    ground_truth_actions_probs.append(25)
     
     # Invalid predictions
-    predictions.append([0.1, 0.2, 0.3] + [0.0] * 33)  # Wrong length
-    ground_truth_actions.append(5)
+    invalid_probs_1 = [0.1, 0.2, 0.3] + [0.0] * 33  # Wrong length
+    predictions_probs.append({
+        "raw_output": "Invalid prediction",
+        "extracted_outputs": invalid_probs_1  # Invalid probabilities go directly in extracted_outputs
+    })
+    ground_truth_actions_probs.append(5)
     
-    predictions.append([0.5, 0.3, 0.2])  # Wrong length
-    ground_truth_actions.append(12)
+    invalid_probs_2 = [0.5, 0.3, 0.2]  # Wrong length
+    predictions_probs.append({
+        "raw_output": "Invalid prediction",
+        "extracted_outputs": invalid_probs_2  # Invalid probabilities go directly in extracted_outputs
+    })
+    ground_truth_actions_probs.append(12)
 
-    print(f"PASS Created {len(predictions)} test predictions")
+    print(f"PASS Created {len(predictions_probs)} test predictions (probabilities)")
     print(f"  - {6} exact matches")
     print(f"  - {4} valid but incorrect")
     print(f"  - {2} invalid predictions")
 
-    metrics = metrics_calculator.calculate_metrics(
-        predictions, ground_truth_actions, with_probabilities=use_probabilities
+    metrics_probs = metrics_calculator.calculate_metrics(
+        predictions_probs, ground_truth_actions_probs, with_probabilities=True
     )
     
+    # Test with probabilities=False (discrete actions)
+    print("\n--- Testing with probabilities=False ---")
+    predictions_discrete = []
+    ground_truth_actions_discrete = []
+    
+    # Perfect predictions (exact matches)
+    for action in [0, 7, 14, 21, 28, 35]:
+        predictions_discrete.append({
+            "raw_output": f"Action {action} selected",
+            "extracted_outputs": action  # Discrete action index
+        })
+        ground_truth_actions_discrete.append(action)
+    
+    # Incorrect but valid predictions
+    predictions_discrete.append({
+        "raw_output": "Action 5 selected",
+        "extracted_outputs": 5  # Discrete action index
+    })
+    ground_truth_actions_discrete.append(10)
+    
+    predictions_discrete.append({
+        "raw_output": "Action 20 selected",
+        "extracted_outputs": 20  # Discrete action index
+    })
+    ground_truth_actions_discrete.append(15)
+    
+    predictions_discrete.append({
+        "raw_output": "Random action",
+        "extracted_outputs": 8  # Discrete action index
+    })
+    ground_truth_actions_discrete.append(8)
+    
+    predictions_discrete.append({
+        "raw_output": "Another random action",
+        "extracted_outputs": 25  # Discrete action index
+    })
+    ground_truth_actions_discrete.append(25)
+    
+    # Invalid predictions
+    predictions_discrete.append({
+        "raw_output": "Invalid prediction",
+        "extracted_outputs": -1  # Invalid action index
+    })
+    ground_truth_actions_discrete.append(5)
+    
+    predictions_discrete.append({
+        "raw_output": "Out of range prediction",
+        "extracted_outputs": 50  # Out of range action index
+    })
+    ground_truth_actions_discrete.append(12)
+
+    print(f"PASS Created {len(predictions_discrete)} test predictions (discrete)")
+    print(f"  - {6} exact matches")
+    print(f"  - {4} valid but incorrect")
+    print(f"  - {2} invalid predictions")
+
+    metrics_discrete = metrics_calculator.calculate_metrics(
+        predictions_discrete, ground_truth_actions_discrete, with_probabilities=False
+    )
+    
+    # Use probabilities results for the rest of the test (both should work the same)
+    metrics = metrics_probs
+    
     assert 'num_timesteps' in metrics, "Missing 'num_timesteps' in metrics"
-    assert metrics['num_timesteps'] == len(predictions), \
-        f"Expected {len(predictions)} timesteps, got {metrics['num_timesteps']}"
+    assert metrics['num_timesteps'] == len(predictions_probs), \
+        f"Expected {len(predictions_probs)} timesteps, got {metrics['num_timesteps']}"
     print(f"PASS num_timesteps = {metrics['num_timesteps']}")
     
     assert 'total_invalid_preds' in metrics, "Missing 'total_invalid_preds' in metrics"
@@ -176,18 +267,43 @@ def test_per_player_metrics():
         assert p1 == expected_p1, f"Player1 mismatch for joint action {joint_action}"
         print(f"  PASS Joint action {joint_action:2d} → Player0: {p0}, Player1: {p1}")
     
-    predictions = []
-    ground_truth_actions = []
+    # Test with probabilities=True
+    predictions_probs = []
+    ground_truth_actions_probs = []
     
     for seed in range(10):
-        predictions.append(create_random_joint_probability(seed=seed))
-        ground_truth_actions.append(seed % 36)
+        probs = create_random_joint_probability(seed=seed)
+        predictions_probs.append({
+            "raw_output": f"Random prediction {seed}",
+            "extracted_outputs": probs
+        })
+        ground_truth_actions_probs.append(seed % 36)
     
     print(f"\nPASS Created 10 test predictions with random probabilities")
     
-    metrics = metrics_calculator.calculate_metrics(
-        predictions, ground_truth_actions, with_probabilities=True
+    metrics_probs = metrics_calculator.calculate_metrics(
+        predictions_probs, ground_truth_actions_probs, with_probabilities=True
     )
+    
+    # Test with probabilities=False (discrete actions)
+    predictions_discrete = []
+    ground_truth_actions_discrete = []
+    
+    for seed in range(10):
+        predictions_discrete.append({
+            "raw_output": f"Discrete prediction {seed}",
+            "extracted_outputs": seed % 36  # Discrete action index
+        })
+        ground_truth_actions_discrete.append(seed % 36)
+    
+    print(f"PASS Created 10 test predictions with discrete actions")
+    
+    metrics_discrete = metrics_calculator.calculate_metrics(
+        predictions_discrete, ground_truth_actions_discrete, with_probabilities=False
+    )
+    
+    # Use probabilities results for the rest of the test
+    metrics = metrics_probs
     
     assert 'player0_results' in metrics, "Missing 'player0_results' in metrics"
     assert 'player1_results' in metrics, "Missing 'player1_results' in metrics"
@@ -195,7 +311,7 @@ def test_per_player_metrics():
     
     player0_results = metrics['player0_results']
     assert 'num_timesteps' in player0_results
-    assert player0_results['num_timesteps'] == len(predictions)
+    assert player0_results['num_timesteps'] == len(predictions_probs)
     assert 'exact_match' in player0_results
     assert 'predicted_actions' in player0_results
     assert 'ground_truth_actions' in player0_results
@@ -205,7 +321,7 @@ def test_per_player_metrics():
     
     player1_results = metrics['player1_results']
     assert 'num_timesteps' in player1_results
-    assert player1_results['num_timesteps'] == len(predictions)
+    assert player1_results['num_timesteps'] == len(predictions_probs)
     assert 'exact_match' in player1_results
     assert 'predicted_actions' in player1_results
     assert 'ground_truth_actions' in player1_results
@@ -231,18 +347,43 @@ def test_exact_match_rate():
     
     metrics_calculator = OvercookedAIMetricsCalculator()
     
-    predictions = []
-    ground_truth_actions = []
+    # Test with probabilities=True
+    predictions_probs = []
+    ground_truth_actions_probs = []
     
     for seed in range(15):
-        predictions.append(create_random_joint_probability(seed=seed))
-        ground_truth_actions.append(seed % 36)
+        probs = create_random_joint_probability(seed=seed)
+        predictions_probs.append({
+            "raw_output": f"Random prediction {seed}",
+            "extracted_outputs": probs
+        })
+        ground_truth_actions_probs.append(seed % 36)
     
-    print(f"Created {len(predictions)} predictions with random probabilities")
+    print(f"Created {len(predictions_probs)} predictions with random probabilities")
     
-    metrics = metrics_calculator.calculate_metrics(
-        predictions, ground_truth_actions, with_probabilities=True
+    metrics_probs = metrics_calculator.calculate_metrics(
+        predictions_probs, ground_truth_actions_probs, with_probabilities=True
     )
+    
+    # Test with probabilities=False (discrete actions)
+    predictions_discrete = []
+    ground_truth_actions_discrete = []
+    
+    for seed in range(15):
+        predictions_discrete.append({
+            "raw_output": f"Discrete prediction {seed}",
+            "extracted_outputs": seed % 36  # Discrete action index
+        })
+        ground_truth_actions_discrete.append(seed % 36)
+    
+    print(f"Created {len(predictions_discrete)} predictions with discrete actions")
+    
+    metrics_discrete = metrics_calculator.calculate_metrics(
+        predictions_discrete, ground_truth_actions_discrete, with_probabilities=False
+    )
+    
+    # Use probabilities results for the rest of the test
+    metrics = metrics_probs
     
     assert 'exact_match' in metrics, "Missing 'exact_match' in metrics"
     assert 0.0 <= metrics['exact_match'] <= 1.0, \
@@ -264,32 +405,101 @@ def test_invalid_predictions():
     predictions = []
     ground_truth_actions = []
     
+    # Test with probabilities=True
+    predictions_probs = []
+    ground_truth_actions_probs = []
+    
     # Various types of invalid predictions
-    predictions.append([0.1, 0.2, 0.3] + [0.0] * 33)  # Doesn't sum to 1.0
-    ground_truth_actions.append(5)
+    predictions_probs.append({
+        "raw_output": "Invalid prediction 1",
+        "extracted_outputs": [0.1, 0.2, 0.3] + [0.0] * 33  # Doesn't sum to 1.0
+    })
+    ground_truth_actions_probs.append(5)
     print("PASS Added prediction that doesn't sum to 1.0")
     
-    predictions.append([1.0, 0.0, 0.0])  # Wrong length
-    ground_truth_actions.append(10)
+    predictions_probs.append({
+        "raw_output": "Invalid prediction 2",
+        "extracted_outputs": [1.0, 0.0, 0.0]  # Wrong length
+    })
+    ground_truth_actions_probs.append(10)
     print("PASS Added prediction with wrong length")
     
-    predictions.append([0.5, 'invalid'] + [0.0] * 34)  # Invalid type
-    ground_truth_actions.append(15)
+    predictions_probs.append({
+        "raw_output": "Invalid prediction 3",
+        "extracted_outputs": [0.5, 'invalid'] + [0.0] * 34  # Invalid type
+    })
+    ground_truth_actions_probs.append(15)
     print("PASS Added prediction with invalid type")
     
-    predictions.append([-0.1, 1.1] + [0.0] * 34)  # Negative probability
-    ground_truth_actions.append(20)
+    predictions_probs.append({
+        "raw_output": "Invalid prediction 4",
+        "extracted_outputs": [-0.1, 1.1] + [0.0] * 34  # Negative probability
+    })
+    ground_truth_actions_probs.append(20)
     print("PASS Added prediction with negative probability")
     
     # Add valid predictions for comparison
     for seed in range(5):
-        predictions.append(create_random_joint_probability(seed=seed))
-        ground_truth_actions.append(seed + 25)
+        probs = create_random_joint_probability(seed=seed)
+        predictions_probs.append({
+            "raw_output": f"Valid prediction {seed}",
+            "extracted_outputs": probs
+        })
+        ground_truth_actions_probs.append(seed + 25)
     print("PASS Added 5 valid predictions with random probabilities")
     
-    metrics = metrics_calculator.calculate_metrics(
-        predictions, ground_truth_actions, with_probabilities=True
+    metrics_probs = metrics_calculator.calculate_metrics(
+        predictions_probs, ground_truth_actions_probs, with_probabilities=True
     )
+    
+    # Test with probabilities=False (discrete actions)
+    predictions_discrete = []
+    ground_truth_actions_discrete = []
+    
+    # Various types of invalid discrete predictions
+    predictions_discrete.append({
+        "raw_output": "Invalid discrete 1",
+        "extracted_outputs": -1  # Invalid action index
+    })
+    ground_truth_actions_discrete.append(5)
+    print("PASS Added invalid discrete action (-1)")
+    
+    predictions_discrete.append({
+        "raw_output": "Invalid discrete 2",
+        "extracted_outputs": 50  # Out of range
+    })
+    ground_truth_actions_discrete.append(10)
+    print("PASS Added out-of-range discrete action (50)")
+    
+    predictions_discrete.append({
+        "raw_output": "Invalid discrete 3",
+        "extracted_outputs": -5  # Negative out of range
+    })
+    ground_truth_actions_discrete.append(15)
+    print("PASS Added negative out-of-range discrete action (-5)")
+    
+    predictions_discrete.append({
+        "raw_output": "Invalid discrete 4",
+        "extracted_outputs": 100  # Way out of range
+    })
+    ground_truth_actions_discrete.append(20)
+    print("PASS Added way out-of-range discrete action (100)")
+    
+    # Add valid predictions for comparison
+    for seed in range(5):
+        predictions_discrete.append({
+            "raw_output": f"Valid discrete {seed}",
+            "extracted_outputs": seed % 36  # Valid action index
+        })
+        ground_truth_actions_discrete.append(seed + 25)
+    print("PASS Added 5 valid discrete predictions")
+    
+    metrics_discrete = metrics_calculator.calculate_metrics(
+        predictions_discrete, ground_truth_actions_discrete, with_probabilities=False
+    )
+    
+    # Use probabilities results for the rest of the test
+    metrics = metrics_probs
     
     assert metrics['total_invalid_preds'] == 4, \
         f"Expected 4 invalid predictions, got {metrics['total_invalid_preds']}"
@@ -328,34 +538,101 @@ def test_edge_cases():
     metrics_calculator = OvercookedAIMetricsCalculator()
     
     print("\nEdge Case 1: Out-of-range ground truth action")
-    predictions = []
-    ground_truth_actions = []
+    # Test with probabilities=True
+    predictions_probs = []
+    ground_truth_actions_probs = []
     for seed in range(10):
-        predictions.append(create_random_joint_probability(seed=seed))
-        ground_truth_actions.append(100 if seed == 0 else seed)
+        probs = create_random_joint_probability(seed=seed)
+        predictions_probs.append({
+            "raw_output": f"Edge case prediction {seed}",
+            "extracted_outputs": probs
+        })
+        ground_truth_actions_probs.append(100 if seed == 0 else seed)
     
-    metrics = metrics_calculator.calculate_metrics(
-        predictions, ground_truth_actions, with_probabilities=True
+    metrics_probs = metrics_calculator.calculate_metrics(
+        predictions_probs, ground_truth_actions_probs, with_probabilities=True
     )
+    
+    # Test with probabilities=False (discrete actions)
+    predictions_discrete = []
+    ground_truth_actions_discrete = []
+    for seed in range(10):
+        predictions_discrete.append({
+            "raw_output": f"Edge case discrete {seed}",
+            "extracted_outputs": seed % 36  # Discrete action index
+        })
+        ground_truth_actions_discrete.append(100 if seed == 0 else seed)
+    
+    metrics_discrete = metrics_calculator.calculate_metrics(
+        predictions_discrete, ground_truth_actions_discrete, with_probabilities=False
+    )
+    
+    # Use probabilities results for the rest of the test
+    metrics = metrics_probs
     
     assert metrics['num_timesteps'] == 10
     print(f"PASS Out-of-range action handled gracefully (clamped to NOOP)")
     
     print("\nEdge Case 2: Mostly invalid predictions")
-    predictions = [
-        [0.5, 0.5],
-        [0.3, 0.3, 0.3],
-        ['invalid'],
+    # Test with probabilities=True
+    predictions_probs = [
+        {
+            "raw_output": "Invalid edge case 1",
+            "extracted_outputs": [0.5, 0.5]
+        },
+        {
+            "raw_output": "Invalid edge case 2", 
+            "extracted_outputs": [0.3, 0.3, 0.3]
+        },
+        {
+            "raw_output": "Invalid edge case 3",
+            "extracted_outputs": ['invalid']
+        },
     ]
-    ground_truth_actions = [5, 10, 15]
+    ground_truth_actions_probs = [5, 10, 15]
     
     for seed in range(7):
-        predictions.append(create_random_joint_probability(seed=seed + 200))
-        ground_truth_actions.append(seed + 20)
+        probs = create_random_joint_probability(seed=seed + 200)
+        predictions_probs.append({
+            "raw_output": f"Valid edge case {seed}",
+            "extracted_outputs": probs
+        })
+        ground_truth_actions_probs.append(seed + 20)
     
-    metrics = metrics_calculator.calculate_metrics(
-        predictions, ground_truth_actions, with_probabilities=True
+    metrics_probs = metrics_calculator.calculate_metrics(
+        predictions_probs, ground_truth_actions_probs, with_probabilities=True
     )
+    
+    # Test with probabilities=False (discrete actions)
+    predictions_discrete = [
+        {
+            "raw_output": "Invalid discrete edge case 1",
+            "extracted_outputs": -1  # Invalid action
+        },
+        {
+            "raw_output": "Invalid discrete edge case 2", 
+            "extracted_outputs": 50  # Out of range
+        },
+        {
+            "raw_output": "Invalid discrete edge case 3",
+            "extracted_outputs": -5  # Negative out of range
+        },
+    ]
+    ground_truth_actions_discrete = [5, 10, 15]
+    
+    for seed in range(7):
+        predictions_discrete.append({
+            "raw_output": f"Valid discrete edge case {seed}",
+            "extracted_outputs": (seed + 20) % 36  # Valid action index
+        })
+        ground_truth_actions_discrete.append(seed + 20)
+    
+    metrics_discrete = metrics_calculator.calculate_metrics(
+        predictions_discrete, ground_truth_actions_discrete, with_probabilities=False
+    )
+    
+    # Use probabilities results for the rest of the test
+    metrics = metrics_probs
     
     assert metrics['total_invalid_preds'] == 3
     expected_percentage = (3 / 10) * 100
@@ -365,15 +642,37 @@ def test_edge_cases():
     print(f"  - percentage_invalids = {metrics['percentage_invalids']:.1f}%")
     
     print("\nEdge Case 3: Multiple predictions with varied probabilities")
-    predictions = []
-    ground_truth_actions = []
+    # Test with probabilities=True
+    predictions_probs = []
+    ground_truth_actions_probs = []
     for seed in range(10):
-        predictions.append(create_random_joint_probability(seed=seed))
-        ground_truth_actions.append(seed % 36)
+        probs = create_random_joint_probability(seed=seed)
+        predictions_probs.append({
+            "raw_output": f"Varied prediction {seed}",
+            "extracted_outputs": probs
+        })
+        ground_truth_actions_probs.append(seed % 36)
     
-    metrics = metrics_calculator.calculate_metrics(
-        predictions, ground_truth_actions, with_probabilities=True
+    metrics_probs = metrics_calculator.calculate_metrics(
+        predictions_probs, ground_truth_actions_probs, with_probabilities=True
     )
+    
+    # Test with probabilities=False (discrete actions)
+    predictions_discrete = []
+    ground_truth_actions_discrete = []
+    for seed in range(10):
+        predictions_discrete.append({
+            "raw_output": f"Varied discrete {seed}",
+            "extracted_outputs": seed % 36  # Discrete action index
+        })
+        ground_truth_actions_discrete.append(seed % 36)
+    
+    metrics_discrete = metrics_calculator.calculate_metrics(
+        predictions_discrete, ground_truth_actions_discrete, with_probabilities=False
+    )
+    
+    # Use probabilities results for the rest of the test
+    metrics = metrics_probs
     
     assert metrics['num_timesteps'] == 10
     assert metrics['total_invalid_preds'] == 0
@@ -383,15 +682,37 @@ def test_edge_cases():
     print(f"  - exact_match = {metrics['exact_match']:.3f}")
     
     print("\nEdge Case 4: Moderate number of predictions")
-    predictions = []
-    ground_truth_actions = []
+    # Test with probabilities=True
+    predictions_probs = []
+    ground_truth_actions_probs = []
     for seed in range(10):
-        predictions.append(create_random_joint_probability(seed=seed + 100))
-        ground_truth_actions.append(seed + 10)
+        probs = create_random_joint_probability(seed=seed + 100)
+        predictions_probs.append({
+            "raw_output": f"Moderate prediction {seed}",
+            "extracted_outputs": probs
+        })
+        ground_truth_actions_probs.append(seed + 10)
     
-    metrics = metrics_calculator.calculate_metrics(
-        predictions, ground_truth_actions, with_probabilities=True
+    metrics_probs = metrics_calculator.calculate_metrics(
+        predictions_probs, ground_truth_actions_probs, with_probabilities=True
     )
+    
+    # Test with probabilities=False (discrete actions)
+    predictions_discrete = []
+    ground_truth_actions_discrete = []
+    for seed in range(10):
+        predictions_discrete.append({
+            "raw_output": f"Moderate discrete {seed}",
+            "extracted_outputs": (seed + 10) % 36  # Discrete action index
+        })
+        ground_truth_actions_discrete.append(seed + 10)
+    
+    metrics_discrete = metrics_calculator.calculate_metrics(
+        predictions_discrete, ground_truth_actions_discrete, with_probabilities=False
+    )
+    
+    # Use probabilities results for the rest of the test
+    metrics = metrics_probs
     
     assert metrics['num_timesteps'] == 10
     assert 'player0_results' in metrics
@@ -399,16 +720,38 @@ def test_edge_cases():
     print(f"PASS Moderate number of predictions handled correctly")
     
     print("\nEdge Case 5: NOOP action (28 = STAY, STAY) decomposition")
-    predictions = []
-    ground_truth_actions = []
+    # Test with probabilities=True
+    predictions_probs = []
+    ground_truth_actions_probs = []
     actions_to_test = [NOOP_ACTION, 0, 7, 14, 21, 28, 35, 1, 8, 15]
     for action in actions_to_test:
-        predictions.append(create_random_joint_probability(seed=action))
-        ground_truth_actions.append(action)
+        probs = create_random_joint_probability(seed=action)
+        predictions_probs.append({
+            "raw_output": f"NOOP test action {action}",
+            "extracted_outputs": probs
+        })
+        ground_truth_actions_probs.append(action)
     
-    metrics = metrics_calculator.calculate_metrics(
-        predictions, ground_truth_actions, with_probabilities=True
+    metrics_probs = metrics_calculator.calculate_metrics(
+        predictions_probs, ground_truth_actions_probs, with_probabilities=True
     )
+    
+    # Test with probabilities=False (discrete actions)
+    predictions_discrete = []
+    ground_truth_actions_discrete = []
+    for action in actions_to_test:
+        predictions_discrete.append({
+            "raw_output": f"NOOP discrete test action {action}",
+            "extracted_outputs": action  # Discrete action index
+        })
+        ground_truth_actions_discrete.append(action)
+    
+    metrics_discrete = metrics_calculator.calculate_metrics(
+        predictions_discrete, ground_truth_actions_discrete, with_probabilities=False
+    )
+    
+    # Use probabilities results for the rest of the test
+    metrics = metrics_probs
     
     # NOOP action (28) should decompose to both players taking STAY (action 4)
     player0_gt = metrics['player0_results']['ground_truth_actions']
@@ -421,10 +764,180 @@ def test_edge_cases():
     return metrics
 
 
+def test_mixed_valid_invalid_predictions():
+    """Test mixed valid/invalid predictions of different types."""
+    print("\n" + "="*80)
+    print("TEST CASE 6: Mixed Valid/Invalid Predictions")
+    print("="*80)
+    
+    metrics_calculator = OvercookedAIMetricsCalculator()
+    
+    # Test with_probabilities=True - mixed probability scenarios
+    print("\n--- Testing with probabilities=True (mixed types) ---")
+    predictions_probs = []
+    ground_truth_actions_probs = []
+    
+    # Mix of valid and invalid probability predictions
+    predictions_probs.append({
+        "raw_output": "Valid prob 1",
+        "extracted_outputs": [0.0]*35 + [1.0]  # Valid probability distribution
+    })
+    ground_truth_actions_probs.append(35)
+    
+    predictions_probs.append({
+        "raw_output": "Invalid string",
+        "extracted_outputs": "invalid string"  # Invalid string
+    })
+    ground_truth_actions_probs.append(5)
+    
+    predictions_probs.append({
+        "raw_output": "Valid prob 2", 
+        "extracted_outputs": [0.0]*10 + [1.0] + [0.0]*25  # Valid probability distribution
+    })
+    ground_truth_actions_probs.append(10)
+    
+    predictions_probs.append({
+        "raw_output": "Invalid length",
+        "extracted_outputs": [0.1, 0.2, 0.3]  # Invalid length
+    })
+    ground_truth_actions_probs.append(15)
+    
+    predictions_probs.append({
+        "raw_output": "Valid prob 3",
+        "extracted_outputs": [0.0]*20 + [1.0] + [0.0]*15  # Valid probability distribution
+    })
+    ground_truth_actions_probs.append(20)
+    
+    predictions_probs.append({
+        "raw_output": "Invalid None",
+        "extracted_outputs": None  # Invalid None
+    })
+    ground_truth_actions_probs.append(25)
+    
+    predictions_probs.append({
+        "raw_output": "Invalid list type",
+        "extracted_outputs": [0.5, 'invalid', 0.3] + [0.0]*33  # Invalid type in list
+    })
+    ground_truth_actions_probs.append(30)
+    
+    predictions_probs.append({
+        "raw_output": "Valid prob 4",
+        "extracted_outputs": [0.0]*28 + [1.0] + [0.0]*7  # Valid probability distribution
+    })
+    ground_truth_actions_probs.append(28)
+    
+    print(f"PASS Created {len(predictions_probs)} mixed probability predictions")
+    print(f"  - {4} valid probability distributions")
+    print(f"  - {4} invalid predictions (string, wrong length, None, invalid type)")
+    
+    metrics_probs = metrics_calculator.calculate_metrics(
+        predictions_probs, ground_truth_actions_probs, with_probabilities=True
+    )
+    
+    # Test with_probabilities=False - mixed discrete scenarios
+    print("\n--- Testing with probabilities=False (mixed types) ---")
+    predictions_discrete = []
+    ground_truth_actions_discrete = []
+    
+    # Mix of valid and invalid discrete predictions
+    predictions_discrete.append({
+        "raw_output": "Valid discrete 1",
+        "extracted_outputs": 5  # Valid discrete action
+    })
+    ground_truth_actions_discrete.append(5)
+    
+    predictions_discrete.append({
+        "raw_output": "Invalid string",
+        "extracted_outputs": "invalid string"  # Invalid string
+    })
+    ground_truth_actions_discrete.append(10)
+    
+    predictions_discrete.append({
+        "raw_output": "Valid discrete 2",
+        "extracted_outputs": 12  # Valid discrete action
+    })
+    ground_truth_actions_discrete.append(12)
+    
+    predictions_discrete.append({
+        "raw_output": "Invalid list",
+        "extracted_outputs": [1, 2, 3]  # Invalid list
+    })
+    ground_truth_actions_discrete.append(15)
+    
+    predictions_discrete.append({
+        "raw_output": "Valid discrete 3",
+        "extracted_outputs": 20  # Valid discrete action
+    })
+    ground_truth_actions_discrete.append(20)
+    
+    predictions_discrete.append({
+        "raw_output": "Invalid None",
+        "extracted_outputs": None  # Invalid None
+    })
+    ground_truth_actions_discrete.append(25)
+    
+    predictions_discrete.append({
+        "raw_output": "Invalid out of range",
+        "extracted_outputs": 50  # Invalid out of range
+    })
+    ground_truth_actions_discrete.append(30)
+    
+    predictions_discrete.append({
+        "raw_output": "Valid discrete 4",
+        "extracted_outputs": 28  # Valid discrete action
+    })
+    ground_truth_actions_discrete.append(28)
+    
+    print(f"PASS Created {len(predictions_discrete)} mixed discrete predictions")
+    print(f"  - {4} valid discrete actions")
+    print(f"  - {4} invalid predictions (string, list, None, out of range)")
+    
+    metrics_discrete = metrics_calculator.calculate_metrics(
+        predictions_discrete, ground_truth_actions_discrete, with_probabilities=False
+    )
+    
+    # Validate results for both modes
+    print(f"\n--- Validation Results ---")
+    
+    # Probabilities mode validation
+    assert metrics_probs['total_invalid_preds'] == 4, \
+        f"Expected 4 invalid predictions (probabilities), got {metrics_probs['total_invalid_preds']}"
+    print(f"PASS Probabilities mode: {metrics_probs['total_invalid_preds']} invalid predictions")
+    
+    expected_percentage_probs = (4 / 8) * 100
+    assert abs(metrics_probs['percentage_invalids'] - expected_percentage_probs) < 0.1, \
+        f"Expected {expected_percentage_probs}% invalid (probabilities), got {metrics_probs['percentage_invalids']}%"
+    print(f"PASS Probabilities mode: {metrics_probs['percentage_invalids']:.1f}% invalid")
+    
+    # Discrete mode validation
+    assert metrics_discrete['total_invalid_preds'] == 4, \
+        f"Expected 4 invalid predictions (discrete), got {metrics_discrete['total_invalid_preds']}"
+    print(f"PASS Discrete mode: {metrics_discrete['total_invalid_preds']} invalid predictions")
+    
+    expected_percentage_discrete = (4 / 8) * 100
+    assert abs(metrics_discrete['percentage_invalids'] - expected_percentage_discrete) < 0.1, \
+        f"Expected {expected_percentage_discrete}% invalid (discrete), got {metrics_discrete['percentage_invalids']}%"
+    print(f"PASS Discrete mode: {metrics_discrete['percentage_invalids']:.1f}% invalid")
+    
+    # Check that valid predictions are processed correctly
+    predicted_actions_probs = metrics_probs['predicted_actions']
+    valid_count_probs = sum(1 for action in predicted_actions_probs if action != -1)
+    assert valid_count_probs == 4, f"Expected 4 valid predictions (probabilities), got {valid_count_probs}"
+    print(f"PASS Probabilities mode: {valid_count_probs} valid predictions processed")
+    
+    predicted_actions_discrete = metrics_discrete['predicted_actions']
+    valid_count_discrete = sum(1 for action in predicted_actions_discrete if action != -1)
+    assert valid_count_discrete == 4, f"Expected 4 valid predictions (discrete), got {valid_count_discrete}"
+    print(f"PASS Discrete mode: {valid_count_discrete} valid predictions processed")
+    
+    print("\nTEST CASE 6 PASSED\n")
+    return metrics_probs, metrics_discrete
+
+
 def test_all_invalid_predictions():
     """Test handling when all predictions are invalid."""
     print("\n" + "="*80)
-    print("TEST CASE 6: All Invalid Predictions")
+    print("TEST CASE 7: All Invalid Predictions")
     print("="*80)
     
     metrics_calculator = OvercookedAIMetricsCalculator()
@@ -432,27 +945,90 @@ def test_all_invalid_predictions():
     predictions = []
     ground_truth_actions = []
     
+    # Test with probabilities=True
+    predictions_probs = []
+    ground_truth_actions_probs = []
+    
     # All invalid predictions - tests the eval_utils.py fix for np.nan handling
-    predictions.append([0.5, 0.5])  # Wrong length
-    ground_truth_actions.append(5)
+    predictions_probs.append({
+        "raw_output": "All invalid test 1",
+        "extracted_outputs": [0.5, 0.5]  # Wrong length
+    })
+    ground_truth_actions_probs.append(5)
 
-    predictions.append([0.3, 0.3, 0.3])  # Wrong length
-    ground_truth_actions.append(10)
+    predictions_probs.append({
+        "raw_output": "All invalid test 2",
+        "extracted_outputs": [0.3, 0.3, 0.3]  # Wrong length
+    })
+    ground_truth_actions_probs.append(10)
     
-    predictions.append(['invalid'] + [0.0] * 35)  # Invalid type
-    ground_truth_actions.append(15)
+    predictions_probs.append({
+        "raw_output": "All invalid test 3",
+        "extracted_outputs": ['invalid'] + [0.0] * 35  # Invalid type
+    })
+    ground_truth_actions_probs.append(15)
     
-    predictions.append([-0.1, 1.1] + [0.0] * 34)  # Negative probability
-    ground_truth_actions.append(20)
+    predictions_probs.append({
+        "raw_output": "All invalid test 4",
+        "extracted_outputs": [-0.1, 1.1] + [0.0] * 34  # Negative probability
+    })
+    ground_truth_actions_probs.append(20)
     
-    predictions.append([0.1, 0.2, 0.3] + [0.0] * 33)  # Doesn't sum to 1
-    ground_truth_actions.append(25)
+    predictions_probs.append({
+        "raw_output": "All invalid test 5",
+        "extracted_outputs": [0.1, 0.2, 0.3] + [0.0] * 33  # Doesn't sum to 1
+    })
+    ground_truth_actions_probs.append(25)
     
-    print("PASS Added 5 invalid predictions")
+    print("PASS Added 5 invalid predictions (probabilities)")
     
-    metrics = metrics_calculator.calculate_metrics(
-        predictions, ground_truth_actions, with_probabilities=True
+    metrics_probs = metrics_calculator.calculate_metrics(
+        predictions_probs, ground_truth_actions_probs, with_probabilities=True
     )
+    
+    # Test with probabilities=False (discrete actions)
+    predictions_discrete = []
+    ground_truth_actions_discrete = []
+    
+    # All invalid discrete predictions
+    predictions_discrete.append({
+        "raw_output": "All invalid discrete 1",
+        "extracted_outputs": -1  # Invalid action
+    })
+    ground_truth_actions_discrete.append(5)
+
+    predictions_discrete.append({
+        "raw_output": "All invalid discrete 2",
+        "extracted_outputs": 50  # Out of range
+    })
+    ground_truth_actions_discrete.append(10)
+    
+    predictions_discrete.append({
+        "raw_output": "All invalid discrete 3",
+        "extracted_outputs": -5  # Negative out of range
+    })
+    ground_truth_actions_discrete.append(15)
+    
+    predictions_discrete.append({
+        "raw_output": "All invalid discrete 4",
+        "extracted_outputs": 100  # Way out of range
+    })
+    ground_truth_actions_discrete.append(20)
+    
+    predictions_discrete.append({
+        "raw_output": "All invalid discrete 5",
+        "extracted_outputs": -10  # Way negative out of range
+    })
+    ground_truth_actions_discrete.append(25)
+    
+    print("PASS Added 5 invalid predictions (discrete)")
+    
+    metrics_discrete = metrics_calculator.calculate_metrics(
+        predictions_discrete, ground_truth_actions_discrete, with_probabilities=False
+    )
+    
+    # Use probabilities results for the rest of the test
+    metrics = metrics_probs
     
     # All predictions should be marked as invalid
     assert metrics['total_invalid_preds'] == 5, \
@@ -493,7 +1069,7 @@ def test_all_invalid_predictions():
         f"Expected exact_match = 0.0, got {metrics['exact_match']}"
     print(f"PASS exact_match = {metrics['exact_match']} (no correct predictions)")
     
-    print("\nTEST CASE 6 PASSED\n")
+    print("\nTEST CASE 7 PASSED\n")
     return metrics
 
 
@@ -508,6 +1084,7 @@ if __name__ == "__main__":
         test_exact_match_rate()
         test_invalid_predictions()
         test_edge_cases()
+        test_mixed_valid_invalid_predictions()
         test_all_invalid_predictions()
         
         print("\n" + "="*80)

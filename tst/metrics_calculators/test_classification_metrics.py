@@ -8,69 +8,33 @@ import pytest
 
 from src.eval_harness.scoring.classification_metrics import (
     _validate_class_output,
-    _extract_class_index,
     ClassificationMetricsCalculator,
-    FLOAT_NUM_TOLERANCE,
 )
 
 
 def test_validate_class_output():
-    """Test class validation for different input types."""
-    # Valid integer classes
+    """Test class validation - adapter should have already extracted to int."""
+    # Valid integer classes (adapter already extracted)
     assert _validate_class_output(0, 2)
     assert _validate_class_output(1, 2)
     assert not _validate_class_output(2, 2)  # Out of range
-    assert not _validate_class_output(-1, 2)  # Out of range
+    assert not _validate_class_output(-1, 2)  # Adapter returns -1 for invalid
     
-    # Valid string classes
-    assert _validate_class_output("0", 2)
-    assert _validate_class_output("1", 2)
-    assert _validate_class_output("class 0", 2)
-    assert _validate_class_output("prediction: 1", 2)
-    assert not _validate_class_output("2", 2)  # Out of range
-    assert not _validate_class_output("invalid", 2)  # No numbers
+    # Adapter should return int, not string (these should fail validation)
+    assert not _validate_class_output("0", 2)
+    assert not _validate_class_output("1", 2)
+    assert not _validate_class_output("class 0", 2)
+    assert not _validate_class_output("prediction: 1", 2)
     
-    # Valid float classes
-    assert _validate_class_output(0.0, 2)
-    assert _validate_class_output(1.0, 2)
-    if FLOAT_NUM_TOLERANCE >= 0.3:
-        assert _validate_class_output(0.7, 2)  # In tolerance
-    if FLOAT_NUM_TOLERANCE < 0.3:
-        assert not _validate_class_output(0.7, 2)  # Out of tolerance
-    assert not _validate_class_output(2.0, 2)  # Out of range
+    # Adapter should return int, not float (these should fail validation)
+    assert not _validate_class_output(0.0, 2)
+    assert not _validate_class_output(1.0, 2)
+    assert not _validate_class_output(0.7, 2)
     
     # Invalid inputs
     assert not _validate_class_output(None, 2)
     assert not _validate_class_output("", 2)
-    assert not _validate_class_output([0, 1], 2)  # List not supported for discrete classes
-
-
-def test_extract_class_index():
-    """Test class index extraction from different input types."""
-    # Integer inputs
-    assert _extract_class_index(0, 2) == 0
-    assert _extract_class_index(1, 2) == 1
-    assert _extract_class_index(2, 2) == -1  # Invalid
-    
-    # String inputs
-    assert _extract_class_index("0", 2) == 0
-    assert _extract_class_index("1", 2) == 1
-    assert _extract_class_index("class 0", 2) == 0
-    assert _extract_class_index("prediction: 1", 2) == 1
-    assert _extract_class_index("invalid", 2) == -1
-    
-    # Float inputs
-    assert _extract_class_index(0.0, 2) == 0
-    assert _extract_class_index(1.0, 2) == 1
-    if FLOAT_NUM_TOLERANCE >= 0.3:
-        assert _extract_class_index(0.7, 2) == 1  # Rounds to 1
-    if FLOAT_NUM_TOLERANCE < 0.3:
-        assert _extract_class_index(0.7, 2) == -1  # Invalid
-    assert _extract_class_index(2.0, 2) == -1  # Invalid
-    
-    # Invalid inputs
-    assert _extract_class_index(None, 2) == -1
-    assert _extract_class_index("", 2) == -1
+    assert not _validate_class_output([0, 1], 2)
 
 
 def test_classification_metrics_calculator_discrete_predictions():
@@ -78,7 +42,13 @@ def test_classification_metrics_calculator_discrete_predictions():
     calc = ClassificationMetricsCalculator(num_classes=2)
     
     # Test case 1: Perfect predictions
-    predictions = [0, 1, 0, 1, 0]
+    predictions = [
+        {"raw_output": "Class 0", "extracted_outputs": 0},
+        {"raw_output": "Class 1", "extracted_outputs": 1},
+        {"raw_output": "Class 0", "extracted_outputs": 0},
+        {"raw_output": "Class 1", "extracted_outputs": 1},
+        {"raw_output": "Class 0", "extracted_outputs": 0},
+    ]
     ground_truth = [0, 1, 0, 1, 0]
     metrics = calc.calculate_metrics(predictions, ground_truth)
     
@@ -90,7 +60,13 @@ def test_classification_metrics_calculator_discrete_predictions():
     assert metrics['total_invalid_preds'] == 0
     
     # Test case 2: Mixed predictions with some invalid
-    predictions = [0, 1, "invalid", 0, 2]  # 2 is out of range
+    predictions = [
+        {"raw_output": "Class 0", "extracted_outputs": 0},
+        {"raw_output": "Class 1", "extracted_outputs": 1},
+        {"raw_output": "invalid", "extracted_outputs": "invalid"},
+        {"raw_output": "Class 0", "extracted_outputs": 0},
+        {"raw_output": "Class 2", "extracted_outputs": 2},  # 2 is out of range
+    ]
     ground_truth = [0, 1, 1, 0, 1]
     metrics = calc.calculate_metrics(predictions, ground_truth)
     
@@ -100,14 +76,20 @@ def test_classification_metrics_calculator_discrete_predictions():
     assert math.isclose(metrics['valid_accuracy'], 1.0)
     assert metrics['total_invalid_preds'] == 2
     
-    # Test case 3: String predictions
-    predictions = ["0", "class 1", "prediction: 0", "1", "invalid text"]
+    # Test case 3: Mixed valid and invalid predictions
+    predictions = [
+        {"raw_output": "Class 0", "extracted_outputs": 0},
+        {"raw_output": "Class 1", "extracted_outputs": 1},
+        {"raw_output": "invalid", "extracted_outputs": "invalid"},  # Invalid string
+        {"raw_output": "Class 0", "extracted_outputs": 0},
+        {"raw_output": "Class 2", "extracted_outputs": 2},  # Out of range
+    ]
     ground_truth = [0, 1, 0, 1, 0]
     metrics = calc.calculate_metrics(predictions, ground_truth)
     
-    # 4 out of 5 correct
-    assert math.isclose(metrics['overall_accuracy'], 4/5)
-    assert metrics['total_invalid_preds'] == 1
+    # 2 out of 5 correct (including invalid as wrong)
+    assert math.isclose(metrics['overall_accuracy'], 2/5)
+    assert metrics['total_invalid_preds'] == 2
 
 
 def test_classification_metrics_calculator_per_class_metrics():
@@ -115,7 +97,13 @@ def test_classification_metrics_calculator_per_class_metrics():
     calc = ClassificationMetricsCalculator(num_classes=2)
     
     # Test case: Imbalanced predictions
-    predictions = [0, 0, 0, 1, 1]  # 3 class 0, 2 class 1
+    predictions = [
+        {"raw_output": "Class 0", "extracted_outputs": 0},
+        {"raw_output": "Class 0", "extracted_outputs": 0},
+        {"raw_output": "Class 0", "extracted_outputs": 0},
+        {"raw_output": "Class 1", "extracted_outputs": 1},
+        {"raw_output": "Class 1", "extracted_outputs": 1},
+    ]  # 3 class 0, 2 class 1
     ground_truth = [0, 0, 1, 1, 1]  # 2 class 0, 3 class 1
     
     metrics = calc.calculate_metrics(predictions, ground_truth)
@@ -136,7 +124,13 @@ def test_classification_metrics_calculator_edge_cases():
     calc = ClassificationMetricsCalculator(num_classes=2)
     
     # All invalid predictions
-    predictions = ["invalid", None, "bad", 2, -1]
+    predictions = [
+        {"raw_output": "invalid", "extracted_outputs": "invalid"},
+        {"raw_output": "", "extracted_outputs": None},
+        {"raw_output": "bad", "extracted_outputs": "bad"},
+        {"raw_output": "2", "extracted_outputs": 2},
+        {"raw_output": "-1", "extracted_outputs": -1},
+    ]
     ground_truth = [0, 1, 0, 1, 0]
     metrics = calc.calculate_metrics(predictions, ground_truth)
     assert metrics['total_invalid_preds'] == 5
@@ -145,7 +139,10 @@ def test_classification_metrics_calculator_edge_cases():
     
     # Mismatched lengths should raise error
     with pytest.raises(ValueError):
-        calc.calculate_metrics([0, 1], [0, 1, 0])
+        calc.calculate_metrics([
+            {"raw_output": "0", "extracted_outputs": 0},
+            {"raw_output": "1", "extracted_outputs": 1},
+        ], [0, 1, 0])
 
 
 def test_classification_metrics_calculator_different_num_classes():
@@ -153,7 +150,12 @@ def test_classification_metrics_calculator_different_num_classes():
     # Test with 3 classes
     calc_3 = ClassificationMetricsCalculator(num_classes=3)
     
-    predictions = [0, 1, 2, 0]
+    predictions = [
+        {"raw_output": "Class 0", "extracted_outputs": 0},
+        {"raw_output": "Class 1", "extracted_outputs": 1},
+        {"raw_output": "Class 2", "extracted_outputs": 2},
+        {"raw_output": "Class 0", "extracted_outputs": 0},
+    ]
     ground_truth = [0, 1, 2, 0]
     metrics = calc_3.calculate_metrics(predictions, ground_truth)
     
@@ -163,21 +165,23 @@ def test_classification_metrics_calculator_different_num_classes():
     assert len(metrics['f1_per_class']) == 3
 
 
-def test_classification_metrics_calculator_float_tolerance():
-    """Test float tolerance for class validation."""
+def test_classification_metrics_calculator_float_rejection():
+    """Test that float inputs are rejected (adapter should extract to int)."""
     calc = ClassificationMetricsCalculator(num_classes=2)
     
-    # Test float inputs within tolerance
-    predictions = [0.0, 1.0, 0.1, 0.9]  # .1 and .9 should be valid
+    # Test float inputs should be rejected
+    predictions = [
+        {"raw_output": "0.0", "extracted_outputs": 0.0},
+        {"raw_output": "1.0", "extracted_outputs": 1.0},
+        {"raw_output": "0.1", "extracted_outputs": 0.1},
+        {"raw_output": "0.9", "extracted_outputs": 0.9},
+    ]  # All should be invalid - adapter should extract to int
     ground_truth = [0, 1, 0, 1]
     metrics = calc.calculate_metrics(predictions, ground_truth)
 
-    if FLOAT_NUM_TOLERANCE >= 0.1:
-        assert math.isclose(metrics['overall_accuracy'], 1.0)
-        assert metrics['total_invalid_preds'] == 0
-    if FLOAT_NUM_TOLERANCE < 0.1:
-        assert math.isclose(metrics['overall_accuracy'], 0.5)
-        assert metrics['total_invalid_preds'] == 2
+    # All should be invalid since floats are not accepted
+    assert metrics['overall_accuracy'] == 0.0
+    assert metrics['total_invalid_preds'] == 4
 
 if __name__ == "__main__":
     pytest.main(['-s', __file__])

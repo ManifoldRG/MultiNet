@@ -5,7 +5,7 @@ This module provides metrics calculation for the Berkeley Function Calling Leade
 dataset, which evaluates models on multi-turn function calling tasks.
 
 Note: Function call extraction is now handled by model adapters, not this metrics calculator.
-Model adapters return structured predictions with both raw_output and extracted_calls.
+Model adapters return structured predictions with both raw_output and extracted_outputs.
 """
 
 from typing import Dict, Any, List, Tuple
@@ -45,7 +45,7 @@ class BFCLMetricsCalculator:
             
             for turn_pred in pred_dict['predictions']:
                 if isinstance(turn_pred, dict):
-                    extracted_calls = turn_pred.get('extracted_calls', [])
+                    extracted_calls = turn_pred.get('extracted_outputs', [])
                     turn_predictions_calls.append(extracted_calls)
                     raw_output = turn_pred.get('raw_output', '')
                     turn_responses_raw.append(raw_output)

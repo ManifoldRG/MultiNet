@@ -273,22 +273,22 @@ class MultipleChoiceAdapter(ModelAdapter):
         instruction: Optional[str] = None,
         dataset_name: Optional[str] = None,
         history: Optional[List[Dict[str, str]]] = None,
-        return_probabilities: bool = False,
         **kwargs
-    ) -> Union[int, Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """
         Predict choice for MCQ task.
         
         Args:
-            observation: Observation containing 'question', 'choices', and optionally 'image'
-            instruction: Optional task instruction
+            observation: Observation containing standardized keys (image_observation, text_observation)
+            instruction: Task instruction containing the question and choices
             dataset_name: Name of the dataset
             history: Optional conversation history (typically not used for MCQ tasks)
-            return_probabilities: Whether to return choice probabilities
             **kwargs: Additional prediction parameters
             
         Returns:
-            Choice index (int) or dict with choice and probabilities
+            Dictionary with:
+                - "raw_output": str (raw model output text)
+                - "extracted_outputs": int (choice index 0 to num_choices-1)
         """
         pass
 
@@ -323,19 +323,21 @@ class TextGenerationAdapter(ModelAdapter):
         dataset_name: Optional[str] = None,
         history: Optional[List[Dict[str, str]]] = None,
         **kwargs
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
         Generate text response.
         
         Args:
-            observation: Observation containing 'image' and 'question' or prompt
-            instruction: Optional task instruction
+            observation: Observation containing standardized keys (image_observation, text_observation)
+            instruction: Task instruction containing the question
             dataset_name: Name of the dataset
             history: Optional conversation history (typically not used for single-turn VQA)
             **kwargs: Additional prediction parameters
             
         Returns:
-            Generated text response
+            Dictionary with:
+                - "raw_output": str (raw model output text)
+                - "extracted_outputs": str (extracted answer text)
         """
         pass
 
@@ -368,23 +370,21 @@ class GroundingAdapter(ModelAdapter):
         dataset_name: Optional[str] = None,
         history: Optional[List[Dict[str, str]]] = None,
         **kwargs
-    ) -> Union[int, List[int], Dict[str, int]]:
+    ) -> Dict[str, Any]:
         """
         Predict entity-to-bbox mappings.
         
         Args:
-            observation: Observation containing:
-                - 'image': Main image
-                - 'bbox_images': List of cropped bounding box images
-                - 'caption': Text with entities to ground
-                - 'entities': List of entity mentions
-            instruction: Optional task instruction
+            observation: Observation containing standardized keys (image_observation)
+            instruction: Task instruction containing the classification question
             dataset_name: Name of the dataset
             history: Optional conversation history (typically not used for grounding tasks)
             **kwargs: Additional prediction parameters
             
         Returns:
-            Entity-to-bbox mapping (int index, list of indices, or dict mapping)
+            Dictionary with:
+                - "raw_output": str (raw model output text)
+                - "extracted_outputs": int (class index)
         """
         pass
 
@@ -420,20 +420,23 @@ class DiscreteActionAdapter(ModelAdapter):
         history: Optional[List[Dict[str, str]]] = None,
         return_probabilities: bool = False,
         **kwargs
-    ) -> Union[int, Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """
         Predict discrete action.
         
         Args:
-            observation: Observation containing 'image' and optional 'state'
+            observation: Observation containing standardized keys (image_observation, text_observation)
             instruction: Optional task instruction
             dataset_name: Name of the dataset
             history: Optional conversation history (typically not used for action prediction)
-            return_probabilities: Whether to return action probabilities
+            return_probabilities: Whether to return action probabilities in the output dict
             **kwargs: Additional prediction parameters
             
         Returns:
-            Action index (int) or dict with action and probabilities
+            Dictionary with:
+                - "raw_output": str (raw model output text)
+                - "extracted_outputs": int (action index 0 to action_space_size-1)
+                - "probabilities": List[float] (optional, if return_probabilities=True)
         """
         pass
 
@@ -470,19 +473,21 @@ class ContinuousActionAdapter(ModelAdapter):
         dataset_name: Optional[str] = None,
         history: Optional[List[Dict[str, str]]] = None,
         **kwargs
-    ) -> np.ndarray:
+    ) -> Dict[str, Any]:
         """
         Predict continuous action.
         
         Args:
-            observation: Observation containing images, state, etc.
+            observation: Observation containing standardized keys (image_observation)
             instruction: Optional task instruction
             dataset_name: Name of the dataset
             history: Optional conversation history (typically not used for action prediction)
             **kwargs: Additional prediction parameters
             
         Returns:
-            Continuous action vector
+            Dictionary with:
+                - "raw_output": str (raw model output text)
+                - "extracted_outputs": np.ndarray (continuous action vector)
         """
         pass
 
@@ -510,13 +515,15 @@ class ToolUseAdapter(ModelAdapter):
     def __init__(
         self,
         model_name: str,
-        supported_datasets: List[str]
+        supported_datasets: List[str],
+        max_answer_length: int = 150
     ):
         super().__init__(
             model_name=model_name,
             model_type="tool_use",
             supported_datasets=supported_datasets
         )
+        self.max_answer_length = max_answer_length
 
     @abstractmethod
     def predict_action(
@@ -538,7 +545,9 @@ class ToolUseAdapter(ModelAdapter):
             **kwargs: Additional prediction parameters
             
         Returns:
-            Dictionary with "raw_output" and "extracted_calls" keys
+            Dictionary with:
+                - "raw_output": str (raw model output text)
+                - "extracted_outputs": List[str] (extracted function calls)
         """
         pass
     
