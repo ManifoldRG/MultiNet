@@ -1,0 +1,11 @@
+git+https://github.com/jwyang/transformers.git@dev/jwyang-v4.48.2
+open_clip_torch
+git+https://github.com/facebookresearch/co-tracker
+git+https://github.com/subhadarship/kmeans_pytorch
+faiss-cpu
+numba
+decord
+draccus
+git+https://github.com/kvablack/dlimp
+tensorflow_graphics==2021.12.3
+deepspeed
