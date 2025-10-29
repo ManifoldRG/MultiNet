@@ -215,7 +215,7 @@ def test_gameplay_adapter():
         dataset_name="overcooked_ai",
         return_probabilities=True
     )
-    print(f"With probabilities: action={result['action']}, top_prob={result['probabilities'].max():.3f}")
+    print(f"With probabilities: action={result['extracted_outputs']}, top_prob={result['probabilities'].max():.3f}")
 
     print("\n--- Testing batch gameplay ---")
     batch_observations = [overcooked_ai_observation, overcooked_ai_observation]

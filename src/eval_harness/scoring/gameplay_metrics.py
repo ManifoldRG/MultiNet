@@ -58,7 +58,8 @@ class GameplayMetricsCalculator:
         num_actions: int,
         max_brier_mae_error: float = 2.0,
         max_brier_mse_error: float = 2.0,
-        noop_action: Optional[int] = None
+        noop_action: Optional[int] = None,
+        with_probabilities: bool = False
     ):
         """
         Initialize the GameplayMetricsCalculator.
@@ -73,19 +74,17 @@ class GameplayMetricsCalculator:
         self.max_brier_mae_error = max_brier_mae_error
         self.max_brier_mse_error = max_brier_mse_error
         self.noop_action = noop_action
+        self.with_probabilities = with_probabilities
     
     def is_valid_prediction_format(
         self, 
         prediction: Any, 
-        with_probabilities: bool = True
     ) -> bool:
         
-        if with_probabilities:
-            # Expected format: list of floats
+        if self.with_probabilities:
             return self._is_valid_probability_prediction_format(prediction)
-
-        # Expected format: single action index
-        return self._is_valid_action_prediction_format(prediction)
+        else:
+            return self._is_valid_action_prediction_format(prediction)
 
     def _is_valid_action_prediction_format(self, prediction: Any) -> bool:
         if isinstance(prediction, (int, np.integer)):
@@ -108,23 +107,21 @@ class GameplayMetricsCalculator:
     def process_prediction(
         self, 
         prediction: Any, 
-        with_probabilities: bool = True
     ) -> Tuple[Optional[np.ndarray], Optional[int]]:
         """
         Process a single model prediction into action probabilities and predicted action.
         
         Args:
             prediction: Raw model prediction
-            with_probabilities: Whether prediction includes probabilities
             
         Returns:
             Tuple of (action_probabilities, predicted_action_index)
             Returns (None, None) if prediction is invalid
         """
-        if not self.is_valid_prediction_format(prediction, with_probabilities):
+        if not self.is_valid_prediction_format(prediction):
             return None, None
         
-        if with_probabilities:
+        if self.with_probabilities:
             return self._process_prediction_probabilities(prediction)
         else:
             return self._process_prediction_action(prediction)
@@ -151,17 +148,15 @@ class GameplayMetricsCalculator:
         self,
         predictions: List[Dict[str, Any]],
         ground_truth_actions: List[int],
-        with_probabilities: bool = True
     ) -> Dict[str, float]:
         """
         Calculate gameplay metrics for a batch of predictions.
         
         Args:
             predictions: List of structured predictions with "extracted_outputs"
-                        If with_probabilities=True, extracted_outputs should be List[float] (probabilities)
-                        If with_probabilities=False, extracted_outputs should be int (action index)
+                        If self.with_probabilities=True, extracted_outputs should be List[float] (probabilities)
+                        If self.with_probabilities=False, extracted_outputs should be int (action index)
             ground_truth_actions: List of ground truth action indices
-            with_probabilities: Whether predictions include probabilities
             
         Returns:
             Dictionary containing calculated metrics
@@ -194,7 +189,7 @@ class GameplayMetricsCalculator:
             one_hot_gt[gt_action] = 1.0
             
             # Process prediction
-            pred_probs, pred_action = self.process_prediction(pred, with_probabilities)
+            pred_probs, pred_action = self.process_prediction(pred)
             
             if pred_probs is not None and pred_action is not None:
                 # Valid prediction
@@ -212,9 +207,7 @@ class GameplayMetricsCalculator:
         
         # Check if all predictions are invalid
         if all(pred == INVALID_ACTION for pred in predicted_actions):
-            print("WARNING: All predictions are invalid. "
-                  "Ensure that prediction is intended to be a list of 6 probabilities if with_probabilities is True, "
-                  "or an integer in the range [0, 5] if with_probabilities is False.")
+            print("WARNING: All predictions are invalid. ")
 
         if not isinstance(predicted_actions, np.ndarray):
             predicted_actions = np.array(predicted_actions)
@@ -360,10 +353,10 @@ class OvercookedAIMetricsCalculator(GameplayMetricsCalculator):
     This calculator provides both joint metrics and per-player metrics.
     """
     
-    def __init__(self):
+    def __init__(self, with_probabilities: bool = False):
         # Joint action space: 6 player0 actions × 6 player1 actions = 36 total
         # NOOP_ACTION is 28 (both players taking noop: 4,4 -> index 28)
-        super().__init__(num_actions=36, noop_action=28)
+        super().__init__(num_actions=36, noop_action=28, with_probabilities=with_probabilities)
         self.dataset_name = "overcooked_ai"
         self.individual_action_space_size = 6
     
@@ -440,17 +433,15 @@ class OvercookedAIMetricsCalculator(GameplayMetricsCalculator):
         self,
         predictions: List[Dict[str, Any]],
         ground_truth_actions: List[int],
-        with_probabilities: bool = True
     ) -> Dict[str, float]:
         """
         Calculate gameplay metrics for OvercookedAI, including per-player metrics.
         
         Args:
             predictions: List of structured predictions with "extracted_outputs"
-                        If with_probabilities=True, extracted_outputs should be List[float] (probabilities)
-                        If with_probabilities=False, extracted_outputs should be int (action index)
+                        If self.with_probabilities=True, extracted_outputs should be List[float] (probabilities)
+                        If self.with_probabilities=False, extracted_outputs should be int (action index)
             ground_truth_actions: List of ground truth joint action indices
-            with_probabilities: Whether predictions include probabilities
             
         Returns:
             Dictionary containing joint metrics and per-player metrics
@@ -495,7 +486,7 @@ class OvercookedAIMetricsCalculator(GameplayMetricsCalculator):
             one_hot_gt[gt_action] = 1.0
             
             # Process prediction
-            pred_probs, pred_action = self.process_prediction(pred, with_probabilities)
+            pred_probs, pred_action = self.process_prediction(pred)
             
             if pred_probs is not None and pred_action is not None:
                 # Valid prediction - calculate joint metrics

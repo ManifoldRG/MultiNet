@@ -5,6 +5,7 @@ class V1SupportedDatasets:
             "openx_mobile_manipulation": None,
             "openx_quadrupedal": None,
             "openx_bimanual": None,
+            "overcooked_ai": None,
             "piqa": None,
             "sqa3d": None,
             "robot_vqa": None,
