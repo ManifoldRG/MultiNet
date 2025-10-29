@@ -89,7 +89,7 @@ class RoboticsMetricsCalculator:
             normalized_mses = min_max_normalize(timestep_mses)
             normalized_amse = calculate_mean(normalized_mses)
         else:
-            normalized_amse = 0.0
+            normalized_amse = np.nan
         
         # Calculate MAE metrics
         total_dataset_mae = sum(timestep_maes)
@@ -101,17 +101,20 @@ class RoboticsMetricsCalculator:
             
             # Calculate quantile filtered MAE metrics
             quantile_filtered_maes = quantile_filter(timestep_maes)
-            normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
-            normalized_quantile_filtered_amae = calculate_mean(normalized_quantile_filtered_maes)
+            if len(quantile_filtered_maes) > 1:
+                normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
+                normalized_quantile_filtered_amae = calculate_mean(normalized_quantile_filtered_maes)
+            else:
+                normalized_quantile_filtered_amae = np.nan
             
             # Calculate additional MAE metrics
             max_rel_mae = calculate_max_relative_mae(timestep_maes)
             prop_beyond_threshold_mae = calculate_proportion_beyond_mae_threshold(timestep_maes)
         else:
-            normalized_amae = 0.0
-            normalized_quantile_filtered_amae = 0.0
-            max_rel_mae = 0.0
-            prop_beyond_threshold_mae = 0.0
+            normalized_amae = np.nan
+            normalized_quantile_filtered_amae = np.nan
+            max_rel_mae = np.nan
+            prop_beyond_threshold_mae = np.nan
         
         # Calculate invalid prediction percentage
         invalid_percentage = (total_invalid_preds / num_timesteps * 100) if num_timesteps > 0 else 0.0

@@ -258,8 +258,11 @@ class GameplayMetricsCalculator:
         
         # Calculate quantile filtered metrics
         quantile_filtered_maes = quantile_filter(timestep_maes)
-        normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
-        normalized_quantile_filtered_amae = calculate_mean(normalized_quantile_filtered_maes)
+        if len(quantile_filtered_maes) > 1:
+            normalized_quantile_filtered_maes = min_max_normalize(quantile_filtered_maes)
+            normalized_quantile_filtered_amae = calculate_mean(normalized_quantile_filtered_maes)
+        else:
+            normalized_quantile_filtered_amae = np.nan
         
         # Calculate additional MAE metrics
         max_rel_mae = calculate_max_relative_mae(timestep_maes)
