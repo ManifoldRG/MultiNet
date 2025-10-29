@@ -1,0 +1,23 @@
+# Dataset Configuration
+# Global settings (set once at the top)
+models_dir=src/eval_harness/adapters/magma
+data_dir=src/eval_harness/sample_data
+
+# Dataset-specific settings
+# Format: dataset_name.key=value
+
+odinw.adapter_module=magma_mcq_adapter.py
+odinw.batch_process=false
+odinw.batch_size=1
+
+piqa.adapter_module=magma_mcq_adapter.py
+piqa.batch_process=true
+piqa.batch_size=2
+
+overcooked_ai.adapter_module=magma_overcooked_adapter.py
+overcooked_ai.batch_process=false
+overcooked_ai.batch_size=1
+
+sqa3d.adapter_module=magma_vqa_adapter.py
+sqa3d.batch_process=false
+sqa3d.batch_size=1
