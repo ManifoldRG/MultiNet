@@ -21,7 +21,7 @@ IMAGE_NAME="multinet-eval"
 # Check if the correct number of arguments (1) are provided.
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 DATASET_NAME"
-    echo "All configuration is read from dataset_config.txt"
+    echo "All configuration is read from harness_dataset_config.txt"
     exit 1
 fi
 
@@ -30,7 +30,7 @@ DATASET="$1"
 
 # --- Dataset Configuration Check ---
 # Check if dataset configuration file exists
-DATASET_CONFIG="dataset_config.txt"
+DATASET_CONFIG="harness_dataset_config.txt"
 if [ ! -f "$DATASET_CONFIG" ]; then
     echo "Error: Dataset configuration file not found: $DATASET_CONFIG"
     exit 1
