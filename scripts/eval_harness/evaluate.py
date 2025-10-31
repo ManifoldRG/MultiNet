@@ -15,6 +15,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import torch
+import numpy as np
+import logging
+import tensorflow as tf
+logger = logging.getLogger(__name__)
 
 # Add project root to path
 ROOT_DIR = Path(__file__).parent.parent.parent
@@ -25,6 +29,64 @@ from src.eval_harness.model_adapter import ModelAdapter
 from src.eval_harness.v1_supported_datasets import V1SupportedDatasets
 from src.data_utils import *
 from src.eval_harness.scoring import *
+from definitions.overcooked import OverCookedDefinitions
+from definitions.openx import OpenXDefinitions
+
+def first_non_none_shape(images_list):
+    """Return (H, W) of the first non-None image; None if all None."""
+    for img in images_list:
+        if img is not None:
+            return img.shape[:2]
+    return None
+
+
+def ensure_image_or_placeholder(img, ref_shape):
+    """Return img if present; else a black placeholder of ref_shape (H, W, 3)."""
+    if img is None:
+        if ref_shape is None:
+            # Should not happen if we gate earlier; keep defensive check
+            raise ValueError("No reference shape available for placeholder")
+        h, w = ref_shape
+        print(f"Warning: Missing image; substituting placeholder of shape ({h}, {w})")
+        return np.zeros((h, w, 3), dtype=np.uint8)
+    return img
+
+
+def first_non_none_shape(images_list):
+    """Return (H, W) of the first non-None image; None if all None."""
+    for img in images_list:
+        if img is not None:
+            return img.shape[:2]
+    return None
+
+
+def _get_meaningful_action_dims(dataset_name: str) -> int:
+    """
+    Get the number of meaningful action dimensions for OpenX datasets.
+
+    Args:
+        dataset_name: OpenX dataset name (e.g., 'openx_wheeled_robot')
+
+    Returns:
+        Number of meaningful dimensions from ACTION_SPACES definition
+    """
+    openx_subtasks_mapping = {
+        'openx_wheeled_robot': 'berkeley_gnm_sac_son',
+        'openx_quadrupedal': 'utokyo_saytap_converted_externally_to_rlds',
+        'openx_single_arm': 'bridge',
+        'openx_bimanual': 'utokyo_xarm_bimanual_converted_externally_to_rlds',
+        'openx_mobile_manipulation': 'fractal20220817_data'
+    }
+
+    if dataset_name not in openx_subtasks_mapping:
+        return None
+
+    subtask = openx_subtasks_mapping[dataset_name]
+    action_space = OpenXDefinitions.ACTION_SPACES[subtask]['default']
+
+    # Count non-None dimensions
+    meaningful_dims = sum(1 for v in action_space.values() if v is not None)
+    return meaningful_dims if meaningful_dims > 0 else None
 
 
 def validate_structured_prediction(pred: Any, dataset_name: str) -> Dict[str, Any]:
@@ -77,6 +139,16 @@ class EvaluationConfig:
         self.batch_size = args.batch_size
         self.device = args.device
         self.seed = args.seed
+        self.batch_process = args.batch_process
+        self.max_samples = args.max_samples
+        
+        # Override batch_size when batch_process=False
+        if not self.batch_process:
+            self.batch_size = 1
+        
+        # Clip batch_size to max_samples if max_samples is set
+        if self.max_samples is not None:
+            self.batch_size = min(self.batch_size, self.max_samples)
         
         # Validate and setup paths
         self.output_path.mkdir(parents=True, exist_ok=True)
@@ -192,6 +264,92 @@ def get_dataset_and_dataloader(config: EvaluationConfig) -> tuple:
         datasets = [dataset]
         data_loaders = [data_loader]
     return datasets, data_loaders
+
+def _convert_action_dict_to_tensor(action_dict: dict, dataset_name: str) -> np.ndarray:
+    """
+    Convert action dictionary to tensor for data format conversion.
+    This is NOT a transformation for model compatibility, just data format conversion.
+    
+    Args:
+        action_dict: Action dictionary with keys like world_vector, rotation_delta, etc.
+        dataset_name: Name of the dataset
+        
+    Returns:
+        Action tensor (7D for both mobile_manipulation and single_arm)
+    """
+    action_components = []
+    
+    if dataset_name == 'openx_mobile_manipulation':
+        if 'world_vector' in action_dict and 'rotation_delta' in action_dict and 'gripper_closedness_action' in action_dict:
+            # Add world_vector (3D)
+            world_vector = np.array(action_dict['world_vector'])
+            if world_vector.ndim == 0:
+                world_vector = world_vector.reshape(1)
+            elif world_vector.ndim > 1:
+                world_vector = world_vector.flatten()
+            action_components.append(world_vector)
+            
+            # Add rotation_delta (3D)
+            rotation_delta = np.array(action_dict['rotation_delta'])
+            if rotation_delta.ndim == 0:
+                rotation_delta = rotation_delta.reshape(1)
+            elif rotation_delta.ndim > 1:
+                rotation_delta = rotation_delta.flatten()
+            action_components.append(rotation_delta)
+            
+            # Add gripper_closedness_action (1D) - convert relative to absolute
+            gripper_raw = np.array(action_dict['gripper_closedness_action'])
+            if gripper_raw.ndim == 0:
+                gripper_raw = gripper_raw.reshape(1)
+            elif gripper_raw.ndim > 1:
+                gripper_raw = gripper_raw.flatten()
+            
+            # Convert relative to absolute: -1 for closing, 1 for opening -> 0 = closed, 1 = open
+            opening_mask = gripper_raw < -0.1
+            closing_mask = gripper_raw > 0.1
+            thresholded_actions = np.where(opening_mask, 1, np.where(closing_mask, -1, 0))
+            gripper_action = thresholded_actions / 2 + 0.5
+            
+            if gripper_action.ndim == 0:
+                gripper_action = gripper_action.reshape(1)
+            action_components.append(gripper_action)
+        else:
+            raise KeyError(f"RT1 dataset missing required keys: world_vector, rotation_delta, gripper_closedness_action")
+            
+    elif dataset_name == 'openx_single_arm':
+        if 'world_vector' in action_dict and 'rotation_delta' in action_dict and 'open_gripper' in action_dict:
+            # Add world_vector (3D)
+            world_vector = np.array(action_dict['world_vector'])
+            if world_vector.ndim == 0:
+                world_vector = world_vector.reshape(1)
+            elif world_vector.ndim > 1:
+                world_vector = world_vector.flatten()
+            action_components.append(world_vector)
+            
+            # Add rotation_delta (3D)
+            rotation_delta = np.array(action_dict['rotation_delta'])
+            if rotation_delta.ndim == 0:
+                rotation_delta = rotation_delta.reshape(1)
+            elif rotation_delta.ndim > 1:
+                rotation_delta = rotation_delta.flatten()
+            action_components.append(rotation_delta)
+            
+            # Add open_gripper (1D) cast to float32
+            gripper_raw = np.array(action_dict['open_gripper'])
+            if gripper_raw.ndim == 0:
+                gripper_raw = gripper_raw.reshape(1)
+            elif gripper_raw.ndim > 1:
+                gripper_raw = gripper_raw.flatten()
+            gripper_action = gripper_raw.astype(np.float32)
+            action_components.append(gripper_action)
+        else:
+            raise KeyError(f"Bridge OXE dataset missing required keys: world_vector, rotation_delta, open_gripper")
+    
+    if action_components:
+        action_tensor = np.concatenate(action_components)
+        return action_tensor
+    else:
+        raise ValueError(f"No valid action components found for dataset {dataset_name}")
 
 def get_metrics_calculator(config: EvaluationConfig, dataset: torch.utils.data.Dataset):
     if 'openx' in config.dataset:
@@ -316,6 +474,8 @@ def save_results(metrics: Dict[str, Any], config: EvaluationConfig, sub_dataset_
             'data_split': config.data_split,
             'sub_dataset_name': sub_dataset_name if sub_dataset_name is not None else '',
             'batch_size': config.batch_size,
+            'batch_process': config.batch_process,
+            'max_samples': config.max_samples,
             'seed': config.seed,
             'timestamp': timestamp
         },
@@ -444,7 +604,7 @@ def profile_and_save_results_multiturn(
                 batch_ground_truths[conv_idx].append(
                     batch['ground_truth_functions'][conv_idx][turn_idx]
                 )
-        
+
         for conv_idx in range(batch_size):
             all_predictions.append({
                 'conversation_id': batch['conversation_id'][conv_idx],
@@ -459,6 +619,12 @@ def profile_and_save_results_multiturn(
         
         if (batch_idx + 1) % 10 == 0:
             print(f"Processed {batch_idx + 1} batches ({len(all_predictions)} conversations)")
+        
+        # Early exit logic for max_samples
+        if config.max_samples is not None:
+            if len(all_predictions) >= config.max_samples:
+                print(f"Processed {len(all_predictions)} conversations (max_samples={config.max_samples}). Exiting.")
+                break
     
     print(f"Completed evaluation of {len(all_predictions)} conversations")
     
@@ -493,7 +659,8 @@ def profile_and_save_results_multiturn(
 
 def extract_observations_and_instructions(
     batch: Dict[str, Any],
-    dataset_name: str
+    dataset_name: str,
+    dataset: torch.utils.data.Dataset
 ) -> tuple:
     """
     Extract standardized observations and instructions from batch.
@@ -518,107 +685,309 @@ def extract_observations_and_instructions(
     instructions = []
     
     if 'openx' in dataset_name:
-        # OpenX: instruction is in text_observation, observation only has image
+        openx_subtasks_mapping= {
+            'openx_wheeled_robot': 'berkeley_gnm_sac_son',
+            'openx_quadrupedal': 'utokyo_saytap_converted_externally_to_rlds',
+            'openx_single_arm': 'bridge',
+            'openx_bimanual': 'utokyo_xarm_bimanual_converted_externally_to_rlds',
+            'openx_mobile_manipulation': 'fractal20220817_data'
+        }
+        
         for i in range(batch_size):
-            observations.append({
-                'image_observation': batch['image_observation'][i]
-            })
-            instructions.append(batch['text_observation'][i])
-    
+            obs_dict = {}
+            env_desc = batch['text_observation'][i].strip()
+            obs_dict['text_observation'] = env_desc
+
+            inst_dict = OpenXDefinitions.DESCRIPTIONS[openx_subtasks_mapping[dataset_name]]
+
+            instruction = inst_dict.get(env_desc, inst_dict.get(env_desc.lower().rstrip('.'), None))
+            instructions.append(instruction)
+
+            action_space = OpenXDefinitions.ACTION_SPACES[openx_subtasks_mapping[dataset_name]]['default']
+            obs_dict['options'] = action_space
+
+            action_stats = dataset.action_stats
+            # Convert TensorFlow tensors to numpy arrays
+            for key in ['min', 'max', 'mean', 'std', 'q01', 'q99']:
+                if key in action_stats:
+                    if tf.is_tensor(action_stats[key]):
+                        action_stats[key] = action_stats[key].numpy()
+                    else:
+                        action_stats[key] = np.array(action_stats[key])
+            
+            obs_dict['action_stats'] = action_stats
+
+            obs_dict['image_observation'] = batch['image_observation'][i]
+
+            observations.append(obs_dict)
+
     elif dataset_name == 'robot_vqa':
         # Robot VQA: instruction is the question, observation only has image
+        # Check if all images are missing
+        ref = first_non_none_shape(batch['image_observation'])
+        if ref is None:
+            print(f"Skipping batch: no images available for robot_vqa")
+            return [], []  # Return empty lists to skip this batch
+        
         for i in range(batch_size):
+            img = ensure_image_or_placeholder(batch['image_observation'][i], ref)
             observations.append({
-                'image_observation': batch['image_observation'][i]
+                'image_observation': img,
             })
             instructions.append(batch['text_observation'][i])
     
     elif dataset_name == 'piqa':
-        # PIQA: instruction is the question, no observation (text-only)
-        # Observation is None for pure text tasks
+        # PIQA: instruction is the question, observation has options only (text-only task)
         for i in range(batch_size):
-            observations.append(None)
+            observations.append({
+                'options': [0, 1],  # PIQA always has 2 choices
+            })
             instructions.append(batch['question'][i])
     
     elif dataset_name == 'sqa3d':
         # SQA3D: instruction is the question, observation only has image
+        # Check if all images are missing
+        ref = first_non_none_shape(batch['scene_image'])
+        if ref is None:
+            print(f"Skipping batch: no images available for SQA3D")
+            return [], []  # Return empty lists to skip this batch
+        
         for i in range(batch_size):
+            img = ensure_image_or_placeholder(batch['scene_image'][i], ref)
             observations.append({
-                'image_observation': batch['scene_image'][i]
+                'image_observation': img,
             })
             instructions.append(batch['question'][i])
     
     elif dataset_name == 'odinw':
-        # ODinW: instruction is the question, observation only has image
+        # ODinW: instruction is the question, observation has image and options
+        # Check if all images are missing
+        ref = first_non_none_shape(batch['image'])
+        if ref is None:
+            print(f"Skipping batch: no images available for odinw")
+            return [], []  # Return empty lists to skip this batch
+        
         for i in range(batch_size):
+            img = ensure_image_or_placeholder(batch['image'][i], ref)
             observations.append({
-                'image_observation': batch['image'][i]
+                'image_observation': img,
+                'options': batch['options'][i]
             })
             instructions.append(batch['question'][i])
     
     elif dataset_name == 'overcooked_ai':
-        # Overcooked: observation has layout + time info, no instruction yet
-        # TODO: Add action space as instruction in the future
+        # Overcooked: observation has layout + time info
+        # Check if all images are missing
+        ref = first_non_none_shape(batch['image_observation'])
+        if ref is None:
+            print(f"Skipping batch: no images available for overcooked_ai")
+            return [], []  # Return empty lists to skip this batch
+        
         for i in range(batch_size):
             # Format text observation with time information
             text_obs = batch['text_observation'][i]
             time_left = batch['time_left'][i]
             time_elapsed = batch['time_elapsed'][i]
-            
-            # Combine into single text observation
+
+            img = ensure_image_or_placeholder(batch['image_observation'][i], ref)
+            observations.append({
+                'text_observation': OverCookedDefinitions.ACTION_MEANINGS,
+                'image_observation': img,
+                'options': OverCookedDefinitions.ACTION_SPACES['overcooked_ai']['default']
+            })
+
+            # Combine into single text observation for instruction
             combined_text = f"Layout: {text_obs}\nTime left: {time_left:.1f}s\nTime elapsed: {time_elapsed:.1f}s"
             
-            observations.append({
-                'text_observation': combined_text,
-                'image_observation': batch['image_observation'][i]
-            })
-        # TODO: Add action space description as instruction
-        # For now, return None instead of list of Nones
-        instructions = None
+            instructions.append(combined_text)
     
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
     
     return observations, instructions
 
-def profile_and_save_results(model_adapter: ModelAdapter,
-                             dataset: torch.utils.data.Dataset,
-                             data_loader: torch.utils.data.DataLoader, 
-                             config: EvaluationConfig,
-                             sub_dataset_name: Optional[str] = None):
+def profile_and_save_results(
+    model_adapter: ModelAdapter,
+    dataset: torch.utils.data.Dataset,
+    data_loader: torch.utils.data.DataLoader, 
+    config: EvaluationConfig,
+    sub_dataset_name: Optional[str] = None
+):
     predictions = []
     ground_truth_actions = []
+    skipped_batches_no_image = 0
+    skipped_samples_no_image = 0
+    
     for batch in data_loader:
         # Extract standardized observations and instructions
         observations, instructions = extract_observations_and_instructions(
-            batch, config.dataset
+            batch, config.dataset, dataset
         )
         
-        # Call batch_predict_actions with proper signature
-        batch_predictions = model_adapter.batch_predict_actions(
-            observations=observations,
-            instructions=instructions,
-            dataset_name=config.dataset
-        )
+        # Skip this batch if no observations (all images missing)
+        if len(observations) == 0:
+            skipped_batches_no_image += 1
+            
+            # Count samples based on dataset-specific image field
+            if config.dataset == 'sqa3d':
+                skipped_samples_no_image += len(batch['scene_image'])
+            elif config.dataset == 'robot_vqa':
+                skipped_samples_no_image += len(batch['image_observation'])
+            elif config.dataset == 'odinw':
+                skipped_samples_no_image += len(batch['image'])
+            elif config.dataset == 'overcooked_ai':
+                skipped_samples_no_image += len(batch['image_observation'])
+            else:
+                # For other datasets, use a fallback
+                skipped_samples_no_image += len(batch.get('image_observation', []))
+            
+            continue
         
-        # Validate predictions have correct structured format
-        validated_predictions = []
-        for pred in batch_predictions:
-            try:
-                validated_pred = validate_structured_prediction(pred, config.dataset)
-                validated_predictions.append(validated_pred)
-            except ValueError as e:
-                raise ValueError(
-                    f"Invalid prediction format from model adapter for dataset '{config.dataset}': {e}"
+        if config.batch_process:
+            # Use batch processing
+            batch_predictions = model_adapter.batch_predict_actions(
+                observations=observations,
+                instructions=instructions,
+                dataset_name=config.dataset
+            )
+            
+            # Validate predictions have correct structured format
+            validated_predictions = []
+            for pred in batch_predictions:
+                try:
+                    validated_pred = validate_structured_prediction(pred, config.dataset)
+                    validated_predictions.append(validated_pred)
+                except ValueError as e:
+                    raise ValueError(
+                        f"Invalid prediction format from model adapter for dataset '{config.dataset}': {e}"
+                    )
+        else:
+            # Use single-item processing
+            validated_predictions = []
+            for i in range(len(observations)):
+                # Get single observation and instruction
+                single_observation = observations[i]
+                single_instruction = instructions[i] if instructions else None
+                
+                # Call predict_action for single item
+                single_prediction = model_adapter.predict_action(
+                    observation=single_observation,
+                    instruction=single_instruction,
+                    dataset_name=config.dataset
                 )
+                
+                # Validate prediction has correct structured format
+                try:
+                    validated_pred = validate_structured_prediction(single_prediction, config.dataset)
+                    validated_predictions.append(validated_pred)
+                except ValueError as e:
+                    raise ValueError(
+                        f"Invalid prediction format from model adapter for dataset '{config.dataset}': {e}"
+                    )
         
         predictions.extend(validated_predictions)
-        ground_truth_actions.extend(batch[get_ground_truth_key(config)])
-        
+
+        # Process ground truth actions for OpenX datasets
+        if 'openx' in config.dataset:
+            # Get raw actions from batch
+            raw_gt_actions = batch['action']
+
+            # Process based on dataset type
+            if config.dataset in ['openx_mobile_manipulation', 'openx_single_arm']:
+                # Convert action_dict to tensor (data format conversion, not transformation)
+                processed_gt_actions = []
+                for i, action_dict in enumerate(batch.get('action_dict', [])):
+                    if action_dict and len(action_dict) > 0:
+                        action_tensor = _convert_action_dict_to_tensor(action_dict, config.dataset)
+                        processed_gt_actions.append(action_tensor)
+                    else:
+                        processed_gt_actions.append(np.array(raw_gt_actions[i]))
+                ground_truth_actions.extend(processed_gt_actions)
+
+            else:
+                # No processing needed
+                ground_truth_actions.extend(raw_gt_actions)
+            
+            # Convert all ground truth actions to numpy array format
+            ground_truth_actions = [np.array(action) for action in ground_truth_actions]
+        else:
+            # Non-OpenX datasets use existing logic
+            ground_truth_actions.extend(batch[get_ground_truth_key(config)])
+
+        # Early exit logic for max_samples
+        if config.max_samples is not None:
+            if len(predictions) >= config.max_samples:
+                print(f"Processed {len(predictions)} samples (max_samples={config.max_samples}). Exiting.")
+                break
+
     save_predictions(predictions, config, sub_dataset_name=sub_dataset_name)
 
+    # Check if no predictions were generated (all batches skipped)
+    if len(predictions) == 0:
+        print(f"No predictions generated (all batches skipped due to missing images). Skipping metrics.")
+        print(f"Skipped {skipped_batches_no_image} batches ({skipped_samples_no_image} samples) due to missing images.")
+        
+        # Create a summary with skipped counts instead of metrics
+        summary = {
+            'evaluation_config': {
+                'dataset': config.dataset,
+                'task_type': config.task_type,
+                'model_adapter_path': str(config.model_adapter_module_path),
+                'data_split': config.data_split,
+                'sub_dataset_name': sub_dataset_name if sub_dataset_name is not None else '',
+                'batch_size': config.batch_size,
+                'batch_process': config.batch_process,
+                'max_samples': config.max_samples,
+                'seed': config.seed,
+                'timestamp': datetime.now().strftime("%Y%m%d_%H%M%S")
+            },
+            'skipped_summary': {
+                'skipped_batches_no_image': skipped_batches_no_image,
+                'skipped_samples_no_image': skipped_samples_no_image,
+                'reason': 'All batches skipped due to missing images'
+            }
+        }
+        
+        # Save the summary instead of metrics
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if sub_dataset_name is None:
+            results_file = config.output_path / f"{config.dataset}_skipped_summary_{timestamp}.json"
+        else:
+            results_file = config.output_path / f"{config.dataset}_{sub_dataset_name}_skipped_summary_{timestamp}.json"
+        
+        with open(results_file, 'w') as f:
+            json.dump(summary, f, indent=2, default=str)
+        
+        print(f"Skipped summary saved to: {results_file}")
+        return
+
     metrics_calculator = get_metrics_calculator(config, dataset)
-    metrics = metrics_calculator.calculate_metrics(predictions, ground_truth_actions)
+
+    # Clip to meaningful dimensions for OpenX datasets
+    if 'openx' in config.dataset:
+        meaningful_dims = _get_meaningful_action_dims(config.dataset)
+        if meaningful_dims is not None:
+
+            # Clip predictions
+            clipped_predictions = []
+            for pred in predictions:
+                clipped_pred = pred.copy()
+                clipped_pred['extracted_outputs'] = pred['extracted_outputs'][:meaningful_dims]
+                clipped_predictions.append(clipped_pred)
+
+            # Clip ground truth
+            clipped_ground_truth = [gt[:meaningful_dims] for gt in ground_truth_actions]
+
+            metrics = metrics_calculator.calculate_metrics(clipped_predictions, clipped_ground_truth)
+        else:
+            metrics = metrics_calculator.calculate_metrics(predictions, ground_truth_actions)
+    else:
+        metrics = metrics_calculator.calculate_metrics(predictions, ground_truth_actions)
+    
+    # Add skipped batch information to metrics if any batches were skipped
+    if skipped_batches_no_image > 0:
+        metrics['skipped_batches_no_image'] = skipped_batches_no_image
+        metrics['skipped_samples_no_image'] = skipped_samples_no_image
     
     save_results(metrics, config, sub_dataset_name=sub_dataset_name)
     
@@ -645,6 +1014,10 @@ def main():
                         help="Device to use for evaluation")
     parser.add_argument('--seed', type=int, default=42,
                         help="Random seed for deterministic evaluation")
+    parser.add_argument('--batch_process', action='store_true', default=False,
+                        help="Use batch processing (batch_predict_actions). If False, uses single-item processing (predict_action) with batch_size=1")
+    parser.add_argument('--max_samples', type=int, default=None,
+                        help="Maximum number of samples to process. If set, clips batch_size to max_samples. If batch_process=True, exits after one batch. If batch_process=False, exits after processing max_samples.")
     
     args = parser.parse_args()
 
@@ -674,6 +1047,10 @@ def main():
     
     bordered_print("RUNNING EVALUATION")
 
+    # Validate BFCL requires batch processing
+    if config.dataset == 'bfcl' and not config.batch_process:
+        raise ValueError("BFCL dataset requires batch_process=True (single-item processing not yet supported for multi-turn datasets)")
+    
     # Determine if this is a multi-turn dataset
     is_multiturn = is_multiturn_dataset(config.dataset)
     
@@ -689,12 +1066,13 @@ def main():
             # Get sub-dataset name for multi-dataset evaluation (like ODinW)
             sub_dataset_name = dataset.get_dataset_name() if hasattr(dataset, 'get_dataset_name') else None
             print(f"Running evaluation for {config.dataset} {sub_dataset_name if sub_dataset_name else ''}")
+            print(f"Total samples in dataset: {len(dataset)}")
             evaluation_function(model_adapter, dataset, data_loader, config, sub_dataset_name=sub_dataset_name)
-            
+
     else:
         print(f"Running evaluation for {config.dataset}")
+        print(f"Total samples in dataset: {len(datasets[0])}")
         evaluation_function(model_adapter, datasets[0], data_loaders[0], config)
-        
 
     bordered_print("EVALUATION COMPLETE!")
 

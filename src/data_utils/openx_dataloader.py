@@ -194,7 +194,8 @@ class OpenXDataset(Dataset):
             stacked_actions = np.stack(all_actions)
             self._action_stats['q01'] = np.quantile(stacked_actions, 0.01, axis=0)
             self._action_stats['q99'] = np.quantile(stacked_actions, 0.99, axis=0)
-    
+
+
     @property
     def action_stats(self):
         if self._action_stats is None:
@@ -232,6 +233,10 @@ class OpenXDataset(Dataset):
         return self._action_stats
         
 
+    @action_stats.setter
+    def action_stats(self, value):
+        self._action_stats = value
+        
     def _get_feature(self, elem, feature_name: str) -> Any:
         # Implement feature extraction based on your TFDS structure
         # This is a placeholder and needs to be adjusted based on your data
