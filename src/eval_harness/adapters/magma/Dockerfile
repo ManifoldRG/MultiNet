@@ -20,8 +20,8 @@ RUN pip install --no-cache-dir --upgrade pip setuptools && \
 #-------------------------------------------------------------------
 # Install specific requirements for adapter
 # Replace with your own requirements
-COPY path/to/your_requirements.txt .
-RUN pip install --no-cache-dir -r your_requirements.txt
+COPY src/v1/modules/Magma/magma_action_requirements.txt .
+RUN pip install --no-cache-dir -r magma_action_requirements.txt
 #-------------------------------------------------------------------
     
 # Stage 2: Runtime image

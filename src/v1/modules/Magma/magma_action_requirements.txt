@@ -1,3 +1,5 @@
+# First clone the multinet env, then pip install -r magma_action_requirements.txt
+# Used for any text generation datasets and the action tokenizer
 git+https://github.com/jwyang/transformers.git@dev/jwyang-v4.48.2
 open_clip_torch
 git+https://github.com/facebookresearch/co-tracker
