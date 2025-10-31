@@ -60,11 +60,9 @@ class MagmaOvercookedAdapter(ModelAdapter):
             torch_dtype: Data type for model weights (bf16, fp16, or fp32)
             device_map: Device mapping strategy for model loading
         """
-        super().__init__(
-            model_name="magma",
-            model_type="discrete_action",
-            supported_datasets=["overcooked_ai"]
-        )
+        super().__init__()
+        self.model_name = "magma"
+        self.model_type = "discrete_action"
         
         self.model_name_or_path = model_name_or_path
         self.device_map = device_map
@@ -80,7 +78,11 @@ class MagmaOvercookedAdapter(ModelAdapter):
         self.model = None
         self.processor = None
         self.device = None
-    
+
+    @property
+    def supported_datasets(self) -> List[str]:
+        return ["overcooked_ai"]
+
     def initialize(
         self,
         device: str = "cuda",

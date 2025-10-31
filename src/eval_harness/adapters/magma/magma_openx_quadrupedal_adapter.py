@@ -45,11 +45,9 @@ class MagmaOpenXQuadrupedalAdapter(ModelAdapter):
             torch_dtype: Data type for model weights (bf16, fp16, or fp32)
             device_map: Device mapping strategy for model loading
         """
-        super().__init__(
-            model_name="Magma-8B-OpenX-Quadrupedal",
-            model_type="continuous_action",
-            supported_datasets=["openx_quadrupedal"]
-        )
+        super().__init__()
+        self.model_name = "Magma-8B-OpenX-Quadrupedal"
+        self.model_type = "continuous_action"
         
         self.model_name_or_path = model_name_or_path
         self.device_map = device_map
@@ -67,7 +65,11 @@ class MagmaOpenXQuadrupedalAdapter(ModelAdapter):
         self.processor = None
         self.generation_args = None
         self.device = None
-    
+
+    @property
+    def supported_datasets(self) -> List[str]:
+        return ["openx_quadrupedal"]
+
     def initialize(
         self,
         device: str = "cuda",

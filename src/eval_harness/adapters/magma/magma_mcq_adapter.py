@@ -53,11 +53,9 @@ class MagmaMCQAdapter(ModelAdapter):
             torch_dtype: Data type for model weights (bf16, fp16, or fp32)
             device_map: Device mapping strategy for model loading
         """
-        super().__init__(
-            model_name="magma",
-            model_type="multiple_choice",
-            supported_datasets=["odinw", "piqa"]
-        )
+        super().__init__()
+        self.model_name = "magma"
+        self.model_type = "multiple_choice"
         
         self.model_name_or_path = model_name_or_path
         self.device_map = device_map
@@ -73,7 +71,11 @@ class MagmaMCQAdapter(ModelAdapter):
         self.model = None
         self.processor = None
         self.device = None
-    
+
+    @property
+    def supported_datasets(self) -> List[str]:
+        return ["odinw", "piqa"]
+
     def initialize(
         self,
         device: str = "cuda",

@@ -13,10 +13,10 @@ import re
 import numpy as np
 from PIL import Image
 from typing import Dict, Any, List, Optional
-from src.eval_harness.model_adapter import TextGenerationAdapter
+from src.eval_harness.model_adapter import ModelAdapter
 
 
-class SimpleVQAAdapter(TextGenerationAdapter):
+class SimpleVQAAdapter(ModelAdapter):
     """
     Example adapter for Visual Question Answering tasks.
     
@@ -25,13 +25,16 @@ class SimpleVQAAdapter(TextGenerationAdapter):
     """
     
     def __init__(self, max_answer_length: int = 100):
-        super().__init__(
-            model_name="SimpleVQAModel",
-            supported_datasets=["robot_vqa", "sqa3d"],
-            max_answer_length=max_answer_length
-        )
+        super().__init__()
+        self.model_name = "SimpleVQAModel"
+        self.model_type = "text_generation"
+        self.max_answer_length = max_answer_length
         self.model = None
-        
+
+    @property
+    def supported_datasets(self) -> List[str]:
+        return ["robot_vqa", "sqa3d"]
+
     def initialize(self, model_path: Optional[str] = None, device: str = "cpu", seed: int = 42, **kwargs):
         """Initialize the VQA model."""
         print(f"Initializing {self.model_name}")

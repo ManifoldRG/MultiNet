@@ -1,7 +1,7 @@
 """
 Gameplay Model Adapter Example
 
-Demonstrates how to implement the DiscreteActionAdapter interface
+Demonstrates how to implement the ModelAdapter interface
 for discrete action gameplay tasks like Procgen, OvercookedAI.
 """
 import os, sys
@@ -11,20 +11,23 @@ sys.path.append(ROOT_DIR)
 import numpy as np
 from PIL import Image
 from typing import Dict, Any, List, Optional, Union
-from src.eval_harness.model_adapter import DiscreteActionAdapter
+from src.eval_harness.model_adapter import ModelAdapter
 
 
-class SimpleGameplayAdapter(DiscreteActionAdapter):
+class SimpleGameplayAdapter(ModelAdapter):
     """Example adapter for gameplay tasks with discrete action spaces."""
     
     def __init__(self, action_space_size: int = 15):
-        super().__init__(
-            model_name="SimpleGameplayModel",
-            supported_datasets=["procgen", "overcooked_ai"],
-            action_space_size=action_space_size,
-        )
+        super().__init__()
+        self.model_name = "SimpleGameplayModel"
+        self.model_type = "discrete_action"
+        self.action_space_size = action_space_size
         self.model = None
-        
+
+    @property
+    def supported_datasets(self) -> List[str]:
+        return ["procgen", "overcooked_ai"]
+
     def initialize(self, model_path: Optional[str] = None, device: str = "cpu", seed: int = 42, **kwargs):
         """Initialize the gameplay model."""
         print(f"Initializing {self.model_name} with {self.action_space_size} actions")

@@ -130,9 +130,39 @@ For detailed instructions on evaluating Pi0 Base on ODINW, PIQA, SQA3D, RoboVQA,
 **GPT Model Evaluation (GenESIS Framework):**
 For detailed instructions on evaluating GPT-5 using the GenESIS framework on ODINW, PIQA, SQA3D, RoboVQA, Overcooked, and OpenX datasets, see the [GenESIS Evaluation Guide](docs/genesis_evaluation.md).
 
-## 📊 Evaluation and submission process to the Multinet benchmark
+## 📊 Process for Submission to the MultiNet Benchmark
 
-Our standardized evaluation harness is currently being developed and is expected to be live soon. If you'd like to get your model on the MultiNet benchmark before the harness is released, please submit a PR with your evaluation code and results, or contact us directly.
+### Using the Evaluation Harness
+
+We provide a standardized evaluation harness for benchmarking your model on MultiNet datasets. The harness provides:
+
+- **Standardized Interface**: Create model adapters that inherit from the base `ModelAdapter` class
+- **Dockerized Evaluation**: Reproducible evaluations in isolated containers
+- **Multiple Task Types**: Support for VQA, multiple choice, action prediction, function calling, and more
+- **Flexible Configuration**: One adapter can handle multiple datasets with configurable batch processing
+
+**Quick Start:**
+1. Create your model adapter by inheriting from `ModelAdapter` in `src/eval_harness/model_adapter.py`
+2. Configure `harness_dataset_config.txt` with your adapter settings
+3. Run `./build_and_run_eval_container.sh DATASET_NAME`
+
+**For complete instructions, see the [Evaluation Harness Guide](src/eval_harness/README.md).**
+
+### Submitting Results
+
+After running evaluations, your results will be saved in the `./eval_results/` directory. To submit to the MultiNet leaderboard:
+
+1. **Test on sample data**: Verify your adapters work correctly using `src/eval_harness/sample_data/`
+2. **Run full evaluations**: Complete evaluations on all relevant datasets for your model type
+3. **Fork the repository**: Create a fork of MultiNet to your GitHub account
+4. **Prepare submission**: 
+   - Place your edited `Dockerfile` and `harness_dataset_config.txt` in the top-level directory
+   - Organize your adapters and results in `src/eval_harness/adapters/your_model_name/`
+5. **Open a Pull Request**: Submit a PR with title "Model Submission: [Your Model Name]"
+
+**For detailed submission instructions, see the [Evaluation Harness Guide](src/eval_harness/README.md#submitting-to-the-leaderboard).**
+
+We welcome submissions for all model types: VLMs, VLAs, and generalist models. For questions or assistance, join our [Discord community](https://discord.gg/Rk4gAq5aYr) or open an issue on GitHub.
 
 ## 📜 Citation
 

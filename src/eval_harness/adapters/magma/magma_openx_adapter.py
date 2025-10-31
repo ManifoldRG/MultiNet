@@ -53,16 +53,9 @@ class MagmaOpenXAdapter(ModelAdapter):
             torch_dtype: Data type for model weights (bf16, fp16, or fp32)
             device_map: Device mapping strategy for model loading
         """
-        super().__init__(
-            model_name="Magma-8B-OpenX",
-            model_type="continuous_action",
-            supported_datasets=[
-                "openx_mobile_manipulation",
-                "openx_single_arm",
-                "openx_bimanual",
-                "openx_wheeled_robot"
-            ]
-        )
+        super().__init__()
+        self.model_name = "Magma-8B-OpenX"
+        self.model_type = "continuous_action"
 
         self.model_name_or_path = model_name_or_path
         self.device_map = device_map
@@ -80,6 +73,15 @@ class MagmaOpenXAdapter(ModelAdapter):
         self.action_tokenizer = None
         self.generation_args = None
         self.device = None
+
+    @property
+    def supported_datasets(self) -> List[str]:
+        return [
+            "openx_mobile_manipulation",
+            "openx_single_arm",
+            "openx_bimanual",
+            "openx_wheeled_robot"
+        ]
 
     def initialize(
         self,

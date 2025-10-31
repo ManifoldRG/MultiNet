@@ -19,12 +19,12 @@ from transformers import AutoModelForCausalLM, AutoProcessor
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
 sys.path.append(ROOT_DIR)
 
-from src.eval_harness.model_adapter import TextGenerationAdapter
+from src.eval_harness.model_adapter import ModelAdapter
 from definitions.sqa3d_prompt import SQA3DDefinitions
 from definitions.robovqa_prompt import ROBOVQA_PROMPT
 
 
-class MagmaVQAAdapter(TextGenerationAdapter):
+class MagmaVQAAdapter(ModelAdapter):
     """
     Adapter for Magma model on VQA tasks (RoboVQA and SQA3D).
     
@@ -48,11 +48,10 @@ class MagmaVQAAdapter(TextGenerationAdapter):
             device_map: Device mapping strategy for model loading
             max_answer_length: Maximum number of tokens to generate
         """
-        super().__init__(
-            model_name="magma",
-            supported_datasets=["robot_vqa", "sqa3d"],
-            max_answer_length=max_answer_length
-        )
+        super().__init__()
+        self.model_name = "magma"
+        self.model_type = "text_generation"
+        self.max_answer_length = max_answer_length
         
         self.model_name_or_path = model_name_or_path
         self.device_map = device_map
@@ -68,7 +67,11 @@ class MagmaVQAAdapter(TextGenerationAdapter):
         self.model = None
         self.processor = None
         self.device = None
-    
+
+    @property
+    def supported_datasets(self) -> List[str]:
+        return ["robot_vqa", "sqa3d"]
+
     def initialize(
         self,
         device: str = "cuda",
