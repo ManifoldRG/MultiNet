@@ -142,27 +142,14 @@ We provide a standardized evaluation harness for benchmarking your model on Mult
 - **Flexible Configuration**: One adapter can handle multiple datasets with configurable batch processing
 
 **Quick Start:**
-1. Create your model adapter by inheriting from `ModelAdapter` in `src/eval_harness/model_adapter.py`
-2. Configure `harness_dataset_config.txt` with your adapter settings
+1. Create your model adapter(s) by inheriting from `ModelAdapter` in `src/eval_harness/model_adapter.py`
+2. Test your model adapter using the `scripts/eval_harness/evaluate.py` entrypoint which loads sample data in a standard format
+2. Configure `harness_dataset_config.txt` and `Dockerfile` with your adapter settings
 3. Run `./build_and_run_eval_container.sh DATASET_NAME`
 
 **For complete instructions, see the [Evaluation Harness Guide](src/eval_harness/README.md).**
 
-### Submitting Results
-
-After running evaluations, your results will be saved in the `./eval_results/` directory. To submit to the MultiNet leaderboard:
-
-1. **Test on sample data**: Verify your adapters work correctly using `src/eval_harness/sample_data/`
-2. **Run full evaluations**: Complete evaluations on all relevant datasets for your model type
-3. **Fork the repository**: Create a fork of MultiNet to your GitHub account
-4. **Prepare submission**: 
-   - Place your edited `Dockerfile` and `harness_dataset_config.txt` in the top-level directory
-   - Organize your adapters and results in `src/eval_harness/adapters/your_model_name/`
-5. **Open a Pull Request**: Submit a PR with title "Model Submission: [Your Model Name]"
-
-**For detailed submission instructions, see the [Evaluation Harness Guide](src/eval_harness/README.md#submitting-to-the-leaderboard).**
-
-We welcome submissions for all model types: VLMs, VLAs, and generalist models. For questions or assistance, join our [Discord community](https://discord.gg/Rk4gAq5aYr) or open an issue on GitHub.
+For questions or assistance, contact us directly or join our [Discord community](https://discord.gg/Rk4gAq5aYr).
 
 ## 📜 Citation
 
