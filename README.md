@@ -138,8 +138,7 @@ We provide a standardized evaluation harness for benchmarking your model on Mult
 
 - **Standardized Interface**: Create model adapters that inherit from the base `ModelAdapter` class
 - **Dockerized Evaluation**: Reproducible evaluations in isolated containers
-- **Multiple Task Types**: Support for VQA, multiple choice, action prediction, function calling, and more
-- **Flexible Configuration**: One adapter can handle multiple datasets with configurable batch processing
+- **Various Task Types**: Support for datasets that span VQA, action prediction, function calling, and more
 
 **Quick Start:**
 1. Create your model adapter(s) by inheriting from `ModelAdapter` in `src/eval_harness/model_adapter.py`
