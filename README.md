@@ -130,9 +130,25 @@ For detailed instructions on evaluating Pi0 Base on ODINW, PIQA, SQA3D, RoboVQA,
 **GPT Model Evaluation (GenESIS Framework):**
 For detailed instructions on evaluating GPT-5 using the GenESIS framework on ODINW, PIQA, SQA3D, RoboVQA, Overcooked, and OpenX datasets, see the [GenESIS Evaluation Guide](docs/genesis_evaluation.md).
 
-## 📊 Evaluation and submission process to the Multinet benchmark
+## 📊 Process for Submission to the MultiNet Benchmark
 
-Our standardized evaluation harness is currently being developed and is expected to be live soon. If you'd like to get your model on the MultiNet benchmark before the harness is released, please submit a PR with your evaluation code and results, or contact us directly.
+### Using the Evaluation Harness
+
+We provide a standardized evaluation harness for benchmarking your model on MultiNet datasets. The harness provides:
+
+- **Standardized Interface**: Create model adapters that inherit from the base `ModelAdapter` class
+- **Dockerized Evaluation**: Reproducible evaluations in isolated containers
+- **Various Task Types**: Support for datasets that span VQA, action prediction, function calling, and more
+
+**Quick Start:**
+1. Create your model adapter(s) by inheriting from `ModelAdapter` in `src/eval_harness/model_adapter.py`
+2. Test your model adapter using the `scripts/eval_harness/evaluate.py` entrypoint which loads sample data in a standard format
+2. Configure `harness_dataset_config.txt` and `Dockerfile` with your adapter settings
+3. Run `./build_and_run_eval_container.sh DATASET_NAME`
+
+**For complete instructions, see the [Evaluation Harness Guide](src/eval_harness/README.md).**
+
+For questions or assistance, contact us directly or join our [Discord community](https://discord.gg/Rk4gAq5aYr).
 
 ## 📜 Citation
 

@@ -13,10 +13,10 @@ import re
 import numpy as np
 from PIL import Image
 from typing import Dict, Any, List, Optional
-from src.eval_harness.model_adapter import TextGenerationAdapter
+from src.eval_harness.model_adapter import ModelAdapter
 
 
-class SimpleVQAAdapter(TextGenerationAdapter):
+class SimpleVQAAdapter(ModelAdapter):
     """
     Example adapter for Visual Question Answering tasks.
     
@@ -25,13 +25,16 @@ class SimpleVQAAdapter(TextGenerationAdapter):
     """
     
     def __init__(self, max_answer_length: int = 100):
-        super().__init__(
-            model_name="SimpleVQAModel",
-            supported_datasets=["robot_vqa", "sqa3d"],
-            max_answer_length=max_answer_length
-        )
+        super().__init__()
+        self.model_name = "SimpleVQAModel"
+        self.model_type = "text_generation"
+        self.max_answer_length = max_answer_length
         self.model = None
-        
+
+    @property
+    def supported_datasets(self) -> List[str]:
+        return ["robot_vqa", "sqa3d"]
+
     def initialize(self, model_path: Optional[str] = None, device: str = "cpu", seed: int = 42, **kwargs):
         """Initialize the VQA model."""
         print(f"Initializing {self.model_name}")
@@ -276,6 +279,7 @@ def test_vqa_adapter():
     
     answer = adapter.predict_action(
         robot_vqa_observation,
+        instruction=robot_vqa_observation['text_observation'],
         dataset_name="robot_vqa"
     )
     print(f"Question: {robot_vqa_observation['text_observation']}")
@@ -292,6 +296,7 @@ def test_vqa_adapter():
     
     answer = adapter.predict_action(
         sqa3d_observation,
+        instruction=sqa3d_observation['question'],
         dataset_name="sqa3d"
     )
     print(f"Question: {sqa3d_observation['question']}")
@@ -299,18 +304,24 @@ def test_vqa_adapter():
     
     # Test batch processing
     print("--- Testing batch VQA ---")
-    batch = {
-        'image_observation': [robot_image, scene_image, robot_image],
-        'text_observation': [
-            'Is the robot arm extended?',
-            'Where is the cup located?',
-            'What color is the gripper?'
-        ]
-    }
+    batch_observations = [
+        {'image_observation': robot_image},
+        {'image_observation': scene_image},
+        {'image_observation': robot_image}
+    ]
+    batch_instructions = [
+        'Is the robot arm extended?',
+        'Where is the cup located?',
+        'What color is the gripper?'
+    ]
     
-    batch_results = adapter.batch_predict_actions(batch, dataset_name="robot_vqa")
+    batch_results = adapter.batch_predict_actions(
+        batch_observations, 
+        instructions=batch_instructions,
+        dataset_name="robot_vqa"
+    )
     print(f"Batch results: {len(batch_results)} predictions")
-    for i, (question, answer) in enumerate(zip(batch['text_observation'], batch_results)):
+    for i, (question, answer) in enumerate(zip(batch_instructions, batch_results)):
         print(f"  Q{i+1}: {question}")
         print(f"  A{i+1}: {answer}")
     
@@ -330,7 +341,11 @@ def test_vqa_adapter():
     test_obs = {'image': robot_image, 'text_observation': test_question}
     
     for i in range(3):
-        answer = adapter.predict_action(test_obs, dataset_name="robot_vqa")
+        answer = adapter.predict_action(
+            test_obs, 
+            instruction=test_question,
+            dataset_name="robot_vqa"
+        )
         print(f"Prediction {i+1}: {answer}")
         
     print("\n=== VQA adapter test completed! ===")
