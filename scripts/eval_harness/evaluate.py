@@ -556,14 +556,27 @@ def profile_and_save_results_multiturn(
                     turn_histories.append(batch_histories[conv_idx].copy())
             
             if not turn_observations:
+                print(f"Skipping batch {batch_idx} turn {turn_idx}: no observations available for {config.dataset}")
                 continue
-            
-            responses = model_adapter.batch_predict_actions(
-                observations=turn_observations,
-                instructions=turn_instructions,
-                dataset_name=config.dataset,
-                histories=turn_histories
-            )
+
+
+            if config.batch_process:
+                responses = model_adapter.batch_predict_actions(
+                    observations=turn_observations,
+                    instructions=turn_instructions,
+                    dataset_name=config.dataset,
+                        histories=turn_histories
+                    )
+            else:
+                responses = []
+                for observation, instruction, history in zip(turn_observations, turn_instructions, turn_histories):
+                    response = model_adapter.predict_action(
+                        observation=observation,
+                        instruction=instruction,
+                        dataset_name=config.dataset,
+                        history=history
+                    )
+                    responses.append(response)
             
             # Validate responses have correct structured format
             validated_responses = []
@@ -1032,6 +1045,8 @@ def main():
     print(f"Dataset: {config.dataset} (Task type: {config.task_type})")
     print(f"Output path: {config.output_path}")
     print(f"Device: {config.device}")
+    print(f"Batch process: {config.batch_process}")
+    print(f"Batch size: {config.batch_size}")
     
     # Step 1: Load dataset
     bordered_print("LOADING DATASET")
@@ -1046,10 +1061,6 @@ def main():
     
     
     bordered_print("RUNNING EVALUATION")
-
-    # Validate BFCL requires batch processing
-    if config.dataset == 'bfcl' and not config.batch_process:
-        raise ValueError("BFCL dataset requires batch_process=True (single-item processing not yet supported for multi-turn datasets)")
     
     # Determine if this is a multi-turn dataset
     is_multiturn = is_multiturn_dataset(config.dataset)

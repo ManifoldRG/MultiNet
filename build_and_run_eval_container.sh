@@ -79,6 +79,44 @@ if [ -z "$ADAPTER_MODULE" ]; then
     exit 1
 fi
 
+# Check if dataset data exists in data directory
+echo "--> Checking if dataset data exists: $DATA_DIR"
+DATA_EXISTS=false
+
+# Map dataset names to directory names
+if [ "$DATASET" = "bfcl" ]; then
+    if [ -d "$DATA_DIR/bfcl_v3" ]; then
+        DATA_EXISTS=true
+    fi
+elif [ "$DATASET" = "robot_vqa" ]; then
+    if [ -d "$DATA_DIR/openx_multi_embodiment" ]; then
+        DATA_EXISTS=true
+    fi
+else
+    # For most datasets, directory name matches dataset name
+    if [ -d "$DATA_DIR/$DATASET" ]; then
+        DATA_EXISTS=true
+    fi
+fi
+
+if [ "$DATA_EXISTS" = false ]; then
+    echo "Error: Dataset '$DATASET' data not found in data directory '$DATA_DIR'"
+    echo "Expected data directories:"
+    if [ "$DATASET" = "bfcl" ]; then
+        echo "  - bfcl_v3/"
+    elif [ "$DATASET" = "robot_vqa" ]; then
+        echo "  - openx_multi_embodiment/"
+    else
+        echo "  - $DATASET/"
+    fi
+    echo ""
+    echo "Available data directories:"
+    ls -1 "$DATA_DIR" | sed 's/^/  - /'
+    exit 1
+fi
+
+echo "--> Dataset data found."
+
 # Check if the required adapter file exists in the models directory
 EXPECTED_ADAPTER_PATH="${MODELS_DIR}/${ADAPTER_MODULE}"
 echo "--> Looking for model adapter: $EXPECTED_ADAPTER_PATH"
@@ -116,9 +154,9 @@ echo "--> Starting evaluation for dataset: $DATASET"
 # Build docker run command with conditional batch size
 DOCKER_ARGS="--dataset $DATASET --model_adapter_module_path /models/$ADAPTER_MODULE --output_path /home/app/multinet/results --disk_root_dir /data"
 
-# Add batch size if dataset supports batch processing
+# Add batch processing arguments if dataset supports batch processing
 if [ "$BATCH_PROCESS" = "true" ]; then
-    DOCKER_ARGS="$DOCKER_ARGS --batch_size $BATCH_SIZE"
+    DOCKER_ARGS="$DOCKER_ARGS --batch_process --batch_size $BATCH_SIZE"
 fi
 
 docker run \
