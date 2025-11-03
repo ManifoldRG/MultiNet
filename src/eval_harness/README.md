@@ -1,6 +1,6 @@
 # MultiNet Evaluation Harness
 
-This guide provides complete instructions for evaluating your model on the MultiNet benchmark using our standardized evaluation harness.
+This guide provides instructions for preparing and testing your model with the MultiNet evaluation harness, and submitting it for official benchmark evaluation.
 
 ## Table of Contents
 - [Overview](#overview)
@@ -9,26 +9,19 @@ This guide provides complete instructions for evaluating your model on the Multi
 - [Observation Format by Dataset](#observation-format-by-dataset)
 - [Required Output Format](#required-output-format)
 - [Configuration](#configuration)
-- [Running Evaluations](#running-evaluations)
+- [Running Evaluations (Local Testing)](#running-evaluations-local-testing)
 - [Results and Troubleshooting](#results-and-troubleshooting)
 
 ## Overview
 
-The MultiNet evaluation harness provides a standardized interface for evaluating vision-language-action models across diverse datasets. The harness:
+The MultiNet evaluation harness provides a standardized interface for evaluating vision-language models (VLMs), vision-language-action (VLA) models, and any other generalist models across diverse datasets. The harness:
 
 1. Loads datasets and provides standardized observations to your model
 2. Calls your model adapter's prediction methods
 3. Validates outputs and computes metrics
-4. Saves results for leaderboard submission
+4. Saves local results for verification; official benchmark results are produced by the MultiNet team
 
 All evaluations run in Docker containers to ensure reproducibility.
-
-## Quick Start
-
-**3-Step Process:**
-1. Create model adapter(s) inheriting from `model_adapter.py`
-2. Configure `harness_dataset_config.txt` and `Dockerfile`
-3. Run `./build_and_run_eval_container.sh DATASET_NAME`
 
 ## Creating Your Model Adapter
 
@@ -340,11 +333,11 @@ RUN pip install --no-cache-dir -r your_requirements.txt
 
 **Example:** See `src/eval_harness/adapters/magma/Dockerfile` for a complete working example.
 
-## Running Evaluations
+## Running Evaluations (Local Testing)
 
 ### Build and Run
 
-Once your adapter and configuration are ready, run:
+Once your adapter and configuration are ready, run on the provided sample datasets:
 
 ```bash
 ./build_and_run_eval_container.sh DATASET_NAME
@@ -357,14 +350,14 @@ Once your adapter and configuration are ready, run:
 ./build_and_run_eval_container.sh sqa3d
 ```
 
-### What Happens During Evaluation
+### What Happens During a Local Test Run
 
 1. **Build Phase:**
    - Docker image is built with your dependencies
    - Your adapter code is copied into the container
 
 2. **Evaluation Phase:**
-   - Dataset is loaded from `/data` mount
+   - Dataset is loaded from the `/data` mount (sample datasets for local testing)
    - Your adapter is initialized
    - Predictions are generated (batch or single mode)
    - Outputs are validated
@@ -376,7 +369,7 @@ Once your adapter and configuration are ready, run:
    - `/data` → Dataset directory
    - `/results` → Output directory (host: `./eval_results`)
 
-### Available Datasets
+### Supported Datasets
 
 - `piqa` - Physical commonsense reasoning
 - `odinw` - Object detection/classification
@@ -392,7 +385,7 @@ Once your adapter and configuration are ready, run:
 
 ## Results and Troubleshooting
 
-### Finding Your Results
+### Finding Your Results (Local Tests)
 
 Evaluation results are saved to `./eval_results/` at the project root:
 
@@ -460,9 +453,9 @@ Before running evaluations, verify:
 - Check the base adapter interface in `src/eval_harness/model_adapter.py`
 - Examine the evaluation script: `scripts/eval_harness/evaluate.py`
 
-## Submitting to the Leaderboard
+## Submitting for Official Evaluation and Leaderboard
 
-After successfully testing your adapters on the sample data and running full evaluations, submit to the MultiNet leaderboard:
+After successfully testing your adapters on the sample data, submit your model for official evaluation. The MultiNet team will run your containerized adapter(s) on the full benchmark datasets and publish results to the leaderboard.
 
 ### Submission Process
 
@@ -471,9 +464,9 @@ After successfully testing your adapters on the sample data and running full eva
    ./build_and_run_eval_container.sh piqa  # Test with sample data first
    ```
 
-2. **Run full evaluations**: Run evaluations on all relevant datasets for your model type
-   - Results will be saved to `./eval_results/`
-   - Review metrics and verify correctness
+2. **Validate the containerized run**: Ensure your adapter initializes and produces valid outputs in the container
+   - Review logs and local results in `./eval_results/`
+   - Fix any issues before submission
 
 3. **Fork the repository**: Create a fork of the MultiNet repository to your GitHub account
    - Go to [https://github.com/ManifoldRG/MultiNet](https://github.com/ManifoldRG/MultiNet)
@@ -495,17 +488,17 @@ After successfully testing your adapters on the sample data and running full eva
    ├── your_adapter.py              # Your model adapter(s)
    ├── requirements.txt              # Your model's dependencies
    ├── README.md                     # Brief model description
-   └── results/                      # Your evaluation results
-       ├── piqa_results.json
-       ├── sqa3d_results.json
-       └── ...
+  └── results/                      # (optional) Sample run outputs from local tests
+      ├── piqa_results.json
+      ├── robot_vqa_results.json
+      └── ...
    ```
 
 5. **Include in your submission**:
    - **Top-level**: Modified `Dockerfile` and `harness_dataset_config.txt` (required for build script)
    - **Adapter directory**: All model adapter Python files
    - **Requirements**: Your model's dependencies (`requirements.txt`)
-   - **Results**: Evaluation results from `eval_results/` directory
+   - **Results**: Sample data evaluation results from `eval_results/` directory
    - **Documentation**: A brief README describing:
      - Model name and type
      - Supported datasets
@@ -518,9 +511,9 @@ After successfully testing your adapters on the sample data and running full eva
    - Title: "Model Submission: [Your Model Name]"
    - Description should include:
      - Model overview
-     - Datasets evaluated
-     - Key results/metrics
+     - Adapted Datasets
+     - (Optional) Notes about local sample test runs
      - Any relevant paper/documentation links
 
-7. **Review process**: Our team will review your submission and add results to the leaderboard
+7. **Review process**: Our team will build your container and run it on the full benchmark datasets. Upon completion, we will add the official results to the leaderboard.
 
