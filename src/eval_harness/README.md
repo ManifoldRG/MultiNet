@@ -4,13 +4,13 @@ This guide provides instructions for preparing and testing your model with the M
 
 ## Table of Contents
 - [Overview](#overview)
-- [Quick Start](#quick-start)
 - [Creating Your Model Adapter](#creating-your-model-adapter)
 - [Observation Format by Dataset](#observation-format-by-dataset)
 - [Required Output Format](#required-output-format)
 - [Configuration](#configuration)
-- [Running Evaluations (Local Testing)](#running-evaluations-local-testing)
+- [Running Evaluations](#running-evaluations-local-testing)
 - [Results and Troubleshooting](#results-and-troubleshooting)
+- [Submitting for Official Evaluation](#submitting-for-official-evaluation-and-leaderboard)
 
 ## Overview
 
@@ -47,17 +47,6 @@ class MyModelAdapter(ModelAdapter):
 ```
 
 **Important:** The evaluation script calls `adapter_class()` with no arguments, so your `__init__` method must have no required parameters. All parameters should be optional keyword arguments with default values.
-
-**Output Formats by Dataset:**
-
-| Dataset Category | Datasets | Output Type |
-|-----------------|----------|-------------|
-| Multiple Choice | PIQA | `int` (choice index) |
-| Text Generation | SQA3D, RoboVQA | `str` (answer text) |
-| Classification | ODinW | `int` (class index) |
-| Discrete Action | Overcooked | `int` (action index) |
-| Continuous Action | OpenX (all variants) | `np.ndarray` (action vector) |
-| Tool Use | BFCL | `List[Dict]` (function calls) |
 
 ### Step 2: Implement Required Methods
 
@@ -319,10 +308,10 @@ openx_single_arm.batch_size=1
 
 ### Step 2: Configure `Dockerfile`
 
-Edit the `Dockerfile` at the project root to install your model's dependencies:
+Edit the `Dockerfile` at the project root to set up your model's environment. You can modify any part of the Dockerfile to ensure your adapter runs correctly:
 
 ```dockerfile
-# Lines 20-25: Add your model's requirements
+# Lines 20-25: Designated area for adapter requirements
 #-------------------------------------------------------------------
 # Install specific requirements for adapter
 # Replace with your own requirements
@@ -331,9 +320,18 @@ RUN pip install --no-cache-dir -r your_requirements.txt
 #-------------------------------------------------------------------
 ```
 
+**You can make changes anywhere in the Dockerfile**, including:
+- Installing system packages (`apt-get install`, etc.)
+- Setting environment variables (`ENV PATH=...`)
+- Modifying system paths
+- Installing additional dependencies
+- Changing base images or Python versions
+
+The goal is to create a container that successfully runs your adapter. Lines 20-25 are provided as a convenient starting point, but feel free to modify any section as needed.
+
 **Example:** See `src/eval_harness/adapters/magma/Dockerfile` for a complete working example.
 
-## Running Evaluations (Local Testing)
+## Running Evaluations
 
 ### Build and Run
 
@@ -350,44 +348,15 @@ Once your adapter and configuration are ready, run on the provided sample datase
 ./build_and_run_eval_container.sh sqa3d
 ```
 
-### What Happens During a Local Test Run
+### What Happens During Evaluation
 
-1. **Build Phase:**
-   - Docker image is built with your dependencies
-   - Your adapter code is copied into the container
-
-2. **Evaluation Phase:**
-   - Dataset is loaded from the `/data` mount (sample datasets for local testing)
-   - Your adapter is initialized
-   - Predictions are generated (batch or single mode)
-   - Outputs are validated
-   - Metrics are computed
-   - Results are saved to `/results` mount
-
-3. **Volume Mounts:**
-   - `/models` → Your adapter directory
-   - `/data` → Dataset directory
-   - `/results` → Output directory (host: `./eval_results`)
-
-### Supported Datasets
-
-- `piqa` - Physical commonsense reasoning
-- `odinw` - Object detection/classification
-- `sqa3d` - 3D scene question answering
-- `robot_vqa` - Robot visual question answering
-- `overcooked_ai` - Multi-agent coordination
-- `bfcl` - Multi-turn function calling
-- `openx_single_arm` - Single-arm manipulation
-- `openx_bimanual` - Bimanual manipulation
-- `openx_wheeled_robot` - Wheeled robot navigation
-- `openx_quadrupedal` - Quadrupedal locomotion
-- `openx_mobile_manipulation` - Mobile manipulation
+The script builds a Docker image with your dependencies, mounts your adapter and sample data, runs predictions, validates outputs, computes metrics, and saves results to `./eval_results/`
 
 ## Results and Troubleshooting
 
-### Finding Your Results (Local Tests)
+### Finding Your Results
 
-Evaluation results are saved to `./eval_results/` at the project root:
+Results are saved to `./eval_results/`:
 
 ```
 eval_results/
@@ -431,27 +400,20 @@ TypeError: batch_predict_actions() missing required argument
 ModuleNotFoundError: No module named 'your_package'
 ```
 - Add missing packages to your requirements file
-- Update Dockerfile to install them (lines 20-25)
+- Update Dockerfile to install them (modify the Dockerfile as needed)
 
 ### Validation Checklist
 
-Before running evaluations, verify:
+Before running evaluations, verify your adapter:
 
-- [ ] Adapter inherits from base `ModelAdapter` class
-- [ ] `supported_datasets` property implemented (returns `List[str]`)
-- [ ] `super().__init__()` called with no arguments in your adapter's `__init__`
-- [ ] `__init__` method has **no required arguments** (only optional kwargs with defaults allowed)
-- [ ] At least one prediction method implemented (`predict_action` or `batch_predict_actions`)
-- [ ] Output format includes both `"raw_output"` (str) and `"extracted_outputs"` (correct type)
-- [ ] `harness_dataset_config.txt` configured with correct paths and settings
-- [ ] `Dockerfile` updated to install your model's dependencies
-- [ ] Adapter file exists in specified `models_dir`
+- [ ] Inherits from `ModelAdapter` with `supported_datasets` property
+- [ ] Has `__init__` with **no required arguments** (only optional kwargs)
+- [ ] Implements `predict_action()` and/or `batch_predict_actions()`
+- [ ] Returns dict with `"raw_output"` and `"extracted_outputs"` in correct type
+- [ ] Is configured in `harness_dataset_config.txt` with correct paths
+- [ ] Has dependencies installed via `Dockerfile`
 
-### Getting Help
-
-- Review example adapters in `src/eval_harness/adapters/magma/`
-- Check the base adapter interface in `src/eval_harness/model_adapter.py`
-- Examine the evaluation script: `scripts/eval_harness/evaluate.py`
+For reference, see example adapters in `src/eval_harness/adapters/magma/`
 
 ## Submitting for Official Evaluation and Leaderboard
 
@@ -459,61 +421,39 @@ After successfully testing your adapters on the sample data, submit your model f
 
 ### Submission Process
 
-1. **Test on sample data**: Verify your adapters work correctly using the sample data in `src/eval_harness/sample_data/`
-   ```bash
-   ./build_and_run_eval_container.sh piqa  # Test with sample data first
-   ```
-
-2. **Validate the containerized run**: Ensure your adapter initializes and produces valid outputs in the container
+1. **Test on sample data**: Verify your adapters work correctly as described in [Running Evaluations](#running-evaluations-local-testing)
    - Review logs and local results in `./eval_results/`
    - Fix any issues before submission
 
-3. **Fork the repository**: Create a fork of the MultiNet repository to your GitHub account
+2. **Fork the repository**: Create a fork of the MultiNet repository to your GitHub account
    - Go to [https://github.com/ManifoldRG/MultiNet](https://github.com/ManifoldRG/MultiNet)
    - Click "Fork" in the top right
 
-4. **Prepare your submission**: Organize your submission in your fork
-   
-   **Top-level directory** (required for `build_and_run_eval_container.sh`):
-   ```
-   MultiNet/
-   ├── Dockerfile                    # Your edited Dockerfile
-   ├── harness_dataset_config.txt    # Your configuration
-   └── build_and_run_eval_container.sh  # (unchanged)
-   ```
+3. **Prepare your submission**: Organize your submission in your fork
    
    **Your adapter directory**:
    ```
    src/eval_harness/adapters/your_model_name/
    ├── your_adapter.py              # Your model adapter(s)
    ├── requirements.txt              # Your model's dependencies
-   ├── README.md                     # Brief model description
-  └── results/                      # (optional) Sample run outputs from local tests
-      ├── piqa_results.json
-      ├── robot_vqa_results.json
-      └── ...
+   ├── README.md                     # Brief model description (name, type, supported datasets)
+   └── results/                      # (optional) Sample run outputs from local tests
+       ├── piqa_results.json
+       └── ...
+   ```
+   
+   **Top-level files** (required for containerized evaluation):
+   ```
+   MultiNet/
+   ├── Dockerfile                    # Your edited Dockerfile with dependencies
+   └── harness_dataset_config.txt    # Your configuration with adapter settings
    ```
 
-5. **Include in your submission**:
-   - **Top-level**: Modified `Dockerfile` and `harness_dataset_config.txt` (required for build script)
-   - **Adapter directory**: All model adapter Python files
-   - **Requirements**: Your model's dependencies (`requirements.txt`)
-   - **Results**: Sample data evaluation results from `eval_results/` directory
-   - **Documentation**: A brief README describing:
-     - Model name and type
-     - Supported datasets
-     - Any special setup or requirements
-     - Link to model weights/checkpoint (if public)
-
-6. **Open a Pull Request**:
+4. **Open a Pull Request**:
    - Push your changes to your fork
    - Open a PR to the main MultiNet repository
    - Title: "Model Submission: [Your Model Name]"
-   - Description should include:
-     - Model overview
-     - Adapted Datasets
-     - (Optional) Notes about local sample test runs
-     - Any relevant paper/documentation links
+   - Description: Model overview, supported datasets, and any relevant documentation
 
-7. **Review process**: Our team will build your container and run it on the full benchmark datasets. Upon completion, we will add the official results to the leaderboard.
+5. **Review process**: Our team will build your container and run it on the full benchmark datasets. Upon completion, we will add the official results to the leaderboard.
 
