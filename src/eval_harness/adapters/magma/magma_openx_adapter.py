@@ -194,7 +194,27 @@ class MagmaOpenXAdapter(ModelAdapter):
                     transformed_stats[key] = values[-7:].tolist()
             return transformed_stats
             
-        elif dataset_name in ['openx_mobile_manipulation', 'openx_single_arm']:
+        elif dataset_name == 'openx_mobile_manipulation':
+            # Transform: 10D -> 7D
+            # Extract dimensions [7,8,9,4,5,6,3] from 10D stats to create 7D stats
+            # Maps to model's [world_vector(3D), rotation_delta(3D), gripper(1D)]
+            transformed_stats = {}
+            for key, values in original_stats.items():
+                if values is not None:
+                    # Extract: Arm XYZ [7,8,9], Arm RPY [4,5,6], Gripper [3]
+                    extracted = np.array([
+                        values[7],  # Arm X
+                        values[8],  # Arm Y
+                        values[9],  # Arm Z
+                        values[4],  # Arm roll
+                        values[5],  # Arm pitch
+                        values[6],  # Arm yaw
+                        values[3],  # Gripper
+                    ])
+                    transformed_stats[key] = extracted.tolist()
+            return transformed_stats
+            
+        elif dataset_name == 'openx_single_arm':
             # No transformation needed - already 7D after dict concatenation
             return action_stats
             
@@ -228,7 +248,24 @@ class MagmaOpenXAdapter(ModelAdapter):
             else:
                 return prediction
                 
-        elif dataset_name in ['openx_mobile_manipulation', 'openx_single_arm']:
+        elif dataset_name == 'openx_mobile_manipulation':
+            # Inverse transform: 7D -> 10D
+            # Map model's 7D [world_vector(3D), rotation_delta(3D), gripper(1D)]
+            # to ground truth 10D positions [7,8,9,4,5,6,3]
+            output = np.zeros(10)
+            output[0] = 0  # Base X
+            output[1] = 0  # Base Y
+            output[2] = 0  # Base rotation
+            output[3] = prediction[6]  # Gripper
+            output[4] = prediction[3]  # Arm roll
+            output[5] = prediction[4]  # Arm pitch
+            output[6] = prediction[5]  # Arm yaw
+            output[7] = prediction[0]  # Arm X
+            output[8] = prediction[1]  # Arm Y
+            output[9] = prediction[2]  # Arm Z
+            return output
+            
+        elif dataset_name == 'openx_single_arm':
             # No inverse transformation needed - already correct dimensions
             return prediction
             

@@ -152,7 +152,7 @@ mkdir -p "$RESULTS_DIR"
 echo "--> Starting evaluation for dataset: $DATASET"
 
 # Build docker run command with conditional batch size
-DOCKER_ARGS="--dataset $DATASET --model_adapter_module_path /models/$ADAPTER_MODULE --output_path /home/app/multinet/results --disk_root_dir /data"
+DOCKER_ARGS="--dataset $DATASET --model_adapter_module_path /models/$ADAPTER_MODULE --output_path /home/app/multinet/results --disk_root_dir /data --max_samples 4"
 
 # Add batch processing arguments if dataset supports batch processing
 if [ "$BATCH_PROCESS" = "true" ]; then

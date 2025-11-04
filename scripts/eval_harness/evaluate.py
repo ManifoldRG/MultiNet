@@ -60,33 +60,6 @@ def first_non_none_shape(images_list):
     return None
 
 
-def _get_meaningful_action_dims(dataset_name: str) -> int:
-    """
-    Get the number of meaningful action dimensions for OpenX datasets.
-
-    Args:
-        dataset_name: OpenX dataset name (e.g., 'openx_wheeled_robot')
-
-    Returns:
-        Number of meaningful dimensions from ACTION_SPACES definition
-    """
-    openx_subtasks_mapping = {
-        'openx_wheeled_robot': 'berkeley_gnm_sac_son',
-        'openx_quadrupedal': 'utokyo_saytap_converted_externally_to_rlds',
-        'openx_single_arm': 'bridge',
-        'openx_bimanual': 'utokyo_xarm_bimanual_converted_externally_to_rlds',
-        'openx_mobile_manipulation': 'fractal20220817_data'
-    }
-
-    if dataset_name not in openx_subtasks_mapping:
-        return None
-
-    subtask = openx_subtasks_mapping[dataset_name]
-    action_space = OpenXDefinitions.ACTION_SPACES[subtask]['default']
-
-    # Count non-None dimensions
-    meaningful_dims = sum(1 for v in action_space.values() if v is not None)
-    return meaningful_dims if meaningful_dims > 0 else None
 
 
 def validate_structured_prediction(pred: Any, dataset_name: str) -> Dict[str, Any]:
@@ -267,92 +240,6 @@ def get_dataset_and_dataloader(config: EvaluationConfig) -> tuple:
         datasets = [dataset]
         data_loaders = [data_loader]
     return datasets, data_loaders
-
-def _convert_action_dict_to_tensor(action_dict: dict, dataset_name: str) -> np.ndarray:
-    """
-    Convert action dictionary to tensor for data format conversion.
-    This is NOT a transformation for model compatibility, just data format conversion.
-    
-    Args:
-        action_dict: Action dictionary with keys like world_vector, rotation_delta, etc.
-        dataset_name: Name of the dataset
-        
-    Returns:
-        Action tensor (7D for both mobile_manipulation and single_arm)
-    """
-    action_components = []
-    
-    if dataset_name == 'openx_mobile_manipulation':
-        if 'world_vector' in action_dict and 'rotation_delta' in action_dict and 'gripper_closedness_action' in action_dict:
-            # Add world_vector (3D)
-            world_vector = np.array(action_dict['world_vector'])
-            if world_vector.ndim == 0:
-                world_vector = world_vector.reshape(1)
-            elif world_vector.ndim > 1:
-                world_vector = world_vector.flatten()
-            action_components.append(world_vector)
-            
-            # Add rotation_delta (3D)
-            rotation_delta = np.array(action_dict['rotation_delta'])
-            if rotation_delta.ndim == 0:
-                rotation_delta = rotation_delta.reshape(1)
-            elif rotation_delta.ndim > 1:
-                rotation_delta = rotation_delta.flatten()
-            action_components.append(rotation_delta)
-            
-            # Add gripper_closedness_action (1D) - convert relative to absolute
-            gripper_raw = np.array(action_dict['gripper_closedness_action'])
-            if gripper_raw.ndim == 0:
-                gripper_raw = gripper_raw.reshape(1)
-            elif gripper_raw.ndim > 1:
-                gripper_raw = gripper_raw.flatten()
-            
-            # Convert relative to absolute: -1 for closing, 1 for opening -> 0 = closed, 1 = open
-            opening_mask = gripper_raw < -0.1
-            closing_mask = gripper_raw > 0.1
-            thresholded_actions = np.where(opening_mask, 1, np.where(closing_mask, -1, 0))
-            gripper_action = thresholded_actions / 2 + 0.5
-            
-            if gripper_action.ndim == 0:
-                gripper_action = gripper_action.reshape(1)
-            action_components.append(gripper_action)
-        else:
-            raise KeyError(f"RT1 dataset missing required keys: world_vector, rotation_delta, gripper_closedness_action")
-            
-    elif dataset_name == 'openx_single_arm':
-        if 'world_vector' in action_dict and 'rotation_delta' in action_dict and 'open_gripper' in action_dict:
-            # Add world_vector (3D)
-            world_vector = np.array(action_dict['world_vector'])
-            if world_vector.ndim == 0:
-                world_vector = world_vector.reshape(1)
-            elif world_vector.ndim > 1:
-                world_vector = world_vector.flatten()
-            action_components.append(world_vector)
-            
-            # Add rotation_delta (3D)
-            rotation_delta = np.array(action_dict['rotation_delta'])
-            if rotation_delta.ndim == 0:
-                rotation_delta = rotation_delta.reshape(1)
-            elif rotation_delta.ndim > 1:
-                rotation_delta = rotation_delta.flatten()
-            action_components.append(rotation_delta)
-            
-            # Add open_gripper (1D) cast to float32
-            gripper_raw = np.array(action_dict['open_gripper'])
-            if gripper_raw.ndim == 0:
-                gripper_raw = gripper_raw.reshape(1)
-            elif gripper_raw.ndim > 1:
-                gripper_raw = gripper_raw.flatten()
-            gripper_action = gripper_raw.astype(np.float32)
-            action_components.append(gripper_action)
-        else:
-            raise KeyError(f"Bridge OXE dataset missing required keys: world_vector, rotation_delta, open_gripper")
-    
-    if action_components:
-        action_tensor = np.concatenate(action_components)
-        return action_tensor
-    else:
-        raise ValueError(f"No valid action components found for dataset {dataset_name}")
 
 def get_metrics_calculator(config: EvaluationConfig, dataset: torch.utils.data.Dataset):
     if 'openx' in config.dataset:
@@ -905,24 +792,9 @@ def profile_and_save_results(
 
         # Process ground truth actions for OpenX datasets
         if 'openx' in config.dataset:
-            # Get raw actions from batch
+            # Get raw actions from batch (already concatenated in correct format)
             raw_gt_actions = batch['action']
-
-            # Process based on dataset type
-            if config.dataset in ['openx_mobile_manipulation', 'openx_single_arm']:
-                # Convert action_dict to tensor (data format conversion, not transformation)
-                processed_gt_actions = []
-                for i, action_dict in enumerate(batch.get('action_dict', [])):
-                    if action_dict and len(action_dict) > 0:
-                        action_tensor = _convert_action_dict_to_tensor(action_dict, config.dataset)
-                        processed_gt_actions.append(action_tensor)
-                    else:
-                        processed_gt_actions.append(np.array(raw_gt_actions[i]))
-                ground_truth_actions.extend(processed_gt_actions)
-
-            else:
-                # No processing needed
-                ground_truth_actions.extend(raw_gt_actions)
+            ground_truth_actions.extend(raw_gt_actions)
             
             # Convert all ground truth actions to numpy array format
             ground_truth_actions = [np.array(action) for action in ground_truth_actions]
@@ -979,26 +851,7 @@ def profile_and_save_results(
 
     metrics_calculator = get_metrics_calculator(config, dataset)
 
-    # Clip to meaningful dimensions for OpenX datasets
-    if 'openx' in config.dataset:
-        meaningful_dims = _get_meaningful_action_dims(config.dataset)
-        if meaningful_dims is not None:
-
-            # Clip predictions
-            clipped_predictions = []
-            for pred in predictions:
-                clipped_pred = pred.copy()
-                clipped_pred['extracted_outputs'] = pred['extracted_outputs'][:meaningful_dims]
-                clipped_predictions.append(clipped_pred)
-
-            # Clip ground truth
-            clipped_ground_truth = [gt[:meaningful_dims] for gt in ground_truth_actions]
-
-            metrics = metrics_calculator.calculate_metrics(clipped_predictions, clipped_ground_truth)
-        else:
-            metrics = metrics_calculator.calculate_metrics(predictions, ground_truth_actions)
-    else:
-        metrics = metrics_calculator.calculate_metrics(predictions, ground_truth_actions)
+    metrics = metrics_calculator.calculate_metrics(predictions, ground_truth_actions)
     
     # Add skipped batch information to metrics if any batches were skipped
     if skipped_batches_no_image > 0:
