@@ -125,9 +125,9 @@ Complete working examples are provided in `src/eval_harness/adapters/magma/`:
 - **`magma_openx_quadrupedal_adapter.py`** - Continuous actions (OpenX quadrupedal)
 - **`magma_bfcl_adapter.py`** - Multi-turn function calling (BFCL)
 
-**Note:** Notice that one adapter can support multiple datasets. For example:
+**Note:** One adapter can support multiple datasets with similar formats. For example:
 - `magma_mcq_adapter.py` handles both PIQA and ODinW
-- `magma_vqa_adapter.py` handles both SQA3D and RoboVQA
+- `magma_vqa_adapter.py` handles both SQA3D and RoboVQA (same input/output format)
 - `magma_openx_adapter.py` handles 4 different OpenX morphologies
 
 ## Observation Format by Dataset
@@ -165,6 +165,8 @@ observation = {
 }
 instruction = "Question about the scene"
 ```
+
+**Note:** Sample data for SQA3D is not provided in this repository, as the dataset is not publicly available. An adapter that works for RoboVQA should be most of the way there for SQA3D as well, as both datasets have similar input and output formats.
 
 ### RoboVQA
 **Dataset:** `robot_vqa`
@@ -345,8 +347,10 @@ Once your adapter and configuration are ready, run on the provided sample datase
 ```bash
 ./build_and_run_eval_container.sh piqa
 ./build_and_run_eval_container.sh openx_single_arm
-./build_and_run_eval_container.sh sqa3d
+./build_and_run_eval_container.sh robot_vqa
 ```
+
+**Note:** Sample data is provided for most datasets in `src/eval_harness/sample_data/`, except for SQA3D which is not publicly available without the authors' permission.
 
 ### What Happens During Evaluation
 
