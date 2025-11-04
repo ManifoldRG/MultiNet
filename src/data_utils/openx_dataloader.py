@@ -7,7 +7,7 @@ import os
 import tensorflow as tf
 import numpy as np
 
-if os.environ.get("OPENX_TF_USE_GPU", "0") != "1":  # Avoid TF GPU deps inside eval container
+if os.environ.get("OPENX_TF_USE_GPU", "0") != "1":  # Avoid TF GPU deps
     try:
         tf.config.set_visible_devices([], "GPU")
     except Exception:
