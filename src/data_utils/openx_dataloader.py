@@ -2,9 +2,16 @@ from collections import defaultdict
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 from typing import List, Dict, Any
+import os
 
 import tensorflow as tf
 import numpy as np
+
+if os.environ.get("OPENX_TF_USE_GPU", "0") != "1":  # Avoid TF GPU deps inside eval container
+    try:
+        tf.config.set_visible_devices([], "GPU")
+    except Exception:
+        pass
 
 
 class OpenXDataset(Dataset):
