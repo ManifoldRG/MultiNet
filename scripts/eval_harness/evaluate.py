@@ -197,8 +197,11 @@ def get_dataset_and_dataloader(config: EvaluationConfig) -> tuple:
     elif config.dataset == 'odinw':
         files = []
         for dataset in V1SupportedDatasets().datasets['odinw']:
-            file = find_data_files('odinw', config.disk_root_dir, dataset=dataset, split=config.data_split)
-            files.extend(file)
+            try:
+                file = find_data_files('odinw', config.disk_root_dir, dataset=dataset, split=config.data_split)
+                files.extend(file)
+            except ValueError as e:
+                print(f"Warning: Could not load ODinW sub-dataset '{dataset}': {e}. Skipping..")
     else:
         files = find_data_files(config.dataset, config.disk_root_dir, split=config.data_split)
     
