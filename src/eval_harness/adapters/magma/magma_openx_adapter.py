@@ -21,7 +21,6 @@ PROJECT_ROOT_DIR = Path(__file__).parent.parent.parent.parent.parent
 MAGMA_ROOT_DIR = PROJECT_ROOT_DIR / 'src' / 'v1' / 'modules' / 'Magma'
 sys.path.append(str(MAGMA_ROOT_DIR))
 
-
 from src.eval_harness.model_adapter import ModelAdapter
 from src.v1.modules.Magma.data.openx.action_tokenizer import ActionTokenizer
 

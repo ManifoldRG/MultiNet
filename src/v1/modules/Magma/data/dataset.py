@@ -7,7 +7,10 @@ import pathlib
 from typing import Dict, Optional, Sequence, List
 import pandas as pd
 import torch
-import deepspeed
+try:
+    import deepspeed  # type: ignore
+except Exception:  # pragma: no cover - deepspeed is optional at runtime
+    deepspeed = None
 import glob
 import pandas as pd
 import transformers
