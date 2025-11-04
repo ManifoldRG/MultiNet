@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python3.10-venv \
     git \
+    build-essential \
     && rm -rf /var/lib/apt/lists/* \
     && python3 -m venv $VENV_PATH
 
@@ -27,9 +28,15 @@ RUN pip install --no-cache-dir -r magma_action_requirements.txt
 # Stage 2: Runtime image
 FROM nvidia/cuda:12.4.1-base-ubuntu22.04
 
-# Install Python3 in the runtime stage
+# Install Python3 and OpenCV dependencies in the runtime stage
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libgl1-mesa-glx \
     && rm -rf /var/lib/apt/lists/*
 
 # Set user and group ids for host user
@@ -60,6 +67,11 @@ USER app
 # Set runtime environment variables
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
+
+# ------------------------------------------------------------------------------------------------
+# Magma-specific environment variable    
+ENV PYTHONPATH="/home/app/multinet:/home/app/multinet/src:/home/app/multinet/src/v1/modules/Magma:${PYTHONPATH}"
+# ------------------------------------------------------------------------------------------------
 
 ENTRYPOINT ["python3", "scripts/eval_harness/evaluate.py"]
 CMD ["--help"]
