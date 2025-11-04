@@ -16,8 +16,8 @@ from PIL import Image
 from transformers import AutoModelForCausalLM, AutoProcessor
 from pathlib import Path
 
-# go up directories until we find the project root
-PROJECT_ROOT_DIR = next(p for p in Path(__file__).parents if p.parts[-1] == 'MultiNet')
+# go up 5 levels to project root (MultiNet/)
+PROJECT_ROOT_DIR = Path(__file__).parent.parent.parent.parent.parent
 MAGMA_ROOT_DIR = PROJECT_ROOT_DIR / 'src' / 'v1' / 'modules' / 'Magma'
 sys.path.append(str(MAGMA_ROOT_DIR))
 
