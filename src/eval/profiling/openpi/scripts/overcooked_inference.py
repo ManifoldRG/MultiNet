@@ -3,6 +3,14 @@ import datetime
 import json
 import os
 import sys
+
+# MUST set environment variables BEFORE importing JAX or any modules that use JAX
+os.environ['JAX_PLATFORMS'] = 'cpu'
+os.environ['CUDA_VISIBLE_DEVICES'] = ''
+os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
+os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.8'
+os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../../')))
 from src.eval.profiling.openpi.src.openpi.models import pi0
 from src.eval.profiling.openpi.src.openpi.models import model as _model
@@ -10,6 +18,8 @@ from src.eval.profiling.openpi.src.openpi.models.model import Observation
 from src.eval.profiling.openpi.src.openpi.models.tokenizer import PaligemmaTokenizer
 from src.eval.profiling.openpi.src.openpi.transforms import pad_to_dim, Unnormalize
 from src.data_utils.overcooked_dataloader import get_overcooked_dataloader, OvercookedDataset
+from definitions.overcooked import OverCookedDefinitions
+from definitions.overcooked_prompt import format_instruction_prompt
 from src.eval.profiling.openpi.src.openpi.shared import download
 from src.eval.profiling.openpi.src.openpi.shared.normalize import NormStats
 from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
@@ -33,15 +43,8 @@ import gc
 from dataclasses import dataclass, field, fields
 import time
 
-
-# Restrict tf to CPU
+# Restrict tf to CPU (TF is imported after env vars are set)
 tf.config.set_visible_devices([], "GPU")
-# Configure JAX memory settings
-os.environ['JAX_PLATFORMS'] = 'cpu'
-os.environ['CUDA_VISIBLE_DEVICES'] = ''
-os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
-os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.8'
-os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
 
 
 @dataclass
@@ -102,36 +105,91 @@ class OvercookedInference:
         self.joint_to_discrete = temp_dataset.joint_to_discrete
         self.num_discrete_actions = temp_dataset.num_discrete_actions
 
-    def prepare_observation(self, obs_dict: dict, batch_size: int, max_token_length: int = 48) -> dict:
-        """Prepare observation dictionary for pi0 model inference."""
+    def _build_genesis_style_prompt(self, layout_name: str, time_left: float, time_elapsed: float) -> str:
+        """
+        Build Genesis-style comprehensive prompt for Pi0 inference.
+
+        Args:
+            layout_name: Name of the Overcooked layout (e.g., "cramped_corridor")
+            time_left: Remaining game time
+            time_elapsed: Time already elapsed
+
+        Returns:
+            str: Complete formatted instruction prompt
+        """
+        # Get action meanings and action space from Genesis definitions
+        action_meanings = str(OverCookedDefinitions.ACTION_MEANINGS)
+        action_space = OverCookedDefinitions.ACTION_SPACES["overcooked_ai"]["default"]
+
+        # Format the complete prompt using Genesis prompt template
+        prompt = format_instruction_prompt(
+            env_name=layout_name,
+            action_meaning=action_meanings,
+            action_space=str(action_space),
+            time_left=time_left,
+            time_elapsed=time_elapsed,
+            additional_inst=None
+        )
+
+        return prompt
+
+    def prepare_observation(self, obs_dict: dict, batch_size: int, time_left: float, time_elapsed: float, max_token_length: int = 48) -> dict:
+        """
+        Prepare observation dictionary for pi0 model inference with Genesis-style prompts.
+
+        Args:
+            obs_dict: Dictionary containing image and text observations
+            batch_size: Size of the batch
+            time_left: Remaining game time
+            time_elapsed: Time already elapsed
+            max_token_length: Maximum length for tokenization
+
+        Returns:
+            dict: Transformed observation dictionary for Pi0 model
+        """
         tokenizer = self.tokenizer
-        
+
         # Process image observation
         base_image = obs_dict["image_observation"]
         if isinstance(base_image[0], np.ndarray):
             base_image = np.array(base_image)
-        
+
         # Add batch dimension if needed
         if len(base_image.shape) == 3:
             base_image = base_image[None, ...]
-            
+
         # Convert to jax array
         base_image = jax.numpy.array(base_image)
         zero_image = jax.numpy.zeros_like(base_image)
-        
-        # Process text observation (layout name)
+
+        # Process text observation (layout name) and build Genesis-style prompt
         text_obs = obs_dict["text_observation"]
-        
-        # Tokenize text prompt/observation
+
+        # Build Genesis-style prompt with full context
         if isinstance(text_obs, list):
-            tokens = [0] * len(text_obs)
-            token_mask = [0] * len(text_obs)
-            for i in range(len(text_obs)):
-                tokens[i], token_mask[i] = tokenizer.tokenize(text_obs[i])
+            # For batched observations, build prompts for each sample
+            # Handle time values as either scalars (all same) or arrays (one per sample)
+            if isinstance(time_left, (list, np.ndarray)):
+                full_prompts = [self._build_genesis_style_prompt(text_obs[i], time_left[i], time_elapsed[i])
+                              for i in range(len(text_obs))]
+            else:
+                # Use same time values for all samples in batch
+                full_prompts = [self._build_genesis_style_prompt(layout_name, time_left, time_elapsed)
+                              for layout_name in text_obs]
+        else:
+            # Single observation
+            full_prompts = self._build_genesis_style_prompt(text_obs, time_left, time_elapsed)
+
+        # Tokenize the full Genesis-style prompts
+        if isinstance(full_prompts, list):
+            tokens = [0] * len(full_prompts)
+            token_mask = [0] * len(full_prompts)
+            for i in range(len(full_prompts)):
+                tokens[i], token_mask[i] = tokenizer.tokenize(full_prompts[i])
                 tokens[i] = jax.numpy.array(tokens[i])
                 token_mask[i] = jax.numpy.array(token_mask[i])
         else:
-            tokens, token_mask = tokenizer.tokenize(text_obs)
+            tokens, token_mask = tokenizer.tokenize(full_prompts)
         
         if not isinstance(tokens, list) and len(tokens.shape) == 1:  
             tokens = jax.numpy.array(tokens)[None, ...]
@@ -307,7 +365,7 @@ class OvercookedInference:
             print("Will recalculate stats...")
             return None, None
 
-    def evaluate_model(self, model, key, config, dataloader, dataset_name: str, output_dir: str = None, max_samples: int = None, data_file: str = None) -> dict:
+    def evaluate_model(self, model, key, config, dataloader, dataset_name: str, output_dir: str = None, max_samples: int = None, data_file: str = None, batch_size: int = 5) -> dict:
         """Evaluate the model on the Overcooked dataset."""
         counter = 0
         dataset_results = DatasetResults()
@@ -316,20 +374,38 @@ class OvercookedInference:
         if output_dir:
             print("Checking for existing dataset statistics...")
             dataset_stats_dict, dataset_stats = self.load_dataset_stats(output_dir)
-            
+
             if dataset_stats_dict is None:
                 # Calculate normalization statistics from dataset
                 print("No existing stats found. Calculating dataset normalization statistics...")
                 dataset_stats_dict, dataset_stats = self.get_dataset_stats(dataloader, dataset_name)
-                
+
                 # Save the calculated stats for future use
                 self.save_dataset_stats(dataset_stats_dict, output_dir)
+
+                # CRITICAL FIX: Create a FRESH dataloader for evaluation after stats exhausted the original
+                print("Creating fresh dataloader for evaluation...")
+                _, dataloader = get_overcooked_dataloader(
+                    data_file,
+                    batch_size=batch_size,
+                    by_episode=False,
+                    group_by_layout=True
+                )
             else:
                 print("Using existing dataset statistics (skipping calculation)")
         else:
             # Fallback to calculating stats if no output_dir provided
             print("Calculating dataset normalization statistics...")
             dataset_stats_dict, dataset_stats = self.get_dataset_stats(dataloader, dataset_name)
+
+            # CRITICAL FIX: Create a FRESH dataloader after stats calculation
+            print("Creating fresh dataloader for evaluation...")
+            _, dataloader = get_overcooked_dataloader(
+                data_file,
+                batch_size=batch_size,
+                by_episode=False,
+                group_by_layout=True
+            )
 
         # Calculate total batches for progress tracking
         total_batches = len(dataloader)
@@ -357,8 +433,18 @@ class OvercookedInference:
                 'image_observation': batch['image_observation'],
                 'text_observation': batch['text_observation']
             }
-            # Transform observation
-            transformed_dict = self.prepare_observation(obs, max_token_length=config.max_token_len, batch_size=actual_batch_size)
+            # Extract temporal information for Genesis-style prompts
+            time_left_batch = batch['time_left']
+            time_elapsed_batch = batch['time_elapsed']
+
+            # Transform observation with Genesis-style prompts including temporal context
+            transformed_dict = self.prepare_observation(
+                obs,
+                batch_size=actual_batch_size,
+                time_left=time_left_batch,
+                time_elapsed=time_elapsed_batch,
+                max_token_length=config.max_token_len
+            )
             observation = Observation.from_dict(transformed_dict)
             
             # Sample actions for entire batch
@@ -580,8 +666,10 @@ def main():
     print(f'Reading data from: {args.data_file}')
     
     # Initialize model and inference object
-    config = pi0.Pi0Config(action_horizon=1)
-    tokenizer = PaligemmaTokenizer()
+    # Increase max_token_len to accommodate Genesis-style prompts (default was 48, actual needed: ~1315)
+    config = pi0.Pi0Config(action_horizon=1, max_token_len=1400)
+    # Initialize tokenizer with same max_len to avoid truncation
+    tokenizer = PaligemmaTokenizer(max_len=1400)
     key = jax.random.key(0)
     checkpoint_path = download.maybe_download("s3://openpi-assets/checkpoints/pi0_base/params")
     params = _model.restore_params(checkpoint_path)
@@ -608,7 +696,7 @@ def main():
     print(f'\n ---- EVALUATING {dataset_name} ---- \n')
     if args.max_samples:
         print(f'Limiting evaluation to {args.max_samples} samples')
-    results = overcooked_inference.evaluate_model(model, key, config, dataloader, dataset_name, args.output_dir, args.max_samples, args.data_file)
+    results = overcooked_inference.evaluate_model(model, key, config, dataloader, dataset_name, args.output_dir, args.max_samples, args.data_file, args.batch_size)
     
     # Save results
     results_data = {dataset_name: results}
