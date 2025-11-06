@@ -1,4 +1,4 @@
-# MultiNet Evaluation Harness
+# MultiNet Submission Guide
 
 This guide provides instructions for preparing and testing your model with the MultiNet evaluation harness, and submitting it for official benchmark evaluation.
 
