@@ -132,9 +132,7 @@ For detailed instructions on evaluating GPT-5 using the GenESIS framework on ODI
 
 ## 📊 Process for Submission to the MultiNet Benchmark
 
-### Using the Evaluation Harness
-
-We provide a standardized evaluation harness for benchmarking your model on MultiNet datasets. The harness provides:
+We provide a submission toolkit and comprehensive instructions to benchmark your model on MultiNet datasets:
 
 - **Standardized Interface**: Create model adapters that inherit from the base `ModelAdapter` class
 - **Dockerized Evaluation**: Reproducible evaluations in isolated containers
@@ -149,7 +147,7 @@ We provide a standardized evaluation harness for benchmarking your model on Mult
 
 Official benchmark runs are executed by the MultiNet team using your submitted `Dockerfile` and adapters. Local runs operate on the provided sample datasets to validate your setup.
 
-**For complete instructions, see the [Evaluation Harness Guide](src/eval_harness/README.md).**
+**For complete instructions, see the [Model Submission Guide](src/eval_harness/README.md).**
 
 If you're experiencing any issues, open a [GitHub issue](https://github.com/ManifoldRG/MultiNet/issues) or contact [pranav@metarch.ai](mailto:pranav@metarch.ai) directly.
 
