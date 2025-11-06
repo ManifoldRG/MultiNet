@@ -4,13 +4,6 @@ import json
 import os
 import sys
 
-# MUST set environment variables BEFORE importing JAX or any modules that use JAX
-os.environ['JAX_PLATFORMS'] = 'cpu'
-os.environ['CUDA_VISIBLE_DEVICES'] = ''
-os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
-os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '0.8'
-os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../../')))
 from src.eval.profiling.openpi.src.openpi.models import pi0
 from src.eval.profiling.openpi.src.openpi.models import model as _model
