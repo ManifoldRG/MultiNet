@@ -14,7 +14,7 @@ This guide provides instructions for preparing and testing your model with the M
 
 ## Overview
 
-The MultiNet evaluation harness provides a standardized interface for evaluating vision-language models (VLMs), vision-language-action (VLA) models, and any other generalist models across diverse datasets. The harness:
+MultiNet provides a standardized interface for evaluating vision-language models (VLMs), vision-language-action (VLA) models, and any other generalist models across diverse datasets. The harness:
 
 1. Loads datasets and provides standardized observations to your model
 2. Calls your model adapter's prediction methods
