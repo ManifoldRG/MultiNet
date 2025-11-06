@@ -4,7 +4,8 @@ import numpy as np
 from src.eval_utils import (
     calculate_mse, calculate_mae,
     calculate_mean, min_max_normalize, quantile_filter,
-    calculate_max_relative_mae, calculate_proportion_beyond_mae_threshold
+    calculate_max_relative_mae, calculate_proportion_beyond_mae_threshold,
+    calculate_baseline_relative_mae, calculate_baseline_relative_mse
 )
 
 def _validate_output(output: Any, shape: tuple[int]) -> bool:
@@ -37,9 +38,13 @@ class RoboticsMetricsCalculator:
         Initialize with action statistics.
         
         Args:
-            action_stats: Dictionary with 'max' and 'min' action values
+            action_stats: Dictionary with 'max', 'min', and 'mean' action values
         """
         self.action_stats = action_stats
+        # Extract training mean for baseline normalization
+        if 'mean' not in action_stats:
+            raise ValueError("action_stats must contain 'mean' key for baseline normalization")
+        self.training_mean = np.array(action_stats['mean'])
     
     def calculate_metrics(self, predictions: List[Any], ground_truth_actions: List[np.ndarray]) -> Dict[str, Any]:
         """
@@ -53,6 +58,7 @@ class RoboticsMetricsCalculator:
             Dictionary containing calculated metrics
         """
         mses, maes = [], []
+        baseline_relative_maes, baseline_relative_mses = [], []
         total_invalid_preds = 0
         action_success = []
 
@@ -64,6 +70,10 @@ class RoboticsMetricsCalculator:
                 pred = [float(item) for item in pred]
                 mses.append(calculate_mse(pred, ground_truth_actions[i]))
                 maes.append(calculate_mae(pred, ground_truth_actions[i]))
+
+                # Calculate baseline-relative metrics
+                baseline_relative_maes.append(calculate_baseline_relative_mae(pred, ground_truth_actions[i], self.training_mean))
+                baseline_relative_mses.append(calculate_baseline_relative_mse(pred, ground_truth_actions[i], self.training_mean))
 
                 # Calculate action success for exact matches (mirroring OpenX implementation)
                 if np.array_equal(np.array(pred), ground_truth_actions[i]):
@@ -78,12 +88,17 @@ class RoboticsMetricsCalculator:
                 mae = calculate_mae(max_vals, min_vals)
                 mses.append(mse)
                 maes.append(mae)
+
+                # For invalid predictions, use worst-case baseline-relative metrics
+                baseline_relative_maes.append(float('inf'))  # Worse than baseline
+                baseline_relative_mses.append(float('inf'))  # Worse than baseline
+
                 total_invalid_preds += 1
                 action_success.append(0)  # Invalid predictions are considered failures
 
-        return self._calculate_final_metrics(mses, maes, total_invalid_preds, action_success)
-    
-    def _calculate_final_metrics(self, timestep_mses: List[float], timestep_maes: List[float], total_invalid_preds: int, action_success: List[int]) -> Dict[str, Any]:
+        return self._calculate_final_metrics(mses, maes, baseline_relative_maes, baseline_relative_mses, total_invalid_preds, action_success)
+
+    def _calculate_final_metrics(self, timestep_mses: List[float], timestep_maes: List[float], baseline_relative_maes: List[float], baseline_relative_mses: List[float], total_invalid_preds: int, action_success: List[int]) -> Dict[str, Any]:
         """Calculate comprehensive final metrics."""
         result = {}
 
@@ -124,6 +139,28 @@ class RoboticsMetricsCalculator:
             max_rel_mae = np.nan
             prop_beyond_threshold_mae = np.nan
 
+        # Calculate baseline-relative MAE metrics
+        # Filter out infinities for normalization, but keep them for averaging
+        finite_baseline_relative_maes = [x for x in baseline_relative_maes if np.isfinite(x)]
+        avg_baseline_relative_mae = calculate_mean(baseline_relative_maes) if baseline_relative_maes else np.nan
+
+        if num_timesteps > 1 and len(finite_baseline_relative_maes) > 1:
+            normalized_baseline_relative_maes = min_max_normalize(finite_baseline_relative_maes)
+            normalized_baseline_relative_mae = calculate_mean(normalized_baseline_relative_maes)
+        else:
+            normalized_baseline_relative_mae = np.nan
+
+        # Calculate baseline-relative MSE metrics
+        # Filter out infinities for normalization, but keep them for averaging
+        finite_baseline_relative_mses = [x for x in baseline_relative_mses if np.isfinite(x)]
+        avg_baseline_relative_mse = calculate_mean(baseline_relative_mses) if baseline_relative_mses else np.nan
+
+        if num_timesteps > 1 and len(finite_baseline_relative_mses) > 1:
+            normalized_baseline_relative_mses = min_max_normalize(finite_baseline_relative_mses)
+            normalized_baseline_relative_mse = calculate_mean(normalized_baseline_relative_mses)
+        else:
+            normalized_baseline_relative_mse = np.nan
+
         action_success_rate = 0.0
         if len(action_success) > 0:
             action_success_rate = (sum(action_success) / len(action_success)) * 100
@@ -143,6 +180,10 @@ class RoboticsMetricsCalculator:
             'normalized_quantile_filtered_amae': normalized_quantile_filtered_amae,
             'max_relative_mae': max_rel_mae,
             'proportion_beyond_threshold_mae': prop_beyond_threshold_mae,
+            'avg_baseline_relative_mae': avg_baseline_relative_mae,
+            'normalized_baseline_relative_mae': normalized_baseline_relative_mae,
+            'avg_baseline_relative_mse': avg_baseline_relative_mse,
+            'normalized_baseline_relative_mse': normalized_baseline_relative_mse,
             'total_invalid_preds': total_invalid_preds,
             'invalid_percentage': invalid_percentage,
         })

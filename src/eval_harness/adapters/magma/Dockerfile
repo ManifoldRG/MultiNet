@@ -69,9 +69,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
 # ------------------------------------------------------------------------------------------------
-# Magma-specific environment variable    
-ENV PYTHONPATH="/home/app/multinet:/home/app/multinet/src:/home/app/multinet/src/v1/modules/Magma:${PYTHONPATH}"
+# Set Magma-specific environment variable
+ENV PYTHONPATH="/home/app/multinet:/home/app/multinet/src:/home/app/multinet/src/v1/modules/Magma${PYTHONPATH:+":$PYTHONPATH"}"
 # ------------------------------------------------------------------------------------------------
-
 ENTRYPOINT ["python3", "scripts/eval_harness/evaluate.py"]
 CMD ["--help"]

@@ -10,6 +10,7 @@ import argparse
 import importlib.util
 import json
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -261,7 +262,86 @@ def get_metrics_calculator(config: EvaluationConfig, dataset: torch.utils.data.D
     else:
         raise ValueError(f"Invalid dataset name: {config.dataset}")
     return metrics_calculator
-    
+
+
+def get_capability_slices(dataset_name: str) -> Optional[Dict[str, slice]]:
+    """
+    Get dimension slices for different capabilities by dataset.
+
+    Returns:
+        Dict mapping capability names to dimension slices, or None if not applicable
+    """
+    if dataset_name == 'openx_bimanual':
+        return {
+            'arm1': slice(0, 7),
+            'arm2': slice(7, 14)
+        }
+    elif dataset_name == 'openx_mobile_manipulation':
+        return {
+            'base_navigation': slice(0, 3),   # base_x, base_y, base_rotation
+            'arm_manipulation': slice(3, 10)   # gripper + arm (roll,pitch,yaw,x,y,z)
+        }
+    else:
+        return None
+
+
+def calculate_capability_metrics(
+    predictions: List[Dict[str, Any]],
+    ground_truth_actions: List[np.ndarray],
+    capability_slices: Dict[str, slice],
+    action_stats: Dict[str, Any]
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Calculate metrics for each capability by slicing predictions and ground truth.
+
+    Args:
+        predictions: List of prediction dicts with "extracted_outputs"
+        ground_truth_actions: List of ground truth action arrays
+        capability_slices: Dict mapping capability names to dimension slices
+        action_stats: Action statistics for the dataset
+
+    Returns:
+        Dict mapping capability names to their metric dictionaries
+    """
+    capability_metrics = {}
+
+    for capability_name, dim_slice in capability_slices.items():
+        # Slice predictions and ground truth for this capability
+        sliced_predictions = []
+        sliced_ground_truth = []
+
+        for pred_dict, gt_action in zip(predictions, ground_truth_actions):
+            # Extract and slice prediction
+            pred_action = pred_dict["extracted_outputs"] if isinstance(pred_dict, dict) else pred_dict
+            sliced_pred = np.array(pred_action)[dim_slice]
+
+            # Slice ground truth
+            sliced_gt = gt_action[dim_slice]
+
+            # Create new prediction dict with sliced output
+            sliced_predictions.append({
+                "raw_output": pred_dict.get("raw_output", ""),
+                "extracted_outputs": sliced_pred
+            })
+            sliced_ground_truth.append(sliced_gt)
+
+        # Slice action stats for this capability
+        sliced_stats = {}
+        for key in ['min', 'max', 'mean', 'std', 'q01', 'q99']:
+            if key in action_stats:
+                stat_array = np.array(action_stats[key])
+                sliced_stats[key] = stat_array[dim_slice]
+
+        # Calculate metrics using existing RoboticsMetricsCalculator
+        capability_calculator = RoboticsMetricsCalculator(sliced_stats)
+        capability_metrics[capability_name] = capability_calculator.calculate_metrics(
+            sliced_predictions,
+            sliced_ground_truth
+        )
+
+    return capability_metrics
+
+
 def get_ground_truth_key(config: EvaluationConfig) -> str:
     """
     Get the correct ground truth key for each dataset.
@@ -408,9 +488,12 @@ def profile_and_save_results_multiturn(
     """Evaluation function for multi-turn datasets with conversation history."""
     all_predictions = []
     all_ground_truths = []
-    
+
     print(f"Running multi-turn evaluation for {config.dataset}")
-    
+
+    # Start timing evaluation
+    eval_start_time = time.time()
+
     for batch_idx, batch in enumerate(data_loader):
         batch_size = len(batch['conversation_id'])
         
@@ -530,10 +613,15 @@ def profile_and_save_results_multiturn(
                 break
     
     print(f"Completed evaluation of {len(all_predictions)} conversations")
-    
+
+    # End timing evaluation
+    eval_end_time = time.time()
+    eval_time = eval_end_time - eval_start_time
+    print(f"Evaluation time: {eval_time:.2f} seconds")
+
     # Save predictions
     save_predictions(all_predictions, config, sub_dataset_name=sub_dataset_name)
-    
+
     # Calculate metrics using the appropriate metrics calculator
     metrics_calculator = get_metrics_calculator(config, dataset)
     
@@ -557,7 +645,8 @@ def profile_and_save_results_multiturn(
     metrics['total_conversations'] = len(all_predictions)
     metrics['total_turns'] = sum(p['num_turns'] for p in all_predictions)
     metrics['avg_turns_per_conversation'] = metrics['total_turns'] / metrics['total_conversations'] if metrics['total_conversations'] > 0 else 0
-    
+    metrics['eval_time'] = eval_time
+
     save_results(metrics, config, sub_dataset_name=sub_dataset_name)
 
 def extract_observations_and_instructions(
@@ -712,7 +801,7 @@ def extract_observations_and_instructions(
 def profile_and_save_results(
     model_adapter: ModelAdapter,
     dataset: torch.utils.data.Dataset,
-    data_loader: torch.utils.data.DataLoader, 
+    data_loader: torch.utils.data.DataLoader,
     config: EvaluationConfig,
     sub_dataset_name: Optional[str] = None
 ):
@@ -720,7 +809,10 @@ def profile_and_save_results(
     ground_truth_actions = []
     skipped_batches_no_image = 0
     skipped_samples_no_image = 0
-    
+
+    # Start timing evaluation
+    eval_start_time = time.time()
+
     for batch in data_loader:
         # Extract standardized observations and instructions
         observations, instructions = extract_observations_and_instructions(
@@ -808,6 +900,11 @@ def profile_and_save_results(
                 print(f"Processed {len(predictions)} samples (max_samples={config.max_samples}). Exiting.")
                 break
 
+    # End timing evaluation
+    eval_end_time = time.time()
+    eval_time = eval_end_time - eval_start_time
+    print(f"Evaluation time: {eval_time:.2f} seconds")
+
     save_predictions(predictions, config, sub_dataset_name=sub_dataset_name)
 
     # Check if no predictions were generated (all batches skipped)
@@ -832,7 +929,8 @@ def profile_and_save_results(
             'skipped_summary': {
                 'skipped_batches_no_image': skipped_batches_no_image,
                 'skipped_samples_no_image': skipped_samples_no_image,
-                'reason': 'All batches skipped due to missing images'
+                'reason': 'All batches skipped due to missing images',
+                'eval_time': eval_time
             }
         }
         
@@ -852,12 +950,27 @@ def profile_and_save_results(
     metrics_calculator = get_metrics_calculator(config, dataset)
 
     metrics = metrics_calculator.calculate_metrics(predictions, ground_truth_actions)
-    
+
+    # Add capability-specific metrics for applicable datasets
+    if 'openx' in config.dataset:
+        capability_slices = get_capability_slices(config.dataset)
+        if capability_slices is not None:
+            capability_metrics = calculate_capability_metrics(
+                predictions,
+                ground_truth_actions,
+                capability_slices,
+                dataset.action_stats
+            )
+            metrics['capability_metrics'] = capability_metrics
+
     # Add skipped batch information to metrics if any batches were skipped
     if skipped_batches_no_image > 0:
         metrics['skipped_batches_no_image'] = skipped_batches_no_image
         metrics['skipped_samples_no_image'] = skipped_samples_no_image
-    
+
+    # Add evaluation time to metrics
+    metrics['eval_time'] = eval_time
+
     save_results(metrics, config, sub_dataset_name=sub_dataset_name)
     
 def main():
