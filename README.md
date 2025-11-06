@@ -151,7 +151,7 @@ Official benchmark runs are executed by the MultiNet team using your submitted `
 
 **For complete instructions, see the [Evaluation Harness Guide](src/eval_harness/README.md).**
 
-For questions or assistance, contact us directly or join our [Discord community](https://discord.gg/Rk4gAq5aYr).
+If you're experiencing any issues, open a [GitHub issue](https://github.com/ManifoldRG/MultiNet/issues) or contact [pranav@metarch.ai](mailto:pranav@metarch.ai) directly.
 
 ## 📜 Citation
 
