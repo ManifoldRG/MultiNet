@@ -4,13 +4,27 @@ Approximate baseline-relative metrics from aggregate MAE/MSE values.
 
 This is an APPROXIMATION. The exact metric would require per-sample predictions.
 
-example:
+The script handles these result file formats:
+- Metrics directly under dataset keys (e.g., pi0 results)
+- Metrics under a "metrics" subkey (e.g., magma results)
+- Metrics under the dataset name as a key
+
+Examples:
+
+# Process a single dataset:
 python approx_baseline_rel_err.py \
     --results_file src/v1/results/magma/magma_openx_bimanual_results.json \
     --dataset openx_bimanual \
     --data_split public \
     --disk_root_dir /mnt/disks/mount_dir/MultiNet/src/v1/processed \
     --output approximate_bimanual_metrics.json
+
+# Process all datasets in a multi-dataset results file:
+python approx_baseline_rel_err.py \
+    --results_file src/v1/results/pi0/pi0_base_openx_results_final.json \
+    --data_split public \
+    --disk_root_dir /mnt/disks/mount_dir/MultiNet/src/v1/processed \
+    --output approximate_all_datasets_metrics.json
 """
 
 import argparse
@@ -86,6 +100,28 @@ def calculate_baseline_metrics_from_dataset(
     }
 
 
+def extract_metrics_from_results(model_metrics: dict, dataset_name: str = None):
+    """Extract metrics from results, checking multiple possible locations."""
+    # Try to get metrics directly first
+    metrics_source = model_metrics
+
+    # If metrics aren't directly available, check under 'metrics' key
+    if 'avg_dataset_amae' not in model_metrics and 'metrics' in model_metrics:
+        metrics_source = model_metrics['metrics']
+    # If still not found and dataset_name is provided, check under dataset name as key
+    elif 'avg_dataset_amae' not in metrics_source and dataset_name and dataset_name in model_metrics:
+        metrics_source = model_metrics[dataset_name]
+
+    # Extract the required metrics
+    try:
+        model_mae = metrics_source['avg_dataset_amae']
+        model_mse = metrics_source['avg_dataset_amse']
+        num_timesteps = metrics_source['num_timesteps']
+        return model_mae, model_mse, num_timesteps
+    except KeyError as e:
+        raise KeyError(f"Required metric key '{e}' not found in results. Available keys: {list(metrics_source.keys())}")
+
+
 def calculate_approximate_relative_metrics(
     model_mae: float,
     model_mse: float,
@@ -93,11 +129,11 @@ def calculate_approximate_relative_metrics(
     baseline_mse: float
 ):
     """Calculate approximate baseline-relative metrics."""
-    
+
     # APPROXIMATION: Use ratio of averages instead of average of ratios
     approx_baseline_relative_mae = model_mae / baseline_mae
     approx_baseline_relative_mse = model_mse / baseline_mse
-    
+
     return {
         'approximate_baseline_relative_mae': approx_baseline_relative_mae,
         'approximate_baseline_relative_mse': approx_baseline_relative_mse
@@ -110,8 +146,8 @@ def main():
     )
     parser.add_argument('--results_file', type=str, required=True,
                         help="Path to results JSON with avg_dataset_amae/amse")
-    parser.add_argument('--dataset', type=str, required=True,
-                        help="Dataset name (e.g., openx_bimanual)")
+    parser.add_argument('--dataset', type=str, default=None,
+                        help="Dataset name (e.g., openx_bimanual). If not specified, process all datasets in results file")
     parser.add_argument('--data_split', type=str, default='public',
                         help="Data split to use")
     parser.add_argument('--disk_root_dir', type=str,
@@ -123,71 +159,94 @@ def main():
                         help="Output JSON file")
     
     args = parser.parse_args()
-    
+
     # Load model results
     print(f"Loading model results from: {args.results_file}")
     with open(args.results_file, 'r') as f:
         results = json.load(f)
-    
-    # Extract model MAE/MSE
-    if args.dataset in results:
-        model_metrics = results[args.dataset]
+
+    # Determine which datasets to process
+    if args.dataset:
+        # Single dataset mode
+        datasets_to_process = [args.dataset]
     else:
-        model_metrics = results
-    
-    model_mae = model_metrics['avg_dataset_amae']
-    model_mse = model_metrics['avg_dataset_amse']
-    num_timesteps = model_metrics['num_timesteps']
-    
-    print(f"\nModel Metrics (from results file):")
-    print(f"  Samples: {num_timesteps}")
-    print(f"  Avg MAE: {model_mae:.4f}")
-    print(f"  Avg MSE: {model_mse:.4f}")
-    
-    # Calculate baseline metrics
-    baseline_metrics = calculate_baseline_metrics_from_dataset(
-        args.dataset,
-        args.data_split,
-        args.disk_root_dir,
-        num_samples=args.num_samples or num_timesteps
-    )
-    
-    baseline_mae = baseline_metrics['avg_baseline_mae']
-    baseline_mse = baseline_metrics['avg_baseline_mse']
-    
-    print(f"\nBaseline Metrics (from dataset):")
-    print(f"  Avg Baseline MAE: {baseline_mae:.4f}")
-    print(f"  Avg Baseline MSE: {baseline_mse:.4f}")
-    
-    # Calculate approximate relative metrics
-    relative_metrics = calculate_approximate_relative_metrics(
-        model_mae, model_mse, baseline_mae, baseline_mse
-    )
-    
-    # Combine all results
-    output = {
-        'model_metrics': {
-            'avg_dataset_amae': model_mae,
-            'avg_dataset_amse': model_mse,
-            'num_timesteps': num_timesteps
-        },
-        'baseline_metrics': baseline_metrics,
-        'approximate_relative_metrics': relative_metrics
-    }
-    
+        # Multi-dataset mode - process all datasets in results file
+        datasets_to_process = list(results.keys())
+        print(f"Found {len(datasets_to_process)} datasets in results file: {datasets_to_process}")
+
+    # Process each dataset
+    all_results = {}
+
+    for dataset_name in datasets_to_process:
+        print(f"\n{'='*60}")
+        print(f"Processing dataset: {dataset_name}")
+        print(f"{'='*60}")
+
+        # Extract model MAE/MSE for this dataset
+        if dataset_name in results:
+            model_metrics = results[dataset_name]
+        else:
+            print(f"Warning: Dataset '{dataset_name}' not found in results file. Skipping.")
+            continue
+
+        try:
+            model_mae, model_mse, num_timesteps = extract_metrics_from_results(model_metrics, dataset_name)
+        except KeyError as e:
+            print(f"Warning: {e}. Skipping dataset '{dataset_name}'.")
+            continue
+
+        print(f"\nModel Metrics (from results file):")
+        print(f"  Samples: {num_timesteps}")
+        print(f"  Avg MAE: {model_mae:.4f}")
+        print(f"  Avg MSE: {model_mse:.4f}")
+
+        # Calculate baseline metrics
+        baseline_metrics = calculate_baseline_metrics_from_dataset(
+            dataset_name,
+            args.data_split,
+            args.disk_root_dir,
+            num_samples=args.num_samples or num_timesteps
+        )
+
+        baseline_mae = baseline_metrics['avg_baseline_mae']
+        baseline_mse = baseline_metrics['avg_baseline_mse']
+
+        print(f"\nBaseline Metrics (from dataset):")
+        print(f"  Avg Baseline MAE: {baseline_mae:.4f}")
+        print(f"  Avg Baseline MSE: {baseline_mse:.4f}")
+
+        # Calculate approximate relative metrics
+        relative_metrics = calculate_approximate_relative_metrics(
+            model_mae, model_mse, baseline_mae, baseline_mse
+        )
+
+        # Store results for this dataset
+        all_results[dataset_name] = {
+            'model_metrics': {
+                'avg_dataset_amae': model_mae,
+                'avg_dataset_amse': model_mse,
+                'num_timesteps': num_timesteps
+            },
+            'baseline_metrics': baseline_metrics,
+            'approximate_relative_metrics': relative_metrics
+        }
+
+        print(f"\nAPPROXIMATE RESULTS for {dataset_name}")
+        print(f"Model MAE / Baseline MAE = {relative_metrics['approximate_baseline_relative_mae']:.4f}")
+        print(f"Model MSE / Baseline MSE = {relative_metrics['approximate_baseline_relative_mse']:.4f}")
+
     # Save results
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     with open(output_path, 'w') as f:
-        json.dump(output, f, indent=2, default=str)
-    
+        json.dump(all_results, f, indent=2, default=str)
+
     print(f"\n{'='*60}")
-    print("APPROXIMATE RESULTS")
+    print("ALL RESULTS SAVED")
     print(f"{'='*60}")
-    print(f"Model MAE / Baseline MAE = {relative_metrics['approximate_baseline_relative_mae']:.4f}")
-    print(f"Model MSE / Baseline MSE = {relative_metrics['approximate_baseline_relative_mse']:.4f}")
-    print(f"\nFull results saved to: {output_path}")
+    print(f"Processed {len(all_results)} datasets")
+    print(f"Full results saved to: {output_path}")
 
 
 if __name__ == "__main__":
