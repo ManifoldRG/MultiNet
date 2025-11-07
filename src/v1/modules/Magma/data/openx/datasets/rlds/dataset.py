@@ -30,7 +30,11 @@ from data.openx.datasets.rlds.utils.data_utils import (
 
 logger = logging.getLogger(__name__)
 # Configure Tensorflow with *no GPU devices* (to prevent clobber with PyTorch)
-tf.config.set_visible_devices([], "GPU")
+try:
+    tf.config.set_visible_devices([], "GPU")
+except RuntimeError:
+    # TensorFlow already initialized, skip GPU device configuration
+    pass
 
 def partition_dataset(dataset, num_partitions, partition_index):
     # Calculate the size of each partition

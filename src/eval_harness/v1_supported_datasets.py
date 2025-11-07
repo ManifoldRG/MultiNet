@@ -1,10 +1,12 @@
 class V1SupportedDatasets:
     def __init__(self):
         self.datasets = {
+            "openx_wheeled_robot": None,
             "openx_single_arm": None,
             "openx_mobile_manipulation": None,
             "openx_quadrupedal": None,
             "openx_bimanual": None,
+            "overcooked_ai": None,
             "piqa": None,
             "sqa3d": None,
             "robot_vqa": None,

@@ -1,0 +1,34 @@
+[
+  {
+    "bbox_image": "bbox_0_DJI_0263_JPG.rf.46456e1604da41debe69ed67f7486ed2.jpg",
+    "original_image": "DJI_0263_JPG.rf.46456e1604da41debe69ed67f7486ed2.jpg",
+    "category_id": 1,
+    "category_name": "boat",
+    "bbox": [
+      595,
+      108,
+      43.5,
+      38
+    ],
+    "bbox_id": 0,
+    "annotation_id": 0,
+    "area": 1653,
+    "dataset": "AerialMaritimeDrone"
+  },
+  {
+    "bbox_image": "bbox_1_DJI_0263_JPG.rf.46456e1604da41debe69ed67f7486ed2.jpg",
+    "original_image": "DJI_0263_JPG.rf.46456e1604da41debe69ed67f7486ed2.jpg",
+    "category_id": 3,
+    "category_name": "dock",
+    "bbox": [
+      860,
+      167,
+      76,
+      74.5
+    ],
+    "bbox_id": 1,
+    "annotation_id": 1,
+    "area": 5662,
+    "dataset": "AerialMaritimeDrone"
+  }
+]

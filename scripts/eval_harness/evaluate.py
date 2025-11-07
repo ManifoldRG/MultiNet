@@ -10,11 +10,16 @@ import argparse
 import importlib.util
 import json
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import torch
+import numpy as np
+import logging
+import tensorflow as tf
+logger = logging.getLogger(__name__)
 
 # Add project root to path
 ROOT_DIR = Path(__file__).parent.parent.parent
@@ -25,6 +30,37 @@ from src.eval_harness.model_adapter import ModelAdapter
 from src.eval_harness.v1_supported_datasets import V1SupportedDatasets
 from src.data_utils import *
 from src.eval_harness.scoring import *
+from definitions.overcooked import OverCookedDefinitions
+from definitions.openx import OpenXDefinitions
+
+def first_non_none_shape(images_list):
+    """Return (H, W) of the first non-None image; None if all None."""
+    for img in images_list:
+        if img is not None:
+            return img.shape[:2]
+    return None
+
+
+def ensure_image_or_placeholder(img, ref_shape):
+    """Return img if present; else a black placeholder of ref_shape (H, W, 3)."""
+    if img is None:
+        if ref_shape is None:
+            # Should not happen if we gate earlier; keep defensive check
+            raise ValueError("No reference shape available for placeholder")
+        h, w = ref_shape
+        print(f"Warning: Missing image; substituting placeholder of shape ({h}, {w})")
+        return np.zeros((h, w, 3), dtype=np.uint8)
+    return img
+
+
+def first_non_none_shape(images_list):
+    """Return (H, W) of the first non-None image; None if all None."""
+    for img in images_list:
+        if img is not None:
+            return img.shape[:2]
+    return None
+
+
 
 
 def validate_structured_prediction(pred: Any, dataset_name: str) -> Dict[str, Any]:
@@ -77,6 +113,16 @@ class EvaluationConfig:
         self.batch_size = args.batch_size
         self.device = args.device
         self.seed = args.seed
+        self.batch_process = args.batch_process
+        self.max_samples = args.max_samples
+        
+        # Override batch_size when batch_process=False
+        if not self.batch_process:
+            self.batch_size = 1
+        
+        # Clip batch_size to max_samples if max_samples is set
+        if self.max_samples is not None:
+            self.batch_size = min(self.batch_size, self.max_samples)
         
         # Validate and setup paths
         self.output_path.mkdir(parents=True, exist_ok=True)
@@ -125,8 +171,11 @@ def get_dataset_and_dataloader(config: EvaluationConfig) -> tuple:
     elif config.dataset == 'odinw':
         files = []
         for dataset in V1SupportedDatasets().datasets['odinw']:
-            file = find_data_files('odinw', config.disk_root_dir, dataset=dataset, split=config.data_split)
-            files.extend(file)
+            try:
+                file = find_data_files('odinw', config.disk_root_dir, dataset=dataset, split=config.data_split)
+                files.extend(file)
+            except ValueError as e:
+                print(f"Warning: Could not load ODinW sub-dataset '{dataset}': {e}. Skipping..")
     else:
         files = find_data_files(config.dataset, config.disk_root_dir, split=config.data_split)
     
@@ -213,7 +262,86 @@ def get_metrics_calculator(config: EvaluationConfig, dataset: torch.utils.data.D
     else:
         raise ValueError(f"Invalid dataset name: {config.dataset}")
     return metrics_calculator
-    
+
+
+def get_capability_slices(dataset_name: str) -> Optional[Dict[str, slice]]:
+    """
+    Get dimension slices for different capabilities by dataset.
+
+    Returns:
+        Dict mapping capability names to dimension slices, or None if not applicable
+    """
+    if dataset_name == 'openx_bimanual':
+        return {
+            'arm1': slice(0, 7),
+            'arm2': slice(7, 14)
+        }
+    elif dataset_name == 'openx_mobile_manipulation':
+        return {
+            'base_navigation': slice(0, 3),   # base_x, base_y, base_rotation
+            'arm_manipulation': slice(3, 10)   # gripper + arm (roll,pitch,yaw,x,y,z)
+        }
+    else:
+        return None
+
+
+def calculate_capability_metrics(
+    predictions: List[Dict[str, Any]],
+    ground_truth_actions: List[np.ndarray],
+    capability_slices: Dict[str, slice],
+    action_stats: Dict[str, Any]
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Calculate metrics for each capability by slicing predictions and ground truth.
+
+    Args:
+        predictions: List of prediction dicts with "extracted_outputs"
+        ground_truth_actions: List of ground truth action arrays
+        capability_slices: Dict mapping capability names to dimension slices
+        action_stats: Action statistics for the dataset
+
+    Returns:
+        Dict mapping capability names to their metric dictionaries
+    """
+    capability_metrics = {}
+
+    for capability_name, dim_slice in capability_slices.items():
+        # Slice predictions and ground truth for this capability
+        sliced_predictions = []
+        sliced_ground_truth = []
+
+        for pred_dict, gt_action in zip(predictions, ground_truth_actions):
+            # Extract and slice prediction
+            pred_action = pred_dict["extracted_outputs"] if isinstance(pred_dict, dict) else pred_dict
+            sliced_pred = np.array(pred_action)[dim_slice]
+
+            # Slice ground truth
+            sliced_gt = gt_action[dim_slice]
+
+            # Create new prediction dict with sliced output
+            sliced_predictions.append({
+                "raw_output": pred_dict.get("raw_output", ""),
+                "extracted_outputs": sliced_pred
+            })
+            sliced_ground_truth.append(sliced_gt)
+
+        # Slice action stats for this capability
+        sliced_stats = {}
+        for key in ['min', 'max', 'mean', 'std', 'q01', 'q99']:
+            if key in action_stats:
+                stat_array = np.array(action_stats[key])
+                sliced_stats[key] = stat_array[dim_slice]
+
+        # Calculate metrics using existing RoboticsMetricsCalculator
+        capability_calculator = RoboticsMetricsCalculator(sliced_stats)
+        capability_metrics[capability_name] = capability_calculator.calculate_metrics(
+            sliced_predictions,
+            sliced_ground_truth
+        )
+
+    return capability_metrics
+
+
 def get_ground_truth_key(config: EvaluationConfig) -> str:
     """
     Get the correct ground truth key for each dataset.
@@ -316,6 +444,8 @@ def save_results(metrics: Dict[str, Any], config: EvaluationConfig, sub_dataset_
             'data_split': config.data_split,
             'sub_dataset_name': sub_dataset_name if sub_dataset_name is not None else '',
             'batch_size': config.batch_size,
+            'batch_process': config.batch_process,
+            'max_samples': config.max_samples,
             'seed': config.seed,
             'timestamp': timestamp
         },
@@ -358,9 +488,12 @@ def profile_and_save_results_multiturn(
     """Evaluation function for multi-turn datasets with conversation history."""
     all_predictions = []
     all_ground_truths = []
-    
+
     print(f"Running multi-turn evaluation for {config.dataset}")
-    
+
+    # Start timing evaluation
+    eval_start_time = time.time()
+
     for batch_idx, batch in enumerate(data_loader):
         batch_size = len(batch['conversation_id'])
         
@@ -396,14 +529,27 @@ def profile_and_save_results_multiturn(
                     turn_histories.append(batch_histories[conv_idx].copy())
             
             if not turn_observations:
+                print(f"Skipping batch {batch_idx} turn {turn_idx}: no observations available for {config.dataset}")
                 continue
-            
-            responses = model_adapter.batch_predict_actions(
-                observations=turn_observations,
-                instructions=turn_instructions,
-                dataset_name=config.dataset,
-                histories=turn_histories
-            )
+
+
+            if config.batch_process:
+                responses = model_adapter.batch_predict_actions(
+                    observations=turn_observations,
+                    instructions=turn_instructions,
+                    dataset_name=config.dataset,
+                        histories=turn_histories
+                    )
+            else:
+                responses = []
+                for observation, instruction, history in zip(turn_observations, turn_instructions, turn_histories):
+                    response = model_adapter.predict_action(
+                        observation=observation,
+                        instruction=instruction,
+                        dataset_name=config.dataset,
+                        history=history
+                    )
+                    responses.append(response)
             
             # Validate responses have correct structured format
             validated_responses = []
@@ -444,7 +590,7 @@ def profile_and_save_results_multiturn(
                 batch_ground_truths[conv_idx].append(
                     batch['ground_truth_functions'][conv_idx][turn_idx]
                 )
-        
+
         for conv_idx in range(batch_size):
             all_predictions.append({
                 'conversation_id': batch['conversation_id'][conv_idx],
@@ -459,12 +605,23 @@ def profile_and_save_results_multiturn(
         
         if (batch_idx + 1) % 10 == 0:
             print(f"Processed {batch_idx + 1} batches ({len(all_predictions)} conversations)")
+        
+        # Early exit logic for max_samples
+        if config.max_samples is not None:
+            if len(all_predictions) >= config.max_samples:
+                print(f"Processed {len(all_predictions)} conversations (max_samples={config.max_samples}). Exiting.")
+                break
     
     print(f"Completed evaluation of {len(all_predictions)} conversations")
-    
+
+    # End timing evaluation
+    eval_end_time = time.time()
+    eval_time = eval_end_time - eval_start_time
+    print(f"Evaluation time: {eval_time:.2f} seconds")
+
     # Save predictions
     save_predictions(all_predictions, config, sub_dataset_name=sub_dataset_name)
-    
+
     # Calculate metrics using the appropriate metrics calculator
     metrics_calculator = get_metrics_calculator(config, dataset)
     
@@ -488,12 +645,14 @@ def profile_and_save_results_multiturn(
     metrics['total_conversations'] = len(all_predictions)
     metrics['total_turns'] = sum(p['num_turns'] for p in all_predictions)
     metrics['avg_turns_per_conversation'] = metrics['total_turns'] / metrics['total_conversations'] if metrics['total_conversations'] > 0 else 0
-    
+    metrics['eval_time'] = eval_time
+
     save_results(metrics, config, sub_dataset_name=sub_dataset_name)
 
 def extract_observations_and_instructions(
     batch: Dict[str, Any],
-    dataset_name: str
+    dataset_name: str,
+    dataset: torch.utils.data.Dataset
 ) -> tuple:
     """
     Extract standardized observations and instructions from batch.
@@ -518,108 +677,300 @@ def extract_observations_and_instructions(
     instructions = []
     
     if 'openx' in dataset_name:
-        # OpenX: instruction is in text_observation, observation only has image
+        openx_subtasks_mapping= {
+            'openx_wheeled_robot': 'berkeley_gnm_sac_son',
+            'openx_quadrupedal': 'utokyo_saytap_converted_externally_to_rlds',
+            'openx_single_arm': 'bridge',
+            'openx_bimanual': 'utokyo_xarm_bimanual_converted_externally_to_rlds',
+            'openx_mobile_manipulation': 'fractal20220817_data'
+        }
+        
         for i in range(batch_size):
-            observations.append({
-                'image_observation': batch['image_observation'][i]
-            })
-            instructions.append(batch['text_observation'][i])
-    
+            obs_dict = {}
+            env_desc = batch['text_observation'][i].strip()
+            obs_dict['text_observation'] = env_desc
+
+            inst_dict = OpenXDefinitions.DESCRIPTIONS[openx_subtasks_mapping[dataset_name]]
+
+            instruction = inst_dict.get(env_desc, inst_dict.get(env_desc.lower().rstrip('.'), None))
+            instructions.append(instruction)
+
+            action_space = OpenXDefinitions.ACTION_SPACES[openx_subtasks_mapping[dataset_name]]['default']
+            obs_dict['options'] = action_space
+
+            action_stats = dataset.action_stats
+            # Convert TensorFlow tensors to numpy arrays
+            for key in ['min', 'max', 'mean', 'std', 'q01', 'q99']:
+                if key in action_stats:
+                    if tf.is_tensor(action_stats[key]):
+                        action_stats[key] = action_stats[key].numpy()
+                    else:
+                        action_stats[key] = np.array(action_stats[key])
+            
+            obs_dict['action_stats'] = action_stats
+
+            obs_dict['image_observation'] = batch['image_observation'][i]
+
+            observations.append(obs_dict)
+
     elif dataset_name == 'robot_vqa':
         # Robot VQA: instruction is the question, observation only has image
+        # Check if all images are missing
+        ref = first_non_none_shape(batch['image_observation'])
+        if ref is None:
+            print(f"Skipping batch: no images available for robot_vqa")
+            return [], []  # Return empty lists to skip this batch
+        
         for i in range(batch_size):
+            img = ensure_image_or_placeholder(batch['image_observation'][i], ref)
             observations.append({
-                'image_observation': batch['image_observation'][i]
+                'image_observation': img,
             })
             instructions.append(batch['text_observation'][i])
     
     elif dataset_name == 'piqa':
-        # PIQA: instruction is the question, no observation (text-only)
-        # Observation is None for pure text tasks
+        # PIQA: instruction is the question, observation has options only (text-only task)
         for i in range(batch_size):
-            observations.append(None)
+            observations.append({
+                'options': [0, 1],  # PIQA always has 2 choices
+            })
             instructions.append(batch['question'][i])
     
     elif dataset_name == 'sqa3d':
         # SQA3D: instruction is the question, observation only has image
+        # Check if all images are missing
+        ref = first_non_none_shape(batch['scene_image'])
+        if ref is None:
+            print(f"Skipping batch: no images available for SQA3D")
+            return [], []  # Return empty lists to skip this batch
+        
         for i in range(batch_size):
+            img = ensure_image_or_placeholder(batch['scene_image'][i], ref)
             observations.append({
-                'image_observation': batch['scene_image'][i]
+                'image_observation': img,
             })
             instructions.append(batch['question'][i])
     
     elif dataset_name == 'odinw':
-        # ODinW: instruction is the question, observation only has image
+        # ODinW: instruction is the question, observation has image and options
+        # Check if all images are missing
+        ref = first_non_none_shape(batch['image'])
+        if ref is None:
+            print(f"Skipping batch: no images available for odinw")
+            return [], []  # Return empty lists to skip this batch
+        
         for i in range(batch_size):
+            img = ensure_image_or_placeholder(batch['image'][i], ref)
             observations.append({
-                'image_observation': batch['image'][i]
+                'image_observation': img,
+                'options': batch['options'][i]
             })
             instructions.append(batch['question'][i])
     
     elif dataset_name == 'overcooked_ai':
-        # Overcooked: observation has layout + time info, no instruction yet
-        # TODO: Add action space as instruction in the future
+        # Overcooked: observation has layout + time info
+        # Check if all images are missing
+        ref = first_non_none_shape(batch['image_observation'])
+        if ref is None:
+            print(f"Skipping batch: no images available for overcooked_ai")
+            return [], []  # Return empty lists to skip this batch
+        
         for i in range(batch_size):
             # Format text observation with time information
             text_obs = batch['text_observation'][i]
             time_left = batch['time_left'][i]
             time_elapsed = batch['time_elapsed'][i]
-            
-            # Combine into single text observation
+
+            img = ensure_image_or_placeholder(batch['image_observation'][i], ref)
+            observations.append({
+                'text_observation': OverCookedDefinitions.ACTION_MEANINGS,
+                'image_observation': img,
+                'options': OverCookedDefinitions.ACTION_SPACES['overcooked_ai']['default']
+            })
+
+            # Combine into single text observation for instruction
             combined_text = f"Layout: {text_obs}\nTime left: {time_left:.1f}s\nTime elapsed: {time_elapsed:.1f}s"
             
-            observations.append({
-                'text_observation': combined_text,
-                'image_observation': batch['image_observation'][i]
-            })
-        # TODO: Add action space description as instruction
-        # For now, return None instead of list of Nones
-        instructions = None
+            instructions.append(combined_text)
     
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
     
     return observations, instructions
 
-def profile_and_save_results(model_adapter: ModelAdapter,
-                             dataset: torch.utils.data.Dataset,
-                             data_loader: torch.utils.data.DataLoader, 
-                             config: EvaluationConfig,
-                             sub_dataset_name: Optional[str] = None):
+def profile_and_save_results(
+    model_adapter: ModelAdapter,
+    dataset: torch.utils.data.Dataset,
+    data_loader: torch.utils.data.DataLoader,
+    config: EvaluationConfig,
+    sub_dataset_name: Optional[str] = None
+):
     predictions = []
     ground_truth_actions = []
+    skipped_batches_no_image = 0
+    skipped_samples_no_image = 0
+
+    # Start timing evaluation
+    eval_start_time = time.time()
+
     for batch in data_loader:
         # Extract standardized observations and instructions
         observations, instructions = extract_observations_and_instructions(
-            batch, config.dataset
+            batch, config.dataset, dataset
         )
         
-        # Call batch_predict_actions with proper signature
-        batch_predictions = model_adapter.batch_predict_actions(
-            observations=observations,
-            instructions=instructions,
-            dataset_name=config.dataset
-        )
+        # Skip this batch if no observations (all images missing)
+        if len(observations) == 0:
+            skipped_batches_no_image += 1
+            
+            # Count samples based on dataset-specific image field
+            if config.dataset == 'sqa3d':
+                skipped_samples_no_image += len(batch['scene_image'])
+            elif config.dataset == 'robot_vqa':
+                skipped_samples_no_image += len(batch['image_observation'])
+            elif config.dataset == 'odinw':
+                skipped_samples_no_image += len(batch['image'])
+            elif config.dataset == 'overcooked_ai':
+                skipped_samples_no_image += len(batch['image_observation'])
+            else:
+                # For other datasets, use a fallback
+                skipped_samples_no_image += len(batch.get('image_observation', []))
+            
+            continue
         
-        # Validate predictions have correct structured format
-        validated_predictions = []
-        for pred in batch_predictions:
-            try:
-                validated_pred = validate_structured_prediction(pred, config.dataset)
-                validated_predictions.append(validated_pred)
-            except ValueError as e:
-                raise ValueError(
-                    f"Invalid prediction format from model adapter for dataset '{config.dataset}': {e}"
+        if config.batch_process:
+            # Use batch processing
+            batch_predictions = model_adapter.batch_predict_actions(
+                observations=observations,
+                instructions=instructions,
+                dataset_name=config.dataset
+            )
+            
+            # Validate predictions have correct structured format
+            validated_predictions = []
+            for pred in batch_predictions:
+                try:
+                    validated_pred = validate_structured_prediction(pred, config.dataset)
+                    validated_predictions.append(validated_pred)
+                except ValueError as e:
+                    raise ValueError(
+                        f"Invalid prediction format from model adapter for dataset '{config.dataset}': {e}"
+                    )
+        else:
+            # Use single-item processing
+            validated_predictions = []
+            for i in range(len(observations)):
+                # Get single observation and instruction
+                single_observation = observations[i]
+                single_instruction = instructions[i] if instructions else None
+                
+                # Call predict_action for single item
+                single_prediction = model_adapter.predict_action(
+                    observation=single_observation,
+                    instruction=single_instruction,
+                    dataset_name=config.dataset
                 )
+                
+                # Validate prediction has correct structured format
+                try:
+                    validated_pred = validate_structured_prediction(single_prediction, config.dataset)
+                    validated_predictions.append(validated_pred)
+                except ValueError as e:
+                    raise ValueError(
+                        f"Invalid prediction format from model adapter for dataset '{config.dataset}': {e}"
+                    )
         
         predictions.extend(validated_predictions)
-        ground_truth_actions.extend(batch[get_ground_truth_key(config)])
-        
+
+        # Process ground truth actions for OpenX datasets
+        if 'openx' in config.dataset:
+            # Get raw actions from batch (already concatenated in correct format)
+            raw_gt_actions = batch['action']
+            ground_truth_actions.extend(raw_gt_actions)
+            
+            # Convert all ground truth actions to numpy array format
+            ground_truth_actions = [np.array(action) for action in ground_truth_actions]
+        else:
+            # Non-OpenX datasets use existing logic
+            ground_truth_actions.extend(batch[get_ground_truth_key(config)])
+
+        # Early exit logic for max_samples
+        if config.max_samples is not None:
+            if len(predictions) >= config.max_samples:
+                print(f"Processed {len(predictions)} samples (max_samples={config.max_samples}). Exiting.")
+                break
+
+    # End timing evaluation
+    eval_end_time = time.time()
+    eval_time = eval_end_time - eval_start_time
+    print(f"Evaluation time: {eval_time:.2f} seconds")
+
     save_predictions(predictions, config, sub_dataset_name=sub_dataset_name)
 
+    # Check if no predictions were generated (all batches skipped)
+    if len(predictions) == 0:
+        print(f"No predictions generated (all batches skipped due to missing images). Skipping metrics.")
+        print(f"Skipped {skipped_batches_no_image} batches ({skipped_samples_no_image} samples) due to missing images.")
+        
+        # Create a summary with skipped counts instead of metrics
+        summary = {
+            'evaluation_config': {
+                'dataset': config.dataset,
+                'task_type': config.task_type,
+                'model_adapter_path': str(config.model_adapter_module_path),
+                'data_split': config.data_split,
+                'sub_dataset_name': sub_dataset_name if sub_dataset_name is not None else '',
+                'batch_size': config.batch_size,
+                'batch_process': config.batch_process,
+                'max_samples': config.max_samples,
+                'seed': config.seed,
+                'timestamp': datetime.now().strftime("%Y%m%d_%H%M%S")
+            },
+            'skipped_summary': {
+                'skipped_batches_no_image': skipped_batches_no_image,
+                'skipped_samples_no_image': skipped_samples_no_image,
+                'reason': 'All batches skipped due to missing images',
+                'eval_time': eval_time
+            }
+        }
+        
+        # Save the summary instead of metrics
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if sub_dataset_name is None:
+            results_file = config.output_path / f"{config.dataset}_skipped_summary_{timestamp}.json"
+        else:
+            results_file = config.output_path / f"{config.dataset}_{sub_dataset_name}_skipped_summary_{timestamp}.json"
+        
+        with open(results_file, 'w') as f:
+            json.dump(summary, f, indent=2, default=str)
+        
+        print(f"Skipped summary saved to: {results_file}")
+        return
+
     metrics_calculator = get_metrics_calculator(config, dataset)
+
     metrics = metrics_calculator.calculate_metrics(predictions, ground_truth_actions)
-    
+
+    # Add capability-specific metrics for applicable datasets
+    if 'openx' in config.dataset:
+        capability_slices = get_capability_slices(config.dataset)
+        if capability_slices is not None:
+            capability_metrics = calculate_capability_metrics(
+                predictions,
+                ground_truth_actions,
+                capability_slices,
+                dataset.action_stats
+            )
+            metrics['capability_metrics'] = capability_metrics
+
+    # Add skipped batch information to metrics if any batches were skipped
+    if skipped_batches_no_image > 0:
+        metrics['skipped_batches_no_image'] = skipped_batches_no_image
+        metrics['skipped_samples_no_image'] = skipped_samples_no_image
+
+    # Add evaluation time to metrics
+    metrics['eval_time'] = eval_time
+
     save_results(metrics, config, sub_dataset_name=sub_dataset_name)
     
 def main():
@@ -645,6 +996,10 @@ def main():
                         help="Device to use for evaluation")
     parser.add_argument('--seed', type=int, default=42,
                         help="Random seed for deterministic evaluation")
+    parser.add_argument('--batch_process', action='store_true', default=False,
+                        help="Use batch processing (batch_predict_actions). If False, uses single-item processing (predict_action) with batch_size=1")
+    parser.add_argument('--max_samples', type=int, default=None,
+                        help="Maximum number of samples to process. If set, clips batch_size to max_samples. If batch_process=True, exits after one batch. If batch_process=False, exits after processing max_samples.")
     
     args = parser.parse_args()
 
@@ -659,6 +1014,8 @@ def main():
     print(f"Dataset: {config.dataset} (Task type: {config.task_type})")
     print(f"Output path: {config.output_path}")
     print(f"Device: {config.device}")
+    print(f"Batch process: {config.batch_process}")
+    print(f"Batch size: {config.batch_size}")
     
     # Step 1: Load dataset
     bordered_print("LOADING DATASET")
@@ -673,7 +1030,7 @@ def main():
     
     
     bordered_print("RUNNING EVALUATION")
-
+    
     # Determine if this is a multi-turn dataset
     is_multiturn = is_multiturn_dataset(config.dataset)
     
@@ -689,12 +1046,13 @@ def main():
             # Get sub-dataset name for multi-dataset evaluation (like ODinW)
             sub_dataset_name = dataset.get_dataset_name() if hasattr(dataset, 'get_dataset_name') else None
             print(f"Running evaluation for {config.dataset} {sub_dataset_name if sub_dataset_name else ''}")
+            print(f"Total samples in dataset: {len(dataset)}")
             evaluation_function(model_adapter, dataset, data_loader, config, sub_dataset_name=sub_dataset_name)
-            
+
     else:
         print(f"Running evaluation for {config.dataset}")
+        print(f"Total samples in dataset: {len(datasets[0])}")
         evaluation_function(model_adapter, datasets[0], data_loaders[0], config)
-        
 
     bordered_print("EVALUATION COMPLETE!")
 

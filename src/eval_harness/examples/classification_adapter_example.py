@@ -13,10 +13,10 @@ import re
 import numpy as np
 from PIL import Image
 from typing import Dict, Any, List, Optional, Union
-from src.eval_harness.model_adapter import MultipleChoiceAdapter
+from src.eval_harness.model_adapter import ModelAdapter
 
 
-class SimpleClassificationAdapter(MultipleChoiceAdapter):
+class SimpleClassificationAdapter(ModelAdapter):
     """
     Example adapter for multiple choice classification taks
     
@@ -27,13 +27,16 @@ class SimpleClassificationAdapter(MultipleChoiceAdapter):
     """
     
     def __init__(self, num_choices: int = 4):
-        super().__init__(
-            model_name="SimpleClassificationModel",
-            supported_datasets=["odinw"],
-            num_choices=num_choices
-        )
+        super().__init__()
+        self.model_name = "SimpleClassificationModel"
+        self.model_type = "multiple_choice"
+        self.num_choices = num_choices
         self.model = None
-        
+
+    @property
+    def supported_datasets(self) -> List[str]:
+        return ["odinw"]
+
     def initialize(self, model_path: Optional[str] = None, device: str = "cpu", seed: int = 42, **kwargs):
         """Initialize the classification model."""
         print(f"Initializing {self.model_name} with {self.num_choices} classes")

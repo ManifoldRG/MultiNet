@@ -2,9 +2,16 @@ from collections import defaultdict
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 from typing import List, Dict, Any
+import os
 
 import tensorflow as tf
 import numpy as np
+
+if os.environ.get("OPENX_TF_USE_GPU", "0") != "1":  # Avoid TF GPU deps
+    try:
+        tf.config.set_visible_devices([], "GPU")
+    except Exception:
+        pass
 
 
 class OpenXDataset(Dataset):
@@ -194,7 +201,8 @@ class OpenXDataset(Dataset):
             stacked_actions = np.stack(all_actions)
             self._action_stats['q01'] = np.quantile(stacked_actions, 0.01, axis=0)
             self._action_stats['q99'] = np.quantile(stacked_actions, 0.99, axis=0)
-    
+
+
     @property
     def action_stats(self):
         if self._action_stats is None:
@@ -232,6 +240,10 @@ class OpenXDataset(Dataset):
         return self._action_stats
         
 
+    @action_stats.setter
+    def action_stats(self, value):
+        self._action_stats = value
+        
     def _get_feature(self, elem, feature_name: str) -> Any:
         # Implement feature extraction based on your TFDS structure
         # This is a placeholder and needs to be adjusted based on your data

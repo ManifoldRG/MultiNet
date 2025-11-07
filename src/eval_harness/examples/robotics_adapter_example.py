@@ -12,10 +12,10 @@ sys.path.append(ROOT_DIR)
 import numpy as np
 from PIL import Image
 from typing import Dict, Any, List, Optional, Union
-from src.eval_harness.model_adapter import ContinuousActionAdapter
+from src.eval_harness.model_adapter import ModelAdapter
 
 
-class SimpleRoboticsAdapter(ContinuousActionAdapter):
+class SimpleRoboticsAdapter(ModelAdapter):
     """
     Example adapter for robotics tasks with continuous action spaces.
     
@@ -24,13 +24,16 @@ class SimpleRoboticsAdapter(ContinuousActionAdapter):
     """
     
     def __init__(self, action_dim: int = 7):
-        super().__init__(
-            model_name="SimpleRoboticsModel",
-            supported_datasets=["openx"],
-            action_dim=action_dim,
-        )
+        super().__init__()
+        self.model_name = "SimpleRoboticsModel"
+        self.model_type = "continuous_action"
+        self.action_dim = action_dim
         self.model = None
-        
+
+    @property
+    def supported_datasets(self) -> List[str]:
+        return ["openx"]
+
     def initialize(self, model_path: Optional[str] = None, device: str = "cpu", seed: int = 42, **kwargs):
         """Initialize the robotics model."""
         print(f"Initializing {self.model_name} with {self.action_dim}D action space")

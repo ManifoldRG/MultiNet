@@ -16,6 +16,12 @@ ENV PATH="$VENV_PATH/bin:$PATH"
 COPY src/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip setuptools && \
     pip install --no-cache-dir -r requirements.txt
+
+#-------------------------------------------------------------------
+# Install specific requirements for adapter
+# Replace with your own requirements
+COPY path/to/your_requirements.txt .
+RUN pip install --no-cache-dir -r your_requirements.txt
 #-------------------------------------------------------------------
     
 # Stage 2: Runtime image
@@ -45,9 +51,10 @@ RUN mkdir /models /data && \
 
 # Copy the virtual environment and source code from the builder stage
 COPY --from=builder /opt/venv /opt/venv
+
 COPY --chown=$UID:$GID src/ src/
 COPY --chown=$UID:$GID scripts/ scripts/
-
+COPY --chown=$UID:$GID definitions/ definitions/
 USER app
 
 # Set runtime environment variables

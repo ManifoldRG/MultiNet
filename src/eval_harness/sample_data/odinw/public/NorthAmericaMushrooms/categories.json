@@ -1,0 +1,26 @@
+{
+  "categories": [
+    {
+      "id": 0,
+      "name": "mushroom",
+      "supercategory": "none"
+    },
+    {
+      "id": 1,
+      "name": "CoW",
+      "supercategory": "mushroom"
+    },
+    {
+      "id": 2,
+      "name": "chanterelle",
+      "supercategory": "mushroom"
+    }
+  ],
+  "num_categories": 3,
+  "category_names": [
+    "mushroom",
+    "CoW",
+    "chanterelle"
+  ],
+  "dataset": "NorthAmericaMushrooms"
+}

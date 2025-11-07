@@ -13,10 +13,10 @@ sys.path.append(ROOT_DIR)
 import re
 import numpy as np
 from typing import Dict, Any, List, Optional, Union
-from src.eval_harness.model_adapter import MultipleChoiceAdapter
+from src.eval_harness.model_adapter import ModelAdapter
 
 
-class SimpleMCQAdapter(MultipleChoiceAdapter):
+class SimpleMCQAdapter(ModelAdapter):
     """
     Example adapter for Multiple Choice Question tasks.
     
@@ -30,13 +30,16 @@ class SimpleMCQAdapter(MultipleChoiceAdapter):
     """
     
     def __init__(self, num_choices: int = 2):
-        super().__init__(
-            model_name="SimpleMCQModel",
-            supported_datasets=["piqa"],
-            num_choices=num_choices
-        )
+        super().__init__()
+        self.model_name = "SimpleMCQModel"
+        self.model_type = "multiple_choice"
+        self.num_choices = num_choices
         self.model = None
-        
+
+    @property
+    def supported_datasets(self) -> List[str]:
+        return ["piqa"]
+
     def initialize(self, model_path: Optional[str] = None, device: str = "cpu", seed: int = 42, **kwargs):
         """Initialize the MCQ model."""
         print(f"Initializing {self.model_name} with {self.num_choices} choices per question")

@@ -5,7 +5,7 @@ This module defines the abstract base class that users must implement to integra
 their models with the MultiNet benchmarking toolkit. The interface standardizes
 model interactions while allowing flexibility for different task types.
 
-Users should inherit from the appropriate task-specific adapter and implement 
+Users should inherit from ModelAdapter and implement 
 the required abstract methods for their specific model.
 """
 
@@ -14,7 +14,6 @@ from typing import Any, Dict, List, Optional, Union, Tuple
 import numpy as np
 import torch
 
-# TODO: the individual inherited adapters may not be fully implemented
 class ModelAdapter(ABC):
     """
     Abstract base class for model adapters in the MultiNet evaluation harness.
@@ -32,12 +31,7 @@ class ModelAdapter(ABC):
         supported_datasets (List[str]): List of datasets this model supports
     """
     
-    def __init__(
-        self,
-        model_name: str,
-        model_type: str,
-        supported_datasets: List[str]
-    ):
+    def __init__(self):
         """
         Initialize the ModelAdapter.
         
@@ -46,9 +40,6 @@ class ModelAdapter(ABC):
             model_type: Type of task this adapter handles
             supported_datasets: List of datasets this model supports
         """
-        self.model_name = model_name
-        self.model_type = model_type
-        self.supported_datasets = supported_datasets
         self._is_initialized = False
         
     @abstractmethod
@@ -67,6 +58,17 @@ class ModelAdapter(ABC):
         """
         pass
     
+    @property
+    @abstractmethod
+    def supported_datasets(self) -> List[str]:
+        """
+        Get the list of datasets this model supports.
+        
+        Returns:
+            List of dataset names
+        """
+        pass
+
     @abstractmethod
     def predict_action(
         self,
@@ -75,7 +77,7 @@ class ModelAdapter(ABC):
         dataset_name: Optional[str] = None,
         history: Optional[List[Dict[str, str]]] = None,
         **kwargs
-    ) -> Union[np.ndarray, List[float], int, str]:
+    ) -> Dict[str, Any]:
         """
         Predict action(s) for a given observation.
         
@@ -122,7 +124,7 @@ class ModelAdapter(ABC):
         dataset_name: Optional[str] = None,
         histories: Optional[List[List[Dict[str, str]]]] = None,
         **kwargs
-    ) -> List[Union[np.ndarray, List[float], int, str]]:
+    ) -> List[Dict[str, Any]]:
         """
         Predict actions for a batch of observations.
         
@@ -209,8 +211,8 @@ class ModelAdapter(ABC):
             - additional model-specific metadata
         """
         return {
-            "model_name": self.model_name,
-            "model_type": self.model_type,
+            "model_name": getattr(self, 'model_name', 'Unknown'),
+            "model_type": getattr(self, 'model_type', 'Unknown'),
             "supported_datasets": self.supported_datasets,
             "is_initialized": self._is_initialized
         }
@@ -241,313 +243,3 @@ class ModelAdapter(ABC):
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
         torch.manual_seed(seed)
-
-
-# Task-specific adapters (one per task type)
-class MultipleChoiceAdapter(ModelAdapter):
-    """
-    Adapter for Multiple Choice Question (MCQ) tasks.
-    
-    Used for: PIQA
-    Task type: Choose one option from multiple choices
-    Output: Choice index (0 to num_choices-1)
-    """
-    
-    def __init__(
-        self,
-        model_name: str,
-        supported_datasets: List[str],
-        num_choices: int = 4
-    ):
-        super().__init__(
-            model_name=model_name,
-            model_type="multiple_choice",
-            supported_datasets=supported_datasets
-        )
-        self.num_choices = num_choices
-    
-    @abstractmethod
-    def predict_action(
-        self,
-        observation: Dict[str, Any],
-        instruction: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        history: Optional[List[Dict[str, str]]] = None,
-        **kwargs
-    ) -> Dict[str, Any]:
-        """
-        Predict choice for MCQ task.
-        
-        Args:
-            observation: Observation containing standardized keys (image_observation, text_observation)
-            instruction: Task instruction containing the question and choices
-            dataset_name: Name of the dataset
-            history: Optional conversation history (typically not used for MCQ tasks)
-            **kwargs: Additional prediction parameters
-            
-        Returns:
-            Dictionary with:
-                - "raw_output": str (raw model output text)
-                - "extracted_outputs": int (choice index 0 to num_choices-1)
-        """
-        pass
-
-
-class TextGenerationAdapter(ModelAdapter):
-    """
-    Adapter for text generation tasks.
-    
-    Used for: SQA3D
-    Task type: Generate text response to visual question or reasoning prompt
-    Output: Text string
-    """
-    
-    def __init__(
-        self,
-        model_name: str,
-        supported_datasets: List[str],
-        max_answer_length: int = 100
-    ):
-        super().__init__(
-            model_name=model_name,
-            model_type="text_generation",
-            supported_datasets=supported_datasets
-        )
-        self.max_answer_length = max_answer_length
-    
-    @abstractmethod
-    def predict_action(
-        self,
-        observation: Dict[str, Any],
-        instruction: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        history: Optional[List[Dict[str, str]]] = None,
-        **kwargs
-    ) -> Dict[str, Any]:
-        """
-        Generate text response.
-        
-        Args:
-            observation: Observation containing standardized keys (image_observation, text_observation)
-            instruction: Task instruction containing the question
-            dataset_name: Name of the dataset
-            history: Optional conversation history (typically not used for single-turn VQA)
-            **kwargs: Additional prediction parameters
-            
-        Returns:
-            Dictionary with:
-                - "raw_output": str (raw model output text)
-                - "extracted_outputs": str (extracted answer text)
-        """
-        pass
-
-
-class GroundingAdapter(ModelAdapter):
-    """
-    Adapter for entity grounding tasks.
-    
-    Used for: ODinW
-    Task type: Match entities to bounding boxes or image regions
-    Output: Entity-to-bbox mapping (indices or selections)
-    """
-    
-    def __init__(
-        self,
-        model_name: str,
-        supported_datasets: List[str]
-    ):
-        super().__init__(
-            model_name=model_name,
-            model_type="grounding",
-            supported_datasets=supported_datasets
-        )
-    
-    @abstractmethod
-    def predict_action(
-        self,
-        observation: Dict[str, Any],
-        instruction: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        history: Optional[List[Dict[str, str]]] = None,
-        **kwargs
-    ) -> Dict[str, Any]:
-        """
-        Predict entity-to-bbox mappings.
-        
-        Args:
-            observation: Observation containing standardized keys (image_observation)
-            instruction: Task instruction containing the classification question
-            dataset_name: Name of the dataset
-            history: Optional conversation history (typically not used for grounding tasks)
-            **kwargs: Additional prediction parameters
-            
-        Returns:
-            Dictionary with:
-                - "raw_output": str (raw model output text)
-                - "extracted_outputs": int (class index)
-        """
-        pass
-
-
-class DiscreteActionAdapter(ModelAdapter):
-    """
-    Adapter for discrete action tasks.
-    
-    Used for: OvercookedAI
-    Task type: Select one discrete action from fixed action space
-    Output: Action index (0 to action_space_size-1)
-    """
-    
-    def __init__(
-        self,
-        model_name: str,
-        supported_datasets: List[str],
-        action_space_size: int
-    ):
-        super().__init__(
-            model_name=model_name,
-            model_type="discrete_action",
-            supported_datasets=supported_datasets
-        )
-        self.action_space_size = action_space_size
-    
-    @abstractmethod
-    def predict_action(
-        self,
-        observation: Dict[str, Any],
-        instruction: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        history: Optional[List[Dict[str, str]]] = None,
-        return_probabilities: bool = False,
-        **kwargs
-    ) -> Dict[str, Any]:
-        """
-        Predict discrete action.
-        
-        Args:
-            observation: Observation containing standardized keys (image_observation, text_observation)
-            instruction: Optional task instruction
-            dataset_name: Name of the dataset
-            history: Optional conversation history (typically not used for action prediction)
-            return_probabilities: Whether to return action probabilities in the output dict
-            **kwargs: Additional prediction parameters
-            
-        Returns:
-            Dictionary with:
-                - "raw_output": str (raw model output text)
-                - "extracted_outputs": int (action index 0 to action_space_size-1)
-                - "probabilities": List[float] (optional, if return_probabilities=True)
-        """
-        pass
-
-
-class ContinuousActionAdapter(ModelAdapter):
-    """
-    Adapter for continuous action tasks.
-    
-    Used for: OpenX
-    Task type: Predict continuous action vector
-    Output: Continuous action array (e.g., robot joint positions/velocities)
-    """
-    
-    def __init__(
-        self,
-        model_name: str,
-        supported_datasets: List[str],
-        action_dim: int,
-        action_bounds: Optional[Tuple[np.ndarray, np.ndarray]] = None
-    ):
-        super().__init__(
-            model_name=model_name,
-            model_type="continuous_action",
-            supported_datasets=supported_datasets
-        )
-        self.action_dim = action_dim
-        self.action_bounds = action_bounds
-    
-    @abstractmethod
-    def predict_action(
-        self,
-        observation: Dict[str, Any],
-        instruction: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        history: Optional[List[Dict[str, str]]] = None,
-        **kwargs
-    ) -> Dict[str, Any]:
-        """
-        Predict continuous action.
-        
-        Args:
-            observation: Observation containing standardized keys (image_observation)
-            instruction: Optional task instruction
-            dataset_name: Name of the dataset
-            history: Optional conversation history (typically not used for action prediction)
-            **kwargs: Additional prediction parameters
-            
-        Returns:
-            Dictionary with:
-                - "raw_output": str (raw model output text)
-                - "extracted_outputs": np.ndarray (continuous action vector)
-        """
-        pass
-
-class ToolUseAdapter(ModelAdapter):
-    """
-    Adapter for function calling and tool use tasks.
-    
-    Used for: BFCL (Berkeley Function Calling Leaderboard)
-    Task type: Evaluate LLM's ability to invoke external functions, APIs, or tools
-    Output: Function calls, tool invocations, or abstention decisions
-    
-    BFCL evaluates:
-    - Serial and parallel function calls across programming languages
-    - Memory and dynamic decision-making in multi-step scenarios
-    - Long-horizon reasoning and stateful agentic behavior
-    - Ability to abstain when appropriate
-    
-    Multi-turn History:
-    - For multi-turn benchmarks, the evaluation harness manages conversation history
-    - The adapter receives the full conversation history via the 'history' parameter
-    - The adapter should format the history appropriately for the model (e.g., apply chat template)
-    - The adapter is stateless: it receives full context and returns a single response
-    """
-    
-    def __init__(
-        self,
-        model_name: str,
-        supported_datasets: List[str],
-        max_answer_length: int = 150
-    ):
-        super().__init__(
-            model_name=model_name,
-            model_type="tool_use",
-            supported_datasets=supported_datasets
-        )
-        self.max_answer_length = max_answer_length
-
-    @abstractmethod
-    def predict_action(
-        self,
-        observation: Dict[str, Any],
-        instruction: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        history: Optional[List[Dict[str, str]]] = None,
-        **kwargs
-    ) -> Dict[str, Any]:
-        """
-        Predict function calls or tool invocations.
-
-        Args:
-            observation: Observation containing available functions and state
-            instruction: User query requiring tool use
-            dataset_name: Name of the dataset
-            history: Optional conversation history for multi-turn scenarios
-            **kwargs: Additional prediction parameters
-            
-        Returns:
-            Dictionary with:
-                - "raw_output": str (raw model output text)
-                - "extracted_outputs": List[str] (extracted function calls)
-        """
-        pass
-    

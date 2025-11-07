@@ -1,0 +1,44 @@
+{
+  "categories": [
+    {
+      "id": 0,
+      "name": "movable-objects",
+      "supercategory": "none"
+    },
+    {
+      "id": 1,
+      "name": "boat",
+      "supercategory": "movable-objects"
+    },
+    {
+      "id": 2,
+      "name": "car",
+      "supercategory": "movable-objects"
+    },
+    {
+      "id": 3,
+      "name": "dock",
+      "supercategory": "movable-objects"
+    },
+    {
+      "id": 4,
+      "name": "jetski",
+      "supercategory": "movable-objects"
+    },
+    {
+      "id": 5,
+      "name": "lift",
+      "supercategory": "movable-objects"
+    }
+  ],
+  "num_categories": 6,
+  "category_names": [
+    "movable-objects",
+    "boat",
+    "car",
+    "dock",
+    "jetski",
+    "lift"
+  ],
+  "dataset": "AerialMaritimeDrone"
+}

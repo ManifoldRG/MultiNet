@@ -239,6 +239,82 @@ def calculate_mean(values: list[float]) -> float:
     return np.mean(values)
 
 
+def calculate_baseline_relative_mae(predicted_action, actual_action, training_mean) -> float:
+    """Calculate MAE relative to a training mean baseline.
+
+    Baseline model always predicts the mean value from training dataset per action dimension,
+    regardless of input. This provides a consistent, realistic baseline for comparison.
+
+    Returns ratio of model MAE to baseline MAE.
+    Values < 1.0 = better than baseline (good)
+    Values = 1.0 = same as baseline (neutral)
+    Values > 1.0 = worse than baseline (bad)
+
+    Args:
+        predicted_action: Model's predicted action vector
+        actual_action: Ground truth action vector
+        training_mean: Mean action values from training dataset (per dimension)
+    """
+    pred = np.array(predicted_action)
+    actual = np.array(actual_action)
+    training_mean = np.array(training_mean)
+
+    # Ensure training_mean matches action dimensions
+    if len(training_mean) != len(actual):
+        raise ValueError(f"training_mean length ({len(training_mean)}) must match action dimension ({len(actual)})")
+
+    # Calculate model MAE
+    model_mae = np.mean(np.abs(pred - actual))
+
+    # Calculate baseline MAE (predict training mean)
+    baseline_pred = training_mean
+    baseline_mae = np.mean(np.abs(baseline_pred - actual))
+
+    # Handle division by zero (rare: test sample equals training mean exactly)
+    if baseline_mae < 1e-6:
+        return 1.0 if model_mae < 1e-6 else float('inf')
+
+    return model_mae / baseline_mae
+
+
+def calculate_baseline_relative_mse(predicted_action, actual_action, training_mean) -> float:
+    """Calculate MSE relative to a training mean baseline.
+
+    Baseline model always predicts the mean value from training dataset per action dimension,
+    regardless of input. This provides a consistent, realistic baseline for comparison.
+
+    Returns ratio of model MSE to baseline MSE.
+    Values < 1.0 = better than baseline (good)
+    Values = 1.0 = same as baseline (neutral)
+    Values > 1.0 = worse than baseline (bad)
+
+    Args:
+        predicted_action: Model's predicted action vector
+        actual_action: Ground truth action vector
+        training_mean: Mean action values from training dataset (per dimension)
+    """
+    pred = np.array(predicted_action)
+    actual = np.array(actual_action)
+    training_mean = np.array(training_mean)
+
+    # Ensure training_mean matches action dimensions
+    if len(training_mean) != len(actual):
+        raise ValueError(f"training_mean length ({len(training_mean)}) must match action dimension ({len(actual)})")
+
+    # Calculate model MSE
+    model_mse = np.mean((pred - actual) ** 2)
+
+    # Calculate baseline MSE (predict training mean)
+    baseline_pred = training_mean
+    baseline_mse = np.mean((baseline_pred - actual) ** 2)
+
+    # Handle division by zero (rare: test sample equals training mean exactly)
+    if baseline_mse < 1e-6:
+        return 1.0 if model_mse < 1e-6 else float('inf')
+
+    return model_mse / baseline_mse
+
+
 def calculate_max_relative_mae(mae_values: list[float]) -> float:
     """Calculate maximum relative error (outlier severity)"""
     if len(mae_values) == 0:

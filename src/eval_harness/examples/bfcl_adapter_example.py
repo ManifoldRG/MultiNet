@@ -19,20 +19,23 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 
 import re
 from typing import Dict, Any, List, Optional
-from src.eval_harness.model_adapter import ToolUseAdapter
+from src.eval_harness.model_adapter import ModelAdapter
 
 
-class ExampleBFCLAdapter(ToolUseAdapter):
+class ExampleBFCLAdapter(ModelAdapter):
     """Example adapter for BFCL function calling tasks with multi-turn support."""
     
     def __init__(self):
-        super().__init__(
-            model_name="example-bfcl-model",
-            supported_datasets=["bfcl"]
-        )
+        super().__init__()
+        self.model_name = "example-bfcl-model"
+        self.model_type = "tool_use"
         self.model = None
         self.tokenizer = None
-    
+
+    @property
+    def supported_datasets(self) -> List[str]:
+        return ["bfcl"]
+
     def initialize(self, device: str = "cuda", seed: int = 42, **kwargs) -> None:
         """Initialize the model and any necessary components."""
         self.set_seed(seed)
