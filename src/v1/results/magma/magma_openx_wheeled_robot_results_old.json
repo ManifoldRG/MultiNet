@@ -1,0 +1,20 @@
+{
+    "openx_wheeled_robot": {
+        "action_success_rate": 0.0,
+        "total_dataset_amse": 86.04723040992351,
+        "total_dataset_amae": 534.587712326108,
+        "num_timesteps": 24507,
+        "avg_dataset_amse": 0.0035111286738451672,
+        "avg_dataset_amae": 0.02181367414722762,
+        "normalized_amse": 0.08214966698534665,
+        "normalized_amae": 0.22912671140986218,
+        "normalized_quantile_filtered_amae": 0.25891730388680934,
+        "max_relative_mae": 5.148183307673763,
+        "proportion_beyond_threshold_mae": 0.02631901089484637,
+        "eval_time": 11481.435850536996,
+        "total_invalid_preds": 0,
+        "invalid_predictions_percentage": 0.0,
+        "total_batches": 2451,
+        "total_timesteps": 24507
+    }
+}
