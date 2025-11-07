@@ -182,12 +182,7 @@ def main():
         print(f"Processing dataset: {dataset_name}")
         print(f"{'='*60}")
 
-        # Extract model MAE/MSE for this dataset
-        if dataset_name in results:
-            model_metrics = results[dataset_name]
-        else:
-            print(f"Warning: Dataset '{dataset_name}' not found in results file. Skipping.")
-            continue
+        model_metrics = results
 
         try:
             model_mae, model_mse, num_timesteps = extract_metrics_from_results(model_metrics, dataset_name)
