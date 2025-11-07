@@ -41,6 +41,16 @@ from src.data_utils import find_data_files, get_openx_dataloader
 from src.eval_utils import calculate_mae, calculate_mse
 
 
+# Mapping from canonical dataset names to alternate names used in Genesis results
+DATASET_NAME_MAPPING = {
+    'openx_bimanual': 'utokyo_xarm_bimanual_converted_externally_to_rlds',
+    'openx_mobile_manipulation': 'fractal20220817_data',
+    'openx_wheeled_robot': 'berkeley_gnm_sac_son',
+    'openx_quadrupedal': 'utokyo_saytap_converted_externally_to_rlds',
+    'openx_single_arm': 'bridge',
+}
+
+
 def calculate_baseline_metrics_from_dataset(
     dataset_name: str,
     data_split: str,
@@ -111,6 +121,11 @@ def extract_metrics_from_results(model_metrics: dict, dataset_name: str = None):
     # If still not found and dataset_name is provided, check under dataset name as key
     elif 'avg_dataset_amae' not in metrics_source and dataset_name and dataset_name in model_metrics:
         metrics_source = model_metrics[dataset_name]
+    # If still not found, try alternate dataset names (for Genesis results)
+    elif 'avg_dataset_amae' not in metrics_source and dataset_name and dataset_name in DATASET_NAME_MAPPING:
+        alt_name = DATASET_NAME_MAPPING[dataset_name]
+        if alt_name in model_metrics:
+            metrics_source = model_metrics[alt_name]
 
     # Extract the required metrics
     try:
