@@ -167,7 +167,7 @@ ICML CodeML Paper Submission - An Open-Source Software Toolkit & Benchmark Suite
       archivePrefix={arXiv},
       primaryClass={cs.LG},
       url={https://arxiv.org/abs/2506.09172}, 
-}
+      }
 
 Multinet v0.2 - Benchmarking Vision, Language, & Action Models in Procedurally Generated, Open Ended Action Environments
 
