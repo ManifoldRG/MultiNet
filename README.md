@@ -157,6 +157,18 @@ If you use MultiNet in your research, please cite our work:
 
 ```bibtex
 
+ICML CodeML Paper Submission - An Open-Source Software Toolkit & Benchmark Suite for the Evaluation and Adaptation of Multimodal Action Models
+
+@misc{guruprasad2025opensourcesoftwaretoolkit,
+      title={An Open-Source Software Toolkit & Benchmark Suite for the Evaluation and Adaptation of Multimodal Action Models}, 
+      author={Pranav Guruprasad and Yangyue Wang and Sudipta Chowdhury and Jaewoo Song and Harshvardhan Sikka},
+      year={2025},
+      eprint={2506.09172},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2506.09172}, 
+}
+
 Multinet v0.2 - Benchmarking Vision, Language, & Action Models in Procedurally Generated, Open Ended Action Environments
 
 @misc{guruprasad2025benchmarkingvisionlanguage,
