@@ -4,7 +4,7 @@ This guide provides comprehensive instructions for evaluating GPT models using t
 
 ## Overview
 
-The GenESIS (General Evaluation System for Intelligence and Supervision) framework allows you to evaluate GPT models in a zero-shot setting using OpenAI's batch API. The evaluation process consists of two steps:
+The GenESIS (Generalizable Extendable Stratified Inference System) framework allows you to evaluate GPT models in a zero-shot setting using OpenAI's batch API. The evaluation process consists of two steps:
 1. **Send batch jobs** - Submit evaluation requests to the OpenAI API
 2. **Run evaluation** - Retrieve results and calculate metrics
 

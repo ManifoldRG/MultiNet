@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/Website-blue?style=flat-square&logo=googlechrome" alt="Website"></a> 
-  <a href="https://multinet.ai/"><img src="https://img.shields.io/badge/Multinet%20v1.0-Release-blue?style=flat-square&logo=Blogger" alt="Multinet v1.0 release"></a>
+  <a href="https://multinet.ai/static/pages/Multinetv1.html"><img src="https://img.shields.io/badge/Multinet%20v1.0-Release-blue?style=flat-square&logo=Blogger" alt="Multinet v1.0 release"></a>
   <a href="https://arxiv.org/abs/2505.05540"><img src="https://img.shields.io/badge/Multinet%20v0.2%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.2 paper"></a> 
   <a href="https://arxiv.org/abs/2411.05821"><img src="https://img.shields.io/badge/Multinet%20v0.1%20paper-arXiv-B31B1B?style=flat-square&logo=arXiv" alt="Multinet v0.1 paper"></a> 
   <a href="https://github.com/ManifoldRG/MultiNet/tree/main/src/modules"><img src="https://img.shields.io/badge/GenESIS%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80%E2%A0%80-blueviolet?style=flat-square&logo=github" alt="GenESIS framework"></a> 
@@ -56,7 +56,7 @@
 ## 🔍 Overview
 
 This repo provides the following:
-1. Ability to profile VLMs and VLAs on our generalist evaluation framework with a comprehensive coverage of open-source vision-language + control/action (RL, Robotics) tasks
+1. Ability to profile VLMs, VLAs, and generalist models on our generalist evaluation framework with a comprehensive coverage of open-source physical commonsense reasoning, image classification, visual question answering, control/action (RL, Robotics), gameplay, and function calling tasks
 2. Ability to translate control data of various formats and from various sources to a unified [Tensorflow Dataset format](https://www.tensorflow.org/datasets/api_docs/python/tfds). 
 3. Evaluate the performance of SoTA VLMs and VLAs such as GPT-5, Pi0, and Magma in a zero-shot setting on a wide-variety of tasks detaied [here](https://multinet.ai/static/pages/Multinetv1.html).
 4. A [general framework](https://github.com/ManifoldRG/MultiNet/tree/main/src/v1/modules) for mapping VLMs to other modality classes, with particular emphasis on action spaces. This framework allows one to adapt a wide range of models to multiple types of tasks or datasets for scaling effectively while reducing the amount of engineering effort required.  In MultiNet v1.0, GenESIS is used to evaluate GPT 5 on the OpenX, Overcooked, PIQA, ODINW, and SQA3D datasets.
@@ -98,14 +98,14 @@ pip install -r requirements.txt
 
 ```bash
 cd Multinet/src/v1
-python centralized_downloader --download <name of dataset you would like to download>
+python centralized_downloader.py --download <name of dataset you would like to download>
 ```
 
 #### To translate one file/shard of your desired control dataset (downloaded using the downloader script in this repo) to the TFDS format 
 
 ```bash
 cd Multinet/src/v1
-python centralized_processor --input_dir <path to the downloaded dataset> --output_dir <directory where you would like to store the translated file>
+python centralized_processor.py --input_dir <path to the downloaded dataset> --output_dir <directory where you would like to store the translated file>
 ```
 
 #### To translate multiple files/shards of your desired control dataset (downloaded using the downloader script in this repo) to the TFDS format 
@@ -156,6 +156,18 @@ If you're experiencing any issues, open a [GitHub issue](https://github.com/Mani
 If you use MultiNet in your research, please cite our work:
 
 ```bibtex
+
+ICML CodeML Paper Submission - An Open-Source Software Toolkit & Benchmark Suite for the Evaluation and Adaptation of Multimodal Action Models
+
+@misc{guruprasad2025opensourcesoftwaretoolkit,
+      title={An Open-Source Software Toolkit & Benchmark Suite for the Evaluation and Adaptation of Multimodal Action Models}, 
+      author={Pranav Guruprasad and Yangyue Wang and Sudipta Chowdhury and Jaewoo Song and Harshvardhan Sikka},
+      year={2025},
+      eprint={2506.09172},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2506.09172}, 
+      }
 
 Multinet v0.2 - Benchmarking Vision, Language, & Action Models in Procedurally Generated, Open Ended Action Environments
 
