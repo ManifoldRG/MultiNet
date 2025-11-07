@@ -98,14 +98,14 @@ pip install -r requirements.txt
 
 ```bash
 cd Multinet/src/v1
-python centralized_downloader --download <name of dataset you would like to download>
+python centralized_downloader.py --download <name of dataset you would like to download>
 ```
 
 #### To translate one file/shard of your desired control dataset (downloaded using the downloader script in this repo) to the TFDS format 
 
 ```bash
 cd Multinet/src/v1
-python centralized_processor --input_dir <path to the downloaded dataset> --output_dir <directory where you would like to store the translated file>
+python centralized_processor.py --input_dir <path to the downloaded dataset> --output_dir <directory where you would like to store the translated file>
 ```
 
 #### To translate multiple files/shards of your desired control dataset (downloaded using the downloader script in this repo) to the TFDS format 
