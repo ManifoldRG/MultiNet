@@ -39,6 +39,7 @@ fi
 # Read global paths from config file
 MODELS_DIR_RAW=$(grep "^models_dir=" "$DATASET_CONFIG" | cut -d'=' -f2)
 DATA_DIR_RAW=$(grep "^data_dir=" "$DATASET_CONFIG" | cut -d'=' -f2)
+MAX_SAMPLES=$(grep "^max_samples=" "$DATASET_CONFIG" | cut -d'=' -f2)
 
 # Convert relative paths to absolute paths for Docker
 if [[ "$MODELS_DIR_RAW" = /* ]]; then
@@ -152,7 +153,12 @@ mkdir -p "$RESULTS_DIR"
 echo "--> Starting evaluation for dataset: $DATASET"
 
 # Build docker run command with conditional batch size
-DOCKER_ARGS="--dataset $DATASET --model_adapter_module_path /models/$ADAPTER_MODULE --output_path /home/app/multinet/results --disk_root_dir /data --max_samples 4"
+DOCKER_ARGS="--dataset $DATASET --model_adapter_module_path /models/$ADAPTER_MODULE --output_path /home/app/multinet/results --disk_root_dir /data"
+
+# Add max_samples argument only if it's set and not empty
+if [ -n "$MAX_SAMPLES" ]; then
+    DOCKER_ARGS="$DOCKER_ARGS --max_samples $MAX_SAMPLES"
+fi
 
 # Add batch processing arguments if dataset supports batch processing
 if [ "$BATCH_PROCESS" = "true" ]; then
