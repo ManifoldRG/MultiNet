@@ -56,7 +56,7 @@
 ## 🔍 Overview
 
 This repo provides the following:
-1. Ability to profile VLMs and VLAs on our generalist evaluation framework with a comprehensive coverage of open-source vision-language + control/action (RL, Robotics) tasks
+1. Ability to profile VLMs, VLAs, and generalist models on our generalist evaluation framework with a comprehensive coverage of open-source physical commonsense reasoning, image classification, visual question answering, control/action (RL, Robotics), gameplay, and function calling tasks
 2. Ability to translate control data of various formats and from various sources to a unified [Tensorflow Dataset format](https://www.tensorflow.org/datasets/api_docs/python/tfds). 
 3. Evaluate the performance of SoTA VLMs and VLAs such as GPT-5, Pi0, and Magma in a zero-shot setting on a wide-variety of tasks detaied [here](https://multinet.ai/static/pages/Multinetv1.html).
 4. A [general framework](https://github.com/ManifoldRG/MultiNet/tree/main/src/v1/modules) for mapping VLMs to other modality classes, with particular emphasis on action spaces. This framework allows one to adapt a wide range of models to multiple types of tasks or datasets for scaling effectively while reducing the amount of engineering effort required.  In MultiNet v1.0, GenESIS is used to evaluate GPT 5 on the OpenX, Overcooked, PIQA, ODINW, and SQA3D datasets.
