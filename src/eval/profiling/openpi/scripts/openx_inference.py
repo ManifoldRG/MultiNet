@@ -692,6 +692,8 @@ class OpenXInference:
             invalid_percentage = 0.0
         
         # Add evaluation metadata
+        final_metrics['all_preds'] = dataset_results.all_preds
+        final_metrics['all_gt'] = dataset_results.all_gt
         final_metrics['eval_time'] = dataset_results.eval_time
         final_metrics['total_invalid_preds'] = dataset_results.total_invalid_predictions
         final_metrics['invalid_predictions_percentage'] = invalid_percentage
