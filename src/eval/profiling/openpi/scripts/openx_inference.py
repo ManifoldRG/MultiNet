@@ -590,11 +590,12 @@ class OpenXInference:
         start_time = time.perf_counter()
 
         for batch in dataloader:
+            key, subkey = jax.random.split(key)
             actual_batch_size = len(batch['image_observation'])
             obs = self.prepare_observation(batch, actual_batch_size, max_token_length=config.max_token_len, dataset_name=dataset)
             observation = Observation.from_dict(obs)
 
-            actions = model.sample_actions(key, observation, num_steps=ModelConfig.DEFAULT_NUM_STEPS)
+            actions = model.sample_actions(subkey, observation, num_steps=ModelConfig.DEFAULT_NUM_STEPS)
             processed_actions = self.process_output(actions, dataset_stats, dataset)
 
             # Process ground truth actions - check for action_dict first
@@ -691,6 +692,8 @@ class OpenXInference:
             invalid_percentage = 0.0
         
         # Add evaluation metadata
+        final_metrics['all_preds'] = dataset_results.all_preds
+        final_metrics['all_gt'] = dataset_results.all_gt
         final_metrics['eval_time'] = dataset_results.eval_time
         final_metrics['total_invalid_preds'] = dataset_results.total_invalid_predictions
         final_metrics['invalid_predictions_percentage'] = invalid_percentage

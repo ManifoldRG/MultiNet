@@ -408,6 +408,7 @@ class OvercookedInference:
         samples_processed = 0
 
         for batch in dataloader:
+            key, subkey = jax.random.split(key)
             actual_batch_size = len(batch['image_observation'])
             # Check if we've reached max_samples limit
             if max_samples is not None and samples_processed + actual_batch_size > max_samples:
@@ -416,11 +417,11 @@ class OvercookedInference:
                 if remaining <= 0:
                     break
                 # Truncate batch to remaining samples
-                for key in batch:
-                    if isinstance(batch[key], list):
-                        batch[key] = batch[key][:remaining]
-                    elif hasattr(batch[key], '__len__'):
-                        batch[key] = batch[key][:remaining]
+                for feature in batch:
+                    if isinstance(batch[feature], list):
+                        batch[feature] = batch[feature][:remaining]
+                    elif hasattr(batch[feature], '__len__'):
+                        batch[feature] = batch[feature][:remaining]
                 actual_batch_size = remaining
             obs = {
                 'image_observation': batch['image_observation'],
@@ -441,7 +442,7 @@ class OvercookedInference:
             observation = Observation.from_dict(transformed_dict)
             
             # Sample actions for entire batch
-            actions = model.sample_actions(key, observation, num_steps=10)
+            actions = model.sample_actions(subkey, observation, num_steps=10)
             unnormalized_discrete_actions = self.process_output(actions, dataset_stats)
             
             counter += 1
