@@ -11,8 +11,6 @@ from src.eval.profiling.openpi.src.openpi.models.model import Observation
 from src.eval.profiling.openpi.src.openpi.models.tokenizer import PaligemmaTokenizer
 from src.eval.profiling.openpi.src.openpi.transforms import pad_to_dim, Unnormalize
 from src.data_utils.overcooked_dataloader import get_overcooked_dataloader, OvercookedDataset
-from definitions.overcooked import OverCookedDefinitions
-from definitions.overcooked_prompt import format_instruction_prompt
 from src.eval.profiling.openpi.src.openpi.shared import download
 from src.eval.profiling.openpi.src.openpi.shared.normalize import NormStats
 from src.eval.profiling.openpi.src.openpi.shared.normalize import RunningStats
@@ -86,6 +84,7 @@ class OvercookedInference:
         self.model = model
         self.tokenizer = tokenizer
         self.config = config
+        self._token_length_logged = False
         
         # Create action mapping for continuous to discrete conversion
         self._create_action_mapping()
@@ -98,48 +97,29 @@ class OvercookedInference:
         self.joint_to_discrete = temp_dataset.joint_to_discrete
         self.num_discrete_actions = temp_dataset.num_discrete_actions
 
-    def _build_genesis_style_prompt(self, layout_name: str, time_left: float, time_elapsed: float) -> str:
-        """
-        Build Genesis-style comprehensive prompt for Pi0 inference.
-
-        Args:
-            layout_name: Name of the Overcooked layout (e.g., "cramped_corridor")
-            time_left: Remaining game time
-            time_elapsed: Time already elapsed
-
-        Returns:
-            str: Complete formatted instruction prompt
-        """
-        # Get action meanings and action space from Genesis definitions
-        action_meanings = str(OverCookedDefinitions.ACTION_MEANINGS)
-        action_space = OverCookedDefinitions.ACTION_SPACES["overcooked_ai"]["default"]
-
-        # Format the complete prompt using Genesis prompt template
-        prompt = format_instruction_prompt(
-            env_name=layout_name,
-            action_meaning=action_meanings,
-            action_space=str(action_space),
-            time_left=time_left,
-            time_elapsed=time_elapsed,
-            additional_inst=None
+    def _build_prompt(self, layout_name: str, time_left: float, time_elapsed: float) -> str:
+        action_groups = {
+            "0-5": "Player 0: North, Player 1: [North,South,East,West,Stay,Interact]",
+            "6-11": "Player 0: South, Player 1: [North,South,East,West,Stay,Interact]",
+            "12-17": "Player 0: East, Player 1: [North,South,East,West,Stay,Interact]",
+            "18-23": "Player 0: West, Player 1: [North,South,East,West,Stay,Interact]",
+            "24-29": "Player 0: Stay, Player 1: [North,South,East,West,Stay,Interact]",
+            "30-35": "Player 0: Interact, Player 1: [North,South,East,West,Stay,Interact]"
+        }
+        action_space_str = ", ".join([f"{k}:{v}" for k, v in action_groups.items()])
+        
+        prompt = (
+            f"Layout {layout_name}. "
+            f"Time: {time_elapsed:.0f}s elapsed, {time_left:.0f}s remaining. "
+            f"Actions: {action_space_str}. "
+            f"Task sequence: Pick ingredients, place in pot, wait for cooking, deliver to serving station. "
+            f"Goal: Coordinate the two players to maximize soup delivery. "
+            f"Output joint action index as single value between 0-35."
         )
-
+        
         return prompt
 
     def prepare_observation(self, obs_dict: dict, batch_size: int, time_left: float, time_elapsed: float, max_token_length: int = 48) -> dict:
-        """
-        Prepare observation dictionary for pi0 model inference with Genesis-style prompts.
-
-        Args:
-            obs_dict: Dictionary containing image and text observations
-            batch_size: Size of the batch
-            time_left: Remaining game time
-            time_elapsed: Time already elapsed
-            max_token_length: Maximum length for tokenization
-
-        Returns:
-            dict: Transformed observation dictionary for Pi0 model
-        """
         tokenizer = self.tokenizer
 
         # Process image observation
@@ -155,34 +135,40 @@ class OvercookedInference:
         base_image = jax.numpy.array(base_image)
         zero_image = jax.numpy.zeros_like(base_image)
 
-        # Process text observation (layout name) and build Genesis-style prompt
         text_obs = obs_dict["text_observation"]
 
-        # Build Genesis-style prompt with full context
         if isinstance(text_obs, list):
-            # For batched observations, build prompts for each sample
-            # Handle time values as either scalars (all same) or arrays (one per sample)
             if isinstance(time_left, (list, np.ndarray)):
-                full_prompts = [self._build_genesis_style_prompt(text_obs[i], time_left[i], time_elapsed[i])
-                              for i in range(len(text_obs))]
+                full_prompts = [self._build_prompt(text_obs[i], time_left[i], time_elapsed[i])
+                                for i in range(len(text_obs))]
             else:
-                # Use same time values for all samples in batch
-                full_prompts = [self._build_genesis_style_prompt(layout_name, time_left, time_elapsed)
-                              for layout_name in text_obs]
+                full_prompts = [self._build_prompt(layout_name, time_left, time_elapsed)
+                                for layout_name in text_obs]
         else:
-            # Single observation
-            full_prompts = self._build_genesis_style_prompt(text_obs, time_left, time_elapsed)
+            full_prompts = self._build_prompt(text_obs, time_left, time_elapsed)
 
-        # Tokenize the full Genesis-style prompts
+        # Tokenize the prompts
         if isinstance(full_prompts, list):
             tokens = [0] * len(full_prompts)
             token_mask = [0] * len(full_prompts)
             for i in range(len(full_prompts)):
                 tokens[i], token_mask[i] = tokenizer.tokenize(full_prompts[i])
+                if i == 0 and not self._token_length_logged:
+                    actual_len = int(np.sum(token_mask[i]))
+                    print(f"Prompt token length: {actual_len} (max_token_len: {max_token_length})")
+                    if actual_len > max_token_length:
+                        print(f"WARNING: Token length {actual_len} exceeds max_token_length!")
+                    self._token_length_logged = True
                 tokens[i] = jax.numpy.array(tokens[i])
                 token_mask[i] = jax.numpy.array(token_mask[i])
         else:
             tokens, token_mask = tokenizer.tokenize(full_prompts)
+            if not self._token_length_logged:
+                actual_len = int(np.sum(token_mask))
+                print(f"Prompt token length: {actual_len} (max_token_len: {max_token_length})")
+                if actual_len > max_token_length:
+                    print(f"WARNING: Token length {actual_len} exceeds max_token_length!")
+                self._token_length_logged = True
         
         if not isinstance(tokens, list) and len(tokens.shape) == 1:  
             tokens = jax.numpy.array(tokens)[None, ...]
@@ -427,11 +413,10 @@ class OvercookedInference:
                 'image_observation': batch['image_observation'],
                 'text_observation': batch['text_observation']
             }
-            # Extract temporal information for Genesis-style prompts
+            # Extract temporal information for prompts
             time_left_batch = batch['time_left']
             time_elapsed_batch = batch['time_elapsed']
 
-            # Transform observation with Genesis-style prompts including temporal context
             transformed_dict = self.prepare_observation(
                 obs,
                 batch_size=actual_batch_size,
@@ -660,10 +645,8 @@ def main():
     print(f'Reading data from: {args.data_file}')
     
     # Initialize model and inference object
-    # Increase max_token_len to accommodate Genesis-style prompts (default was 48, actual needed: ~1315)
-    config = pi0.Pi0Config(action_horizon=1, max_token_len=1400)
-    # Initialize tokenizer with same max_len to avoid truncation
-    tokenizer = PaligemmaTokenizer(max_len=1400)
+    config = pi0.Pi0Config(action_horizon=1, max_token_len=256)
+    tokenizer = PaligemmaTokenizer(max_len=256)
     key = jax.random.key(0)
     checkpoint_path = download.maybe_download("s3://openpi-assets/checkpoints/pi0_base/params")
     params = _model.restore_params(checkpoint_path)
