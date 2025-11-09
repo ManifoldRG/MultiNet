@@ -645,8 +645,8 @@ def main():
     print(f'Reading data from: {args.data_file}')
     
     # Initialize model and inference object
-    config = pi0.Pi0Config(action_horizon=1, max_token_len=1400)
-    tokenizer = PaligemmaTokenizer(max_len=1400)
+    config = pi0.Pi0Config(action_horizon=1, max_token_len=256)
+    tokenizer = PaligemmaTokenizer(max_len=256)
     key = jax.random.key(0)
     checkpoint_path = download.maybe_download("s3://openpi-assets/checkpoints/pi0_base/params")
     params = _model.restore_params(checkpoint_path)
