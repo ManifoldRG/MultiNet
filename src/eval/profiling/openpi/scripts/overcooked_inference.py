@@ -111,10 +111,10 @@ class OvercookedInference:
         prompt = (
             f"Layout {layout_name}. "
             f"Time: {time_elapsed:.0f}s elapsed, {time_left:.0f}s remaining. "
-            f"Control two agents to maximize soup delivery. "
             f"Actions: {action_space_str}. "
             f"Task sequence: Pick ingredients, place in pot, wait for cooking, deliver to serving station. "
-            f"Output action index as single value between 0-35."
+            f"Goal: Coordinate the two players to maximize soup delivery. "
+            f"Output joint action index as single value between 0-35."
         )
         
         return prompt
