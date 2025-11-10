@@ -3,6 +3,10 @@
 models_dir=path/to/your/model/adapters/folder
 data_dir=src/eval_harness/sample_data
 
+# Uncomment the line below to limit samples, leave commented for no limit
+max_samples=4
+
+
 # Dataset-specific settings
 # Format: dataset_name.key=value
 
