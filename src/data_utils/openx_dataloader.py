@@ -186,7 +186,6 @@ class OpenXDataset(Dataset):
                 self._action_stats['sum'] += concatenated_action_float
                 self._action_stats['sum_of_squares'] += concatenated_action_float ** 2
                 self._action_stats['count'] += 1
-                self._action_stats['sum_of_squares'] += concatenated_action_float ** 2
                 
                 # Store action for quantile calculation
                 all_actions.append(concatenated_action_float)
