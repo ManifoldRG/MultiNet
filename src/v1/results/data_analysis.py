@@ -104,8 +104,12 @@ openx_subtasks_mapping = {
 }
 
 #%% load Pi-0 results
-with open('./pi0/pi0_base_openx_results_final.json') as f:
-    pi0_base_openx = json.load(f)
+try:
+    with open('./pi0/pi0_base_openx_results_final.json') as f:
+        pi0_base_openx = json.load(f)
+except FileNotFoundError:
+    with open('./pi0/pi0_base_openx_results.json') as f:
+        pi0_base_openx = json.load(f)
 with open('./pi0/pi0_base_overcooked_results.json') as f:
     pi0_base_overcooked = json.load(f)
 with open('./pi0/pi0_hf_bfcl_inference_results.json') as f:
