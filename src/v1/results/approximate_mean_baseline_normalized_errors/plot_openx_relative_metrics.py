@@ -124,7 +124,7 @@ def plot_metrics(
 
 def main() -> None:
     current_file = Path(__file__).resolve()
-    results_dir = current_file.parent / "results" / "corrected_baseline_mae_approx"
+    results_dir = current_file.parent
 
     model_data = load_model_data(results_dir)
     datasets = extract_datasets(model_data)
