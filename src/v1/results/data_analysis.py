@@ -189,7 +189,7 @@ magma_piqa_emr = extract_key_from_json(magma_piqa, 'exact_match_rate')
 
 pi0_bfcl_emr = extract_key_from_json(pi0_hf_bfcl_inference, 'exact_match_accuracy')
 magma_bfcl_emr = extract_key_from_json(magma_bfcl, 'exact_match_accuracy')
-gpt5_bfcl_emr = [0.285]  # referenced from literature
+gpt5_bfcl_emr = None
 log_count('Pi-0 BFCL exact match', pi0_bfcl_emr)
 log_count('Magma BFCL exact match', magma_bfcl_emr)
 
