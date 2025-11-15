@@ -104,8 +104,12 @@ openx_subtasks_mapping = {
 }
 
 #%% load Pi-0 results
-with open('./pi0/pi0_base_openx_results_final.json') as f:
-    pi0_base_openx = json.load(f)
+try:
+    with open('./pi0/pi0_base_openx_results_final.json') as f:
+        pi0_base_openx = json.load(f)
+except FileNotFoundError:
+    with open('./pi0/pi0_base_openx_results.json') as f:
+        pi0_base_openx = json.load(f)
 with open('./pi0/pi0_base_overcooked_results.json') as f:
     pi0_base_overcooked = json.load(f)
 with open('./pi0/pi0_hf_bfcl_inference_results.json') as f:
@@ -185,7 +189,7 @@ magma_piqa_emr = extract_key_from_json(magma_piqa, 'exact_match_rate')
 
 pi0_bfcl_emr = extract_key_from_json(pi0_hf_bfcl_inference, 'exact_match_accuracy')
 magma_bfcl_emr = extract_key_from_json(magma_bfcl, 'exact_match_accuracy')
-gpt5_bfcl_emr = [0.285]  # referenced from literature
+gpt5_bfcl_emr = None
 log_count('Pi-0 BFCL exact match', pi0_bfcl_emr)
 log_count('Magma BFCL exact match', magma_bfcl_emr)
 
