@@ -23,7 +23,8 @@
         "language_table": "control",
         "openx": "control",
         "locomujoco": "control",
-        "overcooked_ai": "control"
+        "overcooked_ai": "control",
+        "minigrid": "control"
     },
     "models": {
         "gpt-5-chat-latest": ["vlm", "openai"],

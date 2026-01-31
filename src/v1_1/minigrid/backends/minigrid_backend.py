@@ -247,12 +247,16 @@ class MiniGridBackend(AbstractGridBackend):
         # TODO: Consider maintaining a position cache to avoid O(N*W*H) complexity
         for block_id, block in self.env.blocks.items():
             # Find block position by scanning grid
+            found = False
             for x in range(self.env.width):
                 for y in range(self.env.height):
                     cell = self.env.grid.get(x, y)
                     if cell is block:
                         block_positions[block_id] = (x, y)
-                        break  # Found this block, move to next
+                        found = True
+                        break  # Exit inner loop
+                if found:
+                    break  # Exit outer loop
 
         # Check if goal has been reached
         # Goal is reached when agent position matches goal position from task spec

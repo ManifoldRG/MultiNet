@@ -175,6 +175,9 @@ class GridRunner:
         terminated = False
         truncated = False
 
+        # Seed random number generator for deterministic random policy
+        rng = np.random.RandomState(seed)
+
         if verbose:
             print(f"Starting episode: {task_spec.task_id}")
             print(f"Mission: {mission}")
@@ -184,8 +187,8 @@ class GridRunner:
             if policy_fn is not None:
                 action = policy_fn(obs, state, mission)
             else:
-                # Random policy
-                action = np.random.randint(0, 7)
+                # Random policy with explicit seed
+                action = rng.randint(0, 7)
 
             # Execute action
             next_obs, reward, terminated, truncated, next_state, info = self.backend.step(action)

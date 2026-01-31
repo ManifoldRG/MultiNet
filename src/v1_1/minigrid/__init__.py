@@ -27,6 +27,17 @@ from .task_spec import (
 from .task_parser import TaskParser
 from .actions import MiniGridActions, ACTION_NAMES, ACTION_DESCRIPTIONS
 
+
+def register_minigrid_envs():
+    """
+    Stub function for gymnasium plugin system compatibility.
+
+    This local minigrid module is not the official MiniGrid package,
+    but gymnasium tries to load this function from any installed 'minigrid' module.
+    """
+    pass
+
+
 __all__ = [
     # Task specification
     "Position",
@@ -48,4 +59,6 @@ __all__ = [
     "MiniGridActions",
     "ACTION_NAMES",
     "ACTION_DESCRIPTIONS",
+    # Gymnasium compatibility
+    "register_minigrid_envs",
 ]
