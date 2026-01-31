@@ -1,0 +1,39 @@
+{
+  "task_id": "tier2_single_key_001",
+  "version": "1.0",
+  "seed": 42,
+  "difficulty_tier": 2,
+  "description": "Collect the blue key to unlock the blue door and reach the goal",
+  "maze": {
+    "dimensions": [8, 8],
+    "walls": [
+      [4, 1], [4, 2], [4, 4], [4, 5], [4, 6]
+    ],
+    "start": [1, 1],
+    "goal": [6, 6]
+  },
+  "mechanisms": {
+    "keys": [
+      {"id": "key_blue", "position": [2, 3], "color": "blue"}
+    ],
+    "doors": [
+      {"id": "door_blue", "position": [4, 3], "requires_key": "blue", "initial_state": "locked"}
+    ],
+    "switches": [],
+    "gates": [],
+    "blocks": [],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": []
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [6, 6],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 50
+}

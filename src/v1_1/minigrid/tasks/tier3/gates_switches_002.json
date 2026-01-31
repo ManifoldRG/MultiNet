@@ -1,0 +1,42 @@
+{
+  "task_id": "tier3_gates_switches_002",
+  "version": "1.0",
+  "seed": 123,
+  "difficulty_tier": 3,
+  "description": "Multiple switches control multiple gates - activate in correct order",
+  "maze": {
+    "dimensions": [12, 10],
+    "walls": [
+      [4, 1], [4, 2], [4, 4], [4, 5], [4, 6], [4, 7], [4, 8],
+      [8, 1], [8, 2], [8, 3], [8, 5], [8, 6], [8, 7], [8, 8]
+    ],
+    "start": [1, 1],
+    "goal": [10, 8]
+  },
+  "mechanisms": {
+    "keys": [],
+    "doors": [],
+    "switches": [
+      {"id": "switch_a", "position": [2, 6], "controls": ["gate_1"], "switch_type": "toggle", "initial_state": "off"},
+      {"id": "switch_b", "position": [6, 2], "controls": ["gate_2"], "switch_type": "toggle", "initial_state": "off"}
+    ],
+    "gates": [
+      {"id": "gate_1", "position": [4, 3], "initial_state": "closed"},
+      {"id": "gate_2", "position": [8, 4], "initial_state": "closed"}
+    ],
+    "blocks": [],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": []
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [10, 8],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 100
+}

@@ -1,0 +1,42 @@
+{
+  "task_id": "tier2_colored_doors_003",
+  "version": "1.0",
+  "seed": 789,
+  "difficulty_tier": 2,
+  "description": "Multiple colored keys and doors - match colors correctly",
+  "maze": {
+    "dimensions": [10, 10],
+    "walls": [
+      [4, 1], [4, 2], [4, 4], [4, 5], [4, 6], [4, 7], [4, 8],
+      [7, 1], [7, 2], [7, 3], [7, 5], [7, 6], [7, 7], [7, 8]
+    ],
+    "start": [1, 1],
+    "goal": [8, 8]
+  },
+  "mechanisms": {
+    "keys": [
+      {"id": "key_blue", "position": [2, 8], "color": "blue"},
+      {"id": "key_green", "position": [2, 4], "color": "green"}
+    ],
+    "doors": [
+      {"id": "door_green", "position": [4, 3], "requires_key": "green", "initial_state": "locked"},
+      {"id": "door_blue", "position": [7, 4], "requires_key": "blue", "initial_state": "locked"}
+    ],
+    "switches": [],
+    "gates": [],
+    "blocks": [],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": []
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [8, 8],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 100
+}

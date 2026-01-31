@@ -1,0 +1,40 @@
+{
+  "task_id": "tier4_blocked_path_002",
+  "version": "1.0",
+  "seed": 123,
+  "difficulty_tier": 4,
+  "description": "Push blocks to clear a path - wrong moves can block progress",
+  "maze": {
+    "dimensions": [10, 8],
+    "walls": [
+      [1, 4], [2, 4], [3, 4],
+      [5, 4], [6, 4], [7, 4], [8, 4],
+      [5, 1], [5, 2], [5, 6]
+    ],
+    "start": [1, 1],
+    "goal": [8, 6]
+  },
+  "mechanisms": {
+    "keys": [],
+    "doors": [],
+    "switches": [],
+    "gates": [],
+    "blocks": [
+      {"id": "block_a", "position": [4, 4], "pushable": true, "color": "grey"},
+      {"id": "block_b", "position": [5, 3], "pushable": true, "color": "blue"}
+    ],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": []
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [8, 6],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 75
+}

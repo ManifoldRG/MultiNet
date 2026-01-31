@@ -1,0 +1,41 @@
+{
+  "task_id": "tier5_infer_color_002",
+  "version": "1.0",
+  "seed": 123,
+  "difficulty_tier": 5,
+  "description": "Door color must be inferred - try keys to discover which works",
+  "maze": {
+    "dimensions": [10, 8],
+    "walls": [
+      [5, 1], [5, 2], [5, 4], [5, 5], [5, 6]
+    ],
+    "start": [1, 1],
+    "goal": [8, 6]
+  },
+  "mechanisms": {
+    "keys": [
+      {"id": "key_red", "position": [2, 2], "color": "red"},
+      {"id": "key_blue", "position": [2, 5], "color": "blue"},
+      {"id": "key_green", "position": [3, 3], "color": "green"}
+    ],
+    "doors": [
+      {"id": "mystery_door", "position": [5, 3], "requires_key": "blue", "initial_state": "locked"}
+    ],
+    "switches": [],
+    "gates": [],
+    "blocks": [],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": ["mystery_door"]
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [8, 6],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 100
+}
