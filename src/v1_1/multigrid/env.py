@@ -8,7 +8,7 @@ from gymnasium import spaces
 from .agent import Action
 from .world import WorldState, execute_action
 from .base import Tiling
-from .tilings import SquareTiling, HexTiling, TriangleTiling
+from .tilings import SquareTiling, HexTiling, TriangleTiling, Archimedean3464Tiling, Archimedean488Tiling
 from .rendering import render_multigrid
 
 
@@ -17,7 +17,9 @@ class TilingRegistry:
     _types = {
         "square": SquareTiling,
         "hex": HexTiling,
-        "triangle": TriangleTiling
+        "triangle": TriangleTiling,
+        "3464": Archimedean3464Tiling,
+        "488": Archimedean488Tiling,
     }
 
     @classmethod
@@ -48,6 +50,7 @@ class MultiGridEnv(gym.Env):
         render_style: str = "minimal",         # "minimal" or "sprite"
         partial_obs: bool = False,             # Partial observability
         obs_radius: int = 3,                   # Vision radius if partial_obs
+        observability_mode: str = "full",      # "full", "view_cone", "fog_of_war"
     ):
         super().__init__()
 
@@ -67,6 +70,11 @@ class MultiGridEnv(gym.Env):
         self.render_style = render_style
         self.partial_obs = partial_obs
         self.obs_radius = obs_radius
+        self.observability_mode = observability_mode
+
+        # If partial_obs is True but mode is still "full", default to "view_cone"
+        if self.partial_obs and self.observability_mode == "full":
+            self.observability_mode = "view_cone"
 
         # Define Gymnasium action space
         self.action_space = spaces.Discrete(len(Action))
@@ -101,6 +109,11 @@ class MultiGridEnv(gym.Env):
         )
         self.steps = 0
 
+        # Configure partial observability on the state
+        self.state.observability_mode = self.observability_mode
+        self.state.view_radius = self.obs_radius
+        self.state.update_visibility()
+
         obs = self._get_obs()
         info = self._get_info()
 
@@ -117,6 +130,9 @@ class MultiGridEnv(gym.Env):
             self.tiling
         )
         self.steps += 1
+
+        # Update visibility after movement
+        self.state.update_visibility()
 
         # Compute reward
         reward = self._compute_reward(done, action_info)
@@ -176,21 +192,32 @@ class MultiGridEnv(gym.Env):
             if hasattr(self.state.goal, 'target_cell_id'):
                 goal_cell_id = self.state.goal.target_cell_id
 
+        # Pass visibility info to renderer for partial observability
+        visible = self.state.visible_cells if self.state.observability_mode != "full" else None
+        explored = self.state.explored_cells if self.state.observability_mode != "full" else None
+
         # Render observation at 64x64 for VLM input
         return render_multigrid(
             self.state,
             self.tiling,
             width=64,
             height=64,
-            goal_cell_id=goal_cell_id
+            goal_cell_id=goal_cell_id,
+            visible_cells=visible,
+            explored_cells=explored,
         )
 
     def _get_info(self) -> dict:
         """Get info dict."""
-        return {
+        info = {
             "step": self.steps,
-            "agent_cell": self.state.agent.cell_id
+            "agent_cell": self.state.agent.cell_id,
         }
+        if self.state.observability_mode != "full":
+            info["visible_cells"] = len(self.state.visible_cells)
+            info["explored_cells"] = len(self.state.explored_cells)
+            info["total_cells"] = len(self.tiling.cells)
+        return info
 
     def _compute_reward(self, done: bool, action_info: dict) -> float:
         """Compute reward signal."""
@@ -212,13 +239,19 @@ class MultiGridEnv(gym.Env):
             if hasattr(self.state.goal, 'target_cell_id'):
                 goal_cell_id = self.state.goal.target_cell_id
 
+        # Pass visibility info to renderer for partial observability
+        visible = self.state.visible_cells if self.state.observability_mode != "full" else None
+        explored = self.state.explored_cells if self.state.observability_mode != "full" else None
+
         # Render at higher resolution for human viewing
         return render_multigrid(
             self.state,
             self.tiling,
             width=640,
             height=640,
-            goal_cell_id=goal_cell_id
+            goal_cell_id=goal_cell_id,
+            visible_cells=visible,
+            explored_cells=explored,
         )
 
     def _render_human(self):

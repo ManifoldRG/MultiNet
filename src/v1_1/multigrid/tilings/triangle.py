@@ -97,7 +97,8 @@ class TriangleTiling(Tiling):
                         neighbors={},
                         row=hex_row,
                         col=hex_col,
-                        position_hint=(tri_center_x, tri_center_y)
+                        position_hint=(tri_center_x, tri_center_y),
+                        tiling_coords={"hex_center": hex_center, "tri_idx": tri_idx, "hex_size": hex_size}
                     )
 
         # Connect neighbors

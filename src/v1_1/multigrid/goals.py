@@ -156,6 +156,31 @@ class SurviveStepsGoal(Goal):
         return f"Survive for {self.steps} steps"
 
 
+class ObjectInZoneGoal(Goal):
+    """Goal: A specified object must be inside a zone's covered_cells for N consecutive steps."""
+
+    def __init__(self, object_id: str, zone_id: str, consecutive_steps: int = 1):
+        self.object_id = object_id
+        self.zone_id = zone_id
+        self.consecutive_steps = consecutive_steps
+        self._steps_in_zone = 0
+
+    def check(self, state: "WorldState") -> bool:
+        obj = state.objects.get(self.object_id)
+        zone = state.objects.get(self.zone_id)
+        if obj and zone and obj.cell_id in zone.covered_cells:
+            self._steps_in_zone += 1
+        else:
+            self._steps_in_zone = 0
+        return self._steps_in_zone >= self.consecutive_steps
+
+    def get_description(self) -> str:
+        desc = f"Object {self.object_id} in zone {self.zone_id}"
+        if self.consecutive_steps > 1:
+            desc += f" for {self.consecutive_steps} consecutive steps"
+        return desc
+
+
 class CompositeGoal(Goal):
     """Goal: All sub-goals must be achieved (AND logic)."""
 
@@ -246,6 +271,13 @@ def create_goal_from_spec(goal_spec: dict, tiling: "Tiling") -> Goal:
                     target_cell = str(target_pos)
                 block_targets[block_id] = target_cell
             goals.append(PushBlockToGoal(block_targets))
+
+    elif goal_type == "object_in_zone":
+        goals.append(ObjectInZoneGoal(
+            goal_spec["object_id"],
+            goal_spec["zone_id"],
+            goal_spec.get("consecutive_steps", 1),
+        ))
 
     elif goal_type == "survive_steps":
         steps = goal_spec.get("steps", goal_spec.get("max_steps", 100))

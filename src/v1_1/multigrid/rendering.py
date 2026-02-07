@@ -442,12 +442,19 @@ def get_triangle_vertices(
     ]
 
 
+def _dim_color(color: Tuple[int, int, int], factor: float = 0.4) -> Tuple[int, int, int]:
+    """Dim a color by blending it toward dark gray."""
+    return tuple(int(c * factor) for c in color)
+
+
 def render_multigrid(
     state,  # WorldState
     tiling,  # Tiling
     width: int = 640,
     height: int = 640,
-    goal_cell_id: Optional[str] = None
+    goal_cell_id: Optional[str] = None,
+    visible_cells: Optional[set] = None,
+    explored_cells: Optional[set] = None,
 ) -> np.ndarray:
     """
     Render a MultiGrid world state to an RGB image.
@@ -458,6 +465,8 @@ def render_multigrid(
         width: Output image width
         height: Output image height
         goal_cell_id: Optional cell ID to mark as goal
+        visible_cells: Set of currently visible cell IDs (None = all visible)
+        explored_cells: Set of previously explored cell IDs (None = all explored)
 
     Returns:
         RGB numpy array of shape (height, width, 3)
@@ -489,12 +498,37 @@ def render_multigrid(
             hex_size = min(usable_width, usable_height) / (tiling.height * 2) * 0.9
             vertices = get_hex_vertices((px, py), hex_size)
         elif tiling_name == "triangle":
-            hex_size = min(usable_width, usable_height) / (tiling.height * 2) * 0.9
-            # Parse triangle index from cell ID
-            _, _, _, tri_idx = cell_id.split("_")
-            tri_idx = int(tri_idx)
-            # Get hex center from position hint (approximate)
-            vertices = get_triangle_vertices((px, py), hex_size * 0.5, tri_idx)
+            # Use stored tiling_coords for accurate rendering
+            tc = cell.tiling_coords
+            if tc is not None:
+                hc = tc["hex_center"]
+                tri_idx = tc["tri_idx"]
+                hex_size_norm = tc["hex_size"]
+                # Convert hex center from normalized to pixel coords
+                hc_px = offset_x + hc[0] * usable_width
+                hc_py = offset_y + hc[1] * usable_height
+                # Scale hex size from normalized to pixel space
+                hex_size_px = hex_size_norm * min(usable_width, usable_height)
+            else:
+                # Fallback for cells without tiling_coords
+                hc_px, hc_py = px, py
+                hex_size_px = min(usable_width, usable_height) / (tiling.height * 2) * 0.9
+                _, _, _, tri_idx_str = cell_id.split("_")
+                tri_idx = int(tri_idx_str)
+            vertices = get_triangle_vertices((hc_px, hc_py), hex_size_px, tri_idx)
+        elif tiling_name in ("3464", "488"):
+            # Archimedean tilings: read pre-computed vertices from tiling_coords
+            tc = cell.tiling_coords
+            if tc is not None and "vertices" in tc:
+                # Vertices are in normalized [0,1] space; scale to pixel space
+                vertices = [
+                    (offset_x + vx * usable_width, offset_y + vy * usable_height)
+                    for vx, vy in tc["vertices"]
+                ]
+            else:
+                # Fallback: draw a small square at the position hint
+                cell_size = min(usable_width, usable_height) / 10
+                vertices = get_square_vertices((px, py), cell_size)
         else:
             # Fallback to square
             cell_size = min(usable_width, usable_height) / 10
@@ -506,6 +540,15 @@ def render_multigrid(
         else:
             color = COLORS["background"]
 
+        # Apply partial observability dimming
+        if visible_cells is not None and cell_id not in visible_cells:
+            if explored_cells is not None and cell_id in explored_cells:
+                # Previously explored but not currently visible: dim
+                color = _dim_color(color)
+            else:
+                # Never explored: dark background
+                color = (30, 30, 30)
+
         renderer.draw_cell_background(vertices, color)
 
     # Calculate object/agent size
@@ -513,12 +556,20 @@ def render_multigrid(
         obj_size = min(usable_width, usable_height) / max(tiling.width, tiling.height) * 0.7
     elif tiling_name == "hex":
         obj_size = min(usable_width, usable_height) / (tiling.height * 2) * 0.8
+    elif tiling_name in ("3464", "488"):
+        # Archimedean tilings: estimate size from total cell count
+        num_cells = max(len(tiling.cells), 1)
+        # Approximate: tiles_per_row ~ sqrt(num_cells * aspect_ratio)
+        tiles_per_side = max(math.sqrt(num_cells), 1)
+        obj_size = min(usable_width, usable_height) / tiles_per_side * 0.5
     else:
         obj_size = min(usable_width, usable_height) / (tiling.height * 3) * 0.8
 
-    # Draw objects
+    # Draw objects (skip non-visible cells)
     for obj_id, obj in state.objects.items():
         if obj.cell_id is None:
+            continue
+        if visible_cells is not None and obj.cell_id not in visible_cells:
             continue
         cell = tiling.cells.get(obj.cell_id)
         if cell is None:
@@ -529,13 +580,14 @@ def render_multigrid(
         py = offset_y + pos[1] * usable_height
         renderer.draw_object((px, py), obj, obj_size)
 
-    # Draw goal marker
+    # Draw goal marker (skip if not visible)
     if goal_cell_id and goal_cell_id in tiling.cells:
-        goal_cell = tiling.cells[goal_cell_id]
-        pos = goal_cell.position_hint
-        px = offset_x + pos[0] * usable_width
-        py = offset_y + pos[1] * usable_height
-        renderer.draw_goal((px, py), obj_size)
+        if visible_cells is None or goal_cell_id in visible_cells:
+            goal_cell = tiling.cells[goal_cell_id]
+            pos = goal_cell.position_hint
+            px = offset_x + pos[0] * usable_width
+            py = offset_y + pos[1] * usable_height
+            renderer.draw_goal((px, py), obj_size)
 
     # Draw agent
     agent_cell = tiling.cells.get(state.agent.cell_id)

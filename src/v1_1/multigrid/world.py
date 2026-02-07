@@ -14,6 +14,7 @@ from .agent import AgentState, Action
 from .objects.base import WorldObj, ObjectRegistry
 from .base import Tiling
 from .goals import Goal, create_goal_from_spec
+from .visibility import compute_visible_cells
 
 if TYPE_CHECKING:
     from .goals import Goal
@@ -29,6 +30,12 @@ class WorldState:
         self.goal: Optional[Goal] = None  # Goal predicate
         self.rules: dict = {}  # Game rules (key_consumption, etc.)
         self.hazard_hit: bool = False  # Track if agent hit a hazard
+
+        # Partial observability state
+        self.observability_mode: str = "full"  # "full", "view_cone", "fog_of_war"
+        self.view_radius: int = 3
+        self.visible_cells: set[str] = set()
+        self.explored_cells: set[str] = set()
 
     @classmethod
     def from_task_spec(cls, task_spec: dict, tiling: Tiling, seed: int = 0) -> "WorldState":
@@ -65,6 +72,9 @@ class WorldState:
 
         # Link switches to gates
         state._link_switches_and_gates()
+
+        # Compute zone covered_cells
+        _compute_zone_covered_cells(state, tiling)
 
         return state
 
@@ -124,6 +134,22 @@ class WorldState:
                         gate = gates[gate_id]
                         if obj.id not in gate.controlled_by:
                             gate.controlled_by.append(obj.id)
+
+    def update_visibility(self) -> None:
+        """Recompute visible cells based on observability mode."""
+        if self.observability_mode == "full":
+            self.visible_cells = set(self.tiling.cells.keys())
+            self.explored_cells = set(self.tiling.cells.keys())
+        else:
+            facing = self.agent.facing if self.observability_mode == "view_cone" else None
+            self.visible_cells = compute_visible_cells(
+                self.agent.cell_id,
+                self.tiling,
+                self,
+                self.view_radius,
+                facing=facing,
+            )
+            self.explored_cells |= self.visible_cells
 
     def can_move_to(self, cell_id: str) -> bool:
         """Check if agent can move to cell."""
@@ -409,6 +435,41 @@ def execute_action(
     done = state.check_goal()
 
     return state, done, info
+
+
+def _bfs_zone(tiling: Tiling, center_cell_id: str, radius: int) -> set[str]:
+    """
+    BFS from center cell up to radius hops. Returns set of cell IDs within radius.
+
+    No blocking — zones expand freely through the tiling graph.
+    """
+    covered = {center_cell_id}
+    if radius <= 0:
+        return covered
+
+    frontier = [(center_cell_id, 0)]
+    while frontier:
+        next_frontier = []
+        for cell_id, hops in frontier:
+            if hops >= radius:
+                continue
+            cell = tiling.cells.get(cell_id)
+            if cell is None:
+                continue
+            for neighbor_id in cell.neighbors.values():
+                if neighbor_id not in covered:
+                    covered.add(neighbor_id)
+                    next_frontier.append((neighbor_id, hops + 1))
+        frontier = next_frontier
+
+    return covered
+
+
+def _compute_zone_covered_cells(state: WorldState, tiling: Tiling) -> None:
+    """Compute covered_cells for every zone object in the world."""
+    for obj in state.objects.values():
+        if obj.obj_type == "zone" and obj.cell_id:
+            obj.covered_cells = _bfs_zone(tiling, obj.cell_id, obj.radius_hops)
 
 
 def _update_hold_switches(state: WorldState) -> None:
