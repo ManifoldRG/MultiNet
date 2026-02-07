@@ -6,7 +6,7 @@ The Task Parser is a critical component of the MiniGrid evaluation framework tha
 
 **Purpose**: Enable researchers and evaluators to define gridworld puzzles in a human-readable JSON format without needing to write Python code or understand MiniGrid internals.
 
-**Location**: `/src/v1_1/minigrid/task_parser.py`
+**Location**: `/src/v1_1/gridworld/task_parser.py`
 
 **Key Classes**:
 - `TaskParser`: Main parser class that orchestrates environment creation
@@ -162,8 +162,8 @@ The core parsing method. Transforms a TaskSpecification into a configured enviro
 
 **Example**:
 ```python
-from minigrid.task_spec import TaskSpecification
-from minigrid.task_parser import TaskParser
+from gridworld.task_spec import TaskSpecification
+from gridworld.task_parser import TaskParser
 
 # Load specification
 spec = TaskSpecification.from_json("task_001.json")
@@ -228,7 +228,7 @@ Top-level convenience function for the most common use case: loading a task from
 
 **Example**:
 ```python
-from minigrid.task_parser import load_task_from_file
+from gridworld.task_parser import load_task_from_file
 
 # One-liner to load and parse
 env = load_task_from_file("task.json", render_mode="rgb_array")
@@ -252,7 +252,7 @@ Top-level convenience function for loading from a dictionary.
 ### Example 1: Basic Navigation Task
 
 ```python
-from minigrid.task_parser import load_task_from_file
+from gridworld.task_parser import load_task_from_file
 
 # Load a simple navigation task
 env = load_task_from_file("tasks/tier1/navigate_8x8.json")
@@ -275,8 +275,8 @@ print(f"Episode finished with reward: {total_reward}")
 ### Example 2: Key-Door Puzzle
 
 ```python
-from minigrid.task_parser import TaskParser
-from minigrid.task_spec import TaskSpecification
+from gridworld.task_parser import TaskParser
+from gridworld.task_spec import TaskSpecification
 
 # Load task specification
 spec = TaskSpecification.from_json("tasks/tier2/key_door_puzzle.json")
@@ -296,7 +296,7 @@ env = parser.parse(spec, seed=123)
 ### Example 3: Switch-Gate Mechanism
 
 ```python
-from minigrid.task_parser import load_task_from_dict
+from gridworld.task_parser import load_task_from_dict
 
 # Programmatically define a task
 task_data = {
@@ -338,8 +338,8 @@ env = load_task_from_dict(task_data, render_mode="rgb_array")
 ### Example 4: Evaluation Loop with Multiple Seeds
 
 ```python
-from minigrid.task_parser import TaskParser
-from minigrid.task_spec import TaskSpecification
+from gridworld.task_parser import TaskParser
+from gridworld.task_spec import TaskSpecification
 
 # Load task once
 spec = TaskSpecification.from_json("task.json")
@@ -624,7 +624,7 @@ env.place_key(3, 3, "red")  # Now the key stays
 
 ## See Also
 
-- [TaskSpecification Schema](../minigrid/task_spec.py): JSON format for tasks
-- [CustomMiniGridEnv](../minigrid/custom_env.py): The environment class created by parser
+- [TaskSpecification Schema](../gridworld/task_spec.py): JSON format for tasks
+- [CustomMiniGridEnv](../gridworld/custom_env.py): The environment class created by parser
 - [MiniGridBackend Documentation](./minigrid_backend.md): Integration with backend system
 - [MultiNet Task Generation Guide](../../docs/task_generation.md): Creating evaluation tasks

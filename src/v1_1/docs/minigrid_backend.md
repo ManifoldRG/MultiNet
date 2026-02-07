@@ -6,7 +6,7 @@ The MiniGrid Backend is a production-ready implementation of the `AbstractGridBa
 
 **Purpose**: Enable evaluation of vision-language-action models on standard square-grid environments with comprehensive mechanism support (keys, doors, switches, gates, blocks, hazards).
 
-**Location**: `/src/v1_1/minigrid/backends/minigrid_backend.py`
+**Location**: `/src/v1_1/gridworld/backends/minigrid_backend.py`
 
 **Status**: MVP (Minimum Viable Product) - Production ready
 
@@ -125,7 +125,7 @@ class MiniGridBackend(AbstractGridBackend):
 
 **Example**:
 ```python
-from minigrid.backends import MiniGridBackend
+from gridworld.backends import MiniGridBackend
 
 # Production evaluation setup
 backend = MiniGridBackend(render_mode="rgb_array")
@@ -154,8 +154,8 @@ Configures the backend with a task specification. This is the first method that 
 
 **Example**:
 ```python
-from minigrid.task_spec import TaskSpecification
-from minigrid.backends import MiniGridBackend
+from gridworld.task_spec import TaskSpecification
+from gridworld.backends import MiniGridBackend
 
 # Load task specification
 spec = TaskSpecification.from_json("task.json")
@@ -408,8 +408,8 @@ state = backend.get_state()
 ### Example 1: Basic Episode Execution
 
 ```python
-from minigrid.backends import MiniGridBackend
-from minigrid.task_spec import TaskSpecification
+from gridworld.backends import MiniGridBackend
+from gridworld.task_spec import TaskSpecification
 
 # Load task
 spec = TaskSpecification.from_json("tasks/navigation_8x8.json")
@@ -447,8 +447,8 @@ backend.close()
 ### Example 2: Multi-Seed Evaluation
 
 ```python
-from minigrid.backends import MiniGridBackend
-from minigrid.task_spec import TaskSpecification
+from gridworld.backends import MiniGridBackend
+from gridworld.task_spec import TaskSpecification
 
 def evaluate_policy(policy_fn, task_path, num_seeds=10):
     """
@@ -504,8 +504,8 @@ print(f"Success rate: {results['success_rate']:.1%}")
 ### Example 3: Observation and State Comparison
 
 ```python
-from minigrid.backends import MiniGridBackend
-from minigrid.task_spec import TaskSpecification
+from gridworld.backends import MiniGridBackend
+from gridworld.task_spec import TaskSpecification
 
 # Setup
 spec = TaskSpecification.from_json("task.json")
@@ -536,8 +536,8 @@ backend.close()
 ### Example 4: Mechanism State Tracking
 
 ```python
-from minigrid.backends import MiniGridBackend
-from minigrid.task_spec import TaskSpecification
+from gridworld.backends import MiniGridBackend
+from gridworld.task_spec import TaskSpecification
 
 # Task with switches and gates
 spec = TaskSpecification.from_json("tasks/switch_gate_puzzle.json")
@@ -567,8 +567,8 @@ if 'gate1' in state.open_gates:
 ### Example 5: Video Recording
 
 ```python
-from minigrid.backends import MiniGridBackend
-from minigrid.task_spec import TaskSpecification
+from gridworld.backends import MiniGridBackend
+from gridworld.task_spec import TaskSpecification
 import imageio
 
 # Setup
@@ -665,8 +665,8 @@ print(f"Saved {len(frames)} frames to episode.mp4")
 ### Standard Evaluation Pattern
 
 ```python
-from minigrid.backends import MiniGridBackend
-from minigrid.task_spec import TaskSpecification
+from gridworld.backends import MiniGridBackend
+from gridworld.task_spec import TaskSpecification
 
 def run_evaluation(agent, task_files, num_seeds=5):
     """
@@ -786,8 +786,8 @@ backend.reset()  # Works
 
 ## See Also
 
-- [AbstractGridBackend Interface](../minigrid/backends/base.py): Base interface documentation
+- [AbstractGridBackend Interface](../gridworld/backends/base.py): Base interface documentation
 - [Task Parser Documentation](./task_parser.md): How tasks are parsed into environments
 - [MultiGrid Backend Documentation](./multigrid_backend.md): Alternative backend for exotic tilings
-- [TaskSpecification Schema](../minigrid/task_spec.py): JSON format for tasks
+- [TaskSpecification Schema](../gridworld/task_spec.py): JSON format for tasks
 - [Evaluation Pipeline Guide](../../docs/evaluation.md): End-to-end evaluation setup

@@ -6,7 +6,7 @@ The MultiGrid Backend is an experimental implementation of the `AbstractGridBack
 
 **Purpose**: Enable research and evaluation on exotic grid tilings while maintaining compatibility with the standard backend interface and task specification format.
 
-**Location**: `/src/v1_1/minigrid/backends/multigrid_backend.py`
+**Location**: `/src/v1_1/gridworld/backends/multigrid_backend.py`
 
 **Status**: Experimental - Research use only
 
@@ -144,7 +144,7 @@ class MultiGridBackend(AbstractGridBackend):
 
 **Example**:
 ```python
-from minigrid.backends import MultiGridBackend
+from gridworld.backends import MultiGridBackend
 
 # Standard square tiling (same as MiniGrid)
 backend = MultiGridBackend(tiling="square")
@@ -179,8 +179,8 @@ Configures the backend with a task specification and creates the MultiGrid envir
 
 **Example**:
 ```python
-from minigrid.task_spec import TaskSpecification
-from minigrid.backends import MultiGridBackend
+from gridworld.task_spec import TaskSpecification
+from gridworld.backends import MultiGridBackend
 
 # Load standard MiniGrid task
 spec = TaskSpecification.from_json("task.json")
@@ -554,8 +554,8 @@ MultiGrid supports multiple goal types with slight differences in format.
 ### Example 1: Square vs Hex Comparison
 
 ```python
-from minigrid.backends import MultiGridBackend
-from minigrid.task_spec import TaskSpecification
+from gridworld.backends import MultiGridBackend
+from gridworld.task_spec import TaskSpecification
 
 # Load a navigation task
 spec = TaskSpecification.from_json("tasks/navigation_8x8.json")
@@ -596,8 +596,8 @@ print(f"Difference: {abs(steps_square - steps_hex)} steps")
 ### Example 2: Multi-Tiling Evaluation
 
 ```python
-from minigrid.backends import MultiGridBackend
-from minigrid.task_spec import TaskSpecification
+from gridworld.backends import MultiGridBackend
+from gridworld.task_spec import TaskSpecification
 
 def evaluate_across_tilings(policy_fn, task_path, tilings=["square", "hex", "triangle"]):
     """
@@ -643,8 +643,8 @@ for tiling, metrics in results.items():
 ### Example 3: Visualization of Different Tilings
 
 ```python
-from minigrid.backends import MultiGridBackend
-from minigrid.task_spec import TaskSpecification
+from gridworld.backends import MultiGridBackend
+from gridworld.task_spec import TaskSpecification
 import matplotlib.pyplot as plt
 
 # Load task
@@ -680,7 +680,7 @@ for backend in backends.values():
 ### Example 4: Custom Task on Hex Grid
 
 ```python
-from minigrid.backends import MultiGridBackend
+from gridworld.backends import MultiGridBackend
 
 # Define task programmatically
 task_data = {
@@ -731,8 +731,8 @@ backend.close()
 ### Example 5: Action Space Verification
 
 ```python
-from minigrid.backends import MiniGridBackend, MultiGridBackend
-from minigrid.task_spec import TaskSpecification
+from gridworld.backends import MiniGridBackend, MultiGridBackend
+from gridworld.task_spec import TaskSpecification
 
 # Load task
 spec = TaskSpecification.from_json("task.json")
@@ -899,8 +899,8 @@ Exotic tilings add additional overhead:
 ### Standard Evaluation Pattern
 
 ```python
-from minigrid.backends import MultiGridBackend
-from minigrid.task_spec import TaskSpecification
+from gridworld.backends import MultiGridBackend
+from gridworld.task_spec import TaskSpecification
 
 def run_multigrid_evaluation(agent, task_files, tiling="square"):
     """
@@ -945,7 +945,7 @@ def run_multigrid_evaluation(agent, task_files, tiling="square"):
 ### Cross-Backend Comparison
 
 ```python
-from minigrid.backends import MiniGridBackend, MultiGridBackend
+from gridworld.backends import MiniGridBackend, MultiGridBackend
 
 def compare_backends(agent, task_path):
     """
@@ -1080,6 +1080,6 @@ if str(multigrid_path.parent) not in sys.path:
 
 - [MiniGrid Backend Documentation](./minigrid_backend.md): Production backend for standard tasks
 - [Task Parser Documentation](./task_parser.md): How tasks are parsed
-- [AbstractGridBackend Interface](../minigrid/backends/base.py): Backend interface specification
+- [AbstractGridBackend Interface](../gridworld/backends/base.py): Backend interface specification
 - [MultiGrid Environment](../multigrid/env.py): Underlying custom environment
 - [Tiling Theory](../../docs/tiling_theory.md): Mathematical background on grid tilings

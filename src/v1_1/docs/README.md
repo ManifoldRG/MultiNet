@@ -53,8 +53,8 @@ Evaluation / Agent Training
 ### Basic Usage
 
 ```python
-from minigrid.backends import MiniGridBackend
-from minigrid.task_spec import TaskSpecification
+from gridworld.backends import MiniGridBackend
+from gridworld.task_spec import TaskSpecification
 
 # 1. Load task specification
 spec = TaskSpecification.from_json("path/to/task.json")
@@ -82,7 +82,7 @@ print(f"Steps: {state.step_count}")
 #### Navigation Task
 ```python
 # Simple navigation from start to goal
-from minigrid.task_parser import load_task_from_file
+from gridworld.task_parser import load_task_from_file
 
 env = load_task_from_file("tasks/tier1/navigation_8x8.json")
 obs, info = env.reset()
@@ -406,7 +406,7 @@ See individual documentation files for detailed troubleshooting guides.
 
 ```
 src/v1_1/
-├── minigrid/
+├── gridworld/
 │   ├── task_spec.py              # TaskSpecification schema
 │   ├── task_parser.py            # Parser implementation
 │   ├── custom_env.py             # CustomMiniGridEnv
@@ -428,9 +428,9 @@ src/v1_1/
 ## Related Resources
 
 ### Code Files
-- `minigrid/task_spec.py`: Complete TaskSpecification schema with validation
-- `minigrid/custom_env.py`: Custom MiniGrid environment with all mechanisms
-- `minigrid/backends/base.py`: Backend interface and GridState definition
+- `gridworld/task_spec.py`: Complete TaskSpecification schema with validation
+- `gridworld/custom_env.py`: Custom MiniGrid environment with all mechanisms
+- `gridworld/backends/base.py`: Backend interface and GridState definition
 
 ### Example Tasks
 - `tasks/tier1/`: Navigation tasks
