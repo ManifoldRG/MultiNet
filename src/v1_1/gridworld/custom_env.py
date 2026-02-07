@@ -10,20 +10,11 @@ from __future__ import annotations
 import numpy as np
 from typing import Optional, Any
 
-# Import from gymnasium's minigrid package via helper (avoids naming conflict)
-from ._minigrid_pkg import (
-    mg_Grid as Grid,
-    mg_MissionSpace as MissionSpace,
-    mg_WorldObj as WorldObj,
-    mg_Key as Key,
-    mg_Door as Door,
-    mg_Goal as Goal,
-    mg_Wall as Wall,
-    mg_Lava as Lava,
-    mg_Box as Box,
-    mg_Ball as Ball,
-    mg_MiniGridEnv as MiniGridEnv,
-)
+# Import from gymnasium's minigrid package (no naming conflict after rename to gridworld/)
+from minigrid.core.grid import Grid
+from minigrid.core.mission import MissionSpace
+from minigrid.core.world_object import WorldObj, Key, Door, Goal, Wall, Lava, Box, Ball
+from minigrid.minigrid_env import MiniGridEnv
 
 from .task_spec import TaskSpecification, Position
 
@@ -86,6 +77,28 @@ class Gate(Door):
         return False
 
 
+class TeleporterObj(Ball):
+    """
+    Teleporter endpoint object.
+    When the agent steps on it, they are teleported to the partner endpoint.
+    Rendered as a ball with special portal appearance.
+    """
+
+    def __init__(self, color: str = "purple", teleporter_id: str = "",
+                 partner: "TeleporterObj | None" = None, cooldown_max: int = 1):
+        super().__init__(color)
+        self.teleporter_id = teleporter_id
+        self.partner: TeleporterObj | None = partner
+        self.cooldown = 0
+        self.cooldown_max = cooldown_max
+
+    def can_overlap(self):
+        return True
+
+    def can_pickup(self):
+        return False
+
+
 class PushableBlock(Box):
     """
     A block that can be pushed by the agent.
@@ -125,6 +138,10 @@ class CustomMiniGridEnv(MiniGridEnv):
         mission_text: str = "Navigate to the goal",
         render_mode: Optional[str] = None,
         task_spec: Optional[TaskSpecification] = None,
+        see_through_walls: bool = True,
+        agent_view_size: int = 7,
+        highlight: bool = True,
+        agent_pov: bool = False,
         **kwargs,
     ):
         self.agent_start_pos = agent_start_pos
@@ -137,7 +154,11 @@ class CustomMiniGridEnv(MiniGridEnv):
         self.switches: dict[str, Switch] = {}
         self.gates: dict[str, Gate] = {}
         self.blocks: dict[str, PushableBlock] = {}
+        self.teleporters: dict[str, TeleporterObj] = {}
         self.switch_gate_map: dict[str, list[str]] = {}  # switch_id -> [gate_ids]
+
+        # Fog of war tracking: set of (x, y) cells the agent has visited/seen
+        self.explored_cells: set[tuple[int, int]] = set()
 
         # Mission space for the environment - the func returns our custom text
         mission_space = MissionSpace(mission_func=lambda: mission_text)
@@ -147,6 +168,10 @@ class CustomMiniGridEnv(MiniGridEnv):
             width=width,
             height=height,
             max_steps=max_steps,
+            see_through_walls=see_through_walls,
+            agent_view_size=agent_view_size,
+            highlight=highlight,
+            agent_pov=agent_pov,
             render_mode=render_mode,
             **kwargs,
         )
@@ -162,6 +187,9 @@ class CustomMiniGridEnv(MiniGridEnv):
 
         # Add border walls
         self.grid.wall_rect(0, 0, width, height)
+
+        # Reset fog-of-war tracking
+        self.explored_cells = set()
 
         # If we have a task spec, it will be populated after _gen_grid by the parser
         # For now, set basic start/goal if provided
@@ -216,6 +244,20 @@ class CustomMiniGridEnv(MiniGridEnv):
         # All hazards use Lava for now
         self.grid.set(x, y, Lava())
 
+    def place_teleporter(self, teleporter_id: str, x_a: int, y_a: int,
+                         x_b: int, y_b: int, bidirectional: bool = True,
+                         color: str = "purple"):
+        """Place a teleporter pair at the given positions."""
+        tp_a = TeleporterObj(color=color, teleporter_id=f"{teleporter_id}_a")
+        tp_b = TeleporterObj(color=color, teleporter_id=f"{teleporter_id}_b")
+        tp_a.partner = tp_b
+        if bidirectional:
+            tp_b.partner = tp_a
+        self.teleporters[f"{teleporter_id}_a"] = tp_a
+        self.teleporters[f"{teleporter_id}_b"] = tp_b
+        self.put_obj(tp_a, x_a, y_a)
+        self.put_obj(tp_b, x_b, y_b)
+
     def place_goal(self, x: int, y: int):
         """Place the goal at the given position."""
         self.put_obj(Goal(), x, y)
@@ -255,6 +297,14 @@ class CustomMiniGridEnv(MiniGridEnv):
                     obs = self.gen_obs()
                     return obs, 0, False, truncated, {}
 
+        # Handle gate toggle attempt (gates can only be opened by switches, not directly)
+        if action == self.actions.toggle and isinstance(fwd_cell, Gate):
+            # No-op: gates are not directly toggleable
+            self.step_count += 1
+            truncated = self.step_count >= self.max_steps
+            obs = self.gen_obs()
+            return obs, 0, False, truncated, {}
+
         # Handle switch interaction
         if action == self.actions.toggle and isinstance(fwd_cell, Switch):
             # Toggle the switch
@@ -262,6 +312,11 @@ class CustomMiniGridEnv(MiniGridEnv):
             # Toggle all controlled gates
             for gate_id in fwd_cell.controls:
                 self.toggle_gate(gate_id)
+            # Return after handling (don't fall through to super which would re-toggle)
+            self.step_count += 1
+            truncated = self.step_count >= self.max_steps
+            obs = self.gen_obs()
+            return obs, 0, False, truncated, {}
 
         # Handle block pushing
         if action == self.actions.forward and isinstance(fwd_cell, PushableBlock):
@@ -311,8 +366,66 @@ class CustomMiniGridEnv(MiniGridEnv):
             return obs, 0, False, truncated, {}
 
         # Default behavior
-        return super().step(action)
+        obs, reward, terminated, truncated, info = super().step(action)
+
+        # Tick teleporter cooldowns
+        for tp in self.teleporters.values():
+            if tp.cooldown > 0:
+                tp.cooldown -= 1
+
+        # Check if agent landed on a teleporter after moving forward
+        if action == self.actions.forward:
+            cell = self.grid.get(*self.agent_pos)
+            if isinstance(cell, TeleporterObj) and cell.partner is not None and cell.cooldown == 0:
+                # Find partner position
+                for x in range(self.width):
+                    for y in range(self.height):
+                        if self.grid.get(x, y) is cell.partner:
+                            self.agent_pos = (x, y)
+                            # Set cooldown on destination to prevent immediate bounce-back
+                            cell.partner.cooldown = cell.partner.cooldown_max
+                            # Regenerate observation after teleport
+                            obs = self.gen_obs()
+                            break
+                    else:
+                        continue
+                    break
+
+        return obs, reward, terminated, truncated, info
 
     def get_mission_text(self) -> str:
         """Return the mission text."""
         return self._custom_mission_text
+
+    def get_visible_cells(self) -> set[tuple[int, int]]:
+        """Get the set of (x, y) cells currently visible to the agent via view cone.
+
+        Uses the same coordinate mapping as MiniGrid's get_frame highlight logic:
+        the vis_mask from gen_obs_grid is in rotated agent-relative space, and we
+        map back to absolute grid coordinates using dir_vec / right_vec.
+        """
+        _, vis_mask = self.gen_obs_grid()
+        visible = set()
+
+        # MiniGrid coordinate mapping: agent is at bottom-center of rotated view
+        f_vec = self.dir_vec
+        r_vec = np.array((-f_vec[1], f_vec[0]))
+        top_left = (
+            np.array(self.agent_pos)
+            + f_vec * (self.agent_view_size - 1)
+            - r_vec * (self.agent_view_size // 2)
+        )
+
+        for vis_i in range(self.agent_view_size):
+            for vis_j in range(self.agent_view_size):
+                if not vis_mask[vis_i, vis_j]:
+                    continue
+                abs_pos = top_left - (f_vec * vis_j) + (r_vec * vis_i)
+                abs_x, abs_y = int(abs_pos[0]), int(abs_pos[1])
+                if 0 <= abs_x < self.width and 0 <= abs_y < self.height:
+                    visible.add((abs_x, abs_y))
+        return visible
+
+    def update_explored(self):
+        """Update fog-of-war: add currently visible cells to explored set."""
+        self.explored_cells |= self.get_visible_cells()

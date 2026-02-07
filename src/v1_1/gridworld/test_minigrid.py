@@ -20,7 +20,7 @@ def test_task_spec_loading():
     """Test loading task specifications from JSON."""
     print("\n=== Testing Task Specification Loading ===")
 
-    from v1_1.minigrid.task_spec import TaskSpecification
+    from v1_1.gridworld.task_spec import TaskSpecification
 
     # Test loading tier1 task
     tier1_path = Path(__file__).parent / "tasks" / "tier1" / "maze_simple_001.json"
@@ -53,8 +53,8 @@ def test_task_parser():
     """Test parsing task specs into environments."""
     print("\n=== Testing Task Parser ===")
 
-    from v1_1.minigrid.task_spec import TaskSpecification
-    from v1_1.minigrid.task_parser import TaskParser
+    from v1_1.gridworld.task_spec import TaskSpecification
+    from v1_1.gridworld.task_parser import TaskParser
 
     parser = TaskParser(render_mode="rgb_array")
 
@@ -87,9 +87,9 @@ def test_environment_step():
     """Test taking steps in the environment."""
     print("\n=== Testing Environment Step ===")
 
-    from v1_1.minigrid.task_spec import TaskSpecification
-    from v1_1.minigrid.task_parser import TaskParser
-    from v1_1.minigrid.actions import MiniGridActions, ACTION_NAMES
+    from v1_1.gridworld.task_spec import TaskSpecification
+    from v1_1.gridworld.task_parser import TaskParser
+    from v1_1.gridworld.actions import MiniGridActions, ACTION_NAMES
 
     parser = TaskParser(render_mode="rgb_array")
 
@@ -132,8 +132,8 @@ def test_backend():
     """Test the MiniGrid backend wrapper."""
     print("\n=== Testing MiniGrid Backend ===")
 
-    from v1_1.minigrid.task_spec import TaskSpecification
-    from v1_1.minigrid.backends.minigrid_backend import MiniGridBackend
+    from v1_1.gridworld.task_spec import TaskSpecification
+    from v1_1.gridworld.backends.minigrid_backend import MiniGridBackend
 
     backend = MiniGridBackend(render_mode="rgb_array")
 
@@ -168,8 +168,8 @@ def test_runner():
     """Test the grid runner."""
     print("\n=== Testing Grid Runner ===")
 
-    from v1_1.minigrid.task_spec import TaskSpecification
-    from v1_1.minigrid.runner.grid_runner import GridRunner
+    from v1_1.gridworld.task_spec import TaskSpecification
+    from v1_1.gridworld.runner.grid_runner import GridRunner
 
     runner = GridRunner(render_mode="rgb_array")
 
@@ -198,7 +198,7 @@ def test_tier_envs():
     """Test loading environments by tier."""
     print("\n=== Testing Tier Environment Loading ===")
 
-    from v1_1.minigrid.envs.tier_envs import list_available_envs, get_tier1_envs
+    from v1_1.gridworld.envs.tier_envs import list_available_envs, get_tier1_envs
 
     # List available
     available = list_available_envs()
@@ -220,8 +220,8 @@ def test_all_tiers():
     """Test that all tier tasks load correctly."""
     print("\n=== Testing All Tier Tasks ===")
 
-    from v1_1.minigrid.task_spec import TaskSpecification
-    from v1_1.minigrid.task_parser import TaskParser
+    from v1_1.gridworld.task_spec import TaskSpecification
+    from v1_1.gridworld.task_parser import TaskParser
 
     parser = TaskParser(render_mode="rgb_array")
     tasks_dir = Path(__file__).parent / "tasks"

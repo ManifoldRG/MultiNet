@@ -1,4 +1,4 @@
-# minigrid/backends/multigrid_backend.py
+# gridworld/backends/multigrid_backend.py
 
 """
 MultiGrid Backend Implementation
@@ -8,7 +8,7 @@ the AbstractGridBackend interface. This allows evaluation of custom tilings
 (square, hex, triangle) using the same pipeline as MiniGrid.
 
 Usage:
-    from minigrid.backends import MultiGridBackend
+    from gridworld.backends import MultiGridBackend
 
     # Use with triangle tiling
     backend = MultiGridBackend(tiling="triangle", render_mode="rgb_array")
@@ -78,6 +78,11 @@ class MultiGridBackend(AbstractGridBackend):
         # Convert TaskSpecification to multigrid task_spec dict
         multigrid_spec = self._convert_task_spec(task_spec)
 
+        # Extract observability settings from task_spec
+        obs_mode = task_spec.rules.observability if task_spec.rules else "full"
+        view_size = task_spec.rules.view_size if task_spec.rules else 7
+        partial = obs_mode != "full"
+
         # Import and create MultiGridEnv
         from multigrid.env import MultiGridEnv
 
@@ -85,6 +90,9 @@ class MultiGridBackend(AbstractGridBackend):
             task_spec=multigrid_spec,
             tiling=self.tiling_type,
             render_mode=self.render_mode,
+            partial_obs=partial,
+            obs_radius=view_size // 2,
+            observability_mode=obs_mode,
         )
 
         self._max_steps = task_spec.max_steps
@@ -429,6 +437,20 @@ class MultiGridBackend(AbstractGridBackend):
                     int(pos[1] * self.task_spec.maze.dimensions[1])
                 )
 
+        # Convert visibility sets from cell_id strings to (x,y) grid coords
+        obs_mode = getattr(state, 'observability_mode', 'full')
+        visible_xy = set()
+        explored_xy = set()
+
+        if obs_mode != "full":
+            dims = self.task_spec.maze.dimensions
+            for cell_id in state.visible_cells:
+                pos = tiling.cell_to_canonical(cell_id)
+                visible_xy.add((int(pos[0] * dims[0]), int(pos[1] * dims[1])))
+            for cell_id in state.explored_cells:
+                pos = tiling.cell_to_canonical(cell_id)
+                explored_xy.add((int(pos[0] * dims[0]), int(pos[1] * dims[1])))
+
         return GridState(
             agent_position=grid_pos,
             agent_direction=state.agent.facing,
@@ -437,6 +459,9 @@ class MultiGridBackend(AbstractGridBackend):
             max_steps=self._max_steps,
             block_positions=block_positions,
             goal_reached=state.check_goal(),
+            observability_mode=obs_mode,
+            visible_cells=visible_xy,
+            explored_cells=explored_xy,
         )
 
     def close(self) -> None:

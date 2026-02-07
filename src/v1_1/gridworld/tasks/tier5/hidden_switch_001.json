@@ -28,7 +28,9 @@
   "rules": {
     "key_consumption": true,
     "switch_type": "toggle",
-    "hidden_mechanisms": ["hidden_switch"]
+    "hidden_mechanisms": ["hidden_switch"],
+    "observability": "view_cone",
+    "view_size": 5
   },
   "goal": {
     "type": "reach_position",

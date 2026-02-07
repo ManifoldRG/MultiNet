@@ -201,13 +201,17 @@ class Rules:
     key_consumption: bool = True  # Keys are consumed when used
     switch_type: Literal["toggle", "hold", "one_shot"] = "toggle"  # Default switch behavior
     hidden_mechanisms: list[str] = field(default_factory=list)  # IDs of mechanisms not visible initially
+    observability: Literal["full", "view_cone", "fog_of_war"] = "full"
+    view_size: int = 7  # Agent view cone size (must be odd, >= 3). Only used when observability != "full"
 
     @classmethod
     def from_dict(cls, d: dict) -> "Rules":
         return cls(
             key_consumption=d.get("key_consumption", True),
             switch_type=d.get("switch_type", "toggle"),
-            hidden_mechanisms=d.get("hidden_mechanisms", [])
+            hidden_mechanisms=d.get("hidden_mechanisms", []),
+            observability=d.get("observability", "full"),
+            view_size=d.get("view_size", 7),
         )
 
 
@@ -339,7 +343,9 @@ class TaskSpecification:
             "rules": {
                 "key_consumption": self.rules.key_consumption,
                 "switch_type": self.rules.switch_type,
-                "hidden_mechanisms": self.rules.hidden_mechanisms
+                "hidden_mechanisms": self.rules.hidden_mechanisms,
+                "observability": self.rules.observability,
+                "view_size": self.rules.view_size,
             },
             "goal": {
                 "type": self.goal.goal_type,
@@ -409,6 +415,10 @@ class TaskSpecification:
 
         for hazard in self.mechanisms.hazards:
             check_position(hazard.position, f"Hazard {hazard.id}")
+
+        for teleporter in self.mechanisms.teleporters:
+            check_position(teleporter.position_a, f"Teleporter {teleporter.id} endpoint A")
+            check_position(teleporter.position_b, f"Teleporter {teleporter.id} endpoint B")
 
         # Check door-key color consistency
         key_colors = {k.color for k in self.mechanisms.keys}

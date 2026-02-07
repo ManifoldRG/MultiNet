@@ -7,10 +7,10 @@ Shows loading tasks, running episodes, using policies, and saving visualizations
 
 Usage:
     cd src/v1_1
-    python minigrid/demo.py              # Run all demos
-    python minigrid/demo.py --visual     # Save PNG images of each demo
-    python minigrid/demo.py --play       # Interactive play mode
-    python minigrid/demo.py --play --task tier2/single_key_001  # Play specific task
+    python gridworld/demo.py              # Run all demos
+    python gridworld/demo.py --visual     # Save PNG images of each demo
+    python gridworld/demo.py --play       # Interactive play mode
+    python gridworld/demo.py --play --task tier2/single_key_001  # Play specific task
 """
 
 import sys
@@ -21,12 +21,12 @@ import numpy as np
 # Ensure imports work from the v1_1 directory
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from minigrid.task_spec import TaskSpecification
-from minigrid.backends import get_backend, MiniGridBackend
-from minigrid.backends.base import GridState
-from minigrid.runner.grid_runner import GridRunner
-from minigrid.actions import MiniGridActions, ACTION_NAMES
-from minigrid.envs.tier_envs import list_available_envs
+from gridworld.task_spec import TaskSpecification
+from gridworld.backends import get_backend, MiniGridBackend
+from gridworld.backends.base import GridState
+from gridworld.runner.grid_runner import GridRunner
+from gridworld.actions import MiniGridActions, ACTION_NAMES
+from gridworld.envs.tier_envs import list_available_envs
 
 
 def interactive_play(task_path: str = None):

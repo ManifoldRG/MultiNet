@@ -102,6 +102,11 @@ class MiniGridBackend(AbstractGridBackend):
         # Extract backend-agnostic GridState for evaluation
         state = self._get_grid_state()
 
+        # Include partial observation data in info
+        obs_mode = self.task_spec.rules.observability if self.task_spec else "full"
+        if obs_mode != "full":
+            info["partial_obs"] = obs  # The MiniGrid symbolic partial observation
+
         return rgb_obs, state, info
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, bool, GridState, dict]:
@@ -124,6 +129,11 @@ class MiniGridBackend(AbstractGridBackend):
 
         # Execute action
         obs, reward, terminated, truncated, info = self.env.step(action)
+
+        # Update fog-of-war explored cells after movement
+        obs_mode = self.task_spec.rules.observability if self.task_spec else "full"
+        if obs_mode in ("view_cone", "fog_of_war"):
+            self.env.update_explored()
 
         # Get RGB observation
         if self.render_mode == "rgb_array":
@@ -258,12 +268,25 @@ class MiniGridBackend(AbstractGridBackend):
                 if found:
                     break  # Exit outer loop
 
+        # Track teleporter cooldown states
+        teleporter_cooldowns = {}
+        for tp_id, tp in self.env.teleporters.items():
+            teleporter_cooldowns[tp_id] = tp.cooldown
+
         # Check if goal has been reached
         # Goal is reached when agent position matches goal position from task spec
         goal_reached = False
         if self.task_spec is not None:
             goal_pos = self.task_spec.maze.goal.to_tuple()
             goal_reached = self.env.agent_pos == goal_pos
+
+        # Get observability info
+        obs_mode = self.task_spec.rules.observability if self.task_spec else "full"
+        visible_cells = set()
+        explored_cells = set()
+        if obs_mode != "full":
+            visible_cells = self.env.get_visible_cells()
+            explored_cells = set(self.env.explored_cells)
 
         # Construct and return the GridState
         return GridState(
@@ -277,7 +300,11 @@ class MiniGridBackend(AbstractGridBackend):
             active_switches=active_switches,
             open_gates=open_gates,
             block_positions=block_positions,
+            teleporter_cooldowns=teleporter_cooldowns,
             goal_reached=goal_reached,
+            observability_mode=obs_mode,
+            visible_cells=visible_cells,
+            explored_cells=explored_cells,
         )
 
     def _obs_to_rgb(self, obs: dict) -> np.ndarray:

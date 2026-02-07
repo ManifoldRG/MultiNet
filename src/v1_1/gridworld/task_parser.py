@@ -84,6 +84,27 @@ class TaskParser:
         # This allows the same task to be evaluated with different random seeds
         actual_seed = seed if seed is not None else spec.seed
 
+        # Determine observability settings from spec
+        obs_mode = spec.rules.observability
+        if obs_mode == "full":
+            see_through_walls = True
+            agent_view_size = 7
+            agent_pov = False
+        elif obs_mode == "view_cone":
+            see_through_walls = False
+            agent_view_size = spec.rules.view_size
+            agent_pov = False  # Still render full grid with highlights
+        elif obs_mode == "fog_of_war":
+            # Fog of war uses view cone mechanics for current visibility,
+            # but tracks explored cells across the episode
+            see_through_walls = False
+            agent_view_size = spec.rules.view_size
+            agent_pov = False
+        else:
+            see_through_walls = True
+            agent_view_size = 7
+            agent_pov = False
+
         # Create the base environment with core parameters
         # The CustomMiniGridEnv is initialized but not yet populated with task objects
         env = CustomMiniGridEnv(
@@ -96,6 +117,9 @@ class TaskParser:
             mission_text=spec.get_mission_text(),
             render_mode=self.render_mode,
             task_spec=spec,
+            see_through_walls=see_through_walls,
+            agent_view_size=agent_view_size,
+            agent_pov=agent_pov,
         )
 
         # Reset to initialize the grid structure
@@ -108,6 +132,10 @@ class TaskParser:
         # This adds all interactive objects (keys, doors, switches, etc.) to the grid
         # The order of placement matters for certain objects (e.g., gates before switches)
         self._populate_grid(env, spec)
+
+        # Initialize fog-of-war by marking initial visible cells as explored
+        if obs_mode in ("view_cone", "fog_of_war"):
+            env.update_explored()
 
         return env
 
@@ -225,6 +253,16 @@ class TaskParser:
         # Hazards (lava, pits, spikes) typically end the episode if touched
         for hazard in spec.mechanisms.hazards:
             env.place_hazard(hazard.position.x, hazard.position.y, hazard.hazard_type)
+
+        # Place teleporters
+        # Teleporters come in pairs (A, B). Stepping on A teleports agent to B (and vice versa if bidirectional)
+        for teleporter in spec.mechanisms.teleporters:
+            env.place_teleporter(
+                teleporter.id,
+                teleporter.position_a.x, teleporter.position_a.y,
+                teleporter.position_b.x, teleporter.position_b.y,
+                teleporter.bidirectional,
+            )
 
         # Set agent position (overwrite anything at start position)
         # This is done last to ensure the agent always spawns at the correct location,

@@ -6,21 +6,21 @@ Provides pluggable backend implementations for gridworld environments.
 Available Backends:
     MiniGridBackend: Standard MiniGrid (gymnasium) implementation
         - Square grid only
-        - Full MiniGrid feature set (keys, doors, switches, gates, hazards)
-        - Partial observability support
-        - No zones or teleporters
+        - Full mechanism set (keys, doors, switches, gates, blocks, hazards, teleporters)
+        - Partial observability: view cone + fog of war
+        - Well tested, production-ready
 
     MultiGridBackend: Custom multigrid with exotic tilings
-        - Square, hexagonal, and triangle tilings
+        - Square, hexagonal, triangle, 3-4-6-4, 4-8-8 tilings
         - Full mechanism set (keys, doors, switches, gates, hazards, teleporters, zones)
-        - No partial observability yet
+        - Partial observability: view cone + fog of war (BFS-based on adjacency graph)
 
 Feature Comparison (see base.py for full table):
     - MiniGrid: Best for standard square grid tasks, more mature/tested
     - MultiGrid: Required for hex/triangle tilings or zones/teleporters
 
 Usage:
-    from minigrid.backends import get_backend
+    from gridworld.backends import get_backend
 
     # Standard square grid
     backend = get_backend("minigrid", render_mode="rgb_array")

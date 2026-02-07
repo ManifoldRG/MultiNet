@@ -28,14 +28,14 @@ Architecture:
 
 Usage:
     # Option 1: Use MiniGridBackend (gymnasium-based, recommended for MVP)
-    from minigrid.backends import MiniGridBackend
+    from gridworld.backends import MiniGridBackend
     backend = MiniGridBackend(render_mode="rgb_array")
     backend.configure(task_spec)
     obs, state, info = backend.reset(seed=42)
     obs, reward, terminated, truncated, state, info = backend.step(action)
 
     # Option 2: Use MultiGridBackend (custom tilings: square, hex, triangle)
-    from minigrid.backends import MultiGridBackend
+    from gridworld.backends import MultiGridBackend
     backend = MultiGridBackend(tiling="triangle", render_mode="rgb_array")
     backend.configure(task_spec)
     # ... same interface as above
@@ -68,6 +68,8 @@ The two backends have different feature support. Choose based on your needs:
       Square grid        | ✓               | ✓
       Hexagonal grid     | ✗               | ✓
       Triangle grid      | ✗               | ✓
+      3-4-6-4            | ✗               | ✓
+      4-8-8              | ✗               | ✓
     Objects:             |                 |
       Walls              | ✓               | ✓
       Movable/Blocks     | ✓               | ✓
@@ -76,11 +78,11 @@ The two backends have different feature support. Choose based on your needs:
       Switches           | ✓               | ✓
       Gates              | ✓               | ✓
       Hazards (Lava)     | ✓               | ✓
-      Teleporters        | ✗               | ✓
+      Teleporters        | ✓               | ✓
       Zones (targets)    | ✗               | ✓
     Features:            |                 |
-      Partial obs        | ✓               | ✗ (planned)
-      Memory tasks       | ✓               | ✗ (planned)
+      Partial obs (cone) | ✓               | ✓
+      Fog of war         | ✓               | ✓
       Mature/tested      | ✓               | ✗ (newer)
 
     Recommendation:
@@ -127,9 +129,15 @@ class GridState:
     active_switches: set[str] = field(default_factory=set)  # IDs of active switches
     open_gates: set[str] = field(default_factory=set)  # IDs of open gates
     block_positions: dict[str, tuple[int, int]] = field(default_factory=dict)  # block_id -> position
+    teleporter_cooldowns: dict[str, int] = field(default_factory=dict)  # teleporter_id -> cooldown
 
     # Goal state
     goal_reached: bool = False
+
+    # Observability state
+    observability_mode: str = "full"  # "full", "view_cone", "fog_of_war"
+    visible_cells: set[tuple[int, int]] = field(default_factory=set)  # Currently visible cells
+    explored_cells: set[tuple[int, int]] = field(default_factory=set)  # All ever-seen cells (fog_of_war)
 
     def to_dict(self) -> dict:
         """Convert state to dictionary for serialization."""
@@ -147,7 +155,11 @@ class GridState:
             "active_switches": list(self.active_switches),
             "open_gates": list(self.open_gates),
             "block_positions": {k: list(v) for k, v in self.block_positions.items()},
+            "teleporter_cooldowns": self.teleporter_cooldowns,
             "goal_reached": self.goal_reached,
+            "observability_mode": self.observability_mode,
+            "visible_cells": [list(c) for c in self.visible_cells],
+            "explored_cells": [list(c) for c in self.explored_cells],
         }
 
     @classmethod
@@ -167,7 +179,11 @@ class GridState:
             active_switches=set(d.get("active_switches", [])),
             open_gates=set(d.get("open_gates", [])),
             block_positions={k: tuple(v) for k, v in d.get("block_positions", {}).items()},
+            teleporter_cooldowns=d.get("teleporter_cooldowns", {}),
             goal_reached=d.get("goal_reached", False),
+            observability_mode=d.get("observability_mode", "full"),
+            visible_cells={tuple(c) for c in d.get("visible_cells", [])},
+            explored_cells={tuple(c) for c in d.get("explored_cells", [])},
         )
 
 

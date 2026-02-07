@@ -30,8 +30,8 @@ pip install minigrid gymnasium
 ### Usage
 
 ```python
-from minigrid.backends import MiniGridBackend
-from minigrid.task_spec import TaskSpecification
+from gridworld.backends import MiniGridBackend
+from gridworld.task_spec import TaskSpecification
 
 # Load task specification
 spec = TaskSpecification.from_json("tasks/tier2/single_key_001.json")
@@ -115,8 +115,8 @@ Custom implementation supporting arbitrary grid topologies (square, hexagonal, t
 ### Usage
 
 ```python
-from minigrid.backends import MultiGridBackend
-from minigrid.task_spec import TaskSpecification
+from gridworld.backends import MultiGridBackend
+from gridworld.task_spec import TaskSpecification
 
 # Load task specification
 spec = TaskSpecification.from_json("tasks/tier2/single_key_001.json")
@@ -446,7 +446,7 @@ Both backends use the same JSON task specification format:
 ### Factory Function
 
 ```python
-from minigrid.backends import get_backend
+from gridworld.backends import get_backend
 
 # Standard square grid
 backend = get_backend("minigrid", render_mode="rgb_array")
@@ -502,9 +502,9 @@ Tasks are organized into difficulty tiers:
 ## Example: Running Evaluation
 
 ```python
-from minigrid.backends import get_backend
-from minigrid.task_spec import TaskSpecification
-from minigrid.runner import GridRunner
+from gridworld.backends import get_backend
+from gridworld.task_spec import TaskSpecification
+from gridworld.runner import GridRunner
 
 # Load tasks
 tasks = [
@@ -537,7 +537,7 @@ print(f"Success rate: {success_rate:.2%}")
 ## Files Reference
 
 ```
-src/v1_1/minigrid/
+src/v1_1/gridworld/
 ├── __init__.py
 ├── task_spec.py              # TaskSpecification dataclass
 ├── task_parser.py            # JSON → environment parser
