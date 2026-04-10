@@ -6,13 +6,10 @@ Parses TaskSpecification JSON files and creates configured MiniGrid environments
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Optional, Union
 
-import gymnasium as gym
-
-from .task_spec import TaskSpecification, Position
+from .task_spec import TaskSpecification
 from .custom_env import CustomMiniGridEnv
 
 
@@ -242,6 +239,8 @@ class TaskParser:
                 switch.position.y,
                 switch.id,
                 switch.controls,  # List of gate IDs this switch controls
+                switch.switch_type,
+                switch.initial_state,
             )
 
         # Place blocks

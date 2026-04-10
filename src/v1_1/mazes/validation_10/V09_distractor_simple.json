@@ -1,0 +1,126 @@
+{
+  "task_id": "validation_10_v09_distractor_simple",
+  "version": "2.0",
+  "seed": 109,
+  "difficulty_tier": 3,
+  "description": "The red key-door chain is critical, but two wrong-color keys sit in dead-end side rooms off the main dungeon route.",
+  "maze": {
+    "dimensions": [
+      16,
+      12
+    ],
+    "walls": [
+      [1, 4], [1, 5], [1, 6], [1, 7], [1, 8], [1, 9], [1, 10],
+      [2, 4], [2, 5], [2, 6], [2, 7], [2, 8], [2, 9], [2, 10],
+      [3, 4], [3, 5], [3, 6], [3, 7], [3, 8], [3, 9], [3, 10],
+      [4, 1], [4, 3], [4, 4], [4, 5], [4, 10],
+      [5, 4], [5, 5], [5, 10],
+      [6, 10],
+      [7, 4], [7, 5], [7, 10],
+      [8, 1], [8, 3], [8, 4], [8, 5],
+      [9, 6], [9, 7], [9, 8],
+      [10, 6], [10, 7], [10, 8],
+      [11, 6], [11, 7], [11, 8],
+      [12, 1], [12, 3], [12, 6], [12, 7], [12, 8], [12, 9], [12, 10],
+      [13, 1], [13, 3], [13, 4], [13, 5], [13, 6], [13, 7], [13, 8], [13, 9], [13, 10],
+      [14, 1], [14, 3], [14, 4], [14, 5], [14, 6], [14, 7], [14, 8], [14, 9], [14, 10]
+    ],
+    "start": [
+      1,
+      2
+    ],
+    "goal": [
+      14,
+      2
+    ]
+  },
+  "mechanisms": {
+    "keys": [
+      {
+        "id": "kR",
+        "position": [
+          5,
+          8
+        ],
+        "color": "red"
+      },
+      {
+        "id": "kY",
+        "position": [
+          11,
+          4
+        ],
+        "color": "yellow"
+      },
+      {
+        "id": "kB",
+        "position": [
+          10,
+          10
+        ],
+        "color": "blue"
+      }
+    ],
+    "doors": [
+      {
+        "id": "DR",
+        "position": [
+          9,
+          2
+        ],
+        "requires_key": "red",
+        "initial_state": "locked"
+      }
+    ],
+    "switches": [],
+    "gates": [],
+    "blocks": [],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": [],
+    "observability": "full",
+    "view_size": 7
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [
+      14,
+      2
+    ],
+    "auxiliary_conditions": []
+  },
+  "dependency_chain": {
+    "depth": 1,
+    "sequence": [
+      {
+        "step": 1,
+        "type": "key-door",
+        "element": "kR",
+        "unlocks": "DR"
+      }
+    ],
+    "notation": "kR -> DR -> G"
+  },
+  "distractors": [
+    {
+      "type": "wrong_color_key",
+      "element_id": "kY",
+      "description": "Yellow key in an upper dead-end chamber."
+    },
+    {
+      "type": "wrong_color_key",
+      "element_id": "kB",
+      "description": "Blue key in a lower dead-end chamber."
+    }
+  ],
+  "metadata": {
+    "chain_pattern": "key_door_with_dead_end_distractors",
+    "tiling": "square",
+    "wall_topology": "room_chain_with_dead_end_branches"
+  },
+  "max_steps": 220
+}

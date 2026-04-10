@@ -106,30 +106,8 @@ class MultiGridBackend(AbstractGridBackend):
         format (used for consistency across backends) and the MultiGrid-specific
         format required by the custom MultiGrid environment.
 
-        Key Differences Between Formats:
-        1. Coordinate System:
-           - MiniGrid: Integer grid coordinates (e.g., x=3, y=5)
-           - MultiGrid: Normalized [0,1] coordinates (e.g., x=0.375, y=0.625)
-
-        2. Object Representation:
-           - MiniGrid: Separate mechanism types (keys, doors, blocks)
-           - MultiGrid: Unified "objects" list with type field
-
-        3. Tiling Support:
-           - MiniGrid: Implicit square tiling
-           - MultiGrid: Explicit tiling type (square, hex, triangle)
-
-        Translation Strategy:
-        - Keys → "movable" objects (can be picked up)
-        - Doors → "wall" objects with color (blocking barriers)
-        - Blocks → "movable" objects (pushable)
-        - Switches/Gates → Not yet implemented in MultiGrid backend
-        - Positions → Normalized by dividing by grid dimensions
-
-        Note on Coordinate Normalization:
-        MultiGrid uses normalized [0,1] coordinates to support different tilings
-        uniformly. For example, in an 8x8 grid, position (4, 4) becomes (0.5, 0.5).
-        This allows the same task to be rendered on square, hex, or triangle grids.
+        This preserves the canonical TaskSpecification semantics by emitting the
+        corresponding native MultiGrid object types rather than degrading them.
 
         Args:
             spec: TaskSpecification from the minigrid module (standard format)
@@ -138,75 +116,129 @@ class MultiGridBackend(AbstractGridBackend):
             Dictionary in multigrid format ready for MultiGridEnv initialization
 
         Limitations:
-            - Switches and gates are not yet supported (MultiGrid enhancement needed)
-            - Teleporters not implemented
-            - Hazards not implemented
-            - All objects except goal are treated as "movable" or "wall"
+            - Border cells are represented as explicit wall objects so square-grid
+              semantics match the MiniGrid backend.
         """
-        # Build walls list from maze layout
-        # Walls are kept in absolute coordinates as MultiGrid handles them specially
-        walls = [[w.x, w.y] for w in spec.maze.walls]
+        width, height = spec.maze.dimensions
+
+        def canonical_pos(x: int, y: int) -> dict:
+            return {
+                "x": (x + 0.5) / width,
+                "y": (y + 0.5) / height,
+            }
 
         # Build scene objects list
-        # All interactive objects are collected here with unified format
         objects = []
 
-        # Add keys as movable objects
-        # Keys can be picked up and carried by the agent
+        wall_positions = {(w.x, w.y) for w in spec.maze.walls}
+        for x in range(width):
+            wall_positions.add((x, 0))
+            wall_positions.add((x, height - 1))
+        for y in range(height):
+            wall_positions.add((0, y))
+            wall_positions.add((width - 1, y))
+
+        for x, y in sorted(wall_positions):
+            objects.append({
+                "id": f"wall_{x}_{y}",
+                "type": "wall",
+                "color": "grey",
+                "position": canonical_pos(x, y),
+            })
+
         for key in spec.mechanisms.keys:
             objects.append({
                 "id": key.id,
-                "type": "movable",
+                "type": "key",
                 "color": key.color,
-                # Normalize position to [0,1] range for MultiGrid
-                "position": {"x": key.position.x / spec.maze.dimensions[0],
-                            "y": key.position.y / spec.maze.dimensions[1]}
+                "position": canonical_pos(key.position.x, key.position.y),
             })
 
-        # Add doors as walls (or special handling)
-        # Doors are treated as colored walls in the current MultiGrid implementation
-        # TODO: Enhance MultiGrid to support door unlocking mechanics
         for door in spec.mechanisms.doors:
             objects.append({
                 "id": door.id,
-                "type": "wall",  # Doors are blocking barriers
-                "color": door.requires_key,  # Color indicates which key unlocks it
-                "position": {"x": door.position.x / spec.maze.dimensions[0],
-                            "y": door.position.y / spec.maze.dimensions[1]}
+                "type": "door",
+                "color": door.requires_key,
+                "position": canonical_pos(door.position.x, door.position.y),
+                "is_locked": door.initial_state == "locked",
             })
 
-        # Add blocks as movable objects
-        # Blocks can be pushed by the agent (Sokoban-style)
+        for switch in spec.mechanisms.switches:
+            objects.append({
+                "id": switch.id,
+                "type": "switch",
+                "color": "yellow",
+                "position": canonical_pos(switch.position.x, switch.position.y),
+                "controls": switch.controls,
+                "switch_type": switch.switch_type,
+                "initial_state": switch.initial_state == "on",
+            })
+
+        for gate in spec.mechanisms.gates:
+            controlled_by = [
+                switch.id for switch in spec.mechanisms.switches if gate.id in switch.controls
+            ]
+            objects.append({
+                "id": gate.id,
+                "type": "gate",
+                "color": "grey",
+                "position": canonical_pos(gate.position.x, gate.position.y),
+                "is_open": gate.initial_state == "open",
+                "controlled_by": controlled_by,
+            })
+
         for block in spec.mechanisms.blocks:
             objects.append({
                 "id": block.id,
                 "type": "movable",
-                "color": "grey",  # Default block color
-                "position": {"x": block.position.x / spec.maze.dimensions[0],
-                            "y": block.position.y / spec.maze.dimensions[1]}
+                "color": block.color,
+                "position": canonical_pos(block.position.x, block.position.y),
             })
 
-        # Build goal specification
-        # MultiGrid supports multiple goal types with different win conditions
+        for hazard in spec.mechanisms.hazards:
+            objects.append({
+                "id": hazard.id,
+                "type": "hazard",
+                "color": "red",
+                "position": canonical_pos(hazard.position.x, hazard.position.y),
+                "hazard_type": hazard.hazard_type,
+            })
+
+        for teleporter in spec.mechanisms.teleporters:
+            a_id = f"{teleporter.id}_a"
+            b_id = f"{teleporter.id}_b"
+            objects.append({
+                "id": a_id,
+                "type": "teleporter",
+                "color": "purple",
+                "position": canonical_pos(teleporter.position_a.x, teleporter.position_a.y),
+                "linked_to": b_id,
+            })
+            objects.append({
+                "id": b_id,
+                "type": "teleporter",
+                "color": "purple",
+                "position": canonical_pos(teleporter.position_b.x, teleporter.position_b.y),
+                "linked_to": a_id if teleporter.bidirectional else None,
+            })
+
         goal_spec = {}
         if spec.goal:
             if spec.goal.goal_type == "reach_position":
-                # Win by reaching a specific position
+                goal_target = spec.goal.target or spec.maze.goal
                 goal_spec = {
                     "type": "reach_position",
                     "target": {
-                        "x": spec.goal.target.x / spec.maze.dimensions[0],
-                        "y": spec.goal.target.y / spec.maze.dimensions[1]
+                        "x": (goal_target.x + 0.5) / width,
+                        "y": (goal_target.y + 0.5) / height,
                     }
                 }
             elif spec.goal.goal_type == "collect_all":
-                # Win by collecting all specified objects
                 goal_spec = {
                     "type": "collect_all",
                     "target_ids": spec.goal.target_ids
                 }
             elif spec.goal.goal_type == "push_block_to":
-                # Win by pushing blocks to target positions (Sokoban-style)
                 goal_spec = {
                     "type": "push_block_to",
                     "target_ids": spec.goal.target_ids,
@@ -231,19 +263,22 @@ class MultiGridBackend(AbstractGridBackend):
             "scene": {
                 "agent": {
                     "position": {
-                        # Agent start position in normalized coordinates
-                        "x": spec.maze.start.x / spec.maze.dimensions[0],
-                        "y": spec.maze.start.y / spec.maze.dimensions[1]
+                        "x": (spec.maze.start.x + 0.5) / width,
+                        "y": (spec.maze.start.y + 0.5) / height,
                     },
                     "facing": 0  # Default direction (right)
                 },
                 "objects": objects,
-                "walls": walls
             },
             "goal": goal_spec,
+            "rules": {
+                "key_consumption": spec.rules.key_consumption,
+                "switch_type": spec.rules.switch_type,
+            },
             "limits": {
                 "max_steps": spec.max_steps
-            }
+            },
+            "metadata": spec.metadata or {},
         }
 
     def reset(self, seed: Optional[int] = None) -> tuple[np.ndarray, GridState, dict]:
@@ -328,8 +363,8 @@ class MultiGridBackend(AbstractGridBackend):
             2: 0,  # forward -> FORWARD
             3: 4,  # pickup -> PICKUP
             4: 5,  # drop -> DROP
-            5: 6,  # toggle -> PUSH (closest equivalent)
-            6: 7,  # done -> WAIT
+            5: 6,  # toggle -> TOGGLE
+            6: 8,  # done -> WAIT
         }
 
         # Get MultiGrid action index, default to WAIT if action invalid
@@ -427,10 +462,13 @@ class MultiGridBackend(AbstractGridBackend):
         if state.agent.holding is not None:
             carrying = state.agent.holding.id
 
+        block_ids = {block.id for block in self.task_spec.mechanisms.blocks}
+        key_ids = {key.id for key in self.task_spec.mechanisms.keys}
+
         # Build block positions
         block_positions = {}
         for obj_id, obj in state.objects.items():
-            if obj.obj_type == "movable" and obj.cell_id is not None:
+            if obj_id in block_ids and obj.obj_type == "movable" and obj.cell_id is not None:
                 pos = tiling.cell_to_canonical(obj.cell_id)
                 block_positions[obj_id] = (
                     int(pos[0] * self.task_spec.maze.dimensions[0]),
@@ -451,13 +489,40 @@ class MultiGridBackend(AbstractGridBackend):
                 pos = tiling.cell_to_canonical(cell_id)
                 explored_xy.add((int(pos[0] * dims[0]), int(pos[1] * dims[1])))
 
+        open_doors = {
+            obj.id for obj in state.objects.values()
+            if obj.obj_type == "door" and getattr(obj, "is_open", False)
+        }
+        active_switches = {
+            obj.id for obj in state.objects.values()
+            if obj.obj_type == "switch" and getattr(obj, "is_active", False)
+        }
+        open_gates = {
+            obj.id for obj in state.objects.values()
+            if obj.obj_type == "gate" and getattr(obj, "is_open", False)
+        }
+        collected_keys = key_ids - {
+            obj.id for obj in state.objects.values()
+            if obj.obj_type == "key"
+        }
+        teleporter_cooldowns = {
+            obj.id: getattr(obj, "current_cooldown", 0)
+            for obj in state.objects.values()
+            if obj.obj_type == "teleporter"
+        }
+
         return GridState(
             agent_position=grid_pos,
             agent_direction=state.agent.facing,
             agent_carrying=carrying,
             step_count=self._step_count,
             max_steps=self._max_steps,
+            open_doors=open_doors,
+            collected_keys=collected_keys,
+            active_switches=active_switches,
+            open_gates=open_gates,
             block_positions=block_positions,
+            teleporter_cooldowns=teleporter_cooldowns,
             goal_reached=state.check_goal(),
             observability_mode=obs_mode,
             visible_cells=visible_xy,

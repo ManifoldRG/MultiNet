@@ -10,6 +10,10 @@ from __future__ import annotations
 import numpy as np
 from typing import Optional, Any
 
+from .bootstrap import disable_gymnasium_env_plugins
+
+disable_gymnasium_env_plugins()
+
 # Import from gymnasium's minigrid package (no naming conflict after rename to gridworld/)
 from minigrid.core.grid import Grid
 from minigrid.core.mission import MissionSpace
@@ -37,20 +41,49 @@ class Switch(Ball):
     Rendered as a ball with special interaction behavior.
     """
 
-    def __init__(self, color: str = "yellow", switch_id: str = "", controls: list[str] = None):
+    def __init__(
+        self,
+        color: str = "yellow",
+        switch_id: str = "",
+        controls: list[str] = None,
+        switch_type: str = "toggle",
+        initial_state: str = "off",
+    ):
         super().__init__(color)
         self.switch_id = switch_id
         self.controls = controls or []
-        self.is_active = False
+        self.switch_type = switch_type
+        self.is_active = initial_state == "on"
+        self.used = self.is_active and switch_type == "one_shot"
 
     def can_pickup(self):
         return False
 
-    def toggle(self, env, pos):
-        """Toggle the switch state and update controlled gates."""
+    def can_overlap(self):
+        return self.switch_type == "hold"
+
+    def activate(self):
+        """Apply switch-type-specific activation semantics."""
+        if self.switch_type == "one_shot":
+            if self.used:
+                return False
+            self.used = True
+            self.is_active = True
+            return True
+        if self.switch_type == "hold":
+            if not self.is_active:
+                self.is_active = True
+                return True
+            return False
         self.is_active = not self.is_active
-        # Gate toggling is handled by the environment
         return True
+
+    def deactivate(self):
+        """Deactivate hold-type switches when the agent leaves the tile."""
+        if self.switch_type == "hold" and self.is_active:
+            self.is_active = False
+            return True
+        return False
 
 
 class Gate(Door):
@@ -156,6 +189,7 @@ class CustomMiniGridEnv(MiniGridEnv):
         self.blocks: dict[str, PushableBlock] = {}
         self.teleporters: dict[str, TeleporterObj] = {}
         self.switch_gate_map: dict[str, list[str]] = {}  # switch_id -> [gate_ids]
+        self.gate_initial_state: dict[str, bool] = {}
 
         # Fog of war tracking: set of (x, y) cells the agent has visited/seen
         self.explored_cells: set[tuple[int, int]] = set()
@@ -220,17 +254,34 @@ class CustomMiniGridEnv(MiniGridEnv):
         door = Door(color, is_locked=is_locked)
         self.grid.set(x, y, door)
 
-    def place_switch(self, x: int, y: int, switch_id: str, controls: list[str], color: str = "yellow"):
+    def place_switch(
+        self,
+        x: int,
+        y: int,
+        switch_id: str,
+        controls: list[str],
+        switch_type: str = "toggle",
+        initial_state: str = "off",
+        color: str = "yellow",
+    ):
         """Place a switch at the given position."""
-        switch = Switch(color=color, switch_id=switch_id, controls=controls)
+        switch = Switch(
+            color=color,
+            switch_id=switch_id,
+            controls=controls,
+            switch_type=switch_type,
+            initial_state=initial_state,
+        )
         self.switches[switch_id] = switch
         self.switch_gate_map[switch_id] = controls
         self.put_obj(switch, x, y)
+        self._refresh_gates()
 
     def place_gate(self, x: int, y: int, gate_id: str, is_open: bool = False, color: str = "grey"):
         """Place a gate at the given position."""
         gate = Gate(color=color, gate_id=gate_id, is_open=is_open)
         self.gates[gate_id] = gate
+        self.gate_initial_state[gate_id] = is_open
         self.grid.set(x, y, gate)
 
     def place_block(self, x: int, y: int, block_id: str, color: str = "grey"):
@@ -273,6 +324,30 @@ class CustomMiniGridEnv(MiniGridEnv):
             gate = self.gates[gate_id]
             gate.is_open = not gate.is_open
 
+    def _refresh_gates(self):
+        """Recompute gate states from initial configuration and switch activity."""
+        for gate_id, gate in self.gates.items():
+            is_open = self.gate_initial_state.get(gate_id, False)
+            for switch_id, controls in self.switch_gate_map.items():
+                switch = self.switches.get(switch_id)
+                if switch is not None and gate_id in controls and switch.is_active:
+                    is_open = True
+            gate.is_open = is_open
+
+    def _update_hold_switches(self):
+        """Keep hold-type switches active only while the agent stands on them."""
+        changed = False
+        for x in range(self.width):
+            for y in range(self.height):
+                cell = self.grid.get(x, y)
+                if isinstance(cell, Switch) and cell.switch_type == "hold":
+                    if (x, y) == self.agent_pos:
+                        changed = cell.activate() or changed
+                    else:
+                        changed = cell.deactivate() or changed
+        if changed:
+            self._refresh_gates()
+
     def step(self, action: int):
         """Execute one step in the environment with custom mechanics."""
         # Get the position in front of the agent
@@ -307,11 +382,12 @@ class CustomMiniGridEnv(MiniGridEnv):
 
         # Handle switch interaction
         if action == self.actions.toggle and isinstance(fwd_cell, Switch):
-            # Toggle the switch
-            fwd_cell.is_active = not fwd_cell.is_active
-            # Toggle all controlled gates
-            for gate_id in fwd_cell.controls:
-                self.toggle_gate(gate_id)
+            if not fwd_cell.activate():
+                self.step_count += 1
+                truncated = self.step_count >= self.max_steps
+                obs = self.gen_obs()
+                return obs, 0, False, truncated, {"invalid_action": True}
+            self._refresh_gates()
             # Return after handling (don't fall through to super which would re-toggle)
             self.step_count += 1
             truncated = self.step_count >= self.max_steps
@@ -367,6 +443,8 @@ class CustomMiniGridEnv(MiniGridEnv):
 
         # Default behavior
         obs, reward, terminated, truncated, info = super().step(action)
+        if action == self.actions.forward:
+            self._update_hold_switches()
 
         # Tick teleporter cooldowns
         for tp in self.teleporters.values():

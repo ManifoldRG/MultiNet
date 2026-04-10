@@ -9,6 +9,10 @@ This module provides a complete gridworld evaluation domain with:
 - Evaluation module following GenESIS patterns
 """
 
+from .bootstrap import disable_gymnasium_env_plugins
+
+disable_gymnasium_env_plugins()
+
 from .task_spec import (
     Position,
     KeySpec,
@@ -18,6 +22,9 @@ from .task_spec import (
     BlockSpec,
     HazardSpec,
     TeleporterSpec,
+    DependencyStep,
+    DependencyChain,
+    Distractor,
     MazeLayout,
     MechanismSet,
     Rules,
@@ -38,6 +45,9 @@ __all__ = [
     "BlockSpec",
     "HazardSpec",
     "TeleporterSpec",
+    "DependencyStep",
+    "DependencyChain",
+    "Distractor",
     "MazeLayout",
     "MechanismSet",
     "Rules",

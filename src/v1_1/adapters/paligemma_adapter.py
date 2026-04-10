@@ -16,7 +16,10 @@ import re
 import numpy as np
 from PIL import Image
 
-from ..model_interface import ModelInterface, ModelInput, ModelOutput
+try:
+    from ..model_interface import ModelInterface, ModelInput, ModelOutput
+except ImportError:
+    from model_interface import ModelInterface, ModelInput, ModelOutput
 
 
 class PaliGemmaMiniGridAdapter(ModelInterface):
@@ -27,8 +30,9 @@ class PaliGemmaMiniGridAdapter(ModelInterface):
     via the transformers library.
     """
 
-    def __init__(self, model_id: str = "google/paligemma2-3b-pt-896"):
+    def __init__(self, model_id: str = "google/paligemma2-3b-pt-896", max_new_tokens: int = 32):
         self.model_id = model_id
+        self.max_new_tokens = max_new_tokens
         self.model = None
         self.processor = None
         self.device = "cpu"
@@ -81,7 +85,7 @@ class PaliGemmaMiniGridAdapter(ModelInterface):
         with torch.no_grad():
             output_ids = self.model.generate(
                 **inputs,
-                max_new_tokens=32,
+                max_new_tokens=self.max_new_tokens,
                 do_sample=False,
             )
 

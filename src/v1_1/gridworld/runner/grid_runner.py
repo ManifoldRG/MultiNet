@@ -141,7 +141,7 @@ class GridRunner:
     def run_episode(
         self,
         task_spec: TaskSpecification,
-        policy_fn: Optional[Callable[[np.ndarray, GridState, str], int]] = None,
+        policy_fn: Optional[Callable[[np.ndarray, GridState, str], Any]] = None,
         seed: Optional[int] = None,
         record_trajectory: bool = True,
         verbose: bool = False,
@@ -184,14 +184,23 @@ class GridRunner:
 
         while not terminated and not truncated:
             # Get action from policy or random
+            policy_info = {}
             if policy_fn is not None:
-                action = policy_fn(obs, state, mission)
+                policy_result = policy_fn(obs, state, mission)
+                if isinstance(policy_result, tuple):
+                    action = int(policy_result[0])
+                    if len(policy_result) > 1 and isinstance(policy_result[1], dict):
+                        policy_info = policy_result[1]
+                else:
+                    action = int(policy_result)
             else:
                 # Random policy with explicit seed
                 action = rng.randint(0, 7)
 
             # Execute action
             next_obs, reward, terminated, truncated, next_state, info = self.backend.step(action)
+            if policy_info:
+                info = {**info, **policy_info}
             total_reward += reward
             step += 1
 

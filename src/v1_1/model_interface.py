@@ -25,6 +25,7 @@ class ModelInput:
     step_number: int
     max_steps: int
     additional_context: str | None = None
+    prior_images: list[np.ndarray] | None = None
 
 
 @dataclass

@@ -245,6 +245,56 @@ class GoalSpec:
 
 
 @dataclass
+class DependencyStep:
+    """One mechanism step in a dependency chain."""
+    step: int
+    type: str
+    element: str
+    unlocks: str
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "DependencyStep":
+        return cls(
+            step=d["step"],
+            type=d["type"],
+            element=d["element"],
+            unlocks=d["unlocks"],
+        )
+
+
+@dataclass
+class DependencyChain:
+    """Structured dependency chain metadata for mechanism ordering."""
+    depth: int
+    sequence: list[DependencyStep]
+    notation: str
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "DependencyChain":
+        return cls(
+            depth=d["depth"],
+            sequence=[DependencyStep.from_dict(step) for step in d.get("sequence", [])],
+            notation=d.get("notation", ""),
+        )
+
+
+@dataclass
+class Distractor:
+    """Machine-readable distractor annotation."""
+    type: str
+    element_id: str
+    description: str
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Distractor":
+        return cls(
+            type=d["type"],
+            element_id=d["element_id"],
+            description=d.get("description", ""),
+        )
+
+
+@dataclass
 class TaskSpecification:
     """Complete task specification for a gridworld puzzle."""
     task_id: str
@@ -255,6 +305,9 @@ class TaskSpecification:
     rules: Rules
     goal: GoalSpec
     max_steps: int
+    dependency_chain: Optional[DependencyChain] = None
+    distractors: Optional[list[Distractor]] = None
+    metadata: Optional[dict[str, Any]] = None
     version: str = "1.0"
     description: str = ""  # Human-readable task description
 
@@ -292,6 +345,13 @@ class TaskSpecification:
         mechanisms = MechanismSet.from_dict(mechanisms_data)
         rules = Rules.from_dict(d.get("rules", {}))
         goal = GoalSpec.from_dict(d.get("goal", {}))
+        dependency_chain = None
+        if d.get("dependency_chain"):
+            dependency_chain = DependencyChain.from_dict(d["dependency_chain"])
+        distractors = None
+        if d.get("distractors") is not None:
+            distractors = [Distractor.from_dict(item) for item in d.get("distractors", [])]
+        metadata = d.get("metadata")
 
         return cls(
             task_id=d.get("task_id", "unknown"),
@@ -302,6 +362,9 @@ class TaskSpecification:
             rules=rules,
             goal=goal,
             max_steps=d.get("max_steps", 100),
+            dependency_chain=dependency_chain,
+            distractors=distractors,
+            metadata=metadata,
             version=d.get("version", "1.0"),
             description=d.get("description", "")
         )
@@ -318,7 +381,7 @@ class TaskSpecification:
         def pos_to_list(p: Position) -> list[int]:
             return [p.x, p.y]
 
-        return {
+        data = {
             "task_id": self.task_id,
             "version": self.version,
             "seed": self.seed,
@@ -356,6 +419,32 @@ class TaskSpecification:
             },
             "max_steps": self.max_steps
         }
+        if self.dependency_chain is not None:
+            data["dependency_chain"] = {
+                "depth": self.dependency_chain.depth,
+                "sequence": [
+                    {
+                        "step": step.step,
+                        "type": step.type,
+                        "element": step.element,
+                        "unlocks": step.unlocks,
+                    }
+                    for step in self.dependency_chain.sequence
+                ],
+                "notation": self.dependency_chain.notation,
+            }
+        if self.distractors is not None:
+            data["distractors"] = [
+                {
+                    "type": distractor.type,
+                    "element_id": distractor.element_id,
+                    "description": distractor.description,
+                }
+                for distractor in self.distractors
+            ]
+        if self.metadata is not None:
+            data["metadata"] = self.metadata
+        return data
 
     def to_json(self, path: str) -> None:
         """Save task specification to JSON file."""
@@ -440,6 +529,20 @@ class TaskSpecification:
         # Check max_steps
         if self.max_steps < 1:
             errors.append(f"Invalid max_steps: {self.max_steps}, must be positive")
+
+        if self.dependency_chain is not None:
+            if self.dependency_chain.depth != len(self.dependency_chain.sequence):
+                errors.append(
+                    "Dependency chain depth does not match sequence length"
+                )
+            expected_step = 1
+            for step in self.dependency_chain.sequence:
+                if step.step != expected_step:
+                    errors.append(
+                        f"Dependency chain step numbering is invalid at step {step.step}"
+                    )
+                    break
+                expected_step += 1
 
         return len(errors) == 0, errors
 

@@ -22,11 +22,21 @@ from .task_spec import TaskSpecification, Position
 class ValidatorState:
     """Immutable state for BFS search."""
     agent_pos: tuple[int, int]
-    inventory: frozenset  # set of key colors held
+    carrying_key: Optional[str]  # key id currently held
+    collected_keys: frozenset  # key ids removed from the map
     active_switches: frozenset  # set of switch ids that are on
+    used_switches: frozenset  # one-shot switches already used
     open_gates: frozenset  # set of gate ids that are open
     open_doors: frozenset  # set of door ids that are open
     block_positions: frozenset  # frozenset of (block_id, x, y) tuples
+
+
+@dataclass(frozen=True)
+class SuccessorTransition:
+    """One abstract transition in validator state space."""
+    next_state: ValidatorState
+    next_pos: tuple[int, int]
+    action_label: str
 
 
 class TaskValidator:
@@ -69,8 +79,10 @@ class TaskValidator:
             }
 
         self.gates: dict[tuple[int, int], str] = {}
+        self.gate_states: dict[str, bool] = {}
         for gate in spec.mechanisms.gates:
             self.gates[(gate.position.x, gate.position.y)] = gate.id
+            self.gate_states[gate.id] = gate.initial_state == "open"
 
         self.gate_initial_open: set[str] = set()
         for gate in spec.mechanisms.gates:
@@ -82,11 +94,20 @@ class TaskValidator:
             self.switches[(switch.position.x, switch.position.y)] = {
                 "id": switch.id,
                 "controls": switch.controls,
+                "switch_type": switch.switch_type,
+                "initial_state": switch.initial_state,
             }
 
-        self.keys: dict[tuple[int, int], str] = {}
+        self.switches_by_id: dict[str, dict] = {
+            sw["id"]: sw for sw in self.switches.values()
+        }
+
+        self.keys: dict[tuple[int, int], dict] = {}
+        self.keys_by_id: dict[str, dict] = {}
         for key in spec.mechanisms.keys:
-            self.keys[(key.position.x, key.position.y)] = key.color
+            data = {"id": key.id, "color": key.color, "position": (key.position.x, key.position.y)}
+            self.keys[(key.position.x, key.position.y)] = data
+            self.keys_by_id[key.id] = data
 
         self.blocks: dict[tuple[int, int], str] = {}
         for block in spec.mechanisms.blocks:
@@ -108,6 +129,200 @@ class TaskValidator:
         self.start = (spec.maze.start.x, spec.maze.start.y)
         self.key_consumption = spec.rules.key_consumption
 
+    def _recompute_open_gates(self, active_switches: frozenset) -> frozenset:
+        """Recompute gate openness from initial state and current switch activity."""
+        open_gates = set(
+            gate_id for gate_id, is_open in self.gate_states.items() if is_open
+        )
+        for sw in self.switches.values():
+            if sw["id"] in active_switches:
+                open_gates.update(sw["controls"])
+        return frozenset(open_gates)
+
+    def _apply_switch_activation(
+        self,
+        state: ValidatorState,
+        switch_info: dict,
+    ) -> Optional[tuple[frozenset, frozenset, frozenset]]:
+        """Apply switch semantics and return updated (active, used, open_gates)."""
+        switch_id = switch_info["id"]
+        switch_type = switch_info.get("switch_type", "toggle")
+        active = set(state.active_switches)
+        used = set(state.used_switches)
+
+        if switch_type == "one_shot":
+            if switch_id in used:
+                return None
+            used.add(switch_id)
+            active.add(switch_id)
+        elif switch_type == "hold":
+            active.add(switch_id)
+        else:
+            if switch_id in active:
+                active.remove(switch_id)
+            else:
+                active.add(switch_id)
+
+        active_fs = frozenset(active)
+        return active_fs, frozenset(used), self._recompute_open_gates(active_fs)
+
+    def _successors(self, state: ValidatorState) -> list[SuccessorTransition]:
+        """Generate abstract successor transitions from a validator state."""
+        successors: list[SuccessorTransition] = []
+
+        for dx, dy, move_label in [
+            (0, -1, "move_up"),
+            (0, 1, "move_down"),
+            (-1, 0, "move_left"),
+            (1, 0, "move_right"),
+        ]:
+            nx, ny = state.agent_pos[0] + dx, state.agent_pos[1] + dy
+
+            if not (0 <= nx < self.width and 0 <= ny < self.height):
+                continue
+
+            next_pos = (nx, ny)
+            if next_pos in self.walls or next_pos in self.hazards:
+                continue
+
+            block_dict = {(bx, by): bid for bid, bx, by in state.block_positions}
+
+            new_carrying_key = state.carrying_key
+            new_collected_keys = state.collected_keys
+            new_open_doors = state.open_doors
+            new_block_positions = state.block_positions
+            action_label = move_label
+
+            if next_pos in self.doors:
+                door_info = self.doors[next_pos]
+                if door_info["id"] not in state.open_doors:
+                    held_color = None
+                    if state.carrying_key is not None:
+                        held_color = self.keys_by_id[state.carrying_key]["color"]
+                    if held_color == door_info["color"]:
+                        new_open_doors = state.open_doors | {door_info["id"]}
+                        action_label = f"open_door:{door_info['id']}"
+                        if self.key_consumption:
+                            new_carrying_key = None
+                    else:
+                        continue
+
+            if next_pos in self.gates:
+                gate_id = self.gates[next_pos]
+                if gate_id not in state.open_gates:
+                    continue
+
+            if next_pos in block_dict:
+                push_x, push_y = nx + dx, ny + dy
+                push_pos = (push_x, push_y)
+                if (
+                    push_pos in self.walls
+                    or push_pos in block_dict
+                    or push_pos in self.doors
+                    or push_pos in self.gates
+                    or push_pos in self.hazards
+                    or not (0 <= push_x < self.width and 0 <= push_y < self.height)
+                ):
+                    continue
+                bid = block_dict[next_pos]
+                new_block_positions = (
+                    state.block_positions - {(bid, nx, ny)} | {(bid, push_x, push_y)}
+                )
+                action_label = f"push:{bid}:{push_x},{push_y}"
+
+            actual_pos = next_pos
+            if next_pos in self.teleporter_map:
+                actual_pos = self.teleporter_map[next_pos]
+                action_label = f"teleport:{next_pos}->{actual_pos}"
+
+            successor_variants = [
+                (new_carrying_key, new_collected_keys, action_label)
+            ]
+            if next_pos in self.keys:
+                key_info = self.keys[next_pos]
+                if key_info["id"] not in state.collected_keys and new_carrying_key is None:
+                    successor_variants.append(
+                        (
+                            key_info["id"],
+                            state.collected_keys | {key_info["id"]},
+                            f"pickup:{key_info['id']}",
+                        )
+                    )
+
+            for carrying_key, collected_keys, label in successor_variants:
+                successors.append(
+                    SuccessorTransition(
+                        next_state=ValidatorState(
+                            agent_pos=actual_pos,
+                            carrying_key=carrying_key,
+                            collected_keys=collected_keys,
+                            active_switches=state.active_switches,
+                            used_switches=state.used_switches,
+                            open_gates=state.open_gates,
+                            open_doors=new_open_doors,
+                            block_positions=new_block_positions,
+                        ),
+                        next_pos=actual_pos,
+                        action_label=label,
+                    )
+                )
+
+        for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+            target_pos = (state.agent_pos[0] + dx, state.agent_pos[1] + dy)
+            if target_pos not in self.switches:
+                continue
+            switch_info = self.switches[target_pos]
+            result = self._apply_switch_activation(state, switch_info)
+            if result is None:
+                continue
+            new_active, new_used_switches, new_open_gates = result
+            successors.append(
+                SuccessorTransition(
+                    next_state=ValidatorState(
+                        agent_pos=state.agent_pos,
+                        carrying_key=state.carrying_key,
+                        collected_keys=state.collected_keys,
+                        active_switches=new_active,
+                        used_switches=new_used_switches,
+                        open_gates=new_open_gates,
+                        open_doors=state.open_doors,
+                        block_positions=state.block_positions,
+                    ),
+                    next_pos=state.agent_pos,
+                    action_label=f"toggle:{switch_info['id']}",
+                )
+            )
+
+        return successors
+
+    def _find_solution(
+        self,
+        initial_state: ValidatorState,
+        goal: Optional[tuple[int, int]] = None,
+        max_states: int = 500_000,
+    ) -> tuple[bool, Optional[list[tuple[int, int]]], int]:
+        """Run BFS from an arbitrary validator state."""
+        target = self.goal if goal is None else goal
+        queue = deque([(initial_state, [initial_state.agent_pos])])
+        visited: set[ValidatorState] = {initial_state}
+        states_explored = 0
+
+        while queue:
+            if states_explored >= max_states:
+                return False, None, states_explored
+
+            state, path = queue.popleft()
+            states_explored += 1
+            if state.agent_pos == target:
+                return True, path, states_explored
+
+            for transition in self._successors(state):
+                if transition.next_state not in visited:
+                    visited.add(transition.next_state)
+                    queue.append((transition.next_state, path + [transition.next_pos]))
+
+        return False, None, states_explored
+
     def validate(self, max_states: int = 500_000) -> tuple[bool, Optional[list[tuple[int, int]]], str]:
         """
         Check if the task is beatable.
@@ -124,135 +339,370 @@ class TaskValidator:
             d["id"] for pos, d in self.doors.items() if not d["locked"]
         )
 
+        initial_active_switches = frozenset(
+            sw["id"] for sw in self.switches.values() if sw.get("initial_state") == "on"
+        )
+        initial_used_switches = frozenset(
+            sw["id"]
+            for sw in self.switches.values()
+            if sw.get("initial_state") == "on" and sw.get("switch_type") == "one_shot"
+        )
         initial_state = ValidatorState(
             agent_pos=self.start,
-            inventory=frozenset(),
-            active_switches=frozenset(),
-            open_gates=frozenset(self.gate_initial_open),
+            carrying_key=None,
+            collected_keys=frozenset(),
+            active_switches=initial_active_switches,
+            used_switches=initial_used_switches,
+            open_gates=self._recompute_open_gates(initial_active_switches),
             open_doors=initial_open_doors,
             block_positions=initial_block_pos,
         )
 
-        # BFS
-        queue = deque()
-        queue.append((initial_state, [self.start]))
-        visited: set[ValidatorState] = {initial_state}
-        states_explored = 0
+        beatable, path, states_explored = self._find_solution(initial_state, max_states=max_states)
+        if beatable:
+            return True, path, f"Solution found in {len(path)} steps ({states_explored} states explored)"
+        if states_explored >= max_states:
+            return False, None, f"State space exceeded {max_states} states without finding solution"
+        return False, None, f"No solution found ({states_explored} states explored, all reachable states checked)"
+
+    def _spec_without_mechanism(self, mechanism_id: str) -> TaskSpecification:
+        """Return a copy of the spec with a single mechanism removed by id."""
+        data = self.spec.to_dict()
+        mechanisms = data.get("mechanisms", {})
+        for key in ("keys", "doors", "switches", "gates", "blocks", "teleporters", "hazards"):
+            mechanisms[key] = [
+                item for item in mechanisms.get(key, [])
+                if item.get("id") != mechanism_id
+            ]
+        if data.get("dependency_chain"):
+            data["dependency_chain"]["sequence"] = [
+                step for step in data["dependency_chain"].get("sequence", [])
+                if step.get("element") != mechanism_id and step.get("unlocks") != mechanism_id
+            ]
+            data["dependency_chain"]["depth"] = len(data["dependency_chain"]["sequence"])
+        return TaskSpecification.from_dict(data)
+
+    def validate_mechanism_necessity(self) -> list[str]:
+        """Report mechanisms whose removal still leaves the task solvable."""
+        if self.spec.dependency_chain is not None:
+            mechanism_ids = [step.element for step in self.spec.dependency_chain.sequence]
+        else:
+            mechanism_ids = [
+                obj.id
+                for group in (
+                    self.spec.mechanisms.keys,
+                    self.spec.mechanisms.doors,
+                    self.spec.mechanisms.switches,
+                    self.spec.mechanisms.gates,
+                    self.spec.mechanisms.blocks,
+                    self.spec.mechanisms.teleporters,
+                    self.spec.mechanisms.hazards,
+                )
+                for obj in group
+            ]
+
+        violations = []
+        for mechanism_id in dict.fromkeys(mechanism_ids):
+            stripped_spec = self._spec_without_mechanism(mechanism_id)
+            beatable, _, _ = TaskValidator(stripped_spec).validate()
+            if beatable:
+                violations.append(f"Mechanism {mechanism_id} is not necessary")
+        return violations
+
+    def _spec_with_steps_triggered(self, steps: list) -> TaskSpecification:
+        """Return a copy of the spec with the provided dependency steps pre-triggered."""
+        data = self.spec.to_dict()
+        mechanisms = data.get("mechanisms", {})
+
+        for step in steps:
+            if step.type == "key-door":
+                for door in mechanisms.get("doors", []):
+                    if door.get("id") == step.unlocks:
+                        door["initial_state"] = "open"
+            elif step.type == "switch-gate":
+                for switch in mechanisms.get("switches", []):
+                    if switch.get("id") == step.element:
+                        switch["initial_state"] = "on"
+                for gate in mechanisms.get("gates", []):
+                    if gate.get("id") == step.unlocks:
+                        gate["initial_state"] = "open"
+        return TaskSpecification.from_dict(data)
+
+    def _get_element_position(self, element_id: str) -> Optional[tuple[int, int]]:
+        """Locate a mechanism by id and return its grid position."""
+        for group in (
+            self.spec.mechanisms.keys,
+            self.spec.mechanisms.doors,
+            self.spec.mechanisms.switches,
+            self.spec.mechanisms.gates,
+            self.spec.mechanisms.blocks,
+            self.spec.mechanisms.hazards,
+        ):
+            for obj in group:
+                if obj.id == element_id:
+                    return obj.position.to_tuple()
+        return None
+
+    def validate_chain_ordering(self) -> bool:
+        """Verify that each next chain element is unreachable until the prior step is triggered."""
+        if self.spec.dependency_chain is None or len(self.spec.dependency_chain.sequence) <= 1:
+            return True
+
+        sequence = self.spec.dependency_chain.sequence
+        for idx in range(len(sequence) - 1):
+            current_step = sequence[idx]
+            prior_steps = sequence[:idx]
+            next_step = sequence[idx + 1]
+            next_pos = self._get_element_position(next_step.element)
+            if next_pos is None:
+                return False
+            staged_spec = self._spec_with_steps_triggered(prior_steps)
+            staged_spec = TaskValidator(staged_spec)._spec_without_mechanism(current_step.element)
+            staged_data = staged_spec.to_dict()
+            staged_data["maze"]["goal"] = list(next_pos)
+            staged_data["goal"] = {"type": "reach_position", "target": list(next_pos)}
+            staged_target_spec = TaskSpecification.from_dict(staged_data)
+            beatable, _, _ = TaskValidator(staged_target_spec).validate()
+            if beatable:
+                return False
+        return True
+
+    def validate_distractor_safety(self) -> list[str]:
+        """Check whether a single distractor interaction can make the task unsolvable."""
+        if not self.spec.distractors:
+            return []
+
+        base_beatable, _, _ = self.validate()
+        if not base_beatable:
+            return ["Base task is not solvable"]
+
+        initial_block_pos = frozenset(
+            (bid, pos[0], pos[1]) for pos, bid in self.blocks.items()
+        )
+        initial_open_doors = frozenset(
+            d["id"] for _, d in self.doors.items() if not d["locked"]
+        )
+        initial_active_switches = frozenset(
+            sw["id"] for sw in self.switches.values() if sw.get("initial_state") == "on"
+        )
+        initial_used_switches = frozenset(
+            sw["id"]
+            for sw in self.switches.values()
+            if sw.get("initial_state") == "on" and sw.get("switch_type") == "one_shot"
+        )
+        initial_state = ValidatorState(
+            agent_pos=self.start,
+            carrying_key=None,
+            collected_keys=frozenset(),
+            active_switches=initial_active_switches,
+            used_switches=initial_used_switches,
+            open_gates=self._recompute_open_gates(initial_active_switches),
+            open_doors=initial_open_doors,
+            block_positions=initial_block_pos,
+        )
+
+        violations = []
+        for distractor in self.spec.distractors:
+            relevant_ids = self._distractor_candidate_ids(distractor)
+            queue = deque([initial_state])
+            visited = {initial_state}
+            found_interaction = False
+            unsafe = False
+
+            while queue:
+                state = queue.popleft()
+                for transition in self._successors(state):
+                    if transition.next_state not in visited:
+                        visited.add(transition.next_state)
+                        queue.append(transition.next_state)
+
+                    if not any(
+                        self._transition_matches_distractor(transition.action_label, candidate_id)
+                        for candidate_id in relevant_ids
+                    ):
+                        continue
+
+                    found_interaction = True
+                    beatable, _, _ = self._find_solution(transition.next_state)
+                    if (
+                        not beatable
+                        and distractor.type == "wrong_color_key"
+                        and transition.action_label.startswith("pickup:")
+                    ):
+                        dropped_state = ValidatorState(
+                            agent_pos=transition.next_state.agent_pos,
+                            carrying_key=None,
+                            collected_keys=transition.next_state.collected_keys,
+                            active_switches=transition.next_state.active_switches,
+                            used_switches=transition.next_state.used_switches,
+                            open_gates=transition.next_state.open_gates,
+                            open_doors=transition.next_state.open_doors,
+                            block_positions=transition.next_state.block_positions,
+                        )
+                        beatable, _, _ = self._find_solution(dropped_state)
+                    if not beatable:
+                        unsafe = True
+                        queue.clear()
+                        break
+
+                if unsafe:
+                    break
+
+            if unsafe or not found_interaction:
+                violations.append(f"Distractor {distractor.element_id} can break solvability")
+
+        return violations
+
+    def compute_fragility(self, depth_limit: int = 5) -> "FragilityReport":
+        """Bounded BFS over abstract transitions to find the shortest breaking sequence."""
+        initial_block_pos = frozenset(
+            (bid, pos[0], pos[1]) for pos, bid in self.blocks.items()
+        )
+        initial_open_doors = frozenset(
+            d["id"] for _, d in self.doors.items() if not d["locked"]
+        )
+        initial_active_switches = frozenset(
+            sw["id"] for sw in self.switches.values() if sw.get("initial_state") == "on"
+        )
+        initial_used_switches = frozenset(
+            sw["id"]
+            for sw in self.switches.values()
+            if sw.get("initial_state") == "on" and sw.get("switch_type") == "one_shot"
+        )
+        initial_state = ValidatorState(
+            agent_pos=self.start,
+            carrying_key=None,
+            collected_keys=frozenset(),
+            active_switches=initial_active_switches,
+            used_switches=initial_used_switches,
+            open_gates=self._recompute_open_gates(initial_active_switches),
+            open_doors=initial_open_doors,
+            block_positions=initial_block_pos,
+        )
+
+        queue = deque([(initial_state, [])])
+        visited: dict[ValidatorState, int] = {initial_state: 0}
+        breaking_sequences: list[list[str]] = []
+        min_steps_to_break = None
 
         while queue:
-            if states_explored >= max_states:
-                return False, None, f"State space exceeded {max_states} states without finding solution"
+            state, sequence = queue.popleft()
+            if min_steps_to_break is not None and len(sequence) >= min_steps_to_break:
+                continue
+            if len(sequence) >= depth_limit:
+                continue
 
-            state, path = queue.popleft()
-            states_explored += 1
+            for transition in self._successors(state):
+                next_sequence = list(sequence)
+                if self._is_irreversible_transition(state, transition):
+                    next_sequence = sequence + [transition.action_label]
+                next_irrev = len(next_sequence)
+                if next_irrev > depth_limit:
+                    continue
+                if transition.next_state in visited and visited[transition.next_state] <= next_irrev:
+                    continue
+                visited[transition.next_state] = next_irrev
 
-            # Check goal
-            if state.agent_pos == self.goal:
-                return True, path, f"Solution found in {len(path)} steps ({states_explored} states explored)"
-
-            # Generate successor states by moving in 4 directions
-            for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
-                nx, ny = state.agent_pos[0] + dx, state.agent_pos[1] + dy
-
-                if not (0 <= nx < self.width and 0 <= ny < self.height):
+                beatable, _, _ = self._find_solution(transition.next_state)
+                if not beatable and self._is_irreversible_transition(state, transition):
+                    min_steps_to_break = len(next_sequence) if min_steps_to_break is None else min(min_steps_to_break, len(next_sequence))
+                    if len(next_sequence) == min_steps_to_break:
+                        breaking_sequences.append(next_sequence)
                     continue
 
-                next_pos = (nx, ny)
+                queue.append((transition.next_state, next_sequence))
 
-                # Can't walk into walls
-                if next_pos in self.walls:
-                    continue
+        if min_steps_to_break is None:
+            return FragilityReport(
+                min_steps_to_break=-1,
+                breaking_sequences=[],
+                is_fragile=False,
+            )
 
-                # Can't walk into hazards
-                if next_pos in self.hazards:
-                    continue
+        return FragilityReport(
+            min_steps_to_break=min_steps_to_break,
+            breaking_sequences=breaking_sequences[:depth_limit],
+            is_fragile=min_steps_to_break <= 3,
+        )
 
-                # Current block positions as a dict for lookup
-                block_dict = {(bx, by): bid for bid, bx, by in state.block_positions}
+    def _transition_matches_distractor(self, action_label: str, element_id: str) -> bool:
+        """Check whether an action label interacted with a distractor element."""
+        if action_label.startswith(("pickup:", "toggle:", "open_door:")):
+            return action_label.split(":", 1)[1] == element_id
+        if action_label.startswith("push:"):
+            parts = action_label.split(":")
+            return len(parts) >= 2 and parts[1] == element_id
+        if action_label.startswith("teleport:"):
+            return element_id in action_label
+        return False
 
-                # Check door
-                new_inventory = state.inventory
-                new_open_doors = state.open_doors
-                if next_pos in self.doors:
-                    door_info = self.doors[next_pos]
-                    if door_info["id"] not in state.open_doors:
-                        # Door is closed/locked - need matching key
-                        if door_info["color"] in state.inventory:
-                            # Open the door, optionally consume key
-                            new_open_doors = state.open_doors | {door_info["id"]}
-                            if self.key_consumption:
-                                # Remove one key of this color
-                                inv_list = list(state.inventory)
-                                inv_list.remove(door_info["color"])
-                                new_inventory = frozenset(inv_list)
-                        else:
-                            continue  # Can't pass
+    def _distractor_candidate_ids(self, distractor) -> list[str]:
+        """Map a distractor annotation to concrete mechanism ids."""
+        if any(
+            distractor.element_id == obj.id
+            for group in (
+                self.spec.mechanisms.keys,
+                self.spec.mechanisms.doors,
+                self.spec.mechanisms.switches,
+                self.spec.mechanisms.gates,
+                self.spec.mechanisms.blocks,
+                self.spec.mechanisms.teleporters,
+                self.spec.mechanisms.hazards,
+            )
+            for obj in group
+        ):
+            return [distractor.element_id]
 
-                # Check gate
-                if next_pos in self.gates:
-                    gate_id = self.gates[next_pos]
-                    if gate_id not in state.open_gates:
-                        continue  # Closed gate, can't pass
-
-                # Check block at next_pos
-                new_block_positions = state.block_positions
-                if next_pos in block_dict:
-                    # Try to push block
-                    push_x, push_y = nx + dx, ny + dy
-                    push_pos = (push_x, push_y)
-                    # Block can't be pushed into walls, other blocks, doors, gates, hazards
-                    if (push_pos in self.walls or push_pos in block_dict or
-                            push_pos in self.doors or push_pos in self.gates or
-                            push_pos in self.hazards or
-                            not (0 <= push_x < self.width and 0 <= push_y < self.height)):
-                        continue  # Can't push
-                    bid = block_dict[next_pos]
-                    new_block_positions = (
-                        state.block_positions - {(bid, nx, ny)} | {(bid, push_x, push_y)}
-                    )
-
-                # Pick up key if present (and not already picked up - keys are on the grid)
-                if next_pos in self.keys:
-                    key_color = self.keys[next_pos]
-                    # Simple model: keys are auto-collected when walked over
-                    # (In actual MiniGrid, pickup is explicit, but for reachability this is equivalent
-                    #  since a rational agent would always pick up keys they encounter)
-                    new_inventory = new_inventory | {key_color}
-
-                # Toggle switch if present (walk onto switch cell)
-                new_active = state.active_switches
-                new_open_gates = state.open_gates
-                if next_pos in self.switches:
-                    sw = self.switches[next_pos]
-                    sw_id = sw["id"]
-                    if sw_id in state.active_switches:
-                        new_active = state.active_switches - {sw_id}
-                        # Close controlled gates
-                        new_open_gates = state.open_gates - frozenset(sw["controls"])
-                    else:
-                        new_active = state.active_switches | {sw_id}
-                        # Open controlled gates
-                        new_open_gates = state.open_gates | frozenset(sw["controls"])
-
-                # Handle teleporter
-                actual_pos = next_pos
-                if next_pos in self.teleporter_map:
-                    actual_pos = self.teleporter_map[next_pos]
-
-                new_state = ValidatorState(
-                    agent_pos=actual_pos,
-                    inventory=new_inventory,
-                    active_switches=new_active,
-                    open_gates=new_open_gates,
-                    open_doors=new_open_doors,
-                    block_positions=new_block_positions,
+        if distractor.type == "distractor_chain":
+            critical_ids = set()
+            if self.spec.dependency_chain is not None:
+                for step in self.spec.dependency_chain.sequence:
+                    critical_ids.add(step.element)
+                    critical_ids.add(step.unlocks)
+            candidate_ids = [
+                obj.id
+                for group in (
+                    self.spec.mechanisms.keys,
+                    self.spec.mechanisms.doors,
+                    self.spec.mechanisms.switches,
+                    self.spec.mechanisms.gates,
                 )
+                for obj in group
+                if obj.id not in critical_ids
+            ]
+            return candidate_ids or [distractor.element_id]
 
-                if new_state not in visited:
-                    visited.add(new_state)
-                    queue.append((new_state, path + [actual_pos]))
+        return [distractor.element_id]
 
-        return False, None, f"No solution found ({states_explored} states explored, all reachable states checked)"
+    def _is_irreversible_transition(self, state: ValidatorState, transition: SuccessorTransition) -> bool:
+        """Approximate whether a transition is meaningfully irreversible."""
+        label = transition.action_label
+        if label.startswith("push:"):
+            return True
+        if label.startswith("open_door:") and self.key_consumption:
+            return True
+        if label.startswith("toggle:"):
+            switch_id = label.split(":", 1)[1]
+            switch_info = self.switches_by_id.get(switch_id, {})
+            return switch_info.get("switch_type") == "one_shot"
+        if label.startswith("teleport:"):
+            return True
+        return False
+
+
+@dataclass
+class FragilityReport:
+    """Minimum wrong-step analysis for a task."""
+    min_steps_to_break: int
+    breaking_sequences: list[list[str]]
+    is_fragile: bool
+
+    def to_dict(self) -> dict:
+        return {
+            "min_steps_to_break": self.min_steps_to_break,
+            "breaking_sequences": self.breaking_sequences,
+            "is_fragile": self.is_fragile,
+        }
 
 
 @dataclass
@@ -267,6 +717,8 @@ class DifficultyReport:
     mechanism_types: int  # number of distinct mechanism categories used
     dependency_depth: int  # longest chain: key->door, switch->gate, etc.
     grid_area: int  # width * height
+    optimal_path: list[tuple[int, int]]
+    backtrack_count: int
     difficulty_score: float  # composite score
 
     def to_dict(self) -> dict:
@@ -280,6 +732,8 @@ class DifficultyReport:
             "mechanism_types": self.mechanism_types,
             "dependency_depth": self.dependency_depth,
             "grid_area": self.grid_area,
+            "optimal_path": [list(pos) for pos in self.optimal_path],
+            "backtrack_count": self.backtrack_count,
             "difficulty_score": round(self.difficulty_score, 2),
         }
 
@@ -294,6 +748,12 @@ def compute_difficulty(spec: TaskSpecification) -> DifficultyReport:
     import re
     match = re.search(r"(\d+) states explored", message)
     states_explored = int(match.group(1)) if match else 0
+    seen = set()
+    backtrack_count = 0
+    for pos in solution or []:
+        if pos in seen:
+            backtrack_count += 1
+        seen.add(pos)
 
     # Count mechanisms
     m = spec.mechanisms
@@ -319,22 +779,21 @@ def compute_difficulty(spec: TaskSpecification) -> DifficultyReport:
     ]
     mechanism_types = sum(type_flags)
 
-    # Compute dependency depth (longest chain)
-    # key -> door = depth 1, switch -> gate = depth 1
-    # key + switch -> gate -> door = depth 2
-    depth = 0
-    if doors_count > 0 and keys_count > 0:
-        depth = max(depth, 1)
-    if gates_count > 0 and switches_count > 0:
-        depth = max(depth, 1)
-    if doors_count > 0 and keys_count > 0 and gates_count > 0 and switches_count > 0:
-        depth = max(depth, 2)  # Must handle both systems
-    if blocks_count > 0:
-        depth = max(depth, 1)
-    if teleporters_count > 0:
-        depth = max(depth, 1)
-    if (teleporters_count > 0 or blocks_count > 0) and (gates_count > 0 or doors_count > 0):
-        depth = max(depth, 2)
+    # Prefer explicit dependency chain metadata when present.
+    depth = spec.dependency_chain.depth if spec.dependency_chain is not None else 0
+    if depth == 0:
+        if doors_count > 0 and keys_count > 0:
+            depth = max(depth, 1)
+        if gates_count > 0 and switches_count > 0:
+            depth = max(depth, 1)
+        if doors_count > 0 and keys_count > 0 and gates_count > 0 and switches_count > 0:
+            depth = max(depth, 2)
+        if blocks_count > 0:
+            depth = max(depth, 1)
+        if teleporters_count > 0:
+            depth = max(depth, 1)
+        if (teleporters_count > 0 or blocks_count > 0) and (gates_count > 0 or doors_count > 0):
+            depth = max(depth, 2)
 
     w, h = spec.maze.dimensions
     grid_area = w * h
@@ -347,6 +806,7 @@ def compute_difficulty(spec: TaskSpecification) -> DifficultyReport:
         mechanism_count * 2.0 +         # mechanism density
         mechanism_types * 3.0 +         # variety bonus
         depth * 5.0 +                   # dependency chain bonus
+        backtrack_count * 2.0 +         # path revisits
         (states_explored / 100.0) +     # search complexity
         (grid_area / 50.0)              # spatial scale
     )
@@ -361,6 +821,8 @@ def compute_difficulty(spec: TaskSpecification) -> DifficultyReport:
         mechanism_types=mechanism_types,
         dependency_depth=depth,
         grid_area=grid_area,
+        optimal_path=solution or [],
+        backtrack_count=backtrack_count,
         difficulty_score=score,
     )
 
