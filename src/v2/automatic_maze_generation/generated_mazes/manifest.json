@@ -1,0 +1,2002 @@
+[
+  {
+    "file": "maze_000_sequential_chain_kk_none_1000.json",
+    "seed": 1000,
+    "backbone": "sequential_chain",
+    "logic_chain": "kk",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 19
+  },
+  {
+    "file": "maze_001_winding_corridor_none_none_1001.json",
+    "seed": 1001,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 23
+  },
+  {
+    "file": "maze_002_dense_maze_sk_wrong_keys1_1002.json",
+    "seed": 1002,
+    "backbone": "dense_maze",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 28
+  },
+  {
+    "file": "maze_003_sequential_chain_sk_dead_end_rooms1_1003.json",
+    "seed": 1003,
+    "backbone": "sequential_chain",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_004_sequential_chain_none_wrong_keys1_1004.json",
+    "seed": 1004,
+    "backbone": "sequential_chain",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 15
+  },
+  {
+    "file": "maze_005_sequential_chain_ks_wrong_keys2_1005.json",
+    "seed": 1005,
+    "backbone": "sequential_chain",
+    "logic_chain": "ks",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 22
+  },
+  {
+    "file": "maze_006_side_vault_none_none_1006.json",
+    "seed": 1006,
+    "backbone": "side_vault",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_007_winding_corridor_sg_none_1007.json",
+    "seed": 1007,
+    "backbone": "winding_corridor",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 18
+  },
+  {
+    "file": "maze_008_dense_maze_ks_wrong_keys1_1010.json",
+    "seed": 1010,
+    "backbone": "dense_maze",
+    "logic_chain": "ks",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 22
+  },
+  {
+    "file": "maze_009_multi_route_none_none_1009.json",
+    "seed": 1009,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_010_dense_maze_kd_distractor_chain1_1011.json",
+    "seed": 1011,
+    "backbone": "dense_maze",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "distractor_chain",
+    "max_distractors": 1,
+    "optimal_cost": 36
+  },
+  {
+    "file": "maze_011_side_vault_kd_none_1011.json",
+    "seed": 1011,
+    "backbone": "side_vault",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_012_side_vault_none_none_1012.json",
+    "seed": 1012,
+    "backbone": "side_vault",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_013_sequential_chain_sg_wrong_keys1_1013.json",
+    "seed": 1013,
+    "backbone": "sequential_chain",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 20
+  },
+  {
+    "file": "maze_014_dense_maze_none_none_1014.json",
+    "seed": 1014,
+    "backbone": "dense_maze",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 26
+  },
+  {
+    "file": "maze_015_winding_corridor_kd_dead_end_rooms2_1015.json",
+    "seed": 1015,
+    "backbone": "winding_corridor",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 29
+  },
+  {
+    "file": "maze_016_side_vault_sg_dead_end_rooms2_1016.json",
+    "seed": 1016,
+    "backbone": "side_vault",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 23
+  },
+  {
+    "file": "maze_017_sequential_chain_kk_dead_end_rooms1_1017.json",
+    "seed": 1017,
+    "backbone": "sequential_chain",
+    "logic_chain": "kk",
+    "difficulty_tier": 3,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 17
+  },
+  {
+    "file": "maze_018_sequential_chain_kk_dead_end_rooms1_1018.json",
+    "seed": 1018,
+    "backbone": "sequential_chain",
+    "logic_chain": "kk",
+    "difficulty_tier": 3,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 24
+  },
+  {
+    "file": "maze_019_winding_corridor_kd_none_1019.json",
+    "seed": 1019,
+    "backbone": "winding_corridor",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 28
+  },
+  {
+    "file": "maze_020_winding_corridor_none_dead_end_rooms2_1020.json",
+    "seed": 1020,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 17
+  },
+  {
+    "file": "maze_021_dense_maze_sk_none_1021.json",
+    "seed": 1021,
+    "backbone": "dense_maze",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 44
+  },
+  {
+    "file": "maze_022_multi_route_none_dead_end_rooms2_1022.json",
+    "seed": 1022,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_023_sequential_chain_kk_dead_end_rooms2_1023.json",
+    "seed": 1023,
+    "backbone": "sequential_chain",
+    "logic_chain": "kk",
+    "difficulty_tier": 3,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 17
+  },
+  {
+    "file": "maze_024_winding_corridor_kd_dead_end_rooms2_1024.json",
+    "seed": 1024,
+    "backbone": "winding_corridor",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 30
+  },
+  {
+    "file": "maze_025_multi_route_none_none_1025.json",
+    "seed": 1025,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 9
+  },
+  {
+    "file": "maze_026_winding_corridor_kd_dead_end_rooms2_1026.json",
+    "seed": 1026,
+    "backbone": "winding_corridor",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 31
+  },
+  {
+    "file": "maze_027_winding_corridor_none_none_1027.json",
+    "seed": 1027,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 8
+  },
+  {
+    "file": "maze_028_sequential_chain_sk_dead_end_rooms2_1028.json",
+    "seed": 1028,
+    "backbone": "sequential_chain",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 17
+  },
+  {
+    "file": "maze_029_dense_maze_sg_distractor_chain1_1029.json",
+    "seed": 1029,
+    "backbone": "dense_maze",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "distractor_chain",
+    "max_distractors": 1,
+    "optimal_cost": 40
+  },
+  {
+    "file": "maze_030_winding_corridor_kd_wrong_keys1_1030.json",
+    "seed": 1030,
+    "backbone": "winding_corridor",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 28
+  },
+  {
+    "file": "maze_031_dense_maze_sk_none_1031.json",
+    "seed": 1031,
+    "backbone": "dense_maze",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 22
+  },
+  {
+    "file": "maze_032_sequential_chain_kk_wrong_keys2_1032.json",
+    "seed": 1032,
+    "backbone": "sequential_chain",
+    "logic_chain": "kk",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 17
+  },
+  {
+    "file": "maze_033_multi_route_none_wrong_keys2_1033.json",
+    "seed": 1033,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_034_winding_corridor_sg_none_1034.json",
+    "seed": 1034,
+    "backbone": "winding_corridor",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 10
+  },
+  {
+    "file": "maze_035_sequential_chain_kd_dead_end_rooms1_1035.json",
+    "seed": 1035,
+    "backbone": "sequential_chain",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 14
+  },
+  {
+    "file": "maze_036_sequential_chain_kk_wrong_keys1_1036.json",
+    "seed": 1036,
+    "backbone": "sequential_chain",
+    "logic_chain": "kk",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 20
+  },
+  {
+    "file": "maze_037_winding_corridor_kd_wrong_keys2_1037.json",
+    "seed": 1037,
+    "backbone": "winding_corridor",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 14
+  },
+  {
+    "file": "maze_038_winding_corridor_none_dead_end_rooms1_1038.json",
+    "seed": 1038,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 10
+  },
+  {
+    "file": "maze_039_multi_route_none_none_1039.json",
+    "seed": 1039,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 19
+  },
+  {
+    "file": "maze_040_side_vault_none_wrong_keys1_1040.json",
+    "seed": 1040,
+    "backbone": "side_vault",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 13
+  },
+  {
+    "file": "maze_041_sequential_chain_kd_dead_end_rooms2_1041.json",
+    "seed": 1041,
+    "backbone": "sequential_chain",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 18
+  },
+  {
+    "file": "maze_042_multi_route_none_none_1042.json",
+    "seed": 1042,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_043_dense_maze_sg_wrong_keys2_1043.json",
+    "seed": 1043,
+    "backbone": "dense_maze",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 24
+  },
+  {
+    "file": "maze_044_multi_route_none_dead_end_rooms2_1044.json",
+    "seed": 1044,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 15
+  },
+  {
+    "file": "maze_045_winding_corridor_sg_wrong_keys2_1045.json",
+    "seed": 1045,
+    "backbone": "winding_corridor",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 22
+  },
+  {
+    "file": "maze_046_sequential_chain_sk_dead_end_rooms1_1046.json",
+    "seed": 1046,
+    "backbone": "sequential_chain",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 19
+  },
+  {
+    "file": "maze_047_winding_corridor_kd_dead_end_rooms2_1047.json",
+    "seed": 1047,
+    "backbone": "winding_corridor",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 20
+  },
+  {
+    "file": "maze_048_side_vault_kd_none_1048.json",
+    "seed": 1048,
+    "backbone": "side_vault",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 19
+  },
+  {
+    "file": "maze_049_side_vault_sg_dead_end_rooms2_1050.json",
+    "seed": 1050,
+    "backbone": "side_vault",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 17
+  },
+  {
+    "file": "maze_050_winding_corridor_sg_none_1051.json",
+    "seed": 1051,
+    "backbone": "winding_corridor",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 17
+  },
+  {
+    "file": "maze_051_multi_route_none_wrong_keys1_1052.json",
+    "seed": 1052,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_052_side_vault_kd_wrong_keys2_1053.json",
+    "seed": 1053,
+    "backbone": "side_vault",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 27
+  },
+  {
+    "file": "maze_053_winding_corridor_sg_none_1054.json",
+    "seed": 1054,
+    "backbone": "winding_corridor",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 13
+  },
+  {
+    "file": "maze_054_winding_corridor_none_dead_end_rooms1_1055.json",
+    "seed": 1055,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 18
+  },
+  {
+    "file": "maze_055_winding_corridor_none_dead_end_rooms1_1056.json",
+    "seed": 1056,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 30
+  },
+  {
+    "file": "maze_056_dense_maze_sk_none_1057.json",
+    "seed": 1057,
+    "backbone": "dense_maze",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 48
+  },
+  {
+    "file": "maze_057_side_vault_sg_none_1058.json",
+    "seed": 1058,
+    "backbone": "side_vault",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_058_winding_corridor_none_wrong_keys1_1059.json",
+    "seed": 1059,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 23
+  },
+  {
+    "file": "maze_059_multi_route_none_none_1060.json",
+    "seed": 1060,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 9
+  },
+  {
+    "file": "maze_060_dense_maze_sg_wrong_keys1_1061.json",
+    "seed": 1061,
+    "backbone": "dense_maze",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 50
+  },
+  {
+    "file": "maze_061_winding_corridor_none_dead_end_rooms1_1062.json",
+    "seed": 1062,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 9
+  },
+  {
+    "file": "maze_062_multi_route_none_none_1063.json",
+    "seed": 1063,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 13
+  },
+  {
+    "file": "maze_063_multi_route_none_wrong_keys1_1064.json",
+    "seed": 1064,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_064_winding_corridor_kd_none_1065.json",
+    "seed": 1065,
+    "backbone": "winding_corridor",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 23
+  },
+  {
+    "file": "maze_065_sequential_chain_sk_wrong_keys2_1066.json",
+    "seed": 1066,
+    "backbone": "sequential_chain",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 19
+  },
+  {
+    "file": "maze_066_winding_corridor_kd_dead_end_rooms1_1067.json",
+    "seed": 1067,
+    "backbone": "winding_corridor",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 27
+  },
+  {
+    "file": "maze_067_sequential_chain_ks_none_1068.json",
+    "seed": 1068,
+    "backbone": "sequential_chain",
+    "logic_chain": "ks",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 20
+  },
+  {
+    "file": "maze_068_side_vault_sg_none_1069.json",
+    "seed": 1069,
+    "backbone": "side_vault",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 23
+  },
+  {
+    "file": "maze_069_side_vault_sg_none_1070.json",
+    "seed": 1070,
+    "backbone": "side_vault",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 23
+  },
+  {
+    "file": "maze_070_winding_corridor_kd_dead_end_rooms1_1071.json",
+    "seed": 1071,
+    "backbone": "winding_corridor",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_071_sequential_chain_ks_none_1072.json",
+    "seed": 1072,
+    "backbone": "sequential_chain",
+    "logic_chain": "ks",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 24
+  },
+  {
+    "file": "maze_072_side_vault_sg_none_1073.json",
+    "seed": 1073,
+    "backbone": "side_vault",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_073_sequential_chain_sg_none_1074.json",
+    "seed": 1074,
+    "backbone": "sequential_chain",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 20
+  },
+  {
+    "file": "maze_074_sequential_chain_none_none_1075.json",
+    "seed": 1075,
+    "backbone": "sequential_chain",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 16
+  },
+  {
+    "file": "maze_075_side_vault_none_none_1076.json",
+    "seed": 1076,
+    "backbone": "side_vault",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_076_winding_corridor_none_dead_end_rooms2_1077.json",
+    "seed": 1077,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 24
+  },
+  {
+    "file": "maze_077_winding_corridor_none_dead_end_rooms2_1078.json",
+    "seed": 1078,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 19
+  },
+  {
+    "file": "maze_078_dense_maze_kk_wrong_keys1_1079.json",
+    "seed": 1079,
+    "backbone": "dense_maze",
+    "logic_chain": "kk",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 28
+  },
+  {
+    "file": "maze_079_sequential_chain_sk_dead_end_rooms1_1080.json",
+    "seed": 1080,
+    "backbone": "sequential_chain",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 19
+  },
+  {
+    "file": "maze_080_sequential_chain_sg_wrong_keys1_1081.json",
+    "seed": 1081,
+    "backbone": "sequential_chain",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 18
+  },
+  {
+    "file": "maze_081_multi_route_none_wrong_keys1_1082.json",
+    "seed": 1082,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 13
+  },
+  {
+    "file": "maze_082_multi_route_none_dead_end_rooms2_1083.json",
+    "seed": 1083,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 19
+  },
+  {
+    "file": "maze_083_winding_corridor_sg_dead_end_rooms2_1084.json",
+    "seed": 1084,
+    "backbone": "winding_corridor",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 17
+  },
+  {
+    "file": "maze_084_dense_maze_sk_wrong_keys1_1085.json",
+    "seed": 1085,
+    "backbone": "dense_maze",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 34
+  },
+  {
+    "file": "maze_085_dense_maze_kk_wrong_keys2_1086.json",
+    "seed": 1086,
+    "backbone": "dense_maze",
+    "logic_chain": "kk",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 34
+  },
+  {
+    "file": "maze_086_multi_route_none_none_1087.json",
+    "seed": 1087,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 19
+  },
+  {
+    "file": "maze_087_dense_maze_kk_distractor_chain2_1089.json",
+    "seed": 1089,
+    "backbone": "dense_maze",
+    "logic_chain": "kk",
+    "difficulty_tier": 3,
+    "distractor_mode": "distractor_chain",
+    "max_distractors": 2,
+    "optimal_cost": 20
+  },
+  {
+    "file": "maze_088_side_vault_kd_wrong_keys2_1089.json",
+    "seed": 1089,
+    "backbone": "side_vault",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_089_sequential_chain_kd_dead_end_rooms2_1090.json",
+    "seed": 1090,
+    "backbone": "sequential_chain",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 18
+  },
+  {
+    "file": "maze_090_side_vault_none_wrong_keys2_1091.json",
+    "seed": 1091,
+    "backbone": "side_vault",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 13
+  },
+  {
+    "file": "maze_091_dense_maze_sk_wrong_keys2_1097.json",
+    "seed": 1097,
+    "backbone": "dense_maze",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 24
+  },
+  {
+    "file": "maze_092_side_vault_sg_wrong_keys2_1093.json",
+    "seed": 1093,
+    "backbone": "side_vault",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 25
+  },
+  {
+    "file": "maze_093_dense_maze_kk_distractor_chain2_1098.json",
+    "seed": 1098,
+    "backbone": "dense_maze",
+    "logic_chain": "kk",
+    "difficulty_tier": 3,
+    "distractor_mode": "distractor_chain",
+    "max_distractors": 2,
+    "optimal_cost": 32
+  },
+  {
+    "file": "maze_094_multi_route_none_none_1095.json",
+    "seed": 1095,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 9
+  },
+  {
+    "file": "maze_095_sequential_chain_none_dead_end_rooms2_1096.json",
+    "seed": 1096,
+    "backbone": "sequential_chain",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 18
+  },
+  {
+    "file": "maze_096_dense_maze_none_none_1097.json",
+    "seed": 1097,
+    "backbone": "dense_maze",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 38
+  },
+  {
+    "file": "maze_097_multi_route_none_dead_end_rooms2_1098.json",
+    "seed": 1098,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 13
+  },
+  {
+    "file": "maze_098_sequential_chain_kd_none_1099.json",
+    "seed": 1099,
+    "backbone": "sequential_chain",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 20
+  },
+  {
+    "file": "maze_099_winding_corridor_sg_none_1100.json",
+    "seed": 1100,
+    "backbone": "winding_corridor",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 19
+  },
+  {
+    "file": "maze_100_side_vault_kd_dead_end_rooms1_1101.json",
+    "seed": 1101,
+    "backbone": "side_vault",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 19
+  },
+  {
+    "file": "maze_101_side_vault_none_wrong_keys2_1102.json",
+    "seed": 1102,
+    "backbone": "side_vault",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_102_sequential_chain_kk_dead_end_rooms2_1103.json",
+    "seed": 1103,
+    "backbone": "sequential_chain",
+    "logic_chain": "kk",
+    "difficulty_tier": 3,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 18
+  },
+  {
+    "file": "maze_103_side_vault_kd_dead_end_rooms1_1104.json",
+    "seed": 1104,
+    "backbone": "side_vault",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 23
+  },
+  {
+    "file": "maze_104_winding_corridor_none_dead_end_rooms1_1105.json",
+    "seed": 1105,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_105_sequential_chain_ks_dead_end_rooms1_1106.json",
+    "seed": 1106,
+    "backbone": "sequential_chain",
+    "logic_chain": "ks",
+    "difficulty_tier": 3,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 18
+  },
+  {
+    "file": "maze_106_multi_route_none_dead_end_rooms2_1107.json",
+    "seed": 1107,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 13
+  },
+  {
+    "file": "maze_107_multi_route_none_wrong_keys2_1108.json",
+    "seed": 1108,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_108_sequential_chain_none_dead_end_rooms1_1109.json",
+    "seed": 1109,
+    "backbone": "sequential_chain",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 20
+  },
+  {
+    "file": "maze_109_sequential_chain_kd_wrong_keys1_1110.json",
+    "seed": 1110,
+    "backbone": "sequential_chain",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 20
+  },
+  {
+    "file": "maze_110_multi_route_none_none_1111.json",
+    "seed": 1111,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_111_side_vault_none_dead_end_rooms1_1112.json",
+    "seed": 1112,
+    "backbone": "side_vault",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_112_winding_corridor_none_none_1113.json",
+    "seed": 1113,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 8
+  },
+  {
+    "file": "maze_113_dense_maze_sg_wrong_keys2_1114.json",
+    "seed": 1114,
+    "backbone": "dense_maze",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 60
+  },
+  {
+    "file": "maze_114_side_vault_kd_none_1115.json",
+    "seed": 1115,
+    "backbone": "side_vault",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_115_dense_maze_ks_wrong_keys1_1119.json",
+    "seed": 1119,
+    "backbone": "dense_maze",
+    "logic_chain": "ks",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 24
+  },
+  {
+    "file": "maze_116_sequential_chain_sk_none_1117.json",
+    "seed": 1117,
+    "backbone": "sequential_chain",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 25
+  },
+  {
+    "file": "maze_117_multi_route_none_wrong_keys1_1118.json",
+    "seed": 1118,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 9
+  },
+  {
+    "file": "maze_118_winding_corridor_sg_wrong_keys1_1119.json",
+    "seed": 1119,
+    "backbone": "winding_corridor",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_119_dense_maze_kk_none_1122.json",
+    "seed": 1122,
+    "backbone": "dense_maze",
+    "logic_chain": "kk",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 18
+  },
+  {
+    "file": "maze_120_dense_maze_sk_none_1122.json",
+    "seed": 1122,
+    "backbone": "dense_maze",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 24
+  },
+  {
+    "file": "maze_121_sequential_chain_sk_none_1122.json",
+    "seed": 1122,
+    "backbone": "sequential_chain",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 23
+  },
+  {
+    "file": "maze_122_side_vault_kd_wrong_keys1_1123.json",
+    "seed": 1123,
+    "backbone": "side_vault",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 23
+  },
+  {
+    "file": "maze_123_winding_corridor_kd_wrong_keys2_1124.json",
+    "seed": 1124,
+    "backbone": "winding_corridor",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 12
+  },
+  {
+    "file": "maze_124_multi_route_none_dead_end_rooms2_1125.json",
+    "seed": 1125,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 13
+  },
+  {
+    "file": "maze_125_side_vault_none_none_1126.json",
+    "seed": 1126,
+    "backbone": "side_vault",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 9
+  },
+  {
+    "file": "maze_126_sequential_chain_kd_dead_end_rooms1_1127.json",
+    "seed": 1127,
+    "backbone": "sequential_chain",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 15
+  },
+  {
+    "file": "maze_127_winding_corridor_sg_none_1128.json",
+    "seed": 1128,
+    "backbone": "winding_corridor",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 12
+  },
+  {
+    "file": "maze_128_sequential_chain_sg_none_1129.json",
+    "seed": 1129,
+    "backbone": "sequential_chain",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 24
+  },
+  {
+    "file": "maze_129_dense_maze_sg_distractor_chain2_1130.json",
+    "seed": 1130,
+    "backbone": "dense_maze",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "distractor_chain",
+    "max_distractors": 2,
+    "optimal_cost": 24
+  },
+  {
+    "file": "maze_130_winding_corridor_sg_none_1132.json",
+    "seed": 1132,
+    "backbone": "winding_corridor",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 10
+  },
+  {
+    "file": "maze_131_dense_maze_kd_none_1132.json",
+    "seed": 1132,
+    "backbone": "dense_maze",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 30
+  },
+  {
+    "file": "maze_132_sequential_chain_ks_dead_end_rooms1_1133.json",
+    "seed": 1133,
+    "backbone": "sequential_chain",
+    "logic_chain": "ks",
+    "difficulty_tier": 3,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 20
+  },
+  {
+    "file": "maze_133_winding_corridor_sg_none_1134.json",
+    "seed": 1134,
+    "backbone": "winding_corridor",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_134_dense_maze_ks_none_1135.json",
+    "seed": 1135,
+    "backbone": "dense_maze",
+    "logic_chain": "ks",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 36
+  },
+  {
+    "file": "maze_135_winding_corridor_none_dead_end_rooms2_1136.json",
+    "seed": 1136,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 10
+  },
+  {
+    "file": "maze_136_sequential_chain_sk_none_1137.json",
+    "seed": 1137,
+    "backbone": "sequential_chain",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 24
+  },
+  {
+    "file": "maze_137_side_vault_sg_wrong_keys2_1138.json",
+    "seed": 1138,
+    "backbone": "side_vault",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 17
+  },
+  {
+    "file": "maze_138_winding_corridor_kd_none_1139.json",
+    "seed": 1139,
+    "backbone": "winding_corridor",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 15
+  },
+  {
+    "file": "maze_139_side_vault_sg_none_1140.json",
+    "seed": 1140,
+    "backbone": "side_vault",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 27
+  },
+  {
+    "file": "maze_140_sequential_chain_kd_none_1141.json",
+    "seed": 1141,
+    "backbone": "sequential_chain",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 20
+  },
+  {
+    "file": "maze_141_winding_corridor_none_dead_end_rooms2_1142.json",
+    "seed": 1142,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 29
+  },
+  {
+    "file": "maze_142_multi_route_none_dead_end_rooms2_1143.json",
+    "seed": 1143,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 17
+  },
+  {
+    "file": "maze_143_dense_maze_ks_wrong_keys2_1144.json",
+    "seed": 1144,
+    "backbone": "dense_maze",
+    "logic_chain": "ks",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 26
+  },
+  {
+    "file": "maze_144_multi_route_none_wrong_keys2_1145.json",
+    "seed": 1145,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_145_multi_route_none_dead_end_rooms2_1147.json",
+    "seed": 1147,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_146_sequential_chain_sg_wrong_keys1_1148.json",
+    "seed": 1148,
+    "backbone": "sequential_chain",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 22
+  },
+  {
+    "file": "maze_147_dense_maze_kd_distractor_chain2_1151.json",
+    "seed": 1151,
+    "backbone": "dense_maze",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "distractor_chain",
+    "max_distractors": 2,
+    "optimal_cost": 40
+  },
+  {
+    "file": "maze_148_multi_route_none_dead_end_rooms1_1150.json",
+    "seed": 1150,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 15
+  },
+  {
+    "file": "maze_149_multi_route_none_wrong_keys1_1151.json",
+    "seed": 1151,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 13
+  },
+  {
+    "file": "maze_150_dense_maze_sk_distractor_chain1_1153.json",
+    "seed": 1153,
+    "backbone": "dense_maze",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "distractor_chain",
+    "max_distractors": 1,
+    "optimal_cost": 24
+  },
+  {
+    "file": "maze_151_winding_corridor_kd_wrong_keys2_1154.json",
+    "seed": 1154,
+    "backbone": "winding_corridor",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 25
+  },
+  {
+    "file": "maze_152_dense_maze_none_none_1154.json",
+    "seed": 1154,
+    "backbone": "dense_maze",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 38
+  },
+  {
+    "file": "maze_153_multi_route_none_wrong_keys2_1155.json",
+    "seed": 1155,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 15
+  },
+  {
+    "file": "maze_154_dense_maze_none_wrong_keys2_1156.json",
+    "seed": 1156,
+    "backbone": "dense_maze",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 52
+  },
+  {
+    "file": "maze_155_dense_maze_ks_distractor_chain1_1163.json",
+    "seed": 1163,
+    "backbone": "dense_maze",
+    "logic_chain": "ks",
+    "difficulty_tier": 3,
+    "distractor_mode": "distractor_chain",
+    "max_distractors": 1,
+    "optimal_cost": 50
+  },
+  {
+    "file": "maze_156_side_vault_none_none_1158.json",
+    "seed": 1158,
+    "backbone": "side_vault",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_157_multi_route_none_dead_end_rooms2_1159.json",
+    "seed": 1159,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_158_sequential_chain_kd_dead_end_rooms2_1160.json",
+    "seed": 1160,
+    "backbone": "sequential_chain",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 22
+  },
+  {
+    "file": "maze_159_dense_maze_sg_distractor_chain1_1163.json",
+    "seed": 1163,
+    "backbone": "dense_maze",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "distractor_chain",
+    "max_distractors": 1,
+    "optimal_cost": 44
+  },
+  {
+    "file": "maze_160_sequential_chain_none_none_1162.json",
+    "seed": 1162,
+    "backbone": "sequential_chain",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 16
+  },
+  {
+    "file": "maze_161_winding_corridor_none_dead_end_rooms2_1163.json",
+    "seed": 1163,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 9
+  },
+  {
+    "file": "maze_162_multi_route_none_none_1164.json",
+    "seed": 1164,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 9
+  },
+  {
+    "file": "maze_163_multi_route_none_wrong_keys2_1165.json",
+    "seed": 1165,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 9
+  },
+  {
+    "file": "maze_164_winding_corridor_sg_dead_end_rooms1_1166.json",
+    "seed": 1166,
+    "backbone": "winding_corridor",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 17
+  },
+  {
+    "file": "maze_165_multi_route_none_dead_end_rooms1_1167.json",
+    "seed": 1167,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 9
+  },
+  {
+    "file": "maze_166_dense_maze_sk_none_1168.json",
+    "seed": 1168,
+    "backbone": "dense_maze",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 40
+  },
+  {
+    "file": "maze_167_winding_corridor_sg_none_1169.json",
+    "seed": 1169,
+    "backbone": "winding_corridor",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 22
+  },
+  {
+    "file": "maze_168_winding_corridor_none_none_1170.json",
+    "seed": 1170,
+    "backbone": "winding_corridor",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 23
+  },
+  {
+    "file": "maze_169_sequential_chain_ks_none_1171.json",
+    "seed": 1171,
+    "backbone": "sequential_chain",
+    "logic_chain": "ks",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 24
+  },
+  {
+    "file": "maze_170_dense_maze_sk_wrong_keys2_1172.json",
+    "seed": 1172,
+    "backbone": "dense_maze",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 36
+  },
+  {
+    "file": "maze_171_sequential_chain_kd_wrong_keys2_1173.json",
+    "seed": 1173,
+    "backbone": "sequential_chain",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 20
+  },
+  {
+    "file": "maze_172_multi_route_none_dead_end_rooms2_1174.json",
+    "seed": 1174,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 13
+  },
+  {
+    "file": "maze_173_sequential_chain_sk_wrong_keys2_1175.json",
+    "seed": 1175,
+    "backbone": "sequential_chain",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 19
+  },
+  {
+    "file": "maze_174_dense_maze_kd_none_1176.json",
+    "seed": 1176,
+    "backbone": "dense_maze",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 20
+  },
+  {
+    "file": "maze_175_sequential_chain_sg_wrong_keys2_1177.json",
+    "seed": 1177,
+    "backbone": "sequential_chain",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 18
+  },
+  {
+    "file": "maze_176_dense_maze_ks_wrong_keys2_1180.json",
+    "seed": 1180,
+    "backbone": "dense_maze",
+    "logic_chain": "ks",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 32
+  },
+  {
+    "file": "maze_177_dense_maze_none_none_1179.json",
+    "seed": 1179,
+    "backbone": "dense_maze",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 32
+  },
+  {
+    "file": "maze_178_side_vault_none_dead_end_rooms1_1181.json",
+    "seed": 1181,
+    "backbone": "side_vault",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 13
+  },
+  {
+    "file": "maze_179_multi_route_none_wrong_keys1_1182.json",
+    "seed": 1182,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_180_side_vault_sg_none_1183.json",
+    "seed": 1183,
+    "backbone": "side_vault",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 23
+  },
+  {
+    "file": "maze_181_dense_maze_kd_wrong_keys1_1184.json",
+    "seed": 1184,
+    "backbone": "dense_maze",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 26
+  },
+  {
+    "file": "maze_182_side_vault_none_none_1185.json",
+    "seed": 1185,
+    "backbone": "side_vault",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_183_side_vault_kd_wrong_keys1_1186.json",
+    "seed": 1186,
+    "backbone": "side_vault",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 23
+  },
+  {
+    "file": "maze_184_side_vault_none_wrong_keys2_1187.json",
+    "seed": 1187,
+    "backbone": "side_vault",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_185_dense_maze_sk_none_1188.json",
+    "seed": 1188,
+    "backbone": "dense_maze",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 32
+  },
+  {
+    "file": "maze_186_dense_maze_kk_distractor_chain2_1191.json",
+    "seed": 1191,
+    "backbone": "dense_maze",
+    "logic_chain": "kk",
+    "difficulty_tier": 3,
+    "distractor_mode": "distractor_chain",
+    "max_distractors": 2,
+    "optimal_cost": 34
+  },
+  {
+    "file": "maze_187_sequential_chain_sk_wrong_keys1_1190.json",
+    "seed": 1190,
+    "backbone": "sequential_chain",
+    "logic_chain": "sk",
+    "difficulty_tier": 3,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 17
+  },
+  {
+    "file": "maze_188_sequential_chain_sg_dead_end_rooms1_1191.json",
+    "seed": 1191,
+    "backbone": "sequential_chain",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 16
+  },
+  {
+    "file": "maze_189_side_vault_kd_dead_end_rooms1_1192.json",
+    "seed": 1192,
+    "backbone": "side_vault",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 21
+  },
+  {
+    "file": "maze_190_side_vault_sg_wrong_keys2_1193.json",
+    "seed": 1193,
+    "backbone": "side_vault",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 25
+  },
+  {
+    "file": "maze_191_side_vault_sg_none_1194.json",
+    "seed": 1194,
+    "backbone": "side_vault",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 19
+  },
+  {
+    "file": "maze_192_side_vault_kd_dead_end_rooms1_1195.json",
+    "seed": 1195,
+    "backbone": "side_vault",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 25
+  },
+  {
+    "file": "maze_193_multi_route_none_dead_end_rooms2_1196.json",
+    "seed": 1196,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 2,
+    "optimal_cost": 13
+  },
+  {
+    "file": "maze_194_multi_route_none_wrong_keys2_1197.json",
+    "seed": 1197,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 2,
+    "optimal_cost": 9
+  },
+  {
+    "file": "maze_195_side_vault_sg_dead_end_rooms1_1198.json",
+    "seed": 1198,
+    "backbone": "side_vault",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 25
+  },
+  {
+    "file": "maze_196_winding_corridor_sg_wrong_keys1_1199.json",
+    "seed": 1199,
+    "backbone": "winding_corridor",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "wrong_keys",
+    "max_distractors": 1,
+    "optimal_cost": 17
+  },
+  {
+    "file": "maze_197_side_vault_sg_dead_end_rooms1_1200.json",
+    "seed": 1200,
+    "backbone": "side_vault",
+    "logic_chain": "sg",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 25
+  },
+  {
+    "file": "maze_198_multi_route_none_none_1201.json",
+    "seed": 1201,
+    "backbone": "multi_route",
+    "logic_chain": "none",
+    "difficulty_tier": 1,
+    "distractor_mode": "none",
+    "max_distractors": 0,
+    "optimal_cost": 11
+  },
+  {
+    "file": "maze_199_side_vault_kd_dead_end_rooms1_1202.json",
+    "seed": 1202,
+    "backbone": "side_vault",
+    "logic_chain": "kd",
+    "difficulty_tier": 2,
+    "distractor_mode": "dead_end_rooms",
+    "max_distractors": 1,
+    "optimal_cost": 21
+  }
+]

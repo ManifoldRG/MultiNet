@@ -1,0 +1,323 @@
+Random Agent
+Step 1 of 50
+Status at step 1: {'position_before': (1, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (2, 1).'}
+Step 2 of 50
+Status at step 1: {'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_WEST. MOVE_WEST would move out of bounds. You remain at (2, 1).'}
+Step 2 of 50
+Status at step 2: {'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (2, 2).'}
+Step 3 of 50
+Status at step 3: {'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (2, 1).'}      
+Step 4 of 50
+Status at step 4: {'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (2, 2).'}      
+Step 5 of 50
+Status at step 5: {'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 2).'}   
+Step 6 of 50
+Status at step 6: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (3, 1).'}      
+Step 7 of 50
+Status at step 7: {'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 1).'}   
+Step 8 of 50
+Status at step 7: {'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_WEST. MOVE_WEST would move out of bounds. You remain at (2, 1).'}
+Step 8 of 50
+Status at step 8: {'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 1).'}   
+Step 9 of 50
+Status at step 9: {'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (3, 2).'}      
+Step 10 of 50
+Status at step 9: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+Step 10 of 50
+Status at step 9: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+Step 10 of 50
+Status at step 9: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+Step 10 of 50
+Status at step 10: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 2).'}  
+Step 11 of 50
+Status at step 11: {'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 2).'}  
+Step 12 of 50
+Status at step 11: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+Step 12 of 50
+Status at step 11: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+Step 12 of 50
+Status at step 12: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (3, 1).'}     
+Step 13 of 50
+Status at step 13: {'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (3, 2).'}     
+Step 14 of 50
+Status at step 13: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+Step 14 of 50
+Status at step 14: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 2).'}  
+Step 15 of 50
+Status at step 14: {'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (2,3). You remain at (2, 2).'}
+Step 15 of 50
+Status at step 15: {'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (2, 1).'}     
+Step 16 of 50
+Status at step 16: {'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (2, 2).'}     
+Step 17 of 50
+Status at step 17: {'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 2).'}  
+Step 18 of 50
+Status at step 17: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+Step 18 of 50
+Status at step 18: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (3, 1).'}     
+Step 19 of 50
+Status at step 19: {'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (4, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (4, 1).'}  
+Step 20 of 50
+Status at step 19: {'position_before': (4, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (4, 1), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (4,2). You remain at (4, 1).'}
+Step 20 of 50
+Status at step 20: {'position_before': (4, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (3, 1).'}  
+Step 21 of 50
+Status at step 21: {'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 1).'}  
+Step 22 of 50
+Status at step 22: {'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (1, 1).'}  
+Step 23 of 50
+Status at step 22: {'position_before': (1, 1), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 1), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_WEST. MOVE_WEST would move out of bounds. You remain at (1, 1).'}
+Step 23 of 50
+Status at step 23: {'position_before': (1, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (2, 1).'}  
+Step 24 of 50
+Status at step 24: {'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (1, 1).'}  
+Step 25 of 50
+Status at step 25: {'position_before': (1, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (2, 1).'}  
+Step 26 of 50
+Status at step 26: {'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 1).'}  
+Step 27 of 50
+Status at step 27: {'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (3, 2).'}     
+Step 28 of 50
+Status at step 27: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+Step 28 of 50
+Status at step 27: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+Step 28 of 50
+Status at step 28: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (3, 1).'}     
+Step 29 of 50
+Status at step 29: {'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 1).'}  
+Step 30 of 50
+Status at step 30: {'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 1).'}  
+Step 31 of 50
+Status at step 30: {'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_WEST. MOVE_WEST would move out of bounds. You remain at (3, 1).'}
+Step 31 of 50
+Status at step 31: {'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (4, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (4, 1).'}  
+Step 32 of 50
+Status at step 32: {'position_before': (4, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (5, 1).'}  
+Step 33 of 50
+Status at step 33: {'position_before': (5, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (5, 2).'}     
+Step 34 of 50
+Status at step 34: {'position_before': (5, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 3), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (5, 3).'}     
+Step 35 of 50
+Status at step 35: {'position_before': (5, 3), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (5, 2).'}     
+Step 36 of 50
+Status at step 35: {'position_before': (5, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 2), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH would move out of bounds. You remain at (5, 2).'}
+Step 36 of 50
+Status at step 35: {'position_before': (5, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 2), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH would move out of bounds. You remain at (5, 2).'}
+Step 36 of 50
+Status at step 35: {'position_before': (5, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_NORTH. MOVE_NORTH is blocked by a wall at (4,2). You remain at (5, 2).'}
+Step 36 of 50
+Status at step 35: {'position_before': (5, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 2), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH would move out of bounds. You remain at (5, 2).'}
+Step 36 of 50
+Status at step 36: {'position_before': (5, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (5, 1).'}     
+Step 37 of 50
+Status at step 36: {'position_before': (5, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 1), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH would move out of bounds. You remain at (5, 1).'}
+Step 37 of 50
+Status at step 37: {'position_before': (5, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (5, 2).'}     
+Step 38 of 50
+Status at step 38: {'position_before': (5, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (5, 1).'}     
+Step 39 of 50
+Status at step 39: {'position_before': (5, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (4, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (4, 1).'}  
+Step 40 of 50
+Status at step 39: {'position_before': (4, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (4, 1), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (4,2). You remain at (4, 1).'}
+Step 40 of 50
+Status at step 40: {'position_before': (4, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (3, 1).'}  
+Step 41 of 50
+Status at step 40: {'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_WEST. MOVE_WEST would move out of bounds. You remain at (3, 1).'}
+Step 41 of 50
+Status at step 41: {'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 1).'}  
+Step 42 of 50
+Status at step 42: {'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 1).'}  
+Step 43 of 50
+Status at step 43: {'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (3, 2).'}     
+Step 44 of 50
+Status at step 44: {'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 2).'}  
+Step 45 of 50
+Status at step 45: {'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (2, 1).'}     
+Step 46 of 50
+Status at step 46: {'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (2, 2).'}     
+Step 47 of 50
+Status at step 46: {'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (2,3). You remain at (2, 2).'}
+Step 47 of 50
+Status at step 47: {'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (2, 1).'}     
+Step 48 of 50
+Status at step 48: {'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (1, 1).'}  
+Step 49 of 50
+Status at step 48: {'position_before': (1, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 1), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_NORTH. MOVE_NORTH would move out of bounds. You remain at (1, 1).'}
+Step 49 of 50
+Status at step 49: {'position_before': (1, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (1, 2).'}     
+Step 50 of 50
+Status at step 49: {'position_before': (1, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 2), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_NORTH. MOVE_NORTH would move out of bounds. You remain at (1, 2).'}
+Step 50 of 50
+Status at step 49: {'position_before': (1, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 2), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_NORTH. MOVE_NORTH would move out of bounds. You remain at (1, 2).'}
+Step 50 of 50
+Status at step 50: {'position_before': (1, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (2, 2).'}  
+Success: False
+{'position_before': (1, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (2, 1).'}
+{'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_WEST. MOVE_WEST would move out of bounds. You remain at (2, 1).'}
+{'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (2, 2).'}
+{'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (2, 1).'}
+{'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (2, 2).'}
+{'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (3, 1).'}
+{'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 1).'}
+{'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_WEST. MOVE_WEST would move out of bounds. You remain at (2, 1).'}
+{'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 1).'}
+{'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 2).'}
+{'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (3, 1).'}
+{'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 2).'}
+{'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (2,3). You remain at (2, 2).'}
+{'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (2, 1).'}
+{'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (2, 2).'}
+{'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (3, 1).'}
+{'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (4, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (4, 1).'}
+{'position_before': (4, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (4, 1), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (4,2). You remain at (4, 1).'}
+{'position_before': (4, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (3, 1).'}
+{'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 1).'}
+{'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (1, 1).'}
+{'position_before': (1, 1), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 1), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_WEST. MOVE_WEST would move out of bounds. You remain at (1, 1).'}
+{'position_before': (1, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (2, 1).'}
+{'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (1, 1).'}
+{'position_before': (1, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (2, 1).'}
+{'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 1).'}
+{'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (3, 1).'}
+{'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 1).'}
+{'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 1).'}
+{'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_WEST. MOVE_WEST would move out of bounds. You remain at (3, 1).'}
+{'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (4, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (4, 1).'}
+{'position_before': (4, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (5, 1).'}
+{'position_before': (5, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (5, 2).'}
+{'position_before': (5, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 3), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (5, 3).'}
+{'position_before': (5, 3), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (5, 2).'}
+{'position_before': (5, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 2), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH would move out of bounds. You remain at (5, 2).'}
+{'position_before': (5, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 2), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH would move out of bounds. You remain at (5, 2).'}
+{'position_before': (5, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_NORTH. MOVE_NORTH is blocked by a wall at (4,2). You remain at (5, 2).'}
+{'position_before': (5, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 2), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH would move out of bounds. You remain at (5, 2).'}
+{'position_before': (5, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (5, 1).'}
+{'position_before': (5, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 1), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH would move out of bounds. You remain at (5, 1).'}
+{'position_before': (5, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (5, 2).'}
+{'position_before': (5, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (5, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (5, 1).'}
+{'position_before': (5, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (4, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (4, 1).'}
+{'position_before': (4, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (4, 1), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (4,2). You remain at (4, 1).'}
+{'position_before': (4, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (3, 1).'}
+{'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_WEST. MOVE_WEST would move out of bounds. You remain at (3, 1).'}
+{'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 1).'}
+{'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 1).'}
+{'position_before': (3, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (3, 2).'}
+{'position_before': (3, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 2).'}
+{'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (2, 1).'}
+{'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (2, 2).'}
+{'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (2,3). You remain at (2, 2).'}
+{'position_before': (2, 2), 'model_text': 'FINAL_ACTION: MOVE_WEST', 'parsed_action': 'MOVE_WEST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_WEST. Moved to (2, 1).'}
+{'position_before': (2, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 1), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (1, 1).'}
+{'position_before': (1, 1), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 1), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_NORTH. MOVE_NORTH would move out of bounds. You remain at (1, 1).'}
+{'position_before': (1, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (1, 2).'}
+{'position_before': (1, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 2), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_NORTH. MOVE_NORTH would move out of bounds. You remain at (1, 2).'}
+{'position_before': (1, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 2), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_NORTH. MOVE_NORTH would move out of bounds. You remain at (1, 2).'}
+{'position_before': (1, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (2, 2).'}
+{'position_before': (1, 1), 'model_text': 'FINAL_ACTION: MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (1, 2).'}
+{'position_before': (1, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 2), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_NORTH. MOVE_NORTH would move out of bounds. You remain at (1, 2).'}
+{'position_before': (1, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 2), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_NORTH. MOVE_NORTH would move out of bounds. You remain at (1, 2).'}
+{'position_before': (1, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (2, 2).'}
+remain at (1, 2).'}
+{'position_before': (1, 2), 'model_text': 'FINAL_ACTION: MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (1, 2), 'event_type': 'OOB', 'feedback': 'Parsed action: MOVE_NORTH. MOVE_NORTH would move out of bounds. You remain at (1, 2).'}
+{'position_before': (1, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (2, 2).'}
+{'position_before': (1, 2), 'model_text': 'FINAL_ACTION: MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_FINAL_ACTION', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (2, 2).'}
+'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (2, 2).'}
+
+
+
+
+LLM Agent
+Status at step 1: {'position_before': (1, 1), 'model_text': 'MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_REGEX', 'position_after': (1, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_EAST. Moved to (1, 2).'}
+Step 2 of 50
+Status at step 2: {'position_before': (1, 2), 'model_text': 'MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_REGEX', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (2, 2).'}      
+Step 3 of 50
+Status at step 3: {'position_before': (2, 2), 'model_text': 'MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 2).'}      
+Step 4 of 50
+Status at step 3: {'position_before': (3, 2), 'model_text': 'MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+Step 4 of 50
+Status at step 3: {'position_before': (3, 2), 'model_text': 'MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+Step 4 of 50
+Status at step 3: {'position_before': (3, 2), 'model_text': 'MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+Step 4 of 50
+Status at step 3: {'position_before': (3, 2), 'model_text': 'MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+Step 4 of 50
+Status at step 3: {'position_before': (3, 2), 'model_text': 'MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+Step 4 of 50
+Status at step 3: {'position_before': (3, 2), 'model_text': 'MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+Step 4 of 50
+Status at step 3: {'position_before': (3, 2), 'model_text': 'MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+Step 4 of 50
+Status at step 4: {'position_before': (3, 2), 'model_text': 'MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_REGEX', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 2).'}      
+Step 5 of 50
+Status at step 5: {'position_before': (2, 2), 'model_text': 'MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 2).'}      
+Step 6 of 50
+Status at step 5: {'position_before': (3, 2), 'model_text': 'MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+Step 6 of 50
+Status at step 5: {'position_before': (3, 2), 'model_text': 'MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+Step 6 of 50
+Status at step 5: {'position_before': (3, 2), 'model_text': 'MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+Step 6 of 50
+Status at step 6: {'position_before': (3, 2), 'model_text': 'MOVE_NORTH', 'parsed_action': 'MOVE_NORTH', 'parse_status': 'OK_REGEX', 'position_after': (2, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_NORTH. Moved to (2, 2).'}      
+Step 7 of 50
+Status at step 7: {'position_before': (2, 2), 'model_text': 'MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'MOVED', 'feedback': 'Parsed action: MOVE_SOUTH. Moved to (3, 2).'}      
+Step 8 of 50
+Status at step 7: {'position_before': (3, 2), 'model_text': 'MOVE_SOUTH', 'parsed_action': 'MOVE_SOUTH', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_SOUTH. MOVE_SOUTH is blocked by a wall at (4,2). You remain at (3, 2).'}
+Step 8 of 50
+Status at step 7: {'position_before': (3, 2), 'model_text': 'MOVE_EAST', 'parsed_action': 'MOVE_EAST', 'parse_status': 'OK_REGEX', 'position_after': (3, 2), 'event_type': 'WALL', 'feedback': 'Parsed action: MOVE_EAST. MOVE_EAST is blocked by a wall at (3,3). You remain at (3, 2).'}
+Step 8 of 50
+Traceback (most recent call last):
+  File "C:\Users\arush\AppData\Local\Programs\Python\Python312\Lib\site-packages\huggingface_hub\utils\_http.py", line 720, in hf_raise_for_status
+    response.raise_for_status()
+  File "C:\Users\arush\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '402 Payment Required' for url 'https://router.huggingface.co/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\arush\MIT Dropbox\Arushi Jain\Manifold\nlu_benchmark\examples\run_llm.py", line 20, in <module>
+    result = runner.run(agent)
+             ^^^^^^^^^^^^^^^^^
+  File "C:\Users\arush\MIT Dropbox\Arushi Jain\Manifold\nlu_benchmark\runner.py", line 44, in run
+    model_text = agent(messages)
+                 ^^^^^^^^^^^^^^^
+  File "C:\Users\arush\MIT Dropbox\Arushi Jain\Manifold\nlu_benchmark\agents.py", line 63, in __call__
+    response = self.client.chat.completions.create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arush\AppData\Local\Programs\Python\Python312\Lib\site-packages\huggingface_hub\inference\_client.py", line 933, in chat_completion
+    data = self._inner_post(request_parameters, stream=stream)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arush\AppData\Local\Programs\Python\Python312\Lib\site-packages\huggingface_hub\inference\_client.py", line 286, in _inner_post
+uggingface_hub\inference\_client.py", line 286, in _inner_post
+    hf_raise_for_status(response)
+  File "C:\Users\arush\AppData\Local\Programs\Python\Python312\Lib\site-packages\huggingface_hub\utils\_http.py", line 830, in hf_raise_for_status
+    raise _format(HfHubHTTPError, str(e), response) from e
+huggingface_hub.errors.HfHubHTTPError: Client error '402 Payment Required' for url 'https://router.huggingface.co/v1/chat/completions' (Request ID: Root=1-69aa5d58-453448530d1f68ae1f90fbff;232e3da3-6a88-4863-9dae-f8a74bd482a8)
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402
+
+    hf_raise_for_status(response)
+  File "C:\Users\arush\AppData\Local\Programs\Python\Python312\Lib\site-packages\huggingface_hub\utils\_http.py", line 830, in hf_raise_for_status
+    raise _format(HfHubHTTPError, str(e), response) from e
+huggingface_hub.errors.HfHubHTTPError: Client error '402 Payment Required' for url 'https://router.huggingface.co/v1/chat/completions' (Request ID: Root=1-69aa5d58-453448530d1f68ae1f90fbff;232e3da3-6a88-4863-9dae-f8a74bd482a8)
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402
+
+You have depleted your monthly included credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get 20x more included usage.
+PS C:\Users\arush\MIT Dropbox\Arushi Jain\Manifold>
