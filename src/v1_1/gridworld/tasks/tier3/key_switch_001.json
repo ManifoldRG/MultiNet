@@ -1,0 +1,44 @@
+{
+  "task_id": "tier3_key_switch_001",
+  "version": "1.0",
+  "seed": 42,
+  "difficulty_tier": 3,
+  "description": "Collect key to open door, then press switch to open gate to reach goal",
+  "maze": {
+    "dimensions": [10, 8],
+    "walls": [
+      [3, 1], [3, 2], [3, 4], [3, 5], [3, 6],
+      [6, 1], [6, 2], [6, 3], [6, 5], [6, 6]
+    ],
+    "start": [1, 1],
+    "goal": [8, 6]
+  },
+  "mechanisms": {
+    "keys": [
+      {"id": "key_blue", "position": [1, 5], "color": "blue"}
+    ],
+    "doors": [
+      {"id": "door_blue", "position": [3, 3], "requires_key": "blue", "initial_state": "locked"}
+    ],
+    "switches": [
+      {"id": "switch_1", "position": [4, 5], "controls": ["gate_1"], "switch_type": "toggle", "initial_state": "off"}
+    ],
+    "gates": [
+      {"id": "gate_1", "position": [6, 4], "initial_state": "closed"}
+    ],
+    "blocks": [],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": []
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [8, 6],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 75
+}

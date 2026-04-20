@@ -1,0 +1,38 @@
+{
+  "task_id": "tier1_maze_corridor_002",
+  "version": "1.0",
+  "seed": 123,
+  "difficulty_tier": 1,
+  "description": "Navigate through a corridor with walls",
+  "maze": {
+    "dimensions": [10, 6],
+    "walls": [
+      [2, 1], [2, 2], [2, 3],
+      [4, 2], [4, 3], [4, 4],
+      [6, 1], [6, 2], [6, 3],
+      [8, 2], [8, 3], [8, 4]
+    ],
+    "start": [1, 1],
+    "goal": [8, 1]
+  },
+  "mechanisms": {
+    "keys": [],
+    "doors": [],
+    "switches": [],
+    "gates": [],
+    "blocks": [],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": []
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [8, 1],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 50
+}

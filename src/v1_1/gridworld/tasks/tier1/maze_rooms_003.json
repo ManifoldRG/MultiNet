@@ -1,0 +1,36 @@
+{
+  "task_id": "tier1_maze_rooms_003",
+  "version": "1.1",
+  "seed": 456,
+  "difficulty_tier": 1,
+  "description": "Navigate through four connected rooms with doorways",
+  "maze": {
+    "dimensions": [12, 12],
+    "walls": [
+      [5, 1], [5, 2], [5, 4], [5, 5], [5, 6], [5, 7], [5, 9], [5, 10],
+      [1, 5], [2, 5], [4, 5], [5, 5], [6, 5], [7, 5], [9, 5], [10, 5]
+    ],
+    "start": [1, 1],
+    "goal": [10, 10]
+  },
+  "mechanisms": {
+    "keys": [],
+    "doors": [],
+    "switches": [],
+    "gates": [],
+    "blocks": [],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": []
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [10, 10],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 100
+}

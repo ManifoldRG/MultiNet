@@ -1,0 +1,47 @@
+{
+  "task_id": "tier3_complex_deps_003",
+  "version": "1.0",
+  "seed": 456,
+  "difficulty_tier": 3,
+  "description": "Keys, doors, switches, and gates - complex dependency chain",
+  "maze": {
+    "dimensions": [14, 12],
+    "walls": [
+      [4, 1], [4, 2], [4, 4], [4, 5], [4, 6], [4, 7], [4, 8], [4, 9], [4, 10],
+      [7, 1], [7, 2], [7, 3], [7, 5], [7, 6], [7, 7], [7, 8], [7, 9], [7, 10],
+      [10, 1], [10, 2], [10, 3], [10, 4], [10, 6], [10, 7], [10, 8], [10, 9], [10, 10]
+    ],
+    "start": [1, 1],
+    "goal": [12, 10]
+  },
+  "mechanisms": {
+    "keys": [
+      {"id": "key_blue", "position": [2, 8], "color": "blue"},
+      {"id": "key_red", "position": [5, 5], "color": "red"}
+    ],
+    "doors": [
+      {"id": "door_blue", "position": [4, 3], "requires_key": "blue", "initial_state": "locked"},
+      {"id": "door_red", "position": [7, 4], "requires_key": "red", "initial_state": "locked"}
+    ],
+    "switches": [
+      {"id": "switch_main", "position": [8, 8], "controls": ["gate_final"], "switch_type": "toggle", "initial_state": "off"}
+    ],
+    "gates": [
+      {"id": "gate_final", "position": [10, 5], "initial_state": "closed"}
+    ],
+    "blocks": [],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": []
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [12, 10],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 150
+}

@@ -1,0 +1,37 @@
+{
+  "task_id": "tier4_push_block_001",
+  "version": "1.1",
+  "seed": 42,
+  "difficulty_tier": 4,
+  "description": "Push the block out of the way to clear the passage and reach the goal",
+  "maze": {
+    "dimensions": [10, 8],
+    "walls": [
+      [4, 1], [4, 2], [4, 5], [4, 6]
+    ],
+    "start": [1, 1],
+    "goal": [8, 6]
+  },
+  "mechanisms": {
+    "keys": [],
+    "doors": [],
+    "switches": [],
+    "gates": [],
+    "blocks": [
+      {"id": "block_1", "position": [4, 3], "pushable": true, "color": "grey"}
+    ],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": []
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [8, 6],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 50
+}

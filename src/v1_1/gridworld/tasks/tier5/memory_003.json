@@ -1,0 +1,49 @@
+{
+  "task_id": "tier5_memory_003",
+  "version": "1.1",
+  "seed": 456,
+  "difficulty_tier": 5,
+  "description": "Complex multi-step puzzle: activate switch, collect key, navigate hazards, unlock door to reach goal",
+  "maze": {
+    "dimensions": [12, 10],
+    "walls": [
+      [4, 1], [4, 2], [4, 3], [4, 5], [4, 6], [4, 7], [4, 8],
+      [8, 1], [8, 2], [8, 3], [8, 4], [8, 6], [8, 7], [8, 8]
+    ],
+    "start": [1, 1],
+    "goal": [10, 8]
+  },
+  "mechanisms": {
+    "keys": [
+      {"id": "key_purple", "position": [2, 7], "color": "purple"}
+    ],
+    "doors": [
+      {"id": "door_purple", "position": [8, 5], "requires_key": "purple", "initial_state": "locked"}
+    ],
+    "switches": [
+      {"id": "switch_a", "position": [2, 2], "controls": ["gate_a"], "switch_type": "toggle", "initial_state": "off"}
+    ],
+    "gates": [
+      {"id": "gate_a", "position": [4, 4], "initial_state": "closed"}
+    ],
+    "blocks": [],
+    "teleporters": [],
+    "hazards": [
+      {"id": "hazard_1", "position": [6, 6], "hazard_type": "lava"},
+      {"id": "hazard_2", "position": [7, 6], "hazard_type": "lava"}
+    ]
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": [],
+    "observability": "fog_of_war",
+    "view_size": 7
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [10, 8],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 150
+}

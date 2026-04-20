@@ -1,0 +1,52 @@
+{
+  "task_id": "validation_10_v01_empty_room",
+  "version": "2.0",
+  "seed": 101,
+  "difficulty_tier": 1,
+  "description": "Baseline open room with no mechanisms.",
+  "maze": {
+    "dimensions": [
+      8,
+      8
+    ],
+    "walls": [],
+    "start": [
+      1,
+      1
+    ],
+    "goal": [
+      6,
+      6
+    ]
+  },
+  "mechanisms": {
+    "keys": [],
+    "doors": [],
+    "switches": [],
+    "gates": [],
+    "blocks": [],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": [],
+    "observability": "full",
+    "view_size": 7
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [
+      6,
+      6
+    ],
+    "auxiliary_conditions": []
+  },
+  "metadata": {
+    "chain_pattern": "none",
+    "tiling": "square",
+    "wall_topology": "open"
+  },
+  "max_steps": 100
+}

@@ -1,0 +1,52 @@
+{
+  "task_id": "tier5_teleporter_004",
+  "version": "1.0",
+  "seed": 42,
+  "difficulty_tier": 5,
+  "description": "Use teleporters to bypass wall barriers and reach the goal. A bidirectional teleporter connects two isolated chambers.",
+  "maze": {
+    "dimensions": [12, 10],
+    "walls": [
+      [4, 1], [4, 2], [4, 3], [4, 4], [4, 5], [4, 6], [4, 7], [4, 8],
+      [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 6], [8, 7], [8, 8]
+    ],
+    "start": [1, 1],
+    "goal": [10, 8]
+  },
+  "mechanisms": {
+    "keys": [],
+    "doors": [],
+    "switches": [],
+    "gates": [],
+    "blocks": [],
+    "teleporters": [
+      {
+        "id": "portal_1",
+        "position_a": [2, 5],
+        "position_b": [6, 5],
+        "bidirectional": true
+      },
+      {
+        "id": "portal_2",
+        "position_a": [6, 3],
+        "position_b": [10, 3],
+        "bidirectional": false
+      }
+    ],
+    "hazards": [
+      {"id": "lava_1", "position": [6, 7], "hazard_type": "lava"},
+      {"id": "lava_2", "position": [6, 8], "hazard_type": "lava"}
+    ]
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": []
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [10, 8],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 100
+}

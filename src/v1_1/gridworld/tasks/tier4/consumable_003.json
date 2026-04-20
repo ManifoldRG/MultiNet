@@ -1,0 +1,42 @@
+{
+  "task_id": "tier4_consumable_003",
+  "version": "1.1",
+  "seed": 456,
+  "difficulty_tier": 4,
+  "description": "Keys are consumed when used. One key, two doors - only one leads to the goal. Choose wisely.",
+  "maze": {
+    "dimensions": [12, 10],
+    "walls": [
+      [4, 1], [4, 2], [4, 4], [4, 5], [4, 6], [4, 7], [4, 8],
+      [8, 1], [8, 2], [8, 4], [8, 6], [8, 7], [8, 8],
+      [9, 4], [10, 1], [10, 2], [10, 3], [10, 4]
+    ],
+    "start": [1, 1],
+    "goal": [10, 8]
+  },
+  "mechanisms": {
+    "keys": [
+      {"id": "key_blue", "position": [2, 6], "color": "blue"}
+    ],
+    "doors": [
+      {"id": "door_blue_trap", "position": [8, 3], "requires_key": "blue", "initial_state": "locked"},
+      {"id": "door_blue_goal", "position": [8, 5], "requires_key": "blue", "initial_state": "locked"}
+    ],
+    "switches": [],
+    "gates": [],
+    "blocks": [],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": []
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [10, 8],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 100
+}

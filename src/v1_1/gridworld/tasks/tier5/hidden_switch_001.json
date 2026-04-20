@@ -1,0 +1,41 @@
+{
+  "task_id": "tier5_hidden_switch_001",
+  "version": "1.0",
+  "seed": 42,
+  "difficulty_tier": 5,
+  "description": "A switch controls the gate but the connection is not visible - must infer from trial",
+  "maze": {
+    "dimensions": [10, 8],
+    "walls": [
+      [5, 1], [5, 2], [5, 4], [5, 5], [5, 6]
+    ],
+    "start": [1, 1],
+    "goal": [8, 6]
+  },
+  "mechanisms": {
+    "keys": [],
+    "doors": [],
+    "switches": [
+      {"id": "hidden_switch", "position": [2, 5], "controls": ["secret_gate"], "switch_type": "toggle", "initial_state": "off"}
+    ],
+    "gates": [
+      {"id": "secret_gate", "position": [5, 3], "initial_state": "closed"}
+    ],
+    "blocks": [],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": ["hidden_switch"],
+    "observability": "view_cone",
+    "view_size": 5
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [8, 6],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 75
+}

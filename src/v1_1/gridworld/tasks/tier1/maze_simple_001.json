@@ -1,0 +1,33 @@
+{
+  "task_id": "tier1_maze_simple_001",
+  "version": "1.0",
+  "seed": 42,
+  "difficulty_tier": 1,
+  "description": "Simple navigation: reach the goal in an empty room",
+  "maze": {
+    "dimensions": [8, 8],
+    "walls": [],
+    "start": [1, 1],
+    "goal": [6, 6]
+  },
+  "mechanisms": {
+    "keys": [],
+    "doors": [],
+    "switches": [],
+    "gates": [],
+    "blocks": [],
+    "teleporters": [],
+    "hazards": []
+  },
+  "rules": {
+    "key_consumption": true,
+    "switch_type": "toggle",
+    "hidden_mechanisms": []
+  },
+  "goal": {
+    "type": "reach_position",
+    "target": [6, 6],
+    "auxiliary_conditions": []
+  },
+  "max_steps": 50
+}
